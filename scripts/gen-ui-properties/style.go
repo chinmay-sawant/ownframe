@@ -118,79 +118,90 @@ func generateStyles(buf *bytes.Buffer, props []string) error {
 			return fmt.Errorf("keyword metadata for unsupported property %s", prop)
 		}
 	}
-	for family, list := range families {
-		for _, prop := range list {
+	sortedFamilies := slices.Sorted(maps.Keys(families))
+	propFamilies := make(map[string][]string, len(props))
+	for _, family := range sortedFamilies {
+		for _, prop := range families[family] {
 			if _, ok := names[goName(prop)]; !ok {
 				return fmt.Errorf("%s metadata for unsupported property %s", family, prop)
 			}
+			propFamilies[prop] = append(propFamilies[prop], family)
 		}
 	}
+
+	fmt.Fprintln(buf, "\n// Value is a CSS value for properties without property-specific typed helpers.")
+	fmt.Fprintln(buf, "type Value interface { cssValue; isValue() }")
+	fmt.Fprintln(buf, "func (expression) isValue() {}")
+	fmt.Fprintln(buf, "func (wideKeyword) isValue() {}")
+
+	emittedCombos := make(map[string]bool)
 	for _, prop := range props {
-		name := goName(prop)
-		fmt.Fprintf(buf, "\n// %sValue is a value for the CSS %s property.\n",
-			name,
-			prop,
-		)
-		fmt.Fprintf(buf, "type %sValue interface { cssValue; is%s() }\n",
-			name,
-			name,
-		)
-		fmt.Fprintf(buf, "\n// %s sets the CSS %s property. Use RawValue for complex CSS syntax.\n",
-			name,
-			prop,
-		)
-		fmt.Fprintf(buf, "func (e *Element) %s(v %sValue) *Element { return e.setValue(%q, v) }\n",
-			name,
-			name,
-			prop,
-		)
-		for _, universal := range []string{"expression", "wideKeyword"} {
-			fmt.Fprintf(buf, "func (%s) is%s() {}\n",
-				universal,
-				name,
-			)
+		if len(keywords[prop]) > 0 || len(propFamilies[prop]) == 0 {
+			continue
 		}
-		for _, family := range slices.Sorted(maps.Keys(families)) {
-			for _, p := range families[family] {
-				if p == prop {
-					fmt.Fprintf(buf, "func (%s) is%s() {}\n",
-						family,
-						name,
-					)
-				}
-			}
+		combo := propFamilies[prop]
+		iface := strings.Join(combo, "") + "Value"
+		if emittedCombos[iface] {
+			continue
 		}
+		emittedCombos[iface] = true
+		marker := "is" + iface
+		fmt.Fprintf(buf, "\ntype %s interface { cssValue; %s() }\n", iface, marker)
+		fmt.Fprintf(buf, "func (expression) %s() {}\n", marker)
+		fmt.Fprintf(buf, "func (wideKeyword) %s() {}\n", marker)
+		for _, family := range combo {
+			fmt.Fprintf(buf, "func (%s) %s() {}\n", family, marker)
+		}
+	}
+
+	for _, prop := range props {
 		values := keywords[prop]
 		if len(values) == 0 {
 			continue
 		}
+		name := goName(prop)
+		iface := name + "Value"
+		marker := "is" + name
 		typ := strings.ToLower(name[:1]) + name[1:] + "Keyword"
+		fmt.Fprintf(buf, "\ntype %s interface { cssValue; %s() }\n", iface, marker)
 		fmt.Fprintf(buf, "type %s uint16\nconst (\n", typ)
 		for i, val := range values {
-			fmt.Fprintf(buf, "// %s%s sets %s to %s.\n%s%s %s = %d\n",
-				name,
-				goName(val),
-				prop,
-				val,
-				name,
-				goName(val),
-				typ,
-				i+1,
-			)
+			if i == 0 {
+				fmt.Fprintf(buf, "%s%s %s = iota + 1\n", name, goName(val), typ)
+			} else {
+				fmt.Fprintf(buf, "%s%s\n", name, goName(val))
+			}
 		}
-		fmt.Fprintf(buf, ")\nfunc (%s) is%s() {}\nfunc (v %s) cssText() (string, error) { switch v {\n",
+		fmt.Fprintf(buf, ")\nfunc (expression) %s() {}\nfunc (wideKeyword) %s() {}\nfunc (%s) %s() {}\n",
+			marker,
+			marker,
 			typ,
-			name,
-			typ,
+			marker,
 		)
-		for _, val := range values {
-			fmt.Fprintf(buf, "case %s%s: return %q, nil\n",
-				name,
-				goName(val),
-				val,
-			)
+		for _, family := range propFamilies[prop] {
+			fmt.Fprintf(buf, "func (%s) %s() {}\n", family, marker)
 		}
-		fmt.Fprintf(buf, "default: return \"\", fmt.Errorf(\"ui: invalid %s keyword %%d\", v) } }\n", prop)
+		fmt.Fprintf(buf, "func (v %s) cssText() (string, error) {\nnames := [...]string{\"\"", typ)
+		for _, val := range values {
+			fmt.Fprintf(buf, ", %q", val)
+		}
+		fmt.Fprintf(buf, "}\nif v == 0 || int(v) >= len(names) {\nreturn \"\", fmt.Errorf(\"ui: invalid %s keyword %%d\", v)\n}\nreturn names[v], nil\n}\n", prop)
+	}
+
+	fmt.Fprintln(buf)
+	for _, prop := range props {
+		name := goName(prop)
+		iface := "Value"
+		if len(keywords[prop]) > 0 {
+			iface = name + "Value"
+		} else if len(propFamilies[prop]) > 0 {
+			iface = strings.Join(propFamilies[prop], "") + "Value"
+		}
+		fmt.Fprintf(buf, "func (e *Element) %s(v %s) *Element { return e.setValue(%q, v) }\n",
+			name,
+			iface,
+			prop,
+		)
 	}
 	return nil
 }

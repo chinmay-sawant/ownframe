@@ -65,7 +65,7 @@ func rewriteControls(source string, spans []controlSpan, live map[string]Control
 }
 
 // insertValue inserts text at the caret and replaces the selection.
-func (p *Page) insertValue(c Control, caret, anchor int, text string) (Control, int, int, bool) {
+func insertValue(p *Page, c Control, caret, anchor int, text string) (Control, int, int, bool) {
 	return form.InsertValue(c, caret, anchor, text)
 }
 
@@ -96,14 +96,14 @@ func InstallPicker(p interface{ SetPicker(PickFunc) }, pick PickFunc) {
 // FocusNext focuses the next control in document order and wraps. Disabled
 // controls and tabindex="-1" are skipped. It draws when the focus moved.
 func (p *Page) FocusNext(ctx context.Context) error {
-	return p.focusStep(ctx, 1)
+	return focusStep(p, ctx, 1)
 }
 
 // FocusPrev focuses the previous control in document order and wraps.
 // Disabled controls and tabindex="-1" are skipped. It draws when the focus
 // moved.
 func (p *Page) FocusPrev(ctx context.Context) error {
-	return p.focusStep(ctx, -1)
+	return focusStep(p, ctx, -1)
 }
 
 // Focus focuses the control id and draws. An empty id blurs. A disabled
@@ -114,29 +114,29 @@ func (p *Page) Focus(ctx context.Context, id string) error {
 	}
 
 	if id == "" {
-		fs := p.formState()
+		fs := formState(p)
 		if fs == nil || fs.FocusID == "" {
 			return nil
 		}
 
-		p.blurForm()
+		blurForm(p)
 
 		return p.Redraw(ctx)
 	}
 
-	c, ok := p.control(id)
-	if !ok || c.Disabled || !p.inFocusScope(id) {
+	c, ok := control(p, id)
+	if !ok || c.Disabled || !inFocusScope(p, id) {
 		return nil
 	}
 
-	moved, reveal := p.formState().TakeFocus(id, c, ok)
+	moved, reveal := formState(p).TakeFocus(id, c, ok)
 	if !moved {
 		return nil
 	}
 
 	p.tickMutated.Store(true)
 	if reveal {
-		p.revealFocus(id)
+		revealFocus(p, id)
 	}
 
 	return p.Redraw(ctx)
@@ -144,7 +144,7 @@ func (p *Page) Focus(ctx context.Context, id string) error {
 
 // FocusID returns the focused control id, or "" when none is focused.
 func (p *Page) FocusID() string {
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return ""
 	}
@@ -154,7 +154,7 @@ func (p *Page) FocusID() string {
 
 // LastFocusID returns the control id cleared by the most recent blur.
 func (p *Page) LastFocusID() string {
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return ""
 	}
@@ -162,12 +162,12 @@ func (p *Page) LastFocusID() string {
 	return fs.LastFocusID
 }
 
-func (p *Page) focusStep(ctx context.Context, step int) error {
+func focusStep(p *Page, ctx context.Context, step int) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
 
-	id, ok := form.NextID(p.focusOrder(), p.FocusID(), step)
+	id, ok := form.NextID(focusOrder(p), p.FocusID(), step)
 	if !ok {
 		return nil
 	}
@@ -177,15 +177,15 @@ func (p *Page) focusStep(ctx context.Context, step int) error {
 
 // focusOrder is the tab order: the document order of the control boxes,
 // with disabled controls and tabindex="-1" left out.
-func (p *Page) focusOrder() []string {
+func focusOrder(p *Page) []string {
 	ids := make([]string, 0, len(p.boxes))
 	for _, b := range p.boxes {
-		if p.inFocusScope(b.ID) {
+		if inFocusScope(p, b.ID) {
 			ids = append(ids, b.ID)
 		}
 	}
 
-	return form.Order(ids, p.control)
+	return form.Order(ids, func(id string) (Control, bool) { return control(p, id) })
 }
 
 // SelectAt focuses the control under the point and puts the caret at the
@@ -197,15 +197,15 @@ func (p *Page) SelectAt(ctx context.Context, x, y float64) error {
 		return err
 	}
 
-	id := p.boxIDAt(x, y)
-	c, ok := p.control(id)
+	id := boxIDAt(p, x, y)
+	c, ok := control(p, id)
 	if !ok {
-		fs := p.formState()
+		fs := formState(p)
 		if fs == nil || fs.FocusID == "" {
 			return nil
 		}
 
-		p.blurForm()
+		blurForm(p)
 
 		return p.Redraw(ctx)
 	}
@@ -218,7 +218,7 @@ func (p *Page) SelectAt(ctx context.Context, x, y float64) error {
 		return p.Focus(ctx, id)
 	}
 
-	return p.focusCaret(ctx, c, p.offsetAt(p.boxByID(id), c, x, y))
+	return focusCaret(p, ctx, c, offsetAt(p, boxByID(p, id), c, x, y))
 }
 
 // Drag extends the focused field's range to the point. It does nothing when
@@ -228,13 +228,13 @@ func (p *Page) Drag(ctx context.Context, x, y float64) error {
 		return err
 	}
 
-	c, ok := p.typingTarget()
+	c, ok := typingTarget(p)
 	if !ok {
 		return nil
 	}
 
-	off := p.offsetAt(p.boxByID(c.ID), c, x, y)
-	changed := p.formState().DragTo(off)
+	off := offsetAt(p, boxByID(p, c.ID), c, x, y)
+	changed := formState(p).DragTo(off)
 	if !changed {
 		return nil
 	}
@@ -245,28 +245,28 @@ func (p *Page) Drag(ctx context.Context, x, y float64) error {
 
 // SelectWordAt selects the word under the point and draws.
 func (p *Page) SelectWordAt(ctx context.Context, x, y float64) error {
-	return p.selectSpan(ctx, x, y, form.WordBounds)
+	return selectSpan(p, ctx, x, y, form.WordBounds)
 }
 
 // SelectLineAt selects the line under the point and draws.
 func (p *Page) SelectLineAt(ctx context.Context, x, y float64) error {
-	return p.selectSpan(ctx, x, y, form.LineBounds)
+	return selectSpan(p, ctx, x, y, form.LineBounds)
 }
 
-func (p *Page) selectSpan(ctx context.Context, x, y float64, bounds func(string, int) (int, int)) error {
+func selectSpan(p *Page, ctx context.Context, x, y float64, bounds func(string, int) (int, int)) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
 
-	id := p.boxIDAt(x, y)
-	c, ok := p.control(id)
+	id := boxIDAt(p, x, y)
+	c, ok := control(p, id)
 	if !ok || c.Disabled || !canEdit(c) {
 		return nil
 	}
 
-	off := p.offsetAt(p.boxByID(id), c, x, y)
+	off := offsetAt(p, boxByID(p, id), c, x, y)
 	start, end := bounds(c.Value, off)
-	p.formState().SelectSpan(c.ID, start, end)
+	formState(p).SelectSpan(c.ID, start, end)
 	p.tickMutated.Store(true)
 
 	return p.Redraw(ctx)
@@ -275,13 +275,13 @@ func (p *Page) selectSpan(ctx context.Context, x, y float64, bounds func(string,
 // offsetAt turns a point into a rune offset in c's value. A run that cannot
 // be measured, or one whose drawn text does not line up with the shown
 // value, lands at the end of the value.
-func (p *Page) offsetAt(box Box, c Control, x, y float64) int {
+func offsetAt(p *Page, box Box, c Control, x, y float64) int {
 	return form.OffsetAt(p.draw.Display, box, c, x, y)
 }
 
 // focusCaret focuses c and puts the caret and the anchor at off.
-func (p *Page) focusCaret(ctx context.Context, c Control, off int) error {
-	changed := p.formState().FocusCaret(c.ID, off)
+func focusCaret(p *Page, ctx context.Context, c Control, off int) error {
+	changed := formState(p).FocusCaret(c.ID, off)
 	if !changed {
 		return nil
 	}
@@ -290,9 +290,9 @@ func (p *Page) focusCaret(ctx context.Context, c Control, off int) error {
 	return p.Redraw(ctx)
 }
 
-func (p *Page) revealFocus(id string) {
-	box := p.boxByID(id)
-	if p.isFixed(box) {
+func revealFocus(p *Page, id string) {
+	box := boxByID(p, id)
+	if isFixed(p, box) {
 		// A box the window pins to the viewport is always visible, so
 		// revealing it must not scroll the page away from the content.
 		return
@@ -304,28 +304,28 @@ func (p *Page) revealFocus(id string) {
 }
 
 // setCaret moves the caret to pos, keeping the anchor when extend is true.
-func (p *Page) setCaret(pos int, extend bool) {
-	if p.formState() == nil {
+func setCaret(p *Page, pos int, extend bool) {
+	if formState(p) == nil {
 		return
 	}
 
 	p.tickMutated.Store(true)
 	n := 0
-	if c, ok := p.focusedEditable(); ok {
+	if c, ok := focusedEditable(p); ok {
 		n = runeLen(c.Value)
 	}
 
-	p.formState().SetCaret(pos, n, extend)
+	formState(p).SetCaret(pos, n, extend)
 }
 
 // hasSelection reports whether the focused field has a non-empty range.
-func (p *Page) hasSelection() bool {
-	c, ok := p.typingTarget()
+func hasSelection(p *Page) bool {
+	c, ok := typingTarget(p)
 	if !ok {
 		return false
 	}
 
-	start, end := p.formState().Bounds(runeLen(c.Value))
+	start, end := formState(p).Bounds(runeLen(c.Value))
 
 	return start != end
 }
@@ -333,13 +333,13 @@ func (p *Page) hasSelection() bool {
 // caretKey moves the caret for a focused text field and draws. Arrow keys
 // move by rune, Home and End move to the ends, and a ctrl+ or alt+ prefix
 // jumps by word. A shift+ prefix extends the range from the anchor.
-func (p *Page) caretKey(ctx context.Context, key string) error {
-	c, ok := p.typingTarget()
+func caretKey(p *Page, ctx context.Context, key string) error {
+	c, ok := typingTarget(p)
 	if !ok {
 		return nil
 	}
 
-	fs := p.formState()
+	fs := formState(p)
 	n := runeLen(c.Value)
 	caret := form.ClampPos(fs.Caret, n)
 	start, end := fs.Bounds(n)
@@ -360,9 +360,9 @@ func (p *Page) caretKey(ctx context.Context, key string) error {
 
 // resetCaretBlink shows the caret and restarts the blink clock. Every caret
 // move and edit calls it, so the caret is solid while the person types.
-func (p *Page) resetCaretBlink() {
+func resetCaretBlink(p *Page) {
 	p.tickMutated.Store(true)
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return
 	}
@@ -373,9 +373,9 @@ func (p *Page) resetCaretBlink() {
 // caretBlink toggles the focused field's caret on the blink clock and draws
 // when the phase changes. A range selection paints no caret, so it does
 // nothing. A file input never shows a caret, so it does nothing.
-func (p *Page) caretBlink(ctx context.Context) error {
-	c, ok := p.focusedEditable()
-	fs := p.formState()
+func caretBlink(p *Page, ctx context.Context) error {
+	c, ok := focusedEditable(p)
+	fs := formState(p)
 	if fs == nil {
 		return nil
 	}
@@ -394,13 +394,13 @@ func (p *Page) caretBlink(ctx context.Context) error {
 	return p.Redraw(ctx)
 }
 
-func (p *Page) paintCaret(d *layout.Display) {
-	fs := p.formState()
+func paintCaret(p *Page, d *layout.Display) {
+	fs := formState(p)
 	if fs == nil {
 		return
 	}
 
-	c, ok := p.focusedEditable()
+	c, ok := focusedEditable(p)
 	v := fs.View()
 	if ok {
 		v.Control = c
@@ -413,7 +413,7 @@ func (p *Page) paintCaret(d *layout.Display) {
 // the template output is unchanged. It takes dataMu because syncForm reads
 // and clears the flag under the same lock; a plain write here would race a
 // concurrent Redraw.
-func (p *Page) markFormDirty() {
+func markFormDirty(p *Page) {
 	p.dataMu.Lock()
 	p.formDirty = true
 	p.dataMu.Unlock()
@@ -503,7 +503,7 @@ type formMerge struct {
 // behind noteSource, and it lets the sync path and the adopt path thread one
 // hash through instead of hashing the same body again. Callers set syncClean
 // after noting, so the draw adapter skips its own rehash.
-func (p *Page) noteSourceHashed(next string, hash uint64) {
+func noteSourceHashed(p *Page, next string, hash uint64) {
 	if p.sourceRev != 0 && hash == p.sourceHash && len(next) == p.sourceLen {
 		return
 	}
@@ -513,7 +513,7 @@ func (p *Page) noteSourceHashed(next string, hash uint64) {
 	p.sourceRev++
 }
 
-func (p *Page) syncForm(body string) string {
+func syncForm(p *Page, body string) string {
 	p.syncClean = false
 	// Phase 1: snapshot the shared state under one short exclusive lock.
 	// SetData publishes data and the dirty flag under this lock, so the
@@ -523,11 +523,11 @@ func (p *Page) syncForm(body string) string {
 	// every SetData-shared field is copied here.
 	p.dataMu.Lock()
 	doc := p.nav.Doc()
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil || fs.Doc != doc {
 		fresh := form.NewDoc(doc)
 		fs = &fresh
-		p.setFormState(fs)
+		setFormState(p, fs)
 		p.formDirty = true
 	}
 	snap := formSnap{
@@ -583,7 +583,7 @@ func (p *Page) syncForm(body string) string {
 	// of those steps is a no-op; only the focus handoff, the bookkeeping,
 	// and the emoji pass below can change anything.
 	if len(snap.live) == 0 && len(snap.order) == 0 && !hasControls {
-		return p.publishForm(formMerge{body: body, hash: hash}, snap)
+		return publishForm(p, formMerge{body: body, hash: hash}, snap)
 	}
 
 	// The fused scan flags exactly the inputs the button rewrite replaces
@@ -641,7 +641,7 @@ func (p *Page) syncForm(body string) string {
 		merge.built = true
 	}
 
-	return p.publishForm(merge, snap)
+	return publishForm(p, merge, snap)
 }
 
 // publishForm installs the merged controls under a short exclusive lock,
@@ -654,9 +654,9 @@ func (p *Page) syncForm(body string) string {
 // re-verifies against re-executed template output. The final source is noted
 // with its threaded hash and syncClean is set, so the draw adapter skips its
 // own rehash; the memo update mirrors noteSource exactly.
-func (p *Page) publishForm(merge formMerge, snap formSnap) string {
+func publishForm(p *Page, merge formMerge, snap formSnap) string {
 	p.dataMu.Lock()
-	fs := p.formState()
+	fs := formState(p)
 	dirty := false
 	if merge.byID != nil {
 		if refreshBindsLocked(p, &merge, snap) {
@@ -670,7 +670,7 @@ func (p *Page) publishForm(merge formMerge, snap formSnap) string {
 		fs.ClearRange()
 	}
 
-	p.applyFocusRequest()
+	applyFocusRequest(p)
 	fs.ClampToFocus()
 
 	p.lastSyncBody = merge.body
@@ -686,7 +686,7 @@ func (p *Page) publishForm(merge formMerge, snap formSnap) string {
 		outHash = oh
 	}
 
-	p.noteSourceHashed(out, outHash)
+	noteSourceHashed(p, out, outHash)
 	p.syncClean = true
 
 	return out
@@ -775,45 +775,45 @@ func caretOfSnap(snap formSnap, byID map[string]Control) form.Caret {
 	})
 }
 
-func (p *Page) clickControl(ctx context.Context, box Box) error {
-	c, ok := p.control(box.ID)
+func clickControl(p *Page, ctx context.Context, box Box) error {
+	c, ok := control(p, box.ID)
 	if ok && c.Disabled {
 		return nil
 	}
 
 	if c.Type == "file" {
-		p.markFormDirty()
-		return p.clickFile(ctx, box, c)
+		markFormDirty(p)
+		return clickFileControl(p, ctx, box, c)
 	}
 
 	if !c.Disabled && form.WillChange(c) {
-		if err := p.beforeEdit(ctx, box.ID); err != nil {
+		if err := beforeEdit(p, ctx, box.ID); err != nil {
 			return err
 		}
 	}
 
-	oldFocus := p.currentFocus()
+	oldFocus := currentFocus(p)
 	changed := false
 	if !c.Disabled {
-		changed = p.activate(box.ID)
+		changed = activate(p, box.ID)
 	}
 
-	if p.currentFocus() != oldFocus {
-		p.markFormDirty()
-		p.markPair(oldFocus, p.currentFocus())
+	if currentFocus(p) != oldFocus {
+		markFormDirty(p)
+		markPair(p, oldFocus, currentFocus(p))
 	}
 
 	if changed {
-		p.markFormDirty()
+		markFormDirty(p)
 		if c.Type == "checkbox" || c.Type == "radio" {
-			p.markToggle(box.ID)
+			markToggle(p, box.ID)
 		}
 
-		if next, ok := p.control(box.ID); ok {
+		if next, ok := control(p, box.ID); ok {
 			bindWrite(p, next)
 		}
 
-		if err := p.change(ctx, box.ID); err != nil {
+		if err := change(p, ctx, box.ID); err != nil {
 			return err
 		}
 	}
@@ -822,10 +822,10 @@ func (p *Page) clickControl(ctx context.Context, box Box) error {
 		if err := p.handlers.Click(ctx, box); err != nil {
 			return err
 		}
-		p.markFormDirty()
+		markFormDirty(p)
 	}
 
-	painted, err := p.clickPainted(ctx, box)
+	painted, err := clickPainted(p, ctx, box)
 	if err != nil {
 		return err
 	}
@@ -840,15 +840,15 @@ func (p *Page) clickControl(ctx context.Context, box Box) error {
 // clickFile focuses a file control and stores the path the picker returns.
 // Cancel or an empty path keeps the old value, still runs Click, and
 // redraws. Any other picker error redraws the focus and returns wrapped.
-func (p *Page) clickFile(ctx context.Context, box Box, c Control) error {
-	oldFocus := p.currentFocus()
-	p.activate(box.ID)
-	if p.currentFocus() != oldFocus {
-		p.markPair(oldFocus, p.currentFocus())
+func clickFileControl(p *Page, ctx context.Context, box Box, c Control) error {
+	oldFocus := currentFocus(p)
+	activate(p, box.ID)
+	if currentFocus(p) != oldFocus {
+		markPair(p, oldFocus, currentFocus(p))
 	}
 
 	if p.picker != nil {
-		if err := p.applyPicked(ctx, box, c); err != nil {
+		if err := applyPicked(p, ctx, box, c); err != nil {
 			return err
 		}
 	}
@@ -857,13 +857,13 @@ func (p *Page) clickFile(ctx context.Context, box Box, c Control) error {
 		if err := p.handlers.Click(ctx, box); err != nil {
 			return err
 		}
-		p.markFormDirty()
+		markFormDirty(p)
 	}
 
 	return p.Redraw(ctx)
 }
 
-func (p *Page) applyPicked(ctx context.Context, box Box, c Control) error {
+func applyPicked(p *Page, ctx context.Context, box Box, c Control) error {
 	path, err := p.picker(ctx, p.title)
 	if err != nil && !errors.Is(err, filepick.ErrCanceled) {
 		if rerr := p.Redraw(ctx); rerr != nil {
@@ -877,48 +877,48 @@ func (p *Page) applyPicked(ctx context.Context, box Box, c Control) error {
 		return nil
 	}
 
-	if err := p.beforeEdit(ctx, box.ID); err != nil {
+	if err := beforeEdit(p, ctx, box.ID); err != nil {
 		return err
 	}
 
 	c.Value = path
-	p.formState().ByID[box.ID] = c
+	formState(p).ByID[box.ID] = c
 	bindWrite(p, c)
-	p.markPending(box.ID)
+	markPending(p, box.ID)
 
-	return p.change(ctx, box.ID)
+	return change(p, ctx, box.ID)
 }
 
-func (p *Page) blurForm() {
-	p.markFormDirty()
+func blurForm(p *Page) {
+	markFormDirty(p)
 	p.tickMutated.Store(true)
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return
 	}
 
 	old := fs.Blur()
-	p.markPair(old, "")
+	markPair(p, old, "")
 }
 
 // currentFocus is the focused control id, or "" when none is focused.
-func (p *Page) currentFocus() string {
+func currentFocus(p *Page) string {
 	return p.FocusID()
 }
 
-func (p *Page) formControl(id string) bool {
+func formControl(p *Page, id string) bool {
 	if id == "" {
 		return false
 	}
 
-	_, ok := p.control(id)
+	_, ok := control(p, id)
 
 	return ok
 }
 
-func (p *Page) activate(id string) bool {
+func activate(p *Page, id string) bool {
 	p.tickMutated.Store(true)
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return false
 	}
@@ -926,7 +926,7 @@ func (p *Page) activate(id string) bool {
 	return fs.Activate(id)
 }
 
-func (p *Page) editField(ctx context.Context, fn func() error, edit valueEdit) error {
+func editField(p *Page, ctx context.Context, fn func() error, edit valueEdit) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
@@ -940,10 +940,10 @@ func (p *Page) editField(ctx context.Context, fn func() error, edit valueEdit) e
 		ran = true
 		// The handler can mutate the template data in place through the
 		// SetData pointer, so force the next Redraw to re-execute.
-		p.markFormDirty()
+		markFormDirty(p)
 	}
 
-	changed, step, err := p.applyEdit(ctx, edit)
+	changed, step, err := applyEdit(p, ctx, edit)
 	if err != nil {
 		return err
 	}
@@ -953,31 +953,31 @@ func (p *Page) editField(ctx context.Context, fn func() error, edit valueEdit) e
 	}
 
 	edited := ""
-	if fs := p.formState(); fs != nil {
+	if fs := formState(p); fs != nil {
 		edited = fs.FocusID
 	}
 
 	if changed {
-		p.markPending(edited)
-		if err := p.change(ctx, edited); err != nil {
+		markPending(p, edited)
+		if err := change(p, ctx, edited); err != nil {
 			return err
 		}
 	}
 
 	if step != 0 {
-		p.focusSlotStep(edited, step)
+		focusSlotStep(p, edited, step)
 	}
 
 	return p.Redraw(ctx)
 }
 
-func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, int, error) {
-	c, ok := p.typingTarget()
+func applyEdit(p *Page, ctx context.Context, edit valueEdit) (bool, int, error) {
+	c, ok := typingTarget(p)
 	if !ok {
 		return false, 0, nil
 	}
 
-	fs := p.formState()
+	fs := formState(p)
 	next, caret, anchor, changed := edit(c, fs.Caret, fs.Anchor)
 	step := next.SlotStep
 	next.SlotStep = 0
@@ -991,15 +991,15 @@ func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, int, error)
 
 	// GEN-28: every edit funnels here, so clamp once for all writers.
 	next, caret, anchor = form.ClampEdited(next, caret, anchor)
-	if err := p.beforeEdit(ctx, fs.FocusID); err != nil {
+	if err := beforeEdit(p, ctx, fs.FocusID); err != nil {
 		return false, 0, err
 	}
 
-	fs = p.formState()
+	fs = formState(p)
 	fs.ByID[fs.FocusID] = next
 	fs.Caret, fs.Anchor = caret, anchor
 	fs.All = false
-	p.resetCaretBlink()
+	resetCaretBlink(p)
 	bindWrite(p, next)
 
 	return true, step, nil
@@ -1007,14 +1007,14 @@ func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, int, error)
 
 // focusSlotStep moves focus from a one-digit slot by step. A missing
 // neighbor leaves the focus where it is.
-func (p *Page) focusSlotStep(from string, step int) {
-	fs := p.formState()
+func focusSlotStep(p *Page, from string, step int) {
+	fs := formState(p)
 	if fs == nil || step == 0 {
 		return
 	}
 
 	id := form.SlotNeighbor(fs.ByID, from, step)
-	if id == "" || !p.inFocusScope(id) {
+	if id == "" || !inFocusScope(p, id) {
 		return
 	}
 
@@ -1025,14 +1025,14 @@ func (p *Page) focusSlotStep(from string, step int) {
 	}
 
 	p.tickMutated.Store(true)
-	p.markPair(from, id)
+	markPair(p, from, id)
 	if reveal {
-		p.revealFocus(id)
+		revealFocus(p, id)
 	}
 }
 
-func (p *Page) typingTarget() (Control, bool) {
-	c, ok := p.focusedEditable()
+func typingTarget(p *Page) (Control, bool) {
+	c, ok := focusedEditable(p)
 	if !ok || c.Disabled {
 		return Control{}, false
 	}
@@ -1040,13 +1040,13 @@ func (p *Page) typingTarget() (Control, bool) {
 	return c, true
 }
 
-func (p *Page) focusedEditable() (Control, bool) {
-	fs := p.formState()
+func focusedEditable(p *Page) (Control, bool) {
+	fs := formState(p)
 	if fs == nil {
 		return Control{}, false
 	}
 
-	c, ok := p.control(fs.FocusID)
+	c, ok := control(p, fs.FocusID)
 	if !ok || !canEdit(c) {
 		return Control{}, false
 	}
@@ -1056,37 +1056,37 @@ func (p *Page) focusedEditable() (Control, bool) {
 
 // beforeEdit calls the BeforeEdit handler for id.
 // A nil handler does nothing.
-func (p *Page) beforeEdit(ctx context.Context, id string) error {
+func beforeEdit(p *Page, ctx context.Context, id string) error {
 	if p.handlers.BeforeEdit == nil {
 		return nil
 	}
 
-	if err := p.handlers.BeforeEdit(ctx, p.boxByID(id)); err != nil {
+	if err := p.handlers.BeforeEdit(ctx, boxByID(p, id)); err != nil {
 		return err
 	}
-	p.markFormDirty()
+	markFormDirty(p)
 
 	return nil
 }
 
 // change calls the Change handler for id.
 // A nil handler does nothing.
-func (p *Page) change(ctx context.Context, id string) error {
+func change(p *Page, ctx context.Context, id string) error {
 	if p.handlers.Change == nil {
 		return nil
 	}
 
-	if err := p.handlers.Change(ctx, p.boxByID(id)); err != nil {
+	if err := p.handlers.Change(ctx, boxByID(p, id)); err != nil {
 		return err
 	}
-	p.markFormDirty()
+	markFormDirty(p)
 
 	return nil
 }
 
 // FormValue returns the current value of id, or "" when id is absent.
 func (p *Page) FormValue(id string) string {
-	c, _ := p.control(id)
+	c, _ := control(p, id)
 
 	return c.Value
 }
@@ -1097,7 +1097,7 @@ func (p *Page) FormValue(id string) string {
 // The focused control loses its selection.
 func (p *Page) SetFormValue(id, value string) {
 	p.tickMutated.Store(true)
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return
 	}
@@ -1108,7 +1108,7 @@ func (p *Page) SetFormValue(id, value string) {
 // FormChecked reports whether id is checked.
 // A missing control returns false.
 func (p *Page) FormChecked(id string) bool {
-	c, _ := p.control(id)
+	c, _ := control(p, id)
 
 	return c.Checked
 }
@@ -1119,7 +1119,7 @@ func (p *Page) FormChecked(id string) bool {
 // A radio set false clears only that radio.
 func (p *Page) SetFormChecked(id string, checked bool) {
 	p.tickMutated.Store(true)
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return
 	}
@@ -1130,7 +1130,7 @@ func (p *Page) SetFormChecked(id string, checked bool) {
 // FocusedField returns the focused field id, excluding buttons.
 // FocusID also reports button focus.
 func (p *Page) FocusedField() string {
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return ""
 	}
@@ -1138,8 +1138,8 @@ func (p *Page) FocusedField() string {
 	return fs.FieldID()
 }
 
-func (p *Page) control(id string) (Control, bool) {
-	fs := p.formState()
+func control(p *Page, id string) (Control, bool) {
+	fs := formState(p)
 	if fs == nil {
 		return Control{}, false
 	}
@@ -1151,7 +1151,7 @@ func (p *Page) control(id string) (Control, bool) {
 // value is selected. It is false when no control is focused, when the
 // page has no form yet, or when another control is focused.
 func (p *Page) FormSelected(id string) bool {
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil || fs.FocusID != id {
 		return false
 	}
@@ -1168,21 +1168,21 @@ func SetFocusScope(p *Page, ids []string) {
 // Empty id blurs. An absent or disabled control clears the old focus.
 func RequestFocus(p *Page, id string) {
 	p.ff.requestFocus, p.ff.hasFocusRequest = id, true
-	p.markFormDirty()
+	markFormDirty(p)
 }
 
-func (p *Page) inFocusScope(id string) bool {
+func inFocusScope(p *Page, id string) bool {
 	return len(p.ff.scope) == 0 || slices.Contains(p.ff.scope, id)
 }
 
-func (p *Page) applyFocusRequest() {
+func applyFocusRequest(p *Page) {
 	if !p.ff.hasFocusRequest {
 		return
 	}
 	p.ff.hasFocusRequest = false
-	fs := p.formState()
+	fs := formState(p)
 	c, ok := fs.ByID[p.ff.requestFocus]
-	if !ok || c.Disabled || !p.inFocusScope(c.ID) {
+	if !ok || c.Disabled || !inFocusScope(p, c.ID) {
 		fs.FocusID = ""
 		fs.ClearRange()
 		return
@@ -1206,10 +1206,10 @@ type formFocusState struct {
 }
 
 // formState returns the owned form document, or nil before first sync.
-func (p *Page) formState() *form.State { return p.ff.form }
+func formState(p *Page) *form.State { return p.ff.form }
 
 // setFormState replaces the owned form document.
-func (p *Page) setFormState(s *form.State) { p.ff.form = s }
+func setFormState(p *Page, s *form.State) { p.ff.form = s }
 
 // HoverID returns the element the page paints as hovered, or "" when none.
 // The window reads it through host.Hoverer so a hover the page set itself
@@ -1217,28 +1217,28 @@ func (p *Page) setFormState(s *form.State) { p.ff.form = s }
 func (p *Page) HoverID() string { return p.ff.hover }
 
 // setHoverID records the hovered element id.
-func (p *Page) setHoverID(id string) { p.ff.hover = id }
+func setHoverID(p *Page, id string) { p.ff.hover = id }
 
 // clearHoverID drops the hovered element id.
-func (p *Page) clearHoverID() { p.ff.hover = "" }
+func clearHoverID(p *Page) { p.ff.hover = "" }
 
 // hoverPoint is the last hover position in CSS pixels.
-func (p *Page) hoverPoint() (float64, float64) { return p.ff.hoverX, p.ff.hoverY }
+func hoverPoint(p *Page) (float64, float64) { return p.ff.hoverX, p.ff.hoverY }
 
 // setHoverPoint records the last hover position in CSS pixels.
-func (p *Page) setHoverPoint(x, y float64) { p.ff.hoverX, p.ff.hoverY = x, y }
+func setHoverPoint(p *Page, x, y float64) { p.ff.hoverX, p.ff.hoverY = x, y }
 
 // activeID is the pressed element id, or "" when none.
-func (p *Page) activeID() string { return p.ff.active }
+func activeID(p *Page) string { return p.ff.active }
 
 // setActiveID records the pressed element id.
-func (p *Page) setActiveID(id string) { p.ff.active = id }
+func setActiveID(p *Page, id string) { p.ff.active = id }
 
 // setPressUsed records whether a handler consumed the current press.
-func (p *Page) setPressUsed(used bool) { p.ff.pressUsed = used }
+func setPressUsed(p *Page, used bool) { p.ff.pressUsed = used }
 
 // takePress clears the press hit and returns the held id, or "".
-func (p *Page) takePress() string {
+func takePress(p *Page) string {
 	id := p.ff.active
 	p.ff.active = ""
 	p.ff.pressUsed = false
@@ -1247,7 +1247,7 @@ func (p *Page) takePress() string {
 
 // consumePress drops a handler-consumed press hit. It is true when Click
 // lands on the pressed id and should only redraw.
-func (p *Page) consumePress(id string) bool {
+func consumePress(p *Page, id string) bool {
 	if p.ff.pressUsed && p.ff.active == id {
 		p.ff.pressUsed = false
 		return true
@@ -1256,10 +1256,10 @@ func (p *Page) consumePress(id string) bool {
 }
 
 // a11yState returns the owned accessibility snapshot, or nil.
-func (p *Page) a11yState() *accessibilityState { return p.ff.accessibility }
+func a11yState(p *Page) *accessibilityState { return p.ff.accessibility }
 
 // setA11yState replaces the owned accessibility snapshot.
-func (p *Page) setA11yState(s *accessibilityState) { p.ff.accessibility = s }
+func setA11yState(p *Page, s *accessibilityState) { p.ff.accessibility = s }
 
 // rewriteButtons replaces a submit, button, or reset input with a button
 // element so the engine gives it a face and a hit box.

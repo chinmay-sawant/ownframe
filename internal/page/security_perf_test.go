@@ -95,11 +95,11 @@ func TestPerfDisjointRegions(t *testing.T) {
 		{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 165, H: 15},
 	}}
 	rects := []image.Rectangle{image.Rect(0, 0, 20, 20), image.Rect(200, 0, 220, 20)}
-	p.recordPartial(2, rects, d)
+	recordPartial(p, 2, rects, d)
 	if p.stats.dirtyRegions != 2 || p.stats.dirtyArea != 800 || p.stats.dirtyOps != 3 {
 		t.Fatalf("regions=%d area=%d ops=%d", p.stats.dirtyRegions, p.stats.dirtyArea, p.stats.dirtyOps)
 	}
-	p.recordPartial(0, nil, d)
+	recordPartial(p, 0, nil, d)
 	if p.stats.dirtyRegions != 0 || p.stats.dirtyArea != 0 || p.stats.dirtyOps != 0 {
 		t.Fatal("empty damage retained counters")
 	}
@@ -201,7 +201,7 @@ func TestSec_PageFieldCaps(t *testing.T) {
 		t.Fatalf("default cap: %d", len([]rune(got)))
 	}
 	var zero Page
-	next, _, _, changed := zero.insertValue(Control{MaxLength: 2}, 0, 0, "abcdef")
+	next, _, _, changed := insertValue(&zero, Control{MaxLength: 2}, 0, 0, "abcdef")
 	if !changed || next.Value != "ab" {
 		t.Fatalf("insert: %q %v", next.Value, changed)
 	}

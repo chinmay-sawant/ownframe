@@ -103,8 +103,8 @@ func TestClickPaintKeepsTheStateLayout(t *testing.T) {
 		ClickPaint: func(context.Context, Box) (bool, error) { return true, nil },
 	})
 
-	before := p.boxByID("go").W
-	box := p.boxByID("go")
+	before := boxByID(p, "go").W
+	box := boxByID(p, "go")
 	x, y := box.X+box.W/2, box.Y+box.H/2
 
 	p.BeginRedrawBatch()
@@ -118,7 +118,7 @@ func TestClickPaintKeepsTheStateLayout(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.boxByID("go").W; got == before {
+	if got := boxByID(p, "go").W; got == before {
 		t.Fatalf("width %v, want the focused width", got)
 	}
 }
@@ -133,7 +133,7 @@ func TestClickPaintSkipsTheLayoutOfAnUnusedState(t *testing.T) {
 	})
 
 	layouts := p.Stats().Layouts
-	box := p.boxByID("go")
+	box := boxByID(p, "go")
 	x, y := box.X+box.W/2, box.Y+box.H/2
 
 	p.BeginRedrawBatch()
@@ -159,12 +159,12 @@ func TestClickPaintSkipsTheLayoutOfAnUnusedState(t *testing.T) {
 func TestClickSingleSpotResolvesAnonymousChild(t *testing.T) {
 	ctx := context.Background()
 	p := overlapPage(t)
-	p.setBoxes([]Box{
+	setBoxes(p, []Box{
 		{ID: "card", Action: "open", X: 0, Y: 0, W: 100, H: 100},
 		{ID: "", X: 10, Y: 10, W: 20, H: 20},
 	})
 
-	spot := p.boxAt(15, 15)
+	spot := boxAt(p, 15, 15)
 	if !spot.ok || spot.box.ID != "" || spot.id != "card" {
 		t.Fatalf("spot = %+v, want the anonymous child under card", spot)
 	}
@@ -204,7 +204,7 @@ func TestCursorShapes(t *testing.T) {
 	}
 
 	for _, step := range steps {
-		b := p.boxByID(step.id)
+		b := boxByID(p, step.id)
 		if err := p.Hover(ctx, b.X+b.W/2, b.Y+b.H/2); err != nil {
 			t.Fatal(err)
 		}
@@ -257,7 +257,7 @@ func TestFallbackRebuildsFixedHits(t *testing.T) {
 		t.Fatal("the bitmap path left no hit map")
 	}
 
-	spot := p.boxAt(10, 10)
+	spot := boxAt(p, 10, 10)
 	if !spot.ok || spot.id != "head" {
 		t.Fatalf("boxAt = %+v, want the fixed header", spot)
 	}
@@ -291,7 +291,7 @@ func TestFixedBoxWinsOverContent(t *testing.T) {
 	ctx := context.Background()
 	p := fixedHeaderPage(t)
 
-	spot := p.boxAt(10, 10)
+	spot := boxAt(p, 10, 10)
 	if !spot.ok || spot.id != "head" {
 		t.Fatalf("boxAt = %+v, want the fixed header", spot)
 	}
@@ -308,7 +308,7 @@ func TestFixedBoxWinsOverContent(t *testing.T) {
 		t.Fatalf("clicked = %+v, want the fixed header", clicked)
 	}
 
-	spot = p.boxAt(10, 55)
+	spot = boxAt(p, 10, 55)
 	if !spot.ok || spot.id != "body" {
 		t.Fatalf("boxAt = %+v, want the content block", spot)
 	}
@@ -333,7 +333,7 @@ func TestFixedBoxKeepsInnerControl(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	spot := p.boxAt(10, 10)
+	spot := boxAt(p, 10, 10)
 	if !spot.ok || spot.id != "go" {
 		t.Fatalf("boxAt = %+v, want the control inside the fixed box", spot)
 	}
@@ -359,7 +359,7 @@ func TestLongPressSelectsWord(t *testing.T) {
 		t.Fatal("a text-field hold is unclaimed")
 	}
 
-	if start, end := p.formState().Bounds(11); start != 0 || end != 5 {
+	if start, end := formState(p).Bounds(11); start != 0 || end != 5 {
 		t.Fatalf("word [%d,%d)", start, end)
 	}
 }
@@ -412,7 +412,7 @@ func TestLongPressNilHandlerUnclaimed(t *testing.T) {
 	p := bftPage(t, `<div id="card" style="width:120px;height:40px">tap</div>`)
 	bftDraw(t, p, nil)
 
-	box := p.boxByID("card")
+	box := boxByID(p, "card")
 
 	claimed, err := p.LongPress(ctx, box.X+box.W/2, box.Y+box.H/2)
 	if err != nil {

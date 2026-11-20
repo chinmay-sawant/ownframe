@@ -43,7 +43,7 @@ func TestReloadKeepsTickAndImages(t *testing.T) {
 		t.Fatalf("ticks = %d, want 1", ticks)
 	}
 
-	data, err := p.imageBytes("logo")
+	data, err := imageBytes(p, "logo")
 	if err != nil || string(data) != "bytes" {
 		t.Fatalf("image = %q, %v", data, err)
 	}
@@ -147,7 +147,7 @@ func TestReloadClearsStaleHoverActive(t *testing.T) {
 		t.Fatalf("hover = %q, want none", p.HoverID())
 	}
 
-	if p.activeID() != "b" {
-		t.Fatalf("active = %q, want b", p.activeID())
+	if activeID(p) != "b" {
+		t.Fatalf("active = %q, want b", activeID(p))
 	}
 }

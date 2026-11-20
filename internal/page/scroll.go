@@ -29,12 +29,12 @@ func (p *Page) AllowScroll() bool {
 
 // ScrollTo queues an absolute scroll move for the window. The window clamps
 // the target to the content size and owns the offset.
-func (p *Page) ScrollTo(x, y int) { p.scroll.To(x, y); p.notifyFrame() }
+func (p *Page) ScrollTo(x, y int) { p.scroll.To(x, y); notifyFrame(p) }
 
 // ScrollBy queues a scroll delta for the window. A second delta before the
 // window consumes it adds to the first, and a delta after ScrollTo moves the
 // pending target.
-func (p *Page) ScrollBy(dx, dy int) { p.scroll.By(dx, dy); p.notifyFrame() }
+func (p *Page) ScrollBy(dx, dy int) { p.scroll.By(dx, dy); notifyFrame(p) }
 
 // TakeScroll returns the queued request and clears it.
 func (p *Page) TakeScroll() (host.Scroll, bool) { return p.scroll.Take() }
@@ -60,7 +60,7 @@ func (p *Page) ScrollOffset() (int, int) { return p.scroll.Offset() }
 func (p *Page) SetScrollOffset(x, y int) {
 	p.scroll.SetOffset(x, y)
 	if p.hasViewportSticky && p.stickyViewport == nil {
-		p.refreshStickyBoxes(float64(x), float64(y), float64(p.width), float64(p.height))
+		refreshStickyBoxes(p, float64(x), float64(y), float64(p.width), float64(p.height))
 	}
 	p.formDirty = true
 }
@@ -72,7 +72,7 @@ func (p *Page) SetScrollWindow(fn func(offsetY, viewH int) bool) { p.scroll.SetF
 
 // applyScrollWindow runs the row-window callback before the template
 // executes. A nil callback, or a page that opted out, draws unchanged.
-func (p *Page) applyScrollWindow() {
+func applyScrollWindow(p *Page) {
 	if p.scroll.Apply(p.height) {
 		p.formDirty = true
 	}

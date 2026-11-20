@@ -82,7 +82,7 @@ func TestPatchElementDirtiesTheChangedInk(t *testing.T) {
 		}
 	}
 
-	box := p.boxByID("d")
+	box := boxByID(p, "d")
 	if rect.Dx() <= int(box.W) {
 		t.Fatalf("the dirty region %v is the element's box %v", rect, box)
 	}
@@ -96,8 +96,8 @@ func TestPatchElementRebuildsTheHitList(t *testing.T) {
 
 	mustPatch(t, p.PatchElement(ctx, "p", ElementEdit{Attribute: "class", Value: "on"}))
 
-	box := p.boxByID("p")
-	box, ok := p.hitBox(box.X+box.W/2, box.Y+box.H/2)
+	box := boxByID(p, "p")
+	box, ok := hitBox(p, box.X+box.W/2, box.Y+box.H/2)
 	if !ok || box.ID != "p" {
 		t.Fatalf("the patched element does not take the click: %+v %v", box, ok)
 	}
@@ -123,13 +123,13 @@ func TestPatchElementEditsOneBox(t *testing.T) {
 		t.Fatal(err)
 	}
 	before := p.Stats().Repaints
-	if p.boxByID("box").ID == "" {
+	if boxByID(p, "box").ID == "" {
 		t.Fatal("no box")
 	}
 	if p.draw.Display == nil {
 		t.Fatal("the page has no display list")
 	}
-	if fill := p.boxFill("box"); fill == nil {
+	if fill := boxFill(p, "box"); fill == nil {
 		t.Fatal("the box owns no fill")
 	} else if fill.R > 0.2 {
 		t.Fatalf("the fill starts at %.2f, want the base colour", fill.R)
@@ -139,7 +139,7 @@ func TestPatchElementEditsOneBox(t *testing.T) {
 	if p.Stats().Repaints != before+1 {
 		t.Fatalf("repaints = %d, want one more", p.Stats().Repaints)
 	}
-	fill := p.boxFill("box")
+	fill := boxFill(p, "box")
 	if fill == nil {
 		t.Fatal("the box owns no fill")
 	}
@@ -152,7 +152,7 @@ func TestPatchElementEditsOneBox(t *testing.T) {
 }
 
 // boxFill returns the first fill operation the box owns.
-func (p *Page) boxFill(id string) *DisplayOp {
+func boxFill(p *Page, id string) *DisplayOp {
 	for _, b := range p.draw.Display.Boxes {
 		if b.ID != id {
 			continue
@@ -244,7 +244,7 @@ func TestPageChangedPropsConcurrent(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := state.NewStore(map[string]any{"count": 0})
-	p.BindState(st)
+	bindState(p, st)
 	var wg sync.WaitGroup
 	for g := 0; g < 4; g++ {
 		wg.Add(1)
@@ -253,8 +253,8 @@ func TestPageChangedPropsConcurrent(t *testing.T) {
 			for i := 0; i < 50; i++ {
 				st.TryPatchChange("count", g*1000+i)
 				_ = p.ChangedProperties()
-				_ = p.TakeChangedProperties()
-				p.SyncState()
+				_ = takeChangedProperties(p)
+				syncState(p)
 			}
 		}(g)
 	}
@@ -315,7 +315,7 @@ func TestPageStateMetadataSurface(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := state.NewStore(map[string]any{"count": 1})
-	p.BindState(st)
+	bindState(p, st)
 	if _, ok := st.TryPatchChange("count", 2); !ok {
 		t.Fatal("setPath failed for count")
 	}
@@ -353,7 +353,7 @@ func TestPageStateMetadataSurface(t *testing.T) {
 		t.Fatalf("patch props = %+v", patch)
 	}
 
-	p.BindState(nil)
+	bindState(p, nil)
 	if p.State() != nil {
 		t.Fatal("detached page still exposes a store")
 	}
@@ -369,18 +369,18 @@ func TestTakeDrainsLocalProps(t *testing.T) {
 		t.Fatal(err)
 	}
 	p.SetChangedProperties([]string{"a"})
-	first := p.TakeChangedProperties()
+	first := takeChangedProperties(p)
 	if len(first) != 1 || first[0] != "a" {
 		t.Fatalf("first = %v", first)
 	}
-	if second := p.TakeChangedProperties(); len(second) != 0 {
+	if second := takeChangedProperties(p); len(second) != 0 {
 		t.Fatalf("second = %v, want empty", second)
 	}
 	p.SetChangedProperties([]string{"b"})
-	if got := p.TakeChangedProperties(); len(got) != 1 || got[0] != "b" {
+	if got := takeChangedProperties(p); len(got) != 1 || got[0] != "b" {
 		t.Fatalf("second set = %v", got)
 	}
-	if got := p.TakeChangedProperties(); len(got) != 0 {
+	if got := takeChangedProperties(p); len(got) != 0 {
 		t.Fatalf("second drain = %v", got)
 	}
 }

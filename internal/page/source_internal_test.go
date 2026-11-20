@@ -155,7 +155,7 @@ func TestBuilderDocumentSkipsTemplateParse(t *testing.T) {
 	if p.HTML() != source {
 		t.Fatalf("HTML = %d bytes, want %d", len(p.HTML()), len(source))
 	}
-	if !p.hasBox("label") {
+	if !hasBox(p, "label") {
 		t.Fatal("builder document did not lay out")
 	}
 
@@ -215,7 +215,7 @@ func TestNewBuilderDocumentSkipsTemplateParse(t *testing.T) {
 	if err := p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if !p.hasBox("root") {
+	if !hasBox(p, "root") {
 		t.Fatal("New builder document did not lay out")
 	}
 	if p.HTML() != source {
@@ -271,7 +271,7 @@ func TestBuilderDocumentSwitchesToTemplate(t *testing.T) {
 	if err := p.Back(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if p.tpl != nil || !p.staticSource || !p.hasBox("builder") {
+	if p.tpl != nil || !p.staticSource || !hasBox(p, "builder") {
 		t.Fatal("Back to a builder document did not restore the static source")
 	}
 

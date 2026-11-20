@@ -30,6 +30,9 @@ func (a *App) clipClick(ctx context.Context, id string) error {
 
 func (a *App) copyButton(ctx context.Context) error {
 	a.focusLast(ctx)
+	if err := a.restoreSelectedAll(ctx); err != nil {
+		return err
+	}
 	text, ok, err := a.page.Edit().Copy(ctx)
 	if err != nil {
 		return err
@@ -45,6 +48,9 @@ func (a *App) copyButton(ctx context.Context) error {
 
 func (a *App) cutButton(ctx context.Context) error {
 	a.focusLast(ctx)
+	if err := a.restoreSelectedAll(ctx); err != nil {
+		return err
+	}
 	text, ok, err := a.page.Edit().Cut(ctx)
 	if err != nil {
 		return err
@@ -63,6 +69,9 @@ func (a *App) pasteGo(ctx context.Context) error {
 	if !a.focusLast(ctx) {
 		return nil
 	}
+	if err := a.restoreSelectedAll(ctx); err != nil {
+		return err
+	}
 	if err := a.page.Edit().Paste(ctx, pasteFromGo); err != nil {
 		return err
 	}
@@ -75,6 +84,9 @@ func (a *App) pasteClipboard(ctx context.Context) error {
 	if !a.focusLast(ctx) {
 		a.setClip("nothing to paste into")
 		return nil
+	}
+	if err := a.restoreSelectedAll(ctx); err != nil {
+		return err
 	}
 	raw, _ := ownframe.Read()
 	text := strings.ReplaceAll(raw, "\r", "")

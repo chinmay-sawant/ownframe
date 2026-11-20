@@ -32,7 +32,7 @@ func (p *Page) WebControls() []WebControl {
 		return nil
 	}
 
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil || len(fs.ByID) == 0 {
 		return nil
 	}
@@ -109,22 +109,22 @@ func (p *Page) ApplyWebText(ctx context.Context, id, value string) error {
 		return err
 	}
 
-	c, ok := p.control(id)
+	c, ok := control(p, id)
 	if !ok || c.Disabled {
 		return nil
 	}
 
 	switch {
 	case c.Tag == "select":
-		return p.applyWebSelect(ctx, c, value)
+		return applyWebSelect(p, ctx, c, value)
 	case c.Type == "checkbox", c.Type == "radio":
 		return nil
 	default:
-		return p.applyWebField(ctx, id, value)
+		return applyWebField(p, ctx, id, value)
 	}
 }
 
-func (p *Page) applyWebSelect(ctx context.Context, c Control, value string) error {
+func applyWebSelect(p *Page, ctx context.Context, c Control, value string) error {
 	if c.Value == value {
 		return nil
 	}
@@ -133,23 +133,23 @@ func (p *Page) applyWebSelect(ctx context.Context, c Control, value string) erro
 		return err
 	}
 
-	if err := p.beforeEdit(ctx, c.ID); err != nil {
+	if err := beforeEdit(p, ctx, c.ID); err != nil {
 		return err
 	}
 
 	p.SetFormValue(c.ID, value)
 
-	return p.finishWebEdit(ctx, c.ID)
+	return finishWebEdit(p, ctx, c.ID)
 }
 
-func (p *Page) applyWebField(ctx context.Context, id, value string) error {
+func applyWebField(p *Page, ctx context.Context, id, value string) error {
 	if err := p.Focus(ctx, id); err != nil {
 		return err
 	}
 
 	end := form.RuneLen(value)
 
-	return p.editField(ctx, nil, func(c Control, _, _ int) (Control, int, int, bool) {
+	return editField(p, ctx, nil, func(c Control, _, _ int) (Control, int, int, bool) {
 		changed := c.Value != value
 		if changed {
 			c.Value = value
@@ -170,7 +170,7 @@ func (p *Page) ApplyWebChecked(ctx context.Context, id string, checked bool) err
 		return err
 	}
 
-	c, ok := p.control(id)
+	c, ok := control(p, id)
 	if !ok || c.Disabled {
 		return nil
 	}
@@ -183,23 +183,23 @@ func (p *Page) ApplyWebChecked(ctx context.Context, id string, checked bool) err
 		return nil
 	}
 
-	if err := p.beforeEdit(ctx, id); err != nil {
+	if err := beforeEdit(p, ctx, id); err != nil {
 		return err
 	}
 
 	p.SetFormChecked(id, checked)
 
-	return p.finishWebEdit(ctx, id)
+	return finishWebEdit(p, ctx, id)
 }
 
 // finishWebEdit writes the control just stored back into its bound field,
 // fires Change, and redraws. A Change error skips the redraw.
-func (p *Page) finishWebEdit(ctx context.Context, id string) error {
-	if c, ok := p.control(id); ok {
+func finishWebEdit(p *Page, ctx context.Context, id string) error {
+	if c, ok := control(p, id); ok {
 		bindWrite(p, c)
 	}
 
-	if err := p.change(ctx, id); err != nil {
+	if err := change(p, ctx, id); err != nil {
 		return err
 	}
 

@@ -86,9 +86,9 @@ func TestCaretSuppliesIdleDeadline(t *testing.T) {
 	p := bftPage(t, `<input id="t" type="text" value="abcd"`+bedWide+`>`)
 	bftDraw(t, p, nil)
 	bftClick(t, p, "t")
-	p.setCaret(2, false)
+	setCaret(p, 2, false)
 	at := time.Now()
-	p.formState().BlinkAt = at
+	formState(p).BlinkAt = at
 	if p.FramePolling() {
 		t.Fatal("caret unnecessarily enabled compatibility polling")
 	}
@@ -100,7 +100,7 @@ func TestCaretSuppliesIdleDeadline(t *testing.T) {
 	if got := p.NextFrameAt(); !got.Equal(earlier) {
 		t.Fatalf("caret delayed earlier request: %v", got)
 	}
-	p.formState().All = true
+	formState(p).All = true
 	if got := p.NextFrameAt(); !got.IsZero() {
 		t.Fatalf("selection scheduled a caret: %v", got)
 	}
@@ -138,7 +138,7 @@ func TestTickFillPatchSetsFrameDirty(t *testing.T) {
 		if d == nil {
 			return nil
 		}
-		bar := boxRect(p.boxByID("bar"))
+		bar := boxRect(boxByID(p, "bar"))
 		for i := range d.Ops {
 			op := &d.Ops[i]
 			if op.Kind != DisplayOpFillRect || op.W <= 1 || op.H <= 1 {
@@ -166,7 +166,7 @@ func TestTickFillPatchSetsFrameDirty(t *testing.T) {
 	if !ok || r.Empty() {
 		t.Fatalf("TakeDirty %v ok=%v", r, ok)
 	}
-	if r.Intersect(boxRect(p.boxByID("bar"))).Empty() {
+	if r.Intersect(boxRect(boxByID(p, "bar"))).Empty() {
 		t.Fatalf("dirty %v misses bar", r)
 	}
 }
@@ -315,14 +315,14 @@ func benchTickCaptureAndDamage(b *testing.B, opCount int, modify bool) {
 	for i := 0; b.Loop(); i++ {
 		if modify {
 			p.tickMutated.Store(true)
-			snap := p.captureTickOps()
+			snap := captureTickOps(p)
 			p.draw.Display.Ops[0].R = float64(i%2) * 0.8
-			p.noteTickDamage(gen, snap)
-			p.freeOps(snap)
+			noteTickDamage(p, gen, snap)
+			freeOps(p, snap)
 		} else if p.tickMutated.Load() {
-			snap := p.captureTickOps()
-			p.noteTickDamage(gen, snap)
-			p.freeOps(snap)
+			snap := captureTickOps(p)
+			noteTickDamage(p, gen, snap)
+			freeOps(p, snap)
 		}
 		p.dirty.Rects = p.dirty.Rects[:0]
 	}

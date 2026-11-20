@@ -26,3 +26,29 @@ blocks the tag.
   shipped artifacts. Unsigned `scripts/package.sh` archives are the 1.0
   deliverable; signing and notarization stay in the operator runbook
   ([packaging.md](packaging.md)).
+
+## Two-module release tag sequence (`go.mod` and `examples/go.mod`)
+
+`ownframe` and `examples/` are separate Go modules joined by `go.work` during
+development. Tag them in order so published module zips never carry a local
+`replace` directive or an untagged engine pseudo-version:
+
+1. **Verify the `blinkless` pin:** Confirm `github.com/chinmay-sawant/blinkless`
+   in both `go.mod` and `examples/go.mod` is pinned to the same tagged semver
+   release (`vA.B.C`), not a `-0.2026...` commit pseudo-version.
+2. **Verify library archive and release bundles:** Run `make module-check` and
+   `make release-check` from the repository root.
+3. **Tag the root library module:** Commit any final `go.mod` / `go.sum` updates
+   and tag `vX.Y.Z` on the release commit.
+4. **Update `examples/go.mod` for the published library tag:**
+   - Bump `require github.com/chinmay-sawant/ownframe` in `examples/go.mod` to
+     `vX.Y.Z`.
+   - Remove `replace github.com/chinmay-sawant/ownframe => ../` from
+     `examples/go.mod` and run `GOWORK=off go -C examples mod tidy`.
+   - Validate the candidate examples module without the workspace:
+     `GOWORK=off go -C scripts run ./cmd/module-check -root .. -examples-tag examples/vX.Y.Z`.
+5. **Tag the examples module:** Commit `examples/go.mod` and `examples/go.sum`,
+   then tag `examples/vX.Y.Z`.
+6. **Restore development workspace replacement:** Re-add
+   `replace github.com/chinmay-sawant/ownframe => ../` in `examples/go.mod` on
+   the development branch after tagging `examples/vX.Y.Z`.

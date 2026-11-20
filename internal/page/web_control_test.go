@@ -54,7 +54,7 @@ func TestApplyWebTextPasswordKeepsText(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c, ok := p.control("pw")
+	c, ok := control(p, "pw")
 	if !ok || c.Value != "secret" || p.FormValue("pw") != "secret" {
 		t.Fatalf("stored %+v form %q", c, p.FormValue("pw"))
 	}

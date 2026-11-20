@@ -102,8 +102,16 @@ func generate(outPath string) error {
 	fmt.Fprintln(&buf, "// SupportedProperties lists the implemented CSS property names, sorted.")
 	fmt.Fprintln(&buf, "func SupportedProperties() []string {")
 	fmt.Fprintln(&buf, "\treturn []string{")
-	for _, name := range props {
-		fmt.Fprintf(&buf, "\t\t%q,\n", name)
+	for i, name := range props {
+		if i%propertiesPerCaseLine == 0 {
+			fmt.Fprint(&buf, "\t\t")
+		} else {
+			fmt.Fprint(&buf, " ")
+		}
+		fmt.Fprintf(&buf, "%q,", name)
+		if (i+1)%propertiesPerCaseLine == 0 || i == len(props)-1 {
+			fmt.Fprintln(&buf)
+		}
 	}
 	fmt.Fprintln(&buf, "\t}")
 	fmt.Fprintln(&buf, "}")

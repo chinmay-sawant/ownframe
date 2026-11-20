@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 03: Public API Boundaries and Developer Ergonomics
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (16/22 done, 1 partial `[~]`: `API-01`–`API-08`, `API-10`–`API-15`, `API-GATE-01`, `API-GATE-02`; `[~]` `API-09`)
+> **Status:** Complete (21/22 done, 1 intentional `[~]`: `API-01`–`API-08`, `API-10`–`API-18`, `API-GATE-01`–`API-GATE-04`; `[~]` `API-09` freezes the 5 `Testing()` demo harnesses)
 > **Estimated effort:** 4–6 days
 
 ---
@@ -60,9 +60,9 @@ Package `ownframe` currently spans **63 root `.go` files** and **149 exported me
 
 ### 3.4 Drain the example `internal/` import allowlist
 
-- [ ] `API-16` Audit the 15 `examples/css-preview/*` entries in `scripts/example-internal-allowlist.txt` (`internal/animation`, `cssanimation`, `cssmotion`, `csstransition`, `csstrigger`, `viewtransition`): relocate engine-internal unit/conformance tests into `internal/motion/` (or `internal/viewtransition/`) tests so `examples/css-preview` exercises only public `ownframe` APIs. Proof: `examples/css-preview` entries removed from `scripts/example-internal-allowlist.txt` and moved tests pass in the library module.
-- [ ] `API-17` Re-evaluate the final remaining entry (`examples/desktop-cat/cat/preview.go` -> `internal/web`): either expose a minimal public `ServeOptions` / custom-preview hook if broadly useful, or document why it remains the sole explicit allowlist entry. Proof: allowlist reduced from 16 entries to <=1 entry.
-- [ ] `API-18` Run `make internal-import-check` and `make examples-check` to lock in the reduced allowlist. Proof: both commands exit 0.
+- [x] `API-16` Audit the `examples/css-preview/*` entries in `scripts/example-internal-allowlist.txt`: relocated the 4 view-transition catalog tests into `internal/viewtransition/catalog_test.go` and updated `examples/css-preview` (`paint.go`, `manual_motion.go`, `catalog_motion_fixture_test.go`, `catalog_transition_fixture_test.go`, `catalog_transition_behavior_runtime_test.go`) to inspect `p.Probe().Display().Ops` through public `ownframe` and `blinkless/layout` types with zero `ownframe/internal/*` imports. Evidence: all `examples/css-preview` entries removed from `scripts/example-internal-allowlist.txt`; `go test -race ./examples/css-preview/... ./internal/viewtransition/...` passed.
+- [x] `API-17` Re-evaluate the final remaining entry (`examples/desktop-cat/cat/preview.go` -> `internal/web`): documented in `scripts/example-internal-allowlist.txt` why `desktop-cat/cat/preview.go` remains the sole allowlisted pair (it wraps `ownframe.Page` with a custom `PollReload`/`Watching` host adapter to drain its Unix-socket inbox under `internal/web`'s request lock; exposing `internal/web.Screen` publicly for a single companion overlay is not warranted). Evidence: allowlist reduced from **16 -> 1** entry.
+- [x] `API-18` Run `make internal-import-check` and `make examples-check` to lock in the reduced allowlist. Evidence: `make internal-import-check` (`internal-import-check: clean (1 allowlisted pair).`) and `make examples-check` both exited 0.
 
 ---
 
@@ -80,5 +80,5 @@ Package `ownframe` currently spans **63 root `.go` files** and **149 exported me
 
 - [x] `API-GATE-01` Zero process-global `window.*` singleton calls left on `Page.Window()` without explicit page-to-host binding. Evidence: `page_window.go` no longer imports `internal/window`; `TestPageWindowHostControlsDetachedAndBound` passes under `-race`.
 - [x] `API-GATE-02` Root non-test `.go` files consolidated to <=18; `TestRootAliasAllowlist` and `TestOwnframeTestNoInternal` gates pass. Evidence: 48 -> 18 root non-test `.go` files; `go test -race .` exited 0.
-- [ ] `API-GATE-03` `scripts/example-internal-allowlist.txt` reduced from 16 pairs to <=1 pair.
-- [ ] `API-GATE-04` `make test`, `make test-race`, `make lint`, `make docs-check`, and `make internal-import-check` exit 0.
+- [x] `API-GATE-03` `scripts/example-internal-allowlist.txt` reduced from 16 pairs to <=1 pair. Evidence: reduced **16 -> 1** pair (`examples/desktop-cat/cat/preview.go -> github.com/chinmay-sawant/ownframe/internal/web`).
+- [x] `API-GATE-04` `make test`, `make test-race`, `make lint`, `make docs-check`, and `make internal-import-check` exit 0. Evidence: all exited 0 in Wave 5 verification.

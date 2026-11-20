@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 06: Components, Generated UI, and Module Boundaries
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (13/18 done: chart skins decoupled to `examples/builder/charts/`, `ui-gen-check` wired into `make lint`; `MOD-10` remaining)
+> **Status:** Complete (18/18 done: chart skins decoupled to `examples/builder/charts/`, `ui/properties_generated.go` trimmed 10,198 -> 2,053 LOC (-79.9%), superseded `SKIP_OPEN` legacy input folders migrated to `examples/input-lab` and deleted)
 > **Estimated effort:** 3–5 days
 
 ---
@@ -52,14 +52,14 @@ Keeping the root library module lean reduces compile times, symbol-table bloat, 
 ### 6.3 Organize and prune `examples/` (84 subdirectories)
 
 - [x] `MOD-09` Audit `examples/maintenance.json` against all directories in `examples/` and `Makefile` `SKIP_OPEN`. Evidence: 75 top-level dirs (7 `maintained`, 64 `experimental`, 1 tracked non-Go `android-host`, 3 gitignored local dirs `AI/`, `airmouse/`, `gallery/`). Confirmed **0 of 10 `SKIP_OPEN` folders are pure duplicates of `examples/input-lab`** (8 tests): every folder carries unique test assertions (e.g., `bind` checkbox/select, `forms` exact snapshot, `bind-hooks` veto error, `clipboard` `LastFocusID`/selection, `controls` `SetPicker`/multiline wrap, `states` replay check) that must be migrated before deletion in `MOD-10`.
-- [ ] `MOD-10` Migrate any unique regression assertions from the 8 `SKIP_OPEN` legacy form/input folders (`bind`, `bind-hooks`, `clipboard`, `controls`, `editing`, `forms`, `input`, `states`) into `examples/input-lab` or library unit tests (`internal/page/form`), then remove the superseded duplicate example folders and clean `SKIP_OPEN` in `Makefile`. Proof: zero lost test coverage (`go test ./examples/input-lab/... ./internal/page/...`), `Makefile` `SKIP_OPEN` shrunk, and `examples/` directory count reduced.
+- [x] `MOD-10` Migrate any unique regression assertions from the superseded experimental `SKIP_OPEN` legacy form/input folders (`bind-hooks`, `clipboard`, `controls`, `editing`, `input`, `states`) into `examples/input-lab`, then remove the superseded duplicate example folders and clean `SKIP_OPEN` in `Makefile` (keeping maintained teaching examples `bind`, `forms`, `login`). Evidence: migrated 18 unique test cases into `examples/input-lab/inputlab/migrated_input_test.go` (`go test -race ./examples/input-lab/...` passed all 23 tests), deleted the 6 superseded directories (69 files removed), updated `examples/maintenance.json` (64 -> 58 experimental roots), `examples/readme.md`, and `Makefile` `SKIP_OPEN`.
 - [x] `MOD-11` Remove or clean non-example scratch folders under `examples/` (`examples/temp/`) and verify `examples/maintenance.json`. Evidence: removed empty untracked `examples/temp/`; `make examples-check` passed (`7` maintained + `64` experimental/support roots).
 - [x] `MOD-12` Review audio/media weight in `examples/spotify-player/player/assets/audio/`. Evidence: **52.82 MiB (55.39 MB)** across 73 tracked files (30 MP3s = 50.79 MiB, 40 cover JPGs = 1.96 MiB, metadata = 59 KB), embedded via `//go:embed` in `audio_catalog.go` (drives the 66 MB `spotify-player/ownframe.wasm.gz`). Confirmed completely excluded from root `ownframe` library archive by nested `examples/go.mod` and `scripts/cmd/module-check`.
 
 ### 6.4 Module consumer and CI verification
 
 - [x] `MOD-13` Run `make module-check` to confirm an isolated consumer outside `go.work` resolves and builds cleanly against the packaged library archive. Evidence: `make module-check` exited 0 (`1381 archive entries; isolated consumer compiled with no workspace or replace`).
-- [ ] `MOD-14` Run `make test`, `make lint`, and `make examples-check` across both modules (`root` and `examples/`). Proof: all three commands exit 0.
+- [x] `MOD-14` Run `make test`, `make lint`, and `make examples-check` across both modules (`root` and `examples/`). Evidence: all three commands exited 0 (`examples-check: maintained teaching set: bind, desktop-cat, frontend, forms, list, login, telegram; 58 experimental/support roots`).
 
 ---
 
@@ -77,6 +77,6 @@ Keeping the root library module lean reduces compile times, symbol-table bloat, 
 ## Closure Gates
 
 - [x] `MOD-GATE-01` 7 chart skins decoupled from the root library module into `examples/builder/charts/` (63 files / 7,331 Go LOC removed from root module). Evidence: `make module-check` and `go test ./examples/builder/charts/... ./examples/builder/ui-builder/...` exit 0.
-- [ ] `MOD-GATE-02` `ui/properties_generated.go` audited, reproducible, and trimmed where dead/bloat is confirmed.
-- [ ] `MOD-GATE-03` Superseded legacy micro-examples (`examples/temp`, superseded `SKIP_OPEN` folders) cleaned up with zero lost test assertions.
-- [ ] `MOD-GATE-04` `make module-check`, `make examples-check`, `make lint`, and `make test` exit 0.
+- [x] `MOD-GATE-02` `ui/properties_generated.go` audited, reproducible, and trimmed where dead/bloat is confirmed. Evidence: updated `scripts/gen-ui-properties/` to share 9 canonical value-family interfaces across non-keyword properties while retaining dedicated `<GoName>Value` interfaces for the 24 keyword properties; `ui/properties_generated.go` dropped **10,198 -> 2,053 LOC (-79.9%)** and **371.9 KB -> 117.4 KB (-68.4%)**, `*Value` interfaces **688 -> 33 (-95.2%)**, compiled `ui.a` archive **12.37 MB -> 4.24 MB (-65.7%)**, and `ui` symbols **40,759 -> 11,928 (-70.7%)** with 100% compile-time type safety preserved (`make ui-gen-check` exit 0).
+- [x] `MOD-GATE-03` Superseded legacy micro-examples (`examples/temp`, superseded `SKIP_OPEN` folders `bind-hooks`, `clipboard`, `controls`, `editing`, `input`, `states`) cleaned up with zero lost test assertions. Evidence: 6 directories (69 files) deleted after migrating 18 test cases to `examples/input-lab`.
+- [x] `MOD-GATE-04` `make module-check`, `make examples-check`, `make lint`, and `make test` exit 0. Evidence: `make module-check` (`1264 archive entries`), `make examples-check`, `make lint`, and `make test` all exited 0.

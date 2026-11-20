@@ -34,7 +34,7 @@ func (p *Page) SetHotReload(on bool) {
 		return
 	}
 	p.watch.SetHot(on)
-	p.notifyFrame()
+	notifyFrame(p)
 }
 
 // Watching reports whether a poll can reread a source file.
@@ -56,34 +56,34 @@ func (p *Page) PollReload(ctx context.Context) (bool, error) {
 		Files:    srcFiles,
 		Limit:    maxSourceSize,
 		Oversize: sourceTooLarge,
-		Template: p.installWatched,
+		Template: func(tpl *template.Template, src string) error { return installWatched(p, tpl, src) },
 		Theme:    p.SetTheme,
 	})
 	if !applied {
-		p.noteReloadError(first)
+		noteReloadError(p, first)
 		return false, first
 	}
 	if err := p.Redraw(ctx); err != nil {
-		p.noteReloadError(err)
+		noteReloadError(p, err)
 		return false, err
 	}
-	p.noteReload(first)
-	p.resolveStates()
+	noteReload(p, first)
+	resolveStates(p)
 	return true, first
 }
 
-func (p *Page) installWatched(tpl *template.Template, src string) error {
+func installWatched(p *Page, tpl *template.Template, src string) error {
 	p.tpl = tpl
 	p.nav.Retarget(src)
-	p.markFormDirty()
-	p.invalidateAccessibilityDocument()
+	markFormDirty(p)
+	invalidateAccessibilityDocument(p)
 	return nil
 }
 
 // noteReload records one successful reload for host.Stats. err is the first
 // error seen in the same poll, nil when the poll was clean. The text is
 // sanitized to one line so Stats never carries log-forging lines.
-func (p *Page) noteReload(err error) {
+func noteReload(p *Page, err error) {
 	p.stats.reloads++
 	if err != nil {
 		p.stats.reloadErr = reload.Clean(err.Error())
@@ -93,7 +93,7 @@ func (p *Page) noteReload(err error) {
 }
 
 // noteReloadError records a failed poll that applied nothing.
-func (p *Page) noteReloadError(err error) {
+func noteReloadError(p *Page, err error) {
 	if err != nil {
 		p.stats.reloadErr = reload.Clean(err.Error())
 	}
@@ -101,7 +101,7 @@ func (p *Page) noteReloadError(err error) {
 
 // resolveStates clears hover and active ids the new layout does not have.
 // syncForm does the same for focus when Redraw runs.
-func (p *Page) resolveStates() {
+func resolveStates(p *Page) {
 	ids := map[string]bool{}
 	for _, box := range p.boxes {
 		if box.ID != "" {
@@ -109,9 +109,9 @@ func (p *Page) resolveStates() {
 		}
 	}
 	if p.HoverID() != "" && !ids[p.HoverID()] {
-		p.clearHoverID()
+		clearHoverID(p)
 	}
-	if p.activeID() != "" && !ids[p.activeID()] {
-		p.setActiveID("")
+	if activeID(p) != "" && !ids[activeID(p)] {
+		setActiveID(p, "")
 	}
 }

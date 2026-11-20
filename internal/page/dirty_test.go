@@ -240,9 +240,9 @@ func TestDirtyIncrementalRecordPartialMemoParity(t *testing.T) {
 
 	dirty.ResetDiffCounters()
 	a := &Page{perf: true}
-	a.recordPartial(changed, rects, next)
+	recordPartial(a, changed, rects, next)
 	b := &Page{perf: true}
-	b.recordPartialBounds(changed, rects, memo, next)
+	recordPartialBounds(b, changed, rects, memo, next)
 
 	if a.stats != b.stats {
 		t.Fatalf("memo counts %+v must equal fresh counts %+v", b.stats, a.stats)
@@ -274,7 +274,7 @@ func TestDirtyIncrementalSingleDiffRecovery(t *testing.T) {
 	p.dirty.Full = true
 
 	dirty.ResetDiffCounters()
-	p.dirtyFromDisplay(prev, display)
+	dirtyFromDisplay(p, prev, display)
 
 	if !p.lastPatch.Full {
 		t.Fatal("failed recovery must stay full")
@@ -315,8 +315,8 @@ func TestDirtyIncrementalSubtreeMark(t *testing.T) {
 	}
 
 	p := &Page{}
-	p.setBoxes(boxes)
-	p.markElement("card")
+	setBoxes(p, boxes)
+	markElement(p, "card")
 	rects, ok := p.TakeDirtyRects()
 	if !ok || len(rects) != 1 {
 		t.Fatalf("expected one dirty rect, got %v ok=%v", rects, ok)
@@ -345,8 +345,8 @@ func TestDirtyIncrementalSubtreeMarkContained(t *testing.T) {
 	}
 
 	p := &Page{}
-	p.setBoxes(boxes)
-	p.markElement("card")
+	setBoxes(p, boxes)
+	markElement(p, "card")
 	rects, ok := p.TakeDirtyRects()
 	if !ok || len(rects) != 1 {
 		t.Fatalf("expected one dirty rect, got %v ok=%v", rects, ok)
@@ -415,12 +415,12 @@ func TestDirtyIncrementalContentRect(t *testing.T) {
 	}
 
 	for _, s := range steps {
-		p.setBoxes(s.boxes)
+		setBoxes(p, s.boxes)
 		if !p.contentOK {
 			t.Fatalf("%s: content union must stay current", s.name)
 		}
 		ref := refContent(t, 800, 600, s.boxes)
-		got := p.contentRect()
+		got := contentRect(p)
 		if s.exact {
 			if got != ref {
 				t.Fatalf("%s: content rect must equal the full union: got %v want %v", s.name, got, ref)
@@ -480,12 +480,12 @@ func oldDiffDisplay(prev, next *Display) (image.Rectangle, bool, int) {
 // markOldDiff applies the old diff the way dirtyFromDisplay did.
 func markOldDiff(p *Page, r image.Rectangle, full bool) {
 	if full {
-		p.markFull()
+		markFull(p)
 
 		return
 	}
 
-	p.markRect(r)
+	markRect(p, r)
 }
 
 // BenchmarkDirtyTakeSmallChangesBefore runs the same generation through the
@@ -499,7 +499,7 @@ func BenchmarkDirtyTakeSmallChangesBefore(b *testing.B) {
 	r, full, _ := oldDiffDisplay(base, next)
 	markOldDiff(p, r, full)
 	rects, _ := p.TakeDirtyRects()
-	content := p.contentRect()
+	content := contentRect(p)
 	partial := 0.0
 
 	if len(rects) > 0 && (len(rects) != 1 || rects[0] != content) {
@@ -594,9 +594,9 @@ func BenchmarkDirtyTakeSmallChanges(b *testing.B) {
 	p, base, next := benchDiffPage(b)
 	vals := benchDiffValues()
 	mutateBenchText(next, vals)
-	p.dirtyFromDisplay(base, next)
+	dirtyFromDisplay(p, base, next)
 	rects, _ := p.TakeDirtyRects()
-	content := p.contentRect()
+	content := contentRect(p)
 	partial := 0.0
 
 	if len(rects) > 0 && (len(rects) != 1 || rects[0] != content) {
@@ -607,7 +607,7 @@ func BenchmarkDirtyTakeSmallChanges(b *testing.B) {
 
 	for i := 0; b.Loop(); i++ {
 		mutateBenchText(next, vals[(i%benchDiffGens)*benchDiffCells:])
-		p.dirtyFromDisplay(base, next)
+		dirtyFromDisplay(p, base, next)
 		p.TakeDirtyRects()
 	}
 
@@ -752,7 +752,7 @@ func TestPendingMapReused(t *testing.T) {
 
 	p := &Page{pageGeom: pageGeom{width: 100, height: 100}}
 	for i := 0; i < 64; i++ {
-		p.markPending(fmt.Sprintf("id%d", i))
+		markPending(p, fmt.Sprintf("id%d", i))
 	}
 
 	if p.dirty.Pending == nil || len(p.dirty.Pending) != 64 {
@@ -769,8 +769,8 @@ func TestPendingMapReused(t *testing.T) {
 		t.Fatalf("pending holds %d ids after take", len(p.dirty.Pending))
 	}
 
-	p.markPending("id0")
-	p.applyPending()
+	markPending(p, "id0")
+	applyPending(p)
 
 	if p.dirty.Pending == nil || len(p.dirty.Pending) != 0 {
 		t.Fatalf("applyPending left %d ids", len(p.dirty.Pending))

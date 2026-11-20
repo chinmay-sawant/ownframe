@@ -33,21 +33,21 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 		if err := p.handlers.KeyDown(ctx, key); err != nil {
 			return err
 		}
-		p.markFormDirty()
+		markFormDirty(p)
 	}
 
 	var field Control
-	if fs := p.formState(); fs != nil {
-		field, _ = p.control(fs.FocusID)
+	if fs := formState(p); fs != nil {
+		field, _ = control(p, fs.FocusID)
 	}
 
-	if activationKey(key) && p.activationTarget(field) {
-		_, err := p.fireTriggers(ctx, p.boxByID(field.ID), true)
+	if activationKey(key) && activationTarget(p, field) {
+		_, err := fireTriggers(p, ctx, boxByID(p, field.ID), true)
 		if err != nil {
 			return err
 		}
 		if key == "space" {
-			if handled, err := p.activateKeyboardButton(ctx); handled || err != nil {
+			if handled, err := activateKeyboardButton(p, ctx); handled || err != nil {
 				return err
 			}
 		}
@@ -61,7 +61,7 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 		}
 		return p.Focus(ctx, "")
 	case gesture.EffectCaret:
-		return p.caretKey(ctx, key)
+		return caretKey(p, ctx, key)
 	default:
 		return nil
 	}
@@ -81,7 +81,7 @@ func (p *Page) KeyUp(ctx context.Context, key string) error {
 	if err := p.handlers.KeyUp(ctx, key); err != nil {
 		return err
 	}
-	p.markFormDirty()
+	markFormDirty(p)
 
 	return nil
 }
@@ -99,7 +99,7 @@ func (p *Page) Type(ctx context.Context, text string) error {
 		}
 	}
 
-	return p.editField(ctx, fn, func(c Control, caret, anchor int) (Control, int, int, bool) {
+	return editField(p, ctx, fn, func(c Control, caret, anchor int) (Control, int, int, bool) {
 		return gesture.Edit(c, text, gesture.OpInsert, caret, anchor)
 	})
 }
@@ -115,7 +115,7 @@ func (p *Page) Backspace(ctx context.Context) error {
 		}
 	}
 
-	return p.editField(ctx, fn, func(c Control, caret, anchor int) (Control, int, int, bool) {
+	return editField(p, ctx, fn, func(c Control, caret, anchor int) (Control, int, int, bool) {
 		return gesture.Edit(c, "", gesture.OpBackspace, caret, anchor)
 	})
 }
@@ -131,7 +131,7 @@ func (p *Page) DeleteWord(ctx context.Context) error {
 		}
 	}
 
-	return p.editField(ctx, fn, func(c Control, caret, anchor int) (Control, int, int, bool) {
+	return editField(p, ctx, fn, func(c Control, caret, anchor int) (Control, int, int, bool) {
 		return gesture.Edit(c, "", gesture.OpDeleteWord, caret, anchor)
 	})
 }
@@ -145,8 +145,8 @@ func (p *Page) Copy(ctx context.Context) (string, bool, error) {
 		return "", false, err
 	}
 
-	if c, ok := p.focusedEditable(); ok {
-		return gesture.Selected(c.Value, p.formState().Anchor, p.formState().Caret), true, nil
+	if c, ok := focusedEditable(p); ok {
+		return gesture.Selected(c.Value, formState(p).Anchor, formState(p).Caret), true, nil
 	}
 
 	if p.handlers.Copy == nil {
@@ -166,20 +166,20 @@ func (p *Page) Cut(ctx context.Context) (string, bool, error) {
 		return "", false, err
 	}
 
-	if c, ok := p.focusedEditable(); ok {
-		id := p.formState().FocusID
-		if err := p.beforeEdit(ctx, id); err != nil {
+	if c, ok := focusedEditable(p); ok {
+		id := formState(p).FocusID
+		if err := beforeEdit(p, ctx, id); err != nil {
 			return "", false, err
 		}
 
-		c, text, pos := gesture.Cut(c, p.formState().Anchor, p.formState().Caret)
-		p.formState().Caret, p.formState().Anchor = pos, pos
-		p.formState().All = false
-		p.resetCaretBlink()
-		p.formState().ByID[id] = c
-		p.markPending(id)
+		c, text, pos := gesture.Cut(c, formState(p).Anchor, formState(p).Caret)
+		formState(p).Caret, formState(p).Anchor = pos, pos
+		formState(p).All = false
+		resetCaretBlink(p)
+		formState(p).ByID[id] = c
+		markPending(p, id)
 		bindWrite(p, c)
-		if err := p.change(ctx, id); err != nil {
+		if err := change(p, ctx, id); err != nil {
 			return text, true, err
 		}
 
@@ -219,7 +219,7 @@ func (p *Page) Paste(ctx context.Context, text string) error {
 	// closure reads text, so the cap has to land before editField runs it.
 	text = gesture.ClampPaste(text)
 
-	return p.editField(ctx, fn, func(c Control, caret, anchor int) (Control, int, int, bool) {
+	return editField(p, ctx, fn, func(c Control, caret, anchor int) (Control, int, int, bool) {
 		return gesture.Edit(c, text, gesture.OpPaste, caret, anchor)
 	})
 }
@@ -233,16 +233,16 @@ func (p *Page) SelectAll(ctx context.Context) error {
 		return err
 	}
 
-	if c, ok := p.typingTarget(); ok {
+	if c, ok := typingTarget(p); ok {
 		sel := gesture.SelectAll(c.Value)
-		p.formState().Anchor, p.formState().Caret = sel.Anchor, sel.Caret
-		p.formState().All = sel.All
-		p.resetCaretBlink()
+		formState(p).Anchor, formState(p).Caret = sel.Anchor, sel.Caret
+		formState(p).All = sel.All
+		resetCaretBlink(p)
 
 		return p.Redraw(ctx)
 	}
 
-	return p.after(ctx, p.handlers.SelectAll == nil, func() error {
+	return after(p, ctx, p.handlers.SelectAll == nil, func() error {
 		return p.handlers.SelectAll(ctx)
 	})
 }
@@ -250,7 +250,7 @@ func (p *Page) SelectAll(ctx context.Context) error {
 // Undo calls the undo handler and draws the page again.
 // It does nothing when no undo handler is registered.
 func (p *Page) Undo(ctx context.Context) error {
-	return p.after(ctx, p.handlers.Undo == nil, func() error {
+	return after(p, ctx, p.handlers.Undo == nil, func() error {
 		return p.handlers.Undo(ctx)
 	})
 }
@@ -258,7 +258,7 @@ func (p *Page) Undo(ctx context.Context) error {
 // Redo calls the redo handler and draws the page again.
 // It does nothing when no redo handler is registered.
 func (p *Page) Redo(ctx context.Context) error {
-	return p.after(ctx, p.handlers.Redo == nil, func() error {
+	return after(p, ctx, p.handlers.Redo == nil, func() error {
 		return p.handlers.Redo(ctx)
 	})
 }
@@ -269,25 +269,25 @@ func (p *Page) Submit(ctx context.Context) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
-	if handled, err := p.activateKeyboardButton(ctx); handled || err != nil {
+	if handled, err := activateKeyboardButton(p, ctx); handled || err != nil {
 		return err
 	}
-	return p.after(ctx, p.handlers.Submit == nil, func() error {
+	return after(p, ctx, p.handlers.Submit == nil, func() error {
 		return p.handlers.Submit(ctx)
 	})
 }
 
 // activateKeyboardButton uses the focused control rather than pointer hit
 // testing, so a child icon or an overlapping element cannot redirect the key.
-func (p *Page) activateKeyboardButton(ctx context.Context) (bool, error) {
-	field, ok := p.control(p.FocusID())
+func activateKeyboardButton(p *Page, ctx context.Context) (bool, error) {
+	field, ok := control(p, p.FocusID())
 	if !ok || field.Tag != "button" {
 		return false, nil
 	}
 	if field.Disabled {
 		return true, nil
 	}
-	box := p.boxByID(field.ID)
+	box := boxByID(p, field.ID)
 	if box.ID == "" {
 		return false, nil
 	}
@@ -297,12 +297,12 @@ func (p *Page) activateKeyboardButton(ctx context.Context) (bool, error) {
 		}
 	}
 	if field.Type == "submit" && box.Action == "" {
-		return true, p.after(ctx, p.handlers.Submit == nil, func() error { return p.handlers.Submit(ctx) })
+		return true, after(p, ctx, p.handlers.Submit == nil, func() error { return p.handlers.Submit(ctx) })
 	}
-	return true, p.clickControl(ctx, box)
+	return true, clickControl(p, ctx, box)
 }
 
-func (p *Page) after(ctx context.Context, skip bool, fn func() error) error {
+func after(p *Page, ctx context.Context, skip bool, fn func() error) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
@@ -317,7 +317,7 @@ func (p *Page) after(ctx context.Context, skip bool, fn func() error) error {
 
 	// The handler can mutate the template data in place through the
 	// SetData pointer, so force the next Redraw to re-execute.
-	p.markFormDirty()
+	markFormDirty(p)
 
 	return p.Redraw(ctx)
 }
@@ -332,10 +332,10 @@ func (p *Page) BeginDrag(ctx context.Context, x, y float64) (bool, error) {
 		return false, nil
 	}
 
-	box := p.boxByID(p.boxIDAt(x, y))
+	box := boxByID(p, boxIDAt(p, x, y))
 	claimed, err := p.handlers.DragStart(ctx, box)
 	if gesture.Claimed(err, claimed) {
-		p.markFormDirty()
+		markFormDirty(p)
 		p.gesture = p.gesture.Begin(x, y)
 		err = p.Press(ctx, x, y)
 	}
@@ -358,7 +358,7 @@ func (p *Page) MoveDrag(ctx context.Context, x, y float64) error {
 	if err := p.handlers.DragMove(ctx, dx, dy); err != nil {
 		return err
 	}
-	p.markFormDirty()
+	markFormDirty(p)
 
 	return nil
 }
@@ -379,7 +379,7 @@ func (p *Page) EndDrag(ctx context.Context) error {
 		if err := p.handlers.DragEnd(ctx); err != nil {
 			return err
 		}
-		p.markFormDirty()
+		markFormDirty(p)
 	}
 
 	return p.Release(ctx)
@@ -401,7 +401,7 @@ func (p *Page) Swipe(ctx context.Context, dx, dy float64) error {
 	if err := p.handlers.Swipe(ctx, dx, dy); err != nil {
 		return err
 	}
-	p.markFormDirty()
+	markFormDirty(p)
 
 	return nil
 }
@@ -416,26 +416,26 @@ func (p *Page) LongPress(ctx context.Context, x, y float64) (bool, error) {
 		return false, err
 	}
 
-	id := p.boxIDAt(x, y)
-	if c, ok := p.control(id); gesture.ClaimsWord(c, ok) {
+	id := boxIDAt(p, x, y)
+	if c, ok := control(p, id); gesture.ClaimsWord(c, ok) {
 		return true, p.SelectWordAt(ctx, x, y)
 	}
 
-	box, ok := p.hitBox(x, y)
+	box, ok := hitBox(p, x, y)
 	if !ok || p.handlers.LongPress == nil {
 		return false, nil
 	}
 
 	if box.ID == "" {
-		if id := p.boxIDAt(x, y); id != "" {
-			box = p.boxByID(id)
+		if id := boxIDAt(p, x, y); id != "" {
+			box = boxByID(p, id)
 		}
 	}
 
 	if err := p.handlers.LongPress(ctx, box); err != nil {
 		return true, err
 	}
-	p.markFormDirty()
+	markFormDirty(p)
 
 	return true, p.Redraw(ctx)
 }
@@ -454,7 +454,7 @@ func (p *Page) Drop(ctx context.Context, files []Drop) error {
 		if err := p.handlers.Drop(ctx, files); err != nil {
 			return err
 		}
-		p.markFormDirty()
+		markFormDirty(p)
 	}
 
 	return p.Redraw(ctx)
@@ -469,9 +469,9 @@ func (p *Page) Hover(ctx context.Context, x, y float64) error {
 		return err
 	}
 
-	p.setHoverPoint(x, y)
+	setHoverPoint(p, x, y)
 
-	return p.setHover(ctx, p.hoverIDAt(x, y))
+	return setHover(p, ctx, hoverIDAt(p, x, y))
 }
 
 // Press sets the pressed element from a point and draws when it changed.
@@ -480,29 +480,29 @@ func (p *Page) Press(ctx context.Context, x, y float64) error {
 		return err
 	}
 
-	id := p.boxIDAt(x, y)
-	if gesture.SameHit(p.activeID(), id) {
+	id := boxIDAt(p, x, y)
+	if gesture.SameHit(activeID(p), id) {
 		return nil
 	}
 
-	if box, ok := p.activationBox(x, y); ok {
-		if err := p.pressTriggers(ctx, box); err != nil {
+	if box, ok := activationBox(p, x, y); ok {
+		if err := pressTriggers(p, ctx, box); err != nil {
 			return err
 		}
 	}
 
-	p.markPair(p.activeID(), id)
-	p.setActiveID(id)
-	p.setPressUsed(false)
-	c, ok := p.control(id)
+	markPair(p, activeID(p), id)
+	setActiveID(p, id)
+	setPressUsed(p, false)
+	c, ok := control(p, id)
 	if gesture.RunPress(p.handlers.Press != nil, ok, c.Disabled) {
-		used, err := p.handlers.Press(ctx, p.boxByID(id), x, y)
+		used, err := p.handlers.Press(ctx, boxByID(p, id), x, y)
 		if err != nil {
 			return err
 		}
-		p.markFormDirty()
+		markFormDirty(p)
 
-		p.setPressUsed(used)
+		setPressUsed(p, used)
 	}
 
 	// No :active paint to show, so wait for the click handler's redraw.
@@ -519,16 +519,16 @@ func (p *Page) Release(ctx context.Context) error {
 		return err
 	}
 
-	if err := p.releaseTriggers(ctx); err != nil {
+	if err := releaseTriggers(p, ctx); err != nil {
 		return err
 	}
 
-	old := p.takePress()
+	old := takePress(p)
 	if old == "" {
 		return nil
 	}
 
-	p.markPair(old, "")
+	markPair(p, old, "")
 	if !p.statePseudos.Active {
 		return nil
 	}
@@ -536,7 +536,7 @@ func (p *Page) Release(ctx context.Context) error {
 	return p.Redraw(ctx)
 }
 
-func (p *Page) setHover(ctx context.Context, id string) error {
+func setHover(p *Page, ctx context.Context, id string) error {
 	if gesture.SameHit(p.HoverID(), id) {
 		return nil
 	}
@@ -547,14 +547,14 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 	// state. On a handler error the previous id is restored, so a failed
 	// hover changes neither the id nor the generation.
 	prev := p.HoverID()
-	p.setHoverID(id)
-	handled, err := p.paintHover(ctx, prev, id)
+	setHoverID(p, id)
+	handled, err := paintHover(p, ctx, prev, id)
 	if err != nil {
-		p.setHoverID(prev)
+		setHoverID(p, prev)
 		return err
 	}
 
-	p.markPair(prev, id)
+	markPair(p, prev, id)
 	if gesture.SkipHoverRedraw(handled, p.statePseudos.Hover) {
 		return nil
 	}
@@ -562,18 +562,18 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 	return p.Redraw(ctx)
 }
 
-func (p *Page) paintHover(ctx context.Context, prev, id string) (bool, error) {
+func paintHover(p *Page, ctx context.Context, prev, id string) (bool, error) {
 	if !gesture.CanPaintHover(p.handlers.Hover != nil, p.draw.Display != nil) {
 		return false, nil
 	}
 
-	handled, err := p.handlers.Hover(ctx, p.boxByID(prev), p.boxByID(id))
+	handled, err := p.handlers.Hover(ctx, boxByID(p, prev), boxByID(p, id))
 	if err != nil {
 		return false, err
 	}
 	// The handler ran and can mutate the template data in place, whether
 	// or not it claimed the hover.
-	p.markFormDirty()
+	markFormDirty(p)
 
 	return handled, nil
 }
@@ -581,8 +581,8 @@ func (p *Page) paintHover(ctx context.Context, prev, id string) (bool, error) {
 // boxIDAt returns the innermost box with an id that contains the point, or
 // "". It delegates to the shared boxAt scan so Hover and Press agree with
 // Click on overlapping boxes.
-func (p *Page) boxIDAt(x, y float64) string {
-	return p.boxAt(x, y).id
+func boxIDAt(p *Page, x, y float64) string {
+	return boxAt(p, x, y).id
 }
 
 // hoverIDAt answers the Hover point query only: the innermost id-bearing
@@ -593,9 +593,9 @@ func (p *Page) boxIDAt(x, y float64) string {
 // fixed layer the pinned layer wins exactly like boxAt, so Hover delegates
 // to the shared scan. The reject form below is the hit rule: a NaN
 // comparison is false, so NaN is not thrown out.
-func (p *Page) hoverIDAt(x, y float64) string {
+func hoverIDAt(p *Page, x, y float64) string {
 	if len(p.hits) != 0 {
-		return p.boxIDAt(x, y)
+		return boxIDAt(p, x, y)
 	}
 
 	for i := len(p.boxes) - 1; i >= 0; i-- {
@@ -615,7 +615,7 @@ func (p *Page) hoverIDAt(x, y float64) string {
 
 // PressedID is the control held by the current pointer gesture.
 // It is empty after Release.
-func (p *Page) PressedID() string { return p.activeID() }
+func (p *Page) PressedID() string { return activeID(p) }
 
 // CancelTouches queues gesture cancellation for the window loop. A native
 // host may call it from its UI thread before clearing platform touch IDs.
@@ -658,10 +658,10 @@ var _ host.KeyZoomPolicy = (*Page)(nil)
 // copy need a selection, paste needs a focused editable field, select all
 // needs either, and undo and redo need their handler.
 func (p *Page) ContextMenu() []host.MenuItem {
-	_, editable := p.typingTarget()
+	_, editable := typingTarget(p)
 
 	return gesture.ContextMenu(gesture.Menu{
-		Selection: p.hasSelection(),
+		Selection: hasSelection(p),
 		Editable:  editable,
 		SelectAll: editable || p.handlers.SelectAll != nil,
 		Undo:      p.handlers.Undo != nil,
@@ -679,12 +679,12 @@ func (p *Page) CursorShape() host.Shape {
 	in := gesture.Cursor{}
 	if id := p.HoverID(); id != "" {
 		in.HoverID = id
-		if c, ok := p.control(id); ok {
+		if c, ok := control(p, id); ok {
 			in.Control = true
 			in.Editable = canEdit(c)
 			in.Disabled = c.Disabled
 		} else {
-			b := p.boxByID(id)
+			b := boxByID(p, id)
 			in.Tag = b.Tag
 			in.Action = b.Action
 		}
@@ -694,8 +694,8 @@ func (p *Page) CursorShape() host.Shape {
 		return gesture.CursorShape(in)
 	}
 
-	x, y := p.hoverPoint()
-	_, in.Link = p.linkTargetAt(x, y)
+	x, y := hoverPoint(p)
+	_, in.Link = linkTargetAt(p, x, y)
 
 	return gesture.CursorShape(in)
 }
@@ -707,7 +707,7 @@ var _ host.IME = (*Page)(nil)
 // offset into the value, and the value around the caret. ok is false when
 // no text control is focused.
 func (p *Page) IMEContext() (layout.Box, int, string, string, bool) {
-	c, ok := p.typingTarget()
+	c, ok := typingTarget(p)
 	if !ok {
 		return layout.Box{}, 0, "", "", false
 	}
@@ -715,8 +715,8 @@ func (p *Page) IMEContext() (layout.Box, int, string, string, bool) {
 	// The window reports the caret to the platform in screen coordinates,
 	// so take the scroll offset out of the box. Ebiten pans the canvas when
 	// the keyboard would cover this rectangle.
-	before, after, n := gesture.SplitCaret(c.Value, p.formState().Caret)
-	box := gesture.Unscroll(p.boxByID(c.ID), float64(p.scroll.Windowing.X), float64(p.scroll.Windowing.Y))
+	before, after, n := gesture.SplitCaret(c.Value, formState(p).Caret)
+	box := gesture.Unscroll(boxByID(p, c.ID), float64(p.scroll.Windowing.X), float64(p.scroll.Windowing.Y))
 
 	return box, n, before, after, true
 }
@@ -726,12 +726,12 @@ var _ host.IMECaretAnchor = (*Page)(nil)
 // IMEAnchor returns the focused glyph caret in CSS pixels, adjusted for page
 // scrolling. False means the current display cannot measure the caret.
 func (p *Page) IMEAnchor() (layout.Box, bool) {
-	c, ok := p.typingTarget()
+	c, ok := typingTarget(p)
 	if !ok {
 		return layout.Box{}, false
 	}
 
-	fs := p.formState()
+	fs := formState(p)
 	pre := gesture.Preedit{
 		ID:    fs.PreeditID,
 		Text:  fs.Preedit,
@@ -758,12 +758,12 @@ func (p *Page) SetIMEComposition(ctx context.Context, text string, start, end in
 		return err
 	}
 
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return nil
 	}
 
-	_, has := p.typingTarget()
+	_, has := typingTarget(p)
 	cur := gesture.Preedit{
 		ID:    fs.PreeditID,
 		Text:  fs.Preedit,
@@ -785,7 +785,7 @@ func (p *Page) SetIMEComposition(ctx context.Context, text string, start, end in
 // and puts the caret at the byte offset caret within insert. It draws when
 // the value changed.
 func (p *Page) IMEReplace(ctx context.Context, start, end int, insert string, caret int) error {
-	c, ok := p.typingTarget()
+	c, ok := typingTarget(p)
 	if !ok {
 		return nil
 	}
@@ -795,7 +795,7 @@ func (p *Page) IMEReplace(ctx context.Context, start, end int, insert string, ca
 		return nil
 	}
 
-	return p.editField(ctx, nil, func(cur Control, _, _ int) (Control, int, int, bool) {
+	return editField(p, ctx, nil, func(cur Control, _, _ int) (Control, int, int, bool) {
 		cur.Value = value
 
 		return cur, pos, pos, true

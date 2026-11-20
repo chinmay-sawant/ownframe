@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 01: Repository Footprint and Binary Hygiene
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (10/21 done, 1 deferred `[~]`: `FOOT-01`–`FOOT-05`, `FOOT-10`, `FOOT-14`, `FOOT-15`, `FOOT-17`, `FOOT-GATE-03`; `[~]` `FOOT-08`)
+> **Status:** In progress (10/21 done, 2 deferred `[~]`: `FOOT-01`–`FOOT-05`, `FOOT-10`, `FOOT-14`, `FOOT-15`, `FOOT-17`, `FOOT-GATE-03`; `[~]` `FOOT-08`, `FOOT-16`)
 > **Estimated effort:** 2–4 days (excluding optional git history rewrite coordination)
 
 ---
@@ -69,7 +69,7 @@ Every site rebuild or Android artifact refresh commits hundreds of megabytes of 
   - `docs/demos/builder/demo.wasm`: **318.1 MB** (6x) & `docs/demos/ui-builder/demo.wasm`: **181.5 MB** (3x)
   - Android APKs (`telegram`, `lg-remote`, `platform`, `login`, `dino`, `eyes`, `digital-wellbeing`, `depth-alert`): **~718 MB** cumulative across 24 commits.
 - [x] `FOOT-15` Add a tracked-file size check script (`scripts/check-repo-size.py`, wired into `make lint` / CI) that fails when any newly tracked file exceeds **5 MB** (with an explicit, shrinking allowlist for existing unavoidable assets until resolved). Evidence: added `scripts/check-repo-size.py`, `scripts/repo-size-allowlist.txt` (28 frozen >5 MiB entries), `scripts/test_repo_size.py` (3 unit tests covering allowlist, new >5 MiB rejection, and stale entry rejection), `Makefile` `repo-size-check`, and `scripts/run-lint.py` stage; `make repo-size-check` and `make tools-check` exit 0.
-- [ ] `FOOT-16` Decide whether to rewrite `.git` history with `git filter-repo` (stripping historical `.wasm` and `.apk` blobs to shrink `.git` from 3.4 GB toward <200 MB). Document the exact cutover procedure: tag backup mirror, invalidate old PR branches, coordinate force-push, and verify `go.mod` / published tags (`v0.0.1`, `v0.0.2`) remain immutable or clearly note that published Go proxy checksums (`sum.golang.org`) pin existing tags and therefore history rewrites must NOT mutate already-published tag commits. Proof: written decision note (either `[x]` with verified mirror test or `[~]` deferred due to published tag immutability, with shallow-clone guidance in `CONTRIBUTING.md`).
+- [~] `FOOT-16` Decide whether to rewrite `.git` history with `git filter-repo` (stripping historical `.wasm` and `.apk` blobs to shrink `.git` from 3.4 GB toward <200 MB). Decision recorded (2026-11-20): **do NOT rewrite `.git` history across already-published Go module tag commits (`v0.0.1`, `v0.0.2`)** because `sum.golang.org` and `index.golang.org` permanently pin published tag tree/commit hashes and a destructive history rewrite would break `GOPROXY=direct` and invalidate commit SHAs across release notes and ledgers. Instead: (1) block new >5 MiB binary additions via `scripts/check-repo-size.py` (`FOOT-15`), (2) untrack `.wasm`/`.apk` artifacts on `master` once CI Pages/Releases host them (`FOOT-07`, `FOOT-12`), and (3) recommend `git clone --filter=blob:none` / `--depth=1` in `CONTRIBUTING.md` (`FOOT-17`) so contributors avoid downloading historical `.wasm`/`.apk` blobs.
 - [x] `FOOT-17` Document `git clone --depth=1` / `--filter=blob:none` instructions in `CONTRIBUTING.md` if full history remains large to preserve published tag commits. Evidence: added partial/shallow clone commands under `## Setup` in `CONTRIBUTING.md`.
 
 ---

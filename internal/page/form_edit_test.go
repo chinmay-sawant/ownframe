@@ -130,7 +130,7 @@ func TestCaretClickMovesPaintedBar(t *testing.T) {
 
 	left, width := runSpan(p, op)
 	base := runBase(p, op)
-	box := p.boxByID("t")
+	box := boxByID(p, "t")
 	padX := box.X + box.W - 4
 	if padX <= left+width {
 		t.Fatalf("field has no empty padding: text ends at %.1f, box ends at %.1f", left+width, box.X+box.W)
@@ -140,7 +140,7 @@ func TestCaretClickMovesPaintedBar(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	n := runeLen(value)
 	if p.FocusID() != "t" || st.Caret != n || st.Anchor != n {
 		t.Fatalf("padding focus %q caret %d anchor %d", p.FocusID(), st.Caret, st.Anchor)
@@ -166,7 +166,7 @@ func TestCaretClickMovesPaintedBar(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st = p.formState()
+	st = formState(p)
 	if p.FocusID() != "t" || st.Caret != 2 || st.Anchor != 2 {
 		t.Fatalf("glyph focus %q caret %d anchor %d", p.FocusID(), st.Caret, st.Anchor)
 	}
@@ -343,9 +343,9 @@ func TestCaretBlinkDoesNotMoveFieldText(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, caret := range []int{0, 13, 27} {
-		st := p.formState()
+		st := formState(p)
 		st.Caret, st.Anchor = caret, caret
-		p.resetCaretBlink()
+		resetCaretBlink(p)
 		if err = p.Redraw(ctx); err != nil {
 			t.Fatal(err)
 		}
@@ -353,7 +353,7 @@ func TestCaretBlinkDoesNotMoveFieldText(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		st = p.formState()
+		st = formState(p)
 		st.BlinkAt = time.Now().Add(-caretBlinkInterval)
 		if err = p.Tick(ctx); err != nil {
 			t.Fatal(err)
@@ -404,7 +404,7 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatalf("visible caret kind = %v, want fill rect", got)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	st.BlinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
@@ -422,7 +422,7 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatalf("caret returned early with kind %v", got)
 	}
 
-	st = p.formState()
+	st = formState(p)
 	st.BlinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
@@ -448,13 +448,13 @@ func TestEditResetsBlink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	st.BlinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if p.formState().BlinkOn {
+	if formState(p).BlinkOn {
 		t.Fatal("blink did not turn off")
 	}
 
@@ -462,7 +462,7 @@ func TestEditResetsBlink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !p.formState().BlinkOn {
+	if !formState(p).BlinkOn {
 		t.Fatal("typing did not reset the blink")
 	}
 }
@@ -474,14 +474,14 @@ func TestCaretReplacesSelection(t *testing.T) {
 	p := bftPage(t, `<input id="t" type="text" value="abcd"`+bedWide+`>`)
 	bftDraw(t, p, nil)
 	bftClick(t, p, "t")
-	st := p.formState()
+	st := formState(p)
 	st.Anchor, st.Caret = 1, 3
 
 	if err := p.Type(ctx, "Z"); err != nil {
 		t.Fatal(err)
 	}
 
-	got := p.formState()
+	got := formState(p)
 	if p.FormValue("t") != "aZd" || got.Caret != 2 || got.Anchor != 2 {
 		t.Fatalf("value %q caret %d anchor %d", p.FormValue("t"), got.Caret, got.Anchor)
 	}
@@ -499,7 +499,7 @@ func TestSelectAllSetsFullRange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	start, end := st.Bounds(4)
 	if start != 0 || end != 4 || st.Caret != 4 || !st.All {
 		t.Fatalf("range [%d,%d) caret %d all %v", start, end, st.Caret, st.All)
@@ -517,13 +517,13 @@ func TestCaretSurvivesRedraw(t *testing.T) {
 	p := bftPage(t, `<input id="t" type="text" value="abcdef"`+bedWide+`>`)
 	bftDraw(t, p, nil)
 	bftClick(t, p, "t")
-	p.setCaret(4, false)
+	setCaret(p, 4, false)
 
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	if st.Caret != 4 || st.Anchor != 4 || p.FocusID() != "t" {
 		t.Fatalf("caret %d anchor %d focus %q", st.Caret, st.Anchor, p.FocusID())
 	}
@@ -534,13 +534,13 @@ func TestCaretAndSelectionSurviveResize(t *testing.T) {
 	p := bftPage(t, `<input id="t" type="text" value="abcdef"`+bedWide+`>`)
 	bftDraw(t, p, nil)
 	bftClick(t, p, "t")
-	p.setCaret(2, false)
-	p.setCaret(4, true)
+	setCaret(p, 2, false)
+	setCaret(p, 4, true)
 	p.SetSize(600, 400)
 	if err := p.Redraw(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	st := p.formState()
+	st := formState(p)
 	if st.Caret != 4 || st.Anchor != 2 || p.FocusID() != "t" || p.FormValue("t") != "abcdef" {
 		t.Fatal("resize changed the live field, caret, selection, or focus")
 	}
@@ -553,30 +553,30 @@ func TestCaretEditsAtOffset(t *testing.T) {
 	p := bftPage(t, `<input id="t" type="text" value="abcd"`+bedWide+`>`)
 	bftDraw(t, p, nil)
 	bftClick(t, p, "t")
-	p.setCaret(2, false)
+	setCaret(p, 2, false)
 
 	if err := p.Type(ctx, "X"); err != nil {
 		t.Fatal(err)
 	}
 
-	if p.FormValue("t") != "abXcd" || p.formState().Caret != 3 {
-		t.Fatalf("insert value %q caret %d", p.FormValue("t"), p.formState().Caret)
+	if p.FormValue("t") != "abXcd" || formState(p).Caret != 3 {
+		t.Fatalf("insert value %q caret %d", p.FormValue("t"), formState(p).Caret)
 	}
 
 	if err := p.Backspace(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if p.FormValue("t") != "abcd" || p.formState().Caret != 2 {
-		t.Fatalf("backspace value %q caret %d", p.FormValue("t"), p.formState().Caret)
+	if p.FormValue("t") != "abcd" || formState(p).Caret != 2 {
+		t.Fatalf("backspace value %q caret %d", p.FormValue("t"), formState(p).Caret)
 	}
 
 	if err := p.DeleteWord(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if p.FormValue("t") != "cd" || p.formState().Caret != 0 {
-		t.Fatalf("delete word value %q caret %d", p.FormValue("t"), p.formState().Caret)
+	if p.FormValue("t") != "cd" || formState(p).Caret != 0 {
+		t.Fatalf("delete word value %q caret %d", p.FormValue("t"), formState(p).Caret)
 	}
 }
 
@@ -594,7 +594,7 @@ func TestCaretMoveDoesNotEdit(t *testing.T) {
 	})
 
 	bftClick(t, p, "t")
-	p.setCaret(2, false)
+	setCaret(p, 2, false)
 
 	if err := p.KeyDown(ctx, "arrowleft"); err != nil {
 		t.Fatal(err)
@@ -636,7 +636,7 @@ func TestFileShowsNoCaret(t *testing.T) {
 		t.Fatalf("file paints a caret: %s", p.source)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	st.BlinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
@@ -662,7 +662,7 @@ func TestFileShowsNoCaret(t *testing.T) {
 func TestIMEAnchorTracksGlyphCaret(t *testing.T) {
 	t.Parallel()
 	p := imeField(t, "WWWW")
-	p.setCaret(1, false)
+	setCaret(p, 1, false)
 	if err := p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -670,7 +670,7 @@ func TestIMEAnchorTracksGlyphCaret(t *testing.T) {
 	if !ok {
 		t.Fatal("missing caret anchor")
 	}
-	p.setCaret(3, false)
+	setCaret(p, 3, false)
 	if err := p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -678,7 +678,7 @@ func TestIMEAnchorTracksGlyphCaret(t *testing.T) {
 	if !ok || second.X <= first.X {
 		t.Fatalf("caret x positions = %v then %v", first.X, second.X)
 	}
-	field := p.boxByID("e")
+	field := boxByID(p, "e")
 	if first.X <= field.X || second.X >= field.X+field.W {
 		t.Fatalf("caret anchors outside field: first=%+v second=%+v field=%+v", first, second, field)
 	}
@@ -795,7 +795,7 @@ func TestIMEContextAroundCaret(t *testing.T) {
 	t.Parallel()
 
 	p := imeField(t, "hello")
-	p.setCaret(2, false)
+	setCaret(p, 2, false)
 
 	box, caret, before, after, ok := p.IMEContext()
 	if !ok || caret != 2 || before != "he" || after != "llo" {
@@ -811,7 +811,7 @@ func TestIMEContextCountsBytes(t *testing.T) {
 	t.Parallel()
 
 	p := imeField(t, "héllo")
-	p.setCaret(2, false)
+	setCaret(p, 2, false)
 
 	_, caret, before, _, ok := p.IMEContext()
 	if !ok || caret != 3 || before != "hé" {

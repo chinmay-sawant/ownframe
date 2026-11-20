@@ -12,6 +12,7 @@ import (
 func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	if box.ID == "c-left" || box.ID == "c-right" {
 		a.lastClip = box.ID
+		a.selectedAll = false
 	}
 	if box.Action == "send" {
 		return a.send()

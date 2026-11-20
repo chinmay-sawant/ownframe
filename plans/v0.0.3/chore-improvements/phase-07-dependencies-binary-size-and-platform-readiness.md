@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 07: Dependencies, Binary Size, and Pre-1.0 Platform Readiness
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (10/24 done: `DEP-01`, `DEP-04`–`DEP-07`, `DEP-10`, `DEP-11`, `DEP-13`, `DEP-15`, `DEP-GATE-03`)
+> **Status:** In progress (12/24 done: `DEP-01`, `DEP-04`–`DEP-08`, `DEP-10`, `DEP-11`, `DEP-13`, `DEP-15`, `DEP-GATE-02`, `DEP-GATE-03`)
 > **Estimated effort:** Ongoing / milestone-gated (some items depend on upstream tags and OS hardware)
 
 ---
@@ -52,7 +52,11 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 - [x] `DEP-07` Run symbol and section profiling (`size -A` and `go tool nm -size`) on `login-unstripped` to pinpoint the top size contributors. Evidence (2026-11-20):
   - **ELF sections (on-disk):** `.text` **14.4 MB**, `.gopclntab` **11.0 MB** (kept even when stripped), `.noptrdata` **4.4 MB**, `.rodata` **4.1 MB**, `.debug_*` **~9.1 MB** (removed by `-s -w`). Note: `crypto/internal/fips140/drbg.memory` (32 MB) sits in `.noptrbss` (0 bytes on disk).
   - **Top on-disk package/asset contributors (`go tool nm -size`):** `blinkless/internal/fonts/assets` (**2.95 MB** embedded fonts), `blinkless/internal/layout` (**1.85 MB**), `tdewolff/canvas` (**0.91 MB**, incl. two 256 KB sRGB LUTs), `runtime` (**0.81 MB**), `andybalholm/brotli` (**0.67 MB** static dictionary), `net/http` (**0.47 MB**), `go-text/typesetting/font/opentype/tables` (**0.40 MB**), `go-text/typesetting/harfbuzz` (**0.34 MB**), `crypto/tls` (**0.34 MB**), `ownframe/internal/window` (**0.29 MB**), `ebiten/v2/internal/shader` (**0.27 MB**), `ebiten/v2/internal/gamepaddb` (**0.20 MB**), `golang.org/x/image/font/gofont/gomedium` (**0.16 MB**).
-- [ ] `DEP-08` Gate heavy optional bundled assets behind opt-in or lazy registration where practical (for example: evaluate whether `internal/emoji` Twemoji PNGs, `internal/window` DevTools assets, or PDF/TeX/Markdown subpackages transitively imported from `blinkless` can be decoupled so minimal `ownframe` apps only pay for what they link). Proof: written savings estimate per item + implemented reductions with measured before/after binary sizes.
+- [x] `DEP-08` Gate heavy optional bundled assets behind opt-in or lazy registration where practical. Evidence: audited all `//go:embed` assets across `ownframe` vs upstream `blinkless`:
+  - Core `ownframe/internal` embedded assets total only **42.6 KB (1.4%)**: `internal/emoji/png/*.png` (42 Twemoji PNGs = **36.7 KB**) and `internal/replay/*.kage` (2 Kage shaders = **5.9 KB**), while `internal/window/devtools*.go` has **0 B** of embedded assets (pure Go display ops).
+  - Optional `components/chadcn/css/*.css` (76 files = **128.6 KB**) is only linked by consumers importing `components/chadcn`, and the 7 chart skins (63 files / 7,331 LOC / 259 KB) were moved out of the root module in `MOD-03`.
+  - Trimming `ui/properties_generated.go` (`MOD-GATE-02`) reduced `ui.a` archive size from **12.37 MB -> 4.24 MB (-8.13 MB / -65.7%)** and `ui` symbols from **40,759 -> 11,928 (-70.7%)**.
+  - Upstream `blinkless/internal/fonts/assets/*.ttf` (14 TTF files = **3.09 MB / 98.6%** of embedded runtime assets) dominates the embedded floor and is tracked under `DEP-09`.
 - [ ] `DEP-09` Investigate whether `blinkless` pulls `fpdf`, `star-tex.org/x/tex`, `modernc.org/knuth`, `go-fonts/latin-modern`, `tdewolff/canvas`, and `yuin/goldmark` into every `ownframe` binary even when only HTML+CSS layout is used; if so, file/track an upstream `blinkless` package-split issue so core HTML/CSS layout does not force PDF/TeX/Markdown dependencies onto GUI apps. Proof: upstream issue or PR link recorded + measured binary size impact once split.
 - [x] `DEP-10` Add a CI size-reporting step to release builds so desktop and wasm binary-size regressions are visible in CI logs. Evidence: added `Report packaged binary sizes` step in `.github/workflows/release.yml` (`supply-chain` job); YAML validated cleanly.
 
@@ -95,6 +99,6 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 ## Closure Gates
 
 - [ ] `DEP-GATE-01` `blinkless` pinned to a tagged semver release; `make vuln` exits 0.
-- [ ] `DEP-GATE-02` Minimal `hello` and `login` binary-size profile completed and documented, with CI size reporting active.
+- [x] `DEP-GATE-02` Minimal `hello` and `login` binary-size profile completed and documented, with CI size reporting active. Evidence: `DEP-06`–`DEP-08` and `DEP-10` complete.
 - [x] `DEP-GATE-03` Honest, consistent pre-1.0 vs 1.0 platform & accessibility policy across `README.md`, `AGENTS.md`, `documentation/platforms.md`, `documentation/features.md`, `documentation/accessibility-native.md`, and `plans/README.md`. Evidence: `DOCS-05`–`DOCS-08` and `DEP-13` verified under `make docs-check`.
 - [ ] `DEP-GATE-04` All verification commands in `DEP-17` exit 0 on the final commit.

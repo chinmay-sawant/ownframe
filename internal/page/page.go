@@ -253,13 +253,13 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		formDirty:        true,
 	}
 	p.surf = redrawSurface{p}
-	p.imageResolver = p.imageBytes
+	p.imageResolver = func(src string) ([]byte, error) { return imageBytes(p, src) }
 	// Evict the per-page box-cache entry when the page is collected. Benches
 	// and apps that churn pages (e.g. a fresh page per cold build) otherwise
 	// pin every discarded page through the boxCaches map key until the
 	// process exits. The finalizer only deletes the map entry; lookup
 	// callers already treat a missing entry as a page with no boxes.
-	runtime.SetFinalizer(p, func(q *Page) { q.forgetBoxes() })
+	runtime.SetFinalizer(p, func(q *Page) { forgetBoxes(q) })
 	return p
 }
 
@@ -374,7 +374,7 @@ func (p *Page) SetSize(width, height int) {
 	// A viewport callback can update template data even when it declines a
 	// scroll redraw. Pages without one only need the new layout dimensions.
 	if p.scroll.Windowing.On && p.scroll.Windowing.Fn != nil {
-		p.markFormDirty()
+		markFormDirty(p)
 	}
 }
 
@@ -483,10 +483,10 @@ func AdoptPatchedSource(p *Page, source string) error {
 	p.staticSource = true
 	p.tpl = nil
 	p.tplProbeTpl, p.tplProbeHas = nil, false
-	p.noteSourceHashed(source, hash)
-	p.noteCacheSource()
-	p.remember(p.renderState())
-	p.invalidateAccessibilityDocument()
+	noteSourceHashed(p, source, hash)
+	noteCacheSource(p)
+	remember(p, renderState(p))
+	invalidateAccessibilityDocument(p)
 
 	return nil
 }

@@ -30,7 +30,7 @@ func TestButtonsFocusAndDisable(t *testing.T) {
 	}
 	calls := 0
 	p.Handle(Handlers{Click: func(context.Context, Box) error { calls++; return nil }})
-	box := p.boxByID("b")
+	box := boxByID(p, "b")
 	if err := p.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 		t.Fatal(err)
 	}
@@ -48,11 +48,11 @@ func TestButtonRouteAndDisabledRoute(t *testing.T) {
 	calls := 0
 	p.Handle(Handlers{Click: func(context.Context, Box) error { calls++; return nil }})
 	bftClick(t, p, "off")
-	if p.boxByID("next").ID == "" || calls != 0 {
+	if boxByID(p, "next").ID == "" || calls != 0 {
 		t.Fatal("disabled button followed route or called handler")
 	}
 	bftClick(t, p, "next")
-	if p.boxByID("destination").ID == "" || calls != 0 {
+	if boxByID(p, "destination").ID == "" || calls != 0 {
 		t.Fatal("enabled button failed to route")
 	}
 }
@@ -67,7 +67,7 @@ func TestFocusSetsHostState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.renderState().Focus; got != "a" {
+	if got := renderState(p).Focus; got != "a" {
 		t.Fatalf("render focus %q", got)
 	}
 }
@@ -99,7 +99,7 @@ func TestCaretKeys(t *testing.T) {
 	p := bftPage(t, `<input id="t" type="text" value="abcd ef"`+bedWide+`>`)
 	bftDraw(t, p, nil)
 	bftClick(t, p, "t")
-	p.setCaret(2, false)
+	setCaret(p, 2, false)
 
 	var seen []string
 	p.Handle(Handlers{KeyDown: func(_ context.Context, key string) error {
@@ -124,13 +124,13 @@ func TestCaretKeys(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if p.formState().Caret != step.want {
-			t.Fatalf("%s caret %d want %d", step.key, p.formState().Caret, step.want)
+		if formState(p).Caret != step.want {
+			t.Fatalf("%s caret %d want %d", step.key, formState(p).Caret, step.want)
 		}
 	}
 
-	if p.formState().Anchor != 5 {
-		t.Fatalf("shift anchor %d", p.formState().Anchor)
+	if formState(p).Anchor != 5 {
+		t.Fatalf("shift anchor %d", formState(p).Anchor)
 	}
 
 	if len(seen) != len(steps) || seen[0] != "arrowleft" {
@@ -395,7 +395,7 @@ func TestFormHashOncePerChangedFrame(t *testing.T) {
 		t.Fatalf("button rewrite ran on input-free body: %d -> %d", r0, r1)
 	}
 
-	p.markFormDirty()
+	markFormDirty(p)
 	h1 := syncHashCalls.Load()
 	f1 := form.Telemetry()
 	e1 := draw.EmojiStats()
@@ -677,7 +677,7 @@ func TestSelectAtLandsOnGlyph(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		st := p.formState()
+		st := formState(p)
 		if p.FocusID() != "t" || st.Caret != want[i] || st.Anchor != want[i] {
 			t.Fatalf("frac %.1f focus %q caret %d anchor %d", frac, p.FocusID(), st.Caret, st.Anchor)
 		}
@@ -703,7 +703,7 @@ func TestDragExtendsRange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	start, end := st.Bounds(10)
 	if start != 2 || end != 8 || st.Caret != 8 || st.Anchor != 2 {
 		t.Fatalf("range [%d,%d) caret %d anchor %d", start, end, st.Caret, st.Anchor)
@@ -717,7 +717,7 @@ func TestDragExtendsRange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st = p.formState()
+	st = formState(p)
 	if start, end := st.Bounds(10); start != 2 || end != 4 {
 		t.Fatalf("second drag [%d,%d)", start, end)
 	}
@@ -731,7 +731,7 @@ func TestDragAcrossWrappedLines(t *testing.T) {
 	p := bftPage(t, `<input id="t" type="text" value="`+value+`" style="display:block;width:120px;height:80px">`)
 	bftDraw(t, p, nil)
 
-	box := p.boxByID("t")
+	box := boxByID(p, "t")
 	pt := p.draw.Display.PointsPerPixel
 
 	var first, last *DisplayOp
@@ -766,7 +766,7 @@ func TestDragAcrossWrappedLines(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	start, end := st.Bounds(runeLen(value))
 	if start != 0 || end != runeLen(value) {
 		t.Fatalf("wrapped range [%d,%d) of %d", start, end, runeLen(value))
@@ -1119,11 +1119,11 @@ func TestFormSyncAllocs(t *testing.T) {
 		t.Fatal(err)
 	}
 	syncBody := p.lastSyncBody
-	p.markFormDirty()
-	_ = p.syncForm(syncBody) // warm the scan entry and the emoji gate
+	markFormDirty(p)
+	_ = syncForm(p, syncBody) // warm the scan entry and the emoji gate
 	if a := testing.AllocsPerRun(100, func() {
-		p.markFormDirty()
-		_ = p.syncForm(syncBody)
+		markFormDirty(p)
+		_ = syncForm(p, syncBody)
 	}); a != 0 {
 		t.Fatalf("skip-path sync allocs = %v, want 0", a)
 	}
@@ -1136,14 +1136,14 @@ func TestFormSyncAllocs(t *testing.T) {
 		t.Fatal(err)
 	}
 	qbody := q.lastSyncBody
-	q.markFormDirty()
-	_ = q.syncForm(qbody)
+	markFormDirty(q)
+	_ = syncForm(q, qbody)
 	// Budget: merge 4 + bind snapshot 1 + rewrite ~13, all else cached.
 	// A re-added full source pass would cost a builder plus a copy
 	// on top, so the bound catches pass regressions, not alloc noise.
 	if a := testing.AllocsPerRun(100, func() {
-		q.markFormDirty()
-		_ = q.syncForm(qbody)
+		markFormDirty(q)
+		_ = syncForm(q, qbody)
 	}); a > 24 {
 		t.Fatalf("cached full sync allocs = %v, want <= 24", a)
 	}
@@ -1210,7 +1210,7 @@ func TestSyncFormSkipsWithoutControls(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		t.Fatal("no form state after redraw")
 	}
@@ -1248,7 +1248,7 @@ func TestSyncFormSkipsWithoutControls(t *testing.T) {
 		t.Fatal("focus request left pending on input-free page")
 	}
 
-	if got := p.formState(); len(got.ByID) != 0 || len(got.Order) != 0 {
+	if got := formState(p); len(got.ByID) != 0 || len(got.Order) != 0 {
 		t.Fatalf("controls = %d/%d after second sync, want 0/0", len(got.ByID), len(got.Order))
 	}
 }
@@ -1269,7 +1269,7 @@ func TestSyncFormKeepsControlsWithInput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil || len(fs.ByID) != 1 || len(fs.Order) != 1 {
 		t.Fatalf("live controls not merged: %+v", fs)
 	}
@@ -1304,7 +1304,7 @@ func TestSelectWordAt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	start, end := st.Bounds(11)
 	if start != 0 || end != 5 {
 		t.Fatalf("first word [%d,%d)", start, end)
@@ -1314,7 +1314,7 @@ func TestSelectWordAt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st = p.formState()
+	st = formState(p)
 	start, end = st.Bounds(11)
 	if start != 6 || end != 11 {
 		t.Fatalf("second word [%d,%d)", start, end)
@@ -1341,7 +1341,7 @@ two</textarea>`)
 		t.Fatal(err)
 	}
 
-	st := p.formState()
+	st := formState(p)
 	if start, end := st.Bounds(7); start != 4 || end != 7 {
 		t.Fatalf("line [%d,%d)", start, end)
 	}
@@ -1354,7 +1354,7 @@ func TestRangeClampsAfterRedraw(t *testing.T) {
 	p := bftPage(t, `<input id="t" type="text" value="abcdef"`+bedWide+`>`)
 	bftDraw(t, p, nil)
 	bftClick(t, p, "t")
-	st := p.formState()
+	st := formState(p)
 	st.Anchor, st.Caret = 2, 5
 	c := st.ByID["t"]
 	c.Value = "ab"
@@ -1364,7 +1364,7 @@ func TestRangeClampsAfterRedraw(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st = p.formState()
+	st = formState(p)
 	if st.Caret != 2 || st.Anchor != 2 {
 		t.Fatalf("caret %d anchor %d after clamp", st.Caret, st.Anchor)
 	}

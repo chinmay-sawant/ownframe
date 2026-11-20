@@ -8,7 +8,10 @@ func (a *App) focusField(ctx context.Context, id string) bool {
 		if box.ID != id || box.W <= 0 || box.H <= 0 {
 			continue
 		}
-		if err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+		selectedAll := a.selectedAll
+		err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2)
+		a.selectedAll = selectedAll
+		if err != nil {
 			return false
 		}
 		return a.page.Edit().FocusedField() == id

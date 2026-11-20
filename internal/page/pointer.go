@@ -11,9 +11,9 @@ import (
 // Click hit-tests the last picture and applies the click. One box scan answers
 // the animation-trigger pass and the click sequence.
 func (p *Page) Click(ctx context.Context, x, y float64) error {
-	spot := p.boxAt(x, y)
-	if box, ok := p.activationSpot(spot); ok && !p.triggerActivated(box) {
-		if _, err := p.fireTriggers(ctx, box, true); err != nil {
+	spot := boxAt(p, x, y)
+	if box, ok := activationSpot(p, spot); ok && !triggerActivated(p, box) {
+		if _, err := fireTriggers(p, ctx, box, true); err != nil {
 			return err
 		}
 	}
@@ -28,7 +28,7 @@ func (s boxSpot) hitSpot() hit.Spot {
 
 // triggerActivated reports whether the press that started this gesture already
 // fired the entry actions for box, so the click does not repeat them.
-func (p *Page) triggerActivated(box Box) bool {
+func triggerActivated(p *Page, box Box) bool {
 	return p.triggerPress.armed && sameBox(p.triggerPress.box, box)
 }
 
@@ -37,19 +37,19 @@ func (p *Page) triggerActivated(box Box) bool {
 type clickSurface struct{ p *Page }
 
 func (s clickSurface) BoxByID(id string) Box {
-	return s.p.boxByID(id)
+	return boxByID(s.p, id)
 }
 
 func (s clickSurface) ConsumePress(id string) bool {
-	return s.p.consumePress(id)
+	return consumePress(s.p, id)
 }
 
 func (s clickSurface) FormControl(id string) bool {
-	return s.p.formControl(id)
+	return formControl(s.p, id)
 }
 
 func (s clickSurface) Control(id string) (Control, bool) {
-	return s.p.control(id)
+	return control(s.p, id)
 }
 
 func (s clickSurface) Lookup(action string) (string, bool) {
@@ -61,11 +61,11 @@ func (s clickSurface) Load(ctx context.Context, html string) error {
 }
 
 func (s clickSurface) ClickControl(ctx context.Context, box Box) error {
-	return s.p.clickControl(ctx, box)
+	return clickControl(s.p, ctx, box)
 }
 
 func (s clickSurface) BlurForm() {
-	s.p.blurForm()
+	blurForm(s.p)
 }
 
 func (s clickSurface) HasOpenLink() bool {
@@ -73,7 +73,7 @@ func (s clickSurface) HasOpenLink() bool {
 }
 
 func (s clickSurface) OpenLinkAt(ctx context.Context, x, y float64) (bool, error) {
-	return s.p.openLinkAt(ctx, x, y)
+	return openLinkAt(s.p, ctx, x, y)
 }
 
 func (s clickSurface) HasClick() bool {
@@ -84,13 +84,13 @@ func (s clickSurface) HandlerClick(ctx context.Context, box Box) error {
 	// Mark before the handler runs: an incremental update that adopts its
 	// patched source clears the flag, while a handler that only mutates data
 	// leaves it set for the next redraw's form sync.
-	s.p.markFormDirty()
+	markFormDirty(s.p)
 
 	return s.p.handlers.Click(ctx, box)
 }
 
 func (s clickSurface) ClickPainted(ctx context.Context, box Box) (bool, error) {
-	return s.p.clickPainted(ctx, box)
+	return clickPainted(s.p, ctx, box)
 }
 
 func (s clickSurface) Redraw(ctx context.Context) error {
@@ -107,8 +107,8 @@ func (s clickSurface) LabelControl(box Box) string {
 		return ""
 	}
 
-	c, ok := s.p.control(id)
-	if !ok || c.Disabled || !s.p.inFocusScope(id) {
+	c, ok := control(s.p, id)
+	if !ok || c.Disabled || !inFocusScope(s.p, id) {
 		return ""
 	}
 
@@ -131,7 +131,7 @@ var _ click.Surface = clickSurface{}
 // A frame the page would draw differently is not painted. The handler
 // painted the pixels, but the state the sheets match still needs a layout,
 // so the click keeps its redraw.
-func (p *Page) clickPainted(ctx context.Context, box Box) (bool, error) {
+func clickPainted(p *Page, ctx context.Context, box Box) (bool, error) {
 	if p.handlers.ClickPaint == nil {
 		return false, nil
 	}
@@ -142,12 +142,12 @@ func (p *Page) clickPainted(ctx context.Context, box Box) (bool, error) {
 	}
 	// The handler can mutate the template data in place through the
 	// SetData pointer, so force the next Redraw to re-execute.
-	p.markFormDirty()
+	markFormDirty(p)
 	if painted {
-		if !p.unchanged(p.renderState()) {
+		if !unchanged(p, renderState(p)) {
 			return false, nil
 		}
-		p.paintedFrame()
+		paintedFrame(p)
 	}
 
 	return painted, nil
@@ -156,7 +156,7 @@ func (p *Page) clickPainted(ctx context.Context, box Box) (bool, error) {
 // paintedFrame records that the frame is on screen already. The pending and
 // force flags of the redraw batch go, so the batch does not wait for a draw
 // the handler already made.
-func (p *Page) paintedFrame() {
+func paintedFrame(p *Page) {
 	p.redrawPending = false
 	p.redrawForce = false
 }
@@ -325,7 +325,7 @@ func spotFrom(s hit.Spot) boxSpot {
 
 // boxAt answers the point query against the page's boxes. Click, Press,
 // and Hover all read it, so overlapping boxes have one winner.
-func (p *Page) boxAt(x, y float64) boxSpot {
+func boxAt(p *Page, x, y float64) boxSpot {
 	if len(p.hits) > 0 {
 		return spotFrom(hit.ScanList(p.hits, x, y, p.scroll.Windowing.X, p.scroll.Windowing.Y))
 	}
@@ -334,14 +334,14 @@ func (p *Page) boxAt(x, y float64) boxSpot {
 }
 
 // hitBox returns the box under a content point.
-func (p *Page) hitBox(x, y float64) (Box, bool) {
-	spot := p.boxAt(x, y)
+func hitBox(p *Page, x, y float64) (Box, bool) {
+	spot := boxAt(p, x, y)
 
 	return spot.box, spot.ok
 }
 
 // isFixed reports whether the window pins the box to the viewport.
-func (p *Page) isFixed(box Box) bool {
+func isFixed(p *Page, box Box) bool {
 	return hit.IsFixed(p.hits, box)
 }
 

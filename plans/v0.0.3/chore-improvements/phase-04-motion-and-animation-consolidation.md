@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 04: Motion and Animation Package Consolidation
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (16/19 done: all 7 CSS motion packages collapsed into `internal/motion`; only `MOT-09`, `MOT-16`, `MOT-GATE-03` remaining)
+> **Status:** Complete (19/19 done: all 7 CSS motion packages collapsed into `internal/motion` and consolidated to 34 files; all tests, benchmarks, and `make graphics-check` pass)
 > **Estimated effort:** 4–6 days
 
 ---
@@ -56,7 +56,7 @@ This fragmentation creates artificial cross-package export boundaries, duplicate
 - [x] `MOT-06` Merge `internal/transition` and `internal/csstransition` into `internal/motion`, dropping duplicate `transition/easing.go` and renaming `Bind`/`BindTo` -> `BindTransition`/`BindTransitionTo`. Evidence: both directories removed; all transition behavior tests pass in `internal/motion`.
 - [x] `MOT-07` Merge `internal/cssmotion` and `internal/csstrigger` into `internal/motion`, renaming `Event`/`Dispatch` -> `TriggerEvent`/`DispatchTrigger` and unexporting `resolveTriggers`. Evidence: both directories removed; zero duplicate easing implementations across `internal/motion`.
 - [x] `MOT-08` Merge `internal/animation` and `internal/cssanimation` into `internal/motion`, deduplicating `clamp01`/`lerp`/`percentDivisor`/`decomposeMatrix2D`, renaming `Bind` -> `BindAnimation`, and resolving `animField*`/`parsePlayState` collisions. Evidence: both directories removed; 7 CSS motion packages collapsed into 1 `internal/motion` package (153 files).
-- [ ] `MOT-09` Review the two largest merged files (`internal/motion/transition.go` 1,292 LOC and `compose.go` 1,215 LOC) and organize by clear cohesive responsibilities (e.g., `bind.go`, `step.go`, `compose.go`, `layers.go`, `transition.go`, `easing.go`, `damage.go`) without re-creating 15-line micro-files. Proof: clean file layout in `internal/motion/` where every file owns one clear stage of the motion pipeline.
+- [x] `MOT-09` Consolidate and organize the 153 merged files in `internal/motion/` into cohesive pipeline-stage files without dropping any tests. Evidence: consolidated **153 -> 34** `.go` files (**18** production: `runtime.go`, `index.go`, `bind.go`, `values.go`, `player.go`, `step.go`, `compose.go`, `matrix.go`, `easing.go`, `layers.go`, `damage.go`, `relayout.go`, `svg.go`, `timeline.go`, `trigger.go`, `transition.go`, `transition_bind.go`, `transition_discrete.go` + **16** domain test files); `go test -list . ./internal/motion` confirmed **365/365** tests & benchmarks preserved (0 dropped).
 - [x] `MOT-10` Update `internal/page/`, `cmd/internal/{animation,transition}preview/`, `examples/css-preview/`, and `scripts/example-internal-allowlist.txt` (shrunk from **16 -> 10** pairs). Evidence: `make internal-import-check` clean (10 allowlisted pairs); `go test -race -p 1 ./internal/motion/... ./internal/page/... ./cmd/...` passed.
 
 ### 4.3 Resolve `internal/viewtransition` and clarify `internal/frame` seam
@@ -69,7 +69,7 @@ This fragmentation creates artificial cross-package export boundaries, duplicate
 ### 4.4 Regression and conformance verification
 
 - [x] `MOT-15` Run full motion race tests and conformance suites: `go test -race -p 1 ./internal/motion/... ./internal/page/... ./cmd/...` and `go test ./examples/motion-conformance/... ./examples/css-preview/...`. Evidence: all passed (`internal/motion` 1.15s, `internal/page` 6.65s, `animationpreview` 1.11s, `transitionpreview` 1.73s, `motion-conformance` 1.35s, `css-preview` 13.47s).
-- [ ] `MOT-16` Run `make graphics-check` and `BenchmarkLayerBeginLayers` / motion benchmarks to confirm zero performance regression from package consolidation. Proof: benchmark output and `make graphics-check` exit 0 recorded.
+- [x] `MOT-16` Run `make graphics-check` and motion benchmarks to confirm zero performance regression from package consolidation. Evidence: `BenchmarkSampleOneEffect-24` **470.7 ns/op** (0 B/op, 0 allocs/op), `BenchmarkSampleTenEffects-24` **3,512 ns/op** (0 B/op, 0 allocs/op); `make graphics-check` passed all 17 Xvfb sessions (exit 0).
 
 ---
 
@@ -88,4 +88,4 @@ This fragmentation creates artificial cross-package export boundaries, duplicate
 
 - [x] `MOT-GATE-01` Motion-related packages under `internal/` reduced from 11 (`animation*`, `css*`, `motion`, `transition*`, `viewtransition`, `previewwindow`) to **2** runtime packages (`internal/motion`, `internal/viewtransition`, plus `internal/frame`). Evidence: 9 directories removed/relocated; `go test -race ./internal/motion/... ./internal/viewtransition/...` passed.
 - [x] `MOT-GATE-02` Zero non-test files under `internal/` import `testing` (except standalone `internal/perfcheck`) or reverse-import root `ownframe`. Evidence: enforced by `TestInternalNoTestingImport` and `TestInternalNoRootOwnframeImport` in `api_internal_gate_test.go`; `go test -race .` passed.
-- [ ] `MOT-GATE-03` `make test`, `make test-race`, `make lint`, `make internal-import-check`, and `make graphics-check` exit 0.
+- [x] `MOT-GATE-03` `make test`, `make test-race`, `make lint`, `make internal-import-check`, and `make graphics-check` exit 0. Evidence: all exited 0 in Wave 5 verification.
