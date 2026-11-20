@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/animation"
 )
 
 // View is the page scroller state a scroll or view timeline resolves against.
@@ -63,7 +62,7 @@ type timelineBox struct {
 type timelineState struct {
 	refs   []timelineRef
 	values map[string]float64
-	ranges map[string]animation.Range
+	ranges map[string]Range
 
 	// viewRanges reports that the named range map comes from view geometry.
 	// A scroll timeline leaves every named range at the full progress.
@@ -141,7 +140,7 @@ func bindTimelines(d *Display, box layout.Box, index int) (timelineState, int) {
 	if len(state.refs) > 0 {
 		state.values = make(map[string]float64, len(state.refs))
 	}
-	state.ranges = make(map[string]animation.Range, timelineRangeCount)
+	state.ranges = make(map[string]Range, timelineRangeCount)
 	state.axis = timelineAxis(state.axis)
 	if inlineView && !state.viewRanges {
 		state.viewRanges = true
@@ -230,8 +229,8 @@ func timelineAxis(axis string) string {
 // subject progress. The maps it points at belong to the entry and are reused,
 // so a live sample allocates nothing. The returned count is the number of
 // resolved named timelines that had no range at this geometry.
-func (r *Runtime) input(e *entry, now time.Time) (animation.FrameInput, int) {
-	in := animation.FrameInput{Now: now}
+func (r *Runtime) input(e *entry, now time.Time) (FrameInput, int) {
+	in := FrameInput{Now: now}
 	if !r.hasView {
 		return in, 0
 	}
@@ -320,7 +319,7 @@ func clamp01(v float64) float64 {
 // fill writes this element's timeline progress and range values into in. The
 // maps are cleared in place, so a name that stops resolving between samples
 // leaves the animation inactive instead of holding a stale progress value.
-func (t *timelineState) fill(r *Runtime, box timelineBox, in *animation.FrameInput) int {
+func (t *timelineState) fill(r *Runtime, box timelineBox, in *FrameInput) int {
 	inactive := 0
 	if t.values != nil {
 		clear(t.values)
@@ -343,10 +342,10 @@ func (t *timelineState) fill(r *Runtime, box timelineBox, in *animation.FrameInp
 		if t.viewRanges {
 			t.fillViewRanges(r)
 		} else {
-			t.ranges["entry"] = animation.Range{Start: 0, End: 1}
-			t.ranges["exit"] = animation.Range{Start: 0, End: 1}
-			t.ranges["cover"] = animation.Range{Start: 0, End: 1}
-			t.ranges["contain"] = animation.Range{Start: 0, End: 1}
+			t.ranges["entry"] = Range{Start: 0, End: 1}
+			t.ranges["exit"] = Range{Start: 0, End: 1}
+			t.ranges["cover"] = Range{Start: 0, End: 1}
+			t.ranges["contain"] = Range{Start: 0, End: 1}
 		}
 	}
 
@@ -378,10 +377,10 @@ func (t *timelineState) fillViewRanges(r *Runtime) {
 	}
 	entryEnd := clamp01(size / span)
 	exitStart := clamp01(length / span)
-	t.ranges["entry"] = animation.Range{Start: 0, End: entryEnd}
-	t.ranges["exit"] = animation.Range{Start: exitStart, End: 1}
-	t.ranges["cover"] = animation.Range{Start: 0, End: 1}
-	t.ranges["contain"] = animation.Range{Start: entryEnd, End: exitStart}
+	t.ranges["entry"] = Range{Start: 0, End: entryEnd}
+	t.ranges["exit"] = Range{Start: exitStart, End: 1}
+	t.ranges["cover"] = Range{Start: 0, End: 1}
+	t.ranges["contain"] = Range{Start: entryEnd, End: exitStart}
 }
 
 // referenceProgress reads one resolved named timeline at the current page

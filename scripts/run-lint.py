@@ -32,8 +32,10 @@ def main():
         (f'Go library and examples ({args.version})', ['bash', 'scripts/lint.sh', args.version]),
         ('documentation snippets', ['python3', 'scripts/check-doc-snippets.py']),
         ('plan states', ['python3', 'scripts/check-plans.py']),
+        ('tracked file size guardrail', ['python3', 'scripts/check-repo-size.py']),
         ('example maintenance inventory', ['python3', 'scripts/check-examples.py']),
         ('example internal imports', ['bash', 'scripts/check-example-internal.sh']),
+        ('ui generated properties drift', ['python3', 'scripts/check-ui-generated.py']),
         ('website ESLint', ['npm', '--prefix', 'frontend', 'run', 'lint']),
     ]
     passed = True

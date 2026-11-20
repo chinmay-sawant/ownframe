@@ -2,9 +2,9 @@ package ownframe
 
 import (
 	"context"
-	"image"
-
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page"
+	"image"
 )
 
 // Probe inspects retained paint and counters, edits paint metadata, and drains
@@ -115,16 +115,6 @@ func (pr Probe) Element(id string) *Element {
 	}
 
 	return p.Element(id)
-}
-
-// Elements returns all retained handles.
-func (pr Probe) Elements() []*Element {
-	p := innerPage(pr.page)
-	if p == nil {
-		return nil
-	}
-
-	return p.Elements()
 }
 
 // ElementRegistry exposes the retained element registry.
@@ -280,3 +270,24 @@ func (pr Probe) PressedID() string {
 
 	return p.PressedID()
 }
+
+// Stats is one snapshot of the page counters an inspector shows.
+type Stats = host.Stats
+
+// Display is the retained vector list behind a replayable page.
+type Display = page.Display
+
+// DisplayOp is one operation in a Display. A page tick may change its paint
+// fields, which changes the next drawn frame without another Redraw.
+type DisplayOp = page.DisplayOp
+
+const (
+	// DisplayOpFillRect is a filled rectangle.
+	DisplayOpFillRect = page.DisplayOpFillRect
+
+	// DisplayOpText is one shaped text run.
+	DisplayOpText = page.DisplayOpText
+)
+
+// DisplayPatch reports how a retained display changed.
+type DisplayPatch = page.DisplayPatch

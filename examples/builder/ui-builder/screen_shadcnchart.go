@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chinmay-sawant/ownframe/components/shadcnchart"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/shadcnchart"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 

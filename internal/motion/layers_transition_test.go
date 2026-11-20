@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 // transitionLayerPair builds the old and new display of one chip whose
@@ -116,7 +115,7 @@ func TestTransitionLayerOpacityPromotes(t *testing.T) {
 	if want := 0.75; !layerFloatClose(entry.Alpha, want) {
 		t.Fatalf("alpha = %v, want the sampled %v, not the per-op product .375", entry.Alpha, want)
 	}
-	if got := cssmotion.Read(&next.Ops[0]).Opacity; !near(got, .75) {
+	if got := Read(&next.Ops[0]).Opacity; !near(got, .75) {
 		t.Fatalf("sampled op opacity = %v, want .75", got)
 	}
 }

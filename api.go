@@ -9,7 +9,9 @@
 // This package has no layout of its own.
 package ownframe
 
-import "github.com/chinmay-sawant/ownframe/internal/page"
+import (
+	"github.com/chinmay-sawant/ownframe/internal/page"
+)
 
 // Box is one element a click can land on.
 // X, Y, W, and H are CSS pixels, origin at the top left of the picture.
@@ -37,6 +39,29 @@ type MenuItem = page.MenuItem
 // results onto the loop before calling SetData, editing, or redrawing.
 type Page struct {
 	inner *page.Page
+	host  windowHost
+}
+
+type windowHost interface {
+	cursorPosition() (int, int)
+	minimize()
+	toggleMaximize()
+	maximized() bool
+	close()
+}
+
+func (p *Page) bindHost(h windowHost) {
+	if p == nil {
+		return
+	}
+	p.host = h
+}
+
+func (p *Page) hostControls() windowHost {
+	if p == nil {
+		return nil
+	}
+	return p.host
 }
 
 const MaxSourceSize = page.MaxSourceSize
@@ -44,4 +69,45 @@ const MaxSourceSize = page.MaxSourceSize
 // New parses html as an html/template page.
 func New(cfg Config) (*Page, error) {
 	return wrapPage(page.New(cfg))
+}
+
+// Option configures a page before New parses it. Options run in order, so
+// a later option wins when two set the same field. Every option keeps the
+// zero value safe: opting into a risky surface always takes an explicit,
+// InsecureAllow-prefixed name where one exists.
+type Option func(*Config)
+
+// WithPerf records pipeline timing, dirty counters, and allocs in Stats.
+// It is off by default, so end users pay nothing; a developer opts in to
+// fill the DevTools performance rows.
+func WithPerf(on bool) Option {
+	return func(c *Config) { c.Perf = on }
+}
+
+// NewWithOptions parses the page like New after applying every option.
+func NewWithOptions(cfg Config, opts ...Option) (*Page, error) {
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	return New(cfg)
+}
+
+func wrapPage(p *page.Page, err error) (*Page, error) {
+	if err != nil {
+		return nil, err
+	}
+	if p == nil {
+		return nil, nil
+	}
+
+	return &Page{inner: p}, nil
+}
+
+func innerPage(p *Page) *page.Page {
+	if p == nil {
+		return nil
+	}
+
+	return p.inner
 }

@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/animation"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 // Display is the retained display list a runtime samples. It is the same
@@ -29,7 +27,7 @@ type Runtime struct {
 	display *Display
 
 	// index is the cached operation lookup for display.
-	index *cssmotion.Index
+	index *Index
 
 	entries []entry
 	stats   Stats
@@ -199,6 +197,58 @@ func (r *Runtime) animationsActive() bool {
 	return false
 }
 
+// CheckManualOverlap reports whether a manual tick callback mutated any
+// display operation currently owned by an active automatic CSS animation or
+// transition. When an overlap is found, it increments Stats.ManualOverlap and
+// records Stats.ManualOverlapID so callers and DevTools can diagnose
+// dual-driven operations without logging on the hot path.
+func (r *Runtime) CheckManualOverlap(before, after []layout.DisplayOp) (string, bool) {
+	if r == nil || !r.Active() || len(before) != len(after) {
+		return "", false
+	}
+	for i := range r.entries {
+		e := &r.entries[i]
+		if !e.timed || e.layout {
+			continue
+		}
+		if (e.sampled || e.idle) && (e.player == nil || !e.player.Active()) {
+			continue
+		}
+		if opsMutated(before, after, e.indices) {
+			r.stats.ManualOverlap++
+			r.stats.ManualOverlapID = e.key.id
+			return e.key.id, true
+		}
+	}
+	for i := range r.transitions {
+		t := &r.transitions[i]
+		if t.sampled && !t.active {
+			continue
+		}
+		if opsMutated(before, after, t.indices) {
+			r.stats.ManualOverlap++
+			r.stats.ManualOverlapID = t.key.element.id
+			return t.key.element.id, true
+		}
+	}
+	return "", false
+}
+
+func opsMutated(before, after []layout.DisplayOp, indices []int) bool {
+	for _, idx := range indices {
+		if idx < 0 || idx >= len(before) {
+			continue
+		}
+		a, b := &before[idx], &after[idx]
+		if a.X != b.X || a.Y != b.Y || a.W != b.W || a.H != b.H ||
+			a.R != b.R || a.G != b.G || a.B != b.B || a.Alpha != b.Alpha ||
+			a.Opacity() != b.Opacity() || a.XformValue() != b.XformValue() {
+			return true
+		}
+	}
+	return false
+}
+
 // NextFrame returns the next time the runtime needs a sample. An animation and
 // a running transition ask for the next frame; a transition still inside its
 // delay asks for the delay end instead, so a delayed page parks rather than
@@ -291,7 +341,7 @@ type TriggerPass struct {
 	Boxes []layout.Box
 	// Players maps a box index in Boxes to the player its records were
 	// aligned to.
-	Players map[int]*animation.Player
+	Players map[int]*Player
 }
 
 // TriggerPasses builds the dispatch views for the current display. It returns
@@ -327,7 +377,7 @@ func (r *Runtime) TriggerPasses() []TriggerPass {
 		for i := range boxes {
 			boxes[i].Animations = nil
 		}
-		players := make(map[int]*animation.Player, len(byBox))
+		players := make(map[int]*Player, len(byBox))
 		for boxIndex, entries := range byBox {
 			if group >= len(entries) {
 				continue

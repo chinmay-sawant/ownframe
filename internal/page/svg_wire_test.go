@@ -9,7 +9,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/layout"
 
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 const svgFillFrames = `
@@ -73,7 +73,7 @@ func svgRaster(t *testing.T, p *Page, id string) []byte {
 	if box.ID != id {
 		t.Fatalf("the page has no box %q", id)
 	}
-	for _, index := range cssmotion.OperationIndices(d, box) {
+	for _, index := range motion.OperationIndices(d, box) {
 		if d.Ops[index].Kind != layout.DisplayOpImage {
 			continue
 		}

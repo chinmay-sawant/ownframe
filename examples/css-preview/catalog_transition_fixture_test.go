@@ -11,8 +11,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
-	"github.com/chinmay-sawant/ownframe/internal/csstransition"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 type transitionRuntimeCase struct {
@@ -38,8 +37,8 @@ func motionFixture(t *testing.T, html, css string) (*ownframe.Display, ownframe.
 	if d == nil || !ok {
 		t.Fatal("fixture did not produce target box and display")
 	}
-	indices := cssmotion.OperationIndices(d, b)
-	initial := cssmotion.Capture(d, b)
+	indices := motion.OperationIndices(d, b)
+	initial := motion.Capture(d, b)
 	if len(indices) == 0 || len(initial) != len(indices) {
 		t.Fatal("fixture did not produce target paint operations")
 	}
@@ -69,10 +68,10 @@ func sampleTransition(t *testing.T, c transitionRuntimeCase, value string) (pain
 		property = value
 	}
 	start := time.Unix(200, 0)
-	p, err := csstransition.Bind(d, b, property, indices, initial, start)
+	p, err := motion.BindTransition(d, b, property, indices, initial, start)
 	if err != nil {
 		t.Fatal(err)
 	}
 	active := p.Step(start.Add(c.at))
-	return cssmotion.Read(&d.Ops[indices[0]]), active
+	return motion.Read(&d.Ops[indices[0]]), active
 }

@@ -1,5 +1,7 @@
 # Rename and migration
 
+> **Status:** Historical rename record (`go-gpui` -> `ownframe`, completed in `v0.0.2`).
+
 ownframe was formerly known as go-gpui. The product and root Go package are
 named `ownframe`. Documentation and examples use the full name.
 

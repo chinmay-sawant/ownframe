@@ -32,6 +32,8 @@ page, err := ownframe.New(ownframe.Config{
 
 `Run` opens a decorated, resizable window. The initial size is the page `Size`, the OS minimum is `MinSize`, and the OS maximum is `MaxSize` when it is positive. A desktop window cannot grow past that bound; the layout follows whatever size the window has. On a WebAssembly build the browser gives the canvas size, and `MaxSize` does not apply. On a phone the system gives the screen size, so rotation and split screen work the same way.
 
+Host window controls on `Page.Window()` (`Minimize`, `ToggleMaximize`, `Maximized`, `Close`, and `CursorPosition`) are bound to the page only while it is attached to an active desktop host (`Run`, `RunWithOptions`, or `NewGame`). On detached pages, `Serve`, or headless tests, they are safe no-ops (`Maximized` returns `false`, `CursorPosition` returns `0, 0`).
+
 ## Resize
 
 Ebiten calls `Layout` with the outside size when the window changes. `Layout` pulls a size below 1 up to 1, records it, and returns it. The next update commits it in `resize`:

@@ -61,3 +61,5 @@ func readOS() (string, bool) {
 }
 
 func clearOS() { C.ownframePut(nil, 0) }
+
+func diagnoseOS() Status { return Status{Backend: "darwin", Available: true} }

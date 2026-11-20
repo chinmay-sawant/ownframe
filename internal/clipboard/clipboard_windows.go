@@ -96,3 +96,5 @@ func clearOS() {
 	defer closeClip.Call()
 	emptyClip.Call()
 }
+
+func diagnoseOS() Status { return Status{Backend: "windows", Available: true} }

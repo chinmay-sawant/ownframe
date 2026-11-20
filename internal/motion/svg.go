@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-
-	"github.com/chinmay-sawant/ownframe/internal/animation"
 )
 
 // Inline-SVG paint requests.
@@ -204,7 +202,7 @@ func (r *Runtime) NoteSVGPaint(applied int, err error) {
 // It reports false when the sample sets no property, which is the fully
 // deferred paint-server case. none is written as the CSS keyword, never as an
 // empty colour, and a colour with its own alpha becomes rgba().
-func svgPaintOverride(v animation.SVGPaintValue, elementID string) (layout.SVGPaintOverride, bool) {
+func svgPaintOverride(v SVGPaintValue, elementID string) (layout.SVGPaintOverride, bool) {
 	override := layout.SVGPaintOverride{ElementID: elementID}
 	if v.HasFill {
 		override.HasFill, override.Fill = true, svgPaintColor(v.Fill)
@@ -240,7 +238,7 @@ func svgPaintOverride(v animation.SVGPaintValue, elementID string) (layout.SVGPa
 // svgPaintColor writes one sampled colour. none keeps the CSS keyword, an
 // opaque colour is rgb(), and a translucent colour keeps its alpha in rgba()
 // even though fill-opacity is a separate property.
-func svgPaintColor(c animation.SVGPaintColor) string {
+func svgPaintColor(c SVGPaintColor) string {
 	if c.None {
 		return "none"
 	}

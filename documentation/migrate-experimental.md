@@ -1,5 +1,7 @@
 # Migrating existing template apps
 
+> **Status:** Migration note from the `v0.0.3` element-patch rollout. See [optimizations.md](optimizations.md) for current patch guidance.
+
 Existing template apps keep calling `SetData` and work unchanged. The
 retained/reactive layer is opt-in: adopt it per page by opting into
 field-level patches and retained element IDs. Full repaint remains the

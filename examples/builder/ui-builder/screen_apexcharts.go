@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chinmay-sawant/ownframe/components/apexcharts"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/apexcharts"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 

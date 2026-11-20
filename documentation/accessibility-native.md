@@ -1,17 +1,32 @@
 # Native accessibility status and validation
 
-1.0 does not ship a screen-reader product. On Linux, the window registers a
-live AT-SPI application, so Accerciser and Orca can inspect it. NVDA, VoiceOver,
-and TalkBack cannot inspect an ownframe window because those adapters are not
-shipped.
+Currently (`v0.0.x`; no `v1.0` tag yet), ownframe does not ship a cross-platform
+screen-reader adapter. On Linux, the window registers a live AT-SPI application,
+so Accerciser and Orca can inspect it. NVDA, VoiceOver, and TalkBack cannot
+inspect an ownframe window because Windows UIA, macOS VoiceOver, and Android
+TalkBack adapters are not shipped.
 
-1.0 ships the Go snapshot plus an experimental Linux AT-SPI bridge. Ownframe
-exposes page semantics through `host.Accessible`. Linux maps that snapshot to
-AT-SPI objects (`internal/atspi`), registers with the accessibility bus, and
-serves the tree.
+What ships today is the Go accessibility snapshot plus an experimental Linux
+AT-SPI bridge. Ownframe exposes page semantics through `host.Accessible`. Linux
+maps that snapshot to AT-SPI objects (`internal/atspi`), registers with the
+accessibility bus, and serves the tree.
 
 There is no UI Automation provider, no NSAccessibility / VoiceOver bridge, and
 no TalkBack bridge.
+
+## v1.0 accessibility policy
+
+During the `v0.0.x` preview cycle, ownframe ships the Go accessibility snapshot
+(`page.Access().AccessibilityTree` and `page.Access().AccessibilityPerform`) and
+the live Linux AT-SPI bridge (`internal/atspi`, supporting read, focus, and
+activation, with no `EditableText` interface).
+
+Windows UI Automation, macOS VoiceOver (`NSAccessibility`), and Android
+TalkBack remain unshipped. Ownframe will not make a general-purpose `v1.0`
+screen-reader claim across desktop or mobile platforms unless those adapters
+have dedicated platform owners and recorded validation against real assistive
+technologies (NVDA, VoiceOver, and TalkBack) matching the capability scope
+tracked in [platforms.md](platforms.md) and [plans/README.md](../plans/README.md).
 
 ## Current integration boundary
 

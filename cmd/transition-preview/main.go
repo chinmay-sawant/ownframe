@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chinmay-sawant/ownframe/internal/transitionpreview"
+	"github.com/chinmay-sawant/ownframe/cmd/internal/transitionpreview"
 )
 
 func main() {

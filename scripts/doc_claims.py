@@ -41,15 +41,40 @@ def check_current_options(text):
         raise ValueError('docs-check: use explicit InsecureAllow serve options')
 
 
+def check_doc_pins(text, name, go_version, engine):
+    for raw in re.findall(r'blinkless`?\s+`?(v\d+\.\d+\.\d+(?:-[\w.\-]+)?)', text):
+        pin = raw.rstrip('.,;:)')
+        if pin != engine:
+            raise ValueError(f'docs-check: {name} has a stale blinkless pin {pin!r} (go.mod has {engine!r}); link go.mod')
+    for pin in re.findall(r'\b(1\.\d+\.\d+)\b', text):
+        if pin != go_version:
+            raise ValueError(f'docs-check: {name} has a stale Go version {pin!r} (go.mod has {go_version!r})')
+
+
+def check_relative_links(root, names):
+    missing = []
+    for name in names:
+        path = root / name
+        text = re.sub(r'^```.*?^```', '', path.read_text(), flags=re.M | re.S)
+        for match in re.finditer(r'\[[^\]]+\]\(([^)]+)\)', text):
+            target = match.group(1).strip().split('#')[0]
+            if not target or target.startswith(('http://', 'https://', 'mailto:', 'file://')):
+                continue
+            resolved = (path.parent / target).resolve()
+            if not resolved.exists():
+                missing.append(f'{name} -> {target}')
+    if missing:
+        raise ValueError('docs-check: broken relative links:\n' + '\n'.join(f'  - {item}' for item in missing))
+
+
 def validate(root):
     for path in [root / 'README.md', *sorted((root / 'documentation').glob('*.md')),
                  *sorted((root / 'examples').rglob('*.md'))]:
         check_current_options(path.read_text())
-    _, engine = check_versions([(root / name).read_text() for name in ('go.mod', 'examples/go.mod')])
-    android = (root / 'documentation/android-runtime.md').read_text()
-    for pin in re.findall(r'blinkless (v[\w.\-]+)', android):
-        if pin != engine:
-            raise ValueError('docs-check: Android guide has a stale engine pin; link go.mod')
+    go_version, engine = check_versions([(root / name).read_text() for name in ('go.mod', 'examples/go.mod')])
+    for name in ('AGENTS.md', 'README.md', 'CONTRIBUTING.md', 'documentation/android-runtime.md'):
+        check_doc_pins((root / name).read_text(), name, go_version, engine)
+    check_relative_links(root, ('README.md', 'AGENTS.md', 'documentation/README.md', 'plans/README.md'))
     performance = (root / 'documentation/performance.md').read_text()
     if 'ticking pages that do not call `UseFrameDirty`' in performance:
         raise ValueError('docs-check: performance guide describes the retired tick opt-in')

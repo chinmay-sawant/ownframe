@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 // TestOpacityAnimationKeepsItsMask pins the field mask of one paint
@@ -184,15 +183,15 @@ func TestContainedOpacityNeedsNoGap(t *testing.T) {
 // the damage mask.
 func TestFieldMaskOfNarrowsGeometry(t *testing.T) {
 	tests := []struct {
-		mask     cssmotion.Mask
+		mask     Mask
 		want     fieldMask
 		geometry bool
 	}{
-		{cssmotion.MaskRGB, fieldRGB, false},
-		{cssmotion.MaskOpacity, fieldOpacity, false},
-		{cssmotion.MaskMatrix, fieldMatrix, true},
-		{cssmotion.MaskX | cssmotion.MaskY, fieldX | fieldY, true},
-		{cssmotion.MaskAll, maskAll, true},
+		{MaskRGB, fieldRGB, false},
+		{MaskOpacity, fieldOpacity, false},
+		{MaskMatrix, fieldMatrix, true},
+		{MaskX | MaskY, fieldX | fieldY, true},
+		{MaskAll, maskAll, true},
 		{0, maskAll, true},
 	}
 	for _, test := range tests {

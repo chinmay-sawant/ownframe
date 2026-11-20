@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chinmay-sawant/ownframe/components/nivo"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/nivo"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 

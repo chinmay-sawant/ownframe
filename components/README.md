@@ -4,16 +4,9 @@ Reusable controls live here as named sets. Callers import a set and append its S
 
 ```text
 components/
-├── chadcn/         controls
-├── chartjs/        Chart.js
-├── shadcnchart/    shadcn charts
-├── recharts/       Recharts
-├── tremor/         Tremor
-├── echarts/        ECharts
-├── apexcharts/     ApexCharts
-└── nivo/           Nivo
+└── chadcn/         controls
 ```
 
-`chartjs`, `shadcnchart`, `recharts`, `tremor`, `echarts`, `apexcharts`, and `nivo` are HTML and CSS chart packages. Each set has constructors and a Stylesheet. The UI builder has one sidebar entry per set.
+ChadCN is the core reusable control set in the root module. See [chadcn/README.md](chadcn/README.md).
 
-ChadCN is the first control set. See [chadcn/README.md](chadcn/README.md).
+The seven HTML and CSS chart-library skins (`apexcharts`, `chartjs`, `echarts`, `nivo`, `recharts`, `shadcnchart`, and `tremor`) live in the `examples` module under `examples/builder/charts/` for the UI builder catalog.

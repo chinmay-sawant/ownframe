@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/csstrigger"
 )
 
 // splitTriggerDisplay is one element whose transform and background colour
@@ -91,8 +90,8 @@ func TestTriggerReachesOnePlayerOfASplitElement(t *testing.T) {
 	}
 	now := testClock()
 	for i := range passes {
-		event := csstrigger.Event{Name: "--tint", Source: 0, Active: true}
-		if err := csstrigger.Dispatch(passes[i].Boxes, event, passes[i].Players, now); err != nil {
+		event := TriggerEvent{Name: "--tint", Source: 0, Active: true}
+		if err := DispatchTrigger(passes[i].Boxes, event, passes[i].Players, now); err != nil {
 			t.Fatalf("pass %d: %v", i, err)
 		}
 	}

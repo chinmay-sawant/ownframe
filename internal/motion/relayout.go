@@ -3,8 +3,6 @@ package motion
 import (
 	"sort"
 	"time"
-
-	"github.com/chinmay-sawant/ownframe/internal/animation"
 )
 
 // defaultLayoutBudget is the number of element relayouts one frame may apply.
@@ -52,7 +50,7 @@ type layoutState struct {
 	requests []LayoutRequest
 	// values is the sample buffer one element uses. It is handed back to
 	// animation.LayoutAt, which appends the sampled values to it.
-	values []animation.LayoutValue
+	values []LayoutValue
 }
 
 // reset drops every queued element and the sampled buffers. A bind that
@@ -253,7 +251,7 @@ func (r *Runtime) StepLayout(now time.Time) []LayoutRequest {
 // reports whether it still has work. The transition geometry pass calls it
 // after its own sample so one element reaches the engine once, and the
 // animation value wins when both write the same property.
-func (r *Runtime) sampleLayoutAnimation(id string, now time.Time) ([]animation.LayoutValue, bool) {
+func (r *Runtime) sampleLayoutAnimation(id string, now time.Time) ([]LayoutValue, bool) {
 	entry := r.layoutEntry(id)
 	if entry == nil {
 		return nil, false
@@ -275,7 +273,7 @@ func (r *Runtime) sampleLayoutAnimation(id string, now time.Time) ([]animation.L
 // already own. An animation wins the cascade on the same property, so its
 // value replaces the transition's when the two collide.
 func mergeLayoutOverrides(overrides []LayoutOverride,
-	values []animation.LayoutValue) []LayoutOverride {
+	values []LayoutValue) []LayoutOverride {
 	for i := range values {
 		property := values[i].Property
 		value := values[i].CSS()

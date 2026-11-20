@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
-type paint = cssmotion.Paint
+type paint = motion.Paint
 
 func capture(d *ownframe.Display, box ownframe.Box) []paint {
-	return cssmotion.Capture(d, box)
+	return motion.Capture(d, box)
 }

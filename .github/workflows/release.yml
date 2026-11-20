@@ -80,6 +80,34 @@ jobs:
         run: |
           sh scripts/package.sh login
           python3 scripts/check-release-bundle.py dist --require-platform linux --require-platform windows --require-platform macos
+      - name: Report packaged binary sizes
+        run: |
+          python3 - <<'EOF'
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          dist = Path("dist")
+          print("Packaged binary and archive sizes:")
+          for archive_path in sorted(dist.iterdir()):
+              if archive_path.name.endswith(".tar.gz"):
+                  arch_bytes = archive_path.stat().st_size
+                  print(f"  archive {archive_path.name}: {arch_bytes} bytes ({arch_bytes / (1024 * 1024):.2f} MiB)")
+                  with tarfile.open(archive_path, "r:gz") as tf:
+                      for member in tf.getmembers():
+                          if member.isfile() and (member.mode & 0o111) and member.size > 0:
+                              print(f"    binary {member.name}: {member.size} bytes ({member.size / (1024 * 1024):.2f} MiB)")
+              elif archive_path.name.endswith(".zip"):
+                  arch_bytes = archive_path.stat().st_size
+                  print(f"  archive {archive_path.name}: {arch_bytes} bytes ({arch_bytes / (1024 * 1024):.2f} MiB)")
+                  with zipfile.ZipFile(archive_path) as zf:
+                      for info in zf.infolist():
+                          if info.is_dir():
+                              continue
+                          name = info.filename
+                          if name == "ownframe.wasm" or name.endswith(".exe") or ".app/Contents/MacOS/" in name:
+                              print(f"    binary {name}: {info.file_size} bytes ({info.file_size / (1024 * 1024):.2f} MiB)")
+          EOF
       # SBOM of both modules in SPDX JSON (GEN-13).
       - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:

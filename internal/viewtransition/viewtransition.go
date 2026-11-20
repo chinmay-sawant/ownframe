@@ -3,7 +3,7 @@ package viewtransition
 import (
 	"errors"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 )
 
 // DocumentRoot selects the full display snapshot.
@@ -29,7 +29,7 @@ type ClassStyle struct{ Opacity, Scale *float64 }
 
 // Transition pairs named elements from two retained displays.
 type Transition struct {
-	old, next *ownframe.Display
+	old, next *layout.Display
 	groups    []group
 	base      []int
 	styles    map[string]ClassStyle

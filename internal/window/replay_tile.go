@@ -1,8 +1,10 @@
 package window
 
 import (
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
 	"image"
+	"math"
 )
 
 // tileSize is the side of one replay tile in CSS pixels. The content is cut
@@ -172,4 +174,262 @@ func (g *tileGrid) dispose() {
 			img.Deallocate()
 		}
 	}
+}
+
+// blitFrame shows the frame's tiles on the screen. A stale frame, a grid the
+// chrome rects outgrow, or a just-rebuilt grid fills the screen and copies
+// every tile; a scroll copies the whole content at the new offset; anything
+// else copies only the damaged tiles. The retained screen still holds every
+// untouched tile, so the screen is complete when this returns.
+func (s *shell) blitFrame(dst *ebiten.Image, display *layout.Display, plans []repaintPlan, chrome []image.Rectangle, whole, stale bool) {
+	if s.blitFromTiles(dst, display, plans, chrome, whole, stale) {
+		s.paintPinnedChrome(dst, display)
+
+		return
+	}
+
+	s.paintFullReplay(dst, display)
+}
+
+// showTilesWhole fills the screen with the page background and copies every
+// tile. The grid is current for the frame, so this replaces a second full
+// replay of the display list on a frame that only needs the screen
+// repainted. It reports whether the grid could supply the frame. Tiles the
+// paint pass left dirty repaint on demand as the copy reaches them.
+func (s *shell) showTilesWhole(dst *ebiten.Image, d *layout.Display) bool {
+	g := s.partial.tiles
+	if g == nil {
+		return false
+	}
+
+	dst.Fill(s.pageBackground())
+	s.blitTiles(dst, d, g.content())
+
+	return true
+}
+
+// withinTiles reports that every chrome rect has a source region inside the
+// grid. Chrome that reaches past a narrow page cannot be restored, so such a
+// frame repaints in full.
+func withinTiles(g *tileGrid, rects []image.Rectangle) bool {
+	content := g.content()
+
+	for _, rect := range rects {
+		if !rect.In(content) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// visibleRect is the page area the screen shows at the current scroll. A
+// scroll copies only this part of the tile grid, so the copy does not walk
+// every tile of a long page.
+func (s *shell) visibleRect() image.Rectangle {
+	viewW, viewH := s.viewSize()
+
+	return image.Rect(s.scrollX, s.scrollY, s.scrollX+viewW, s.scrollY+viewH)
+}
+
+// blitTiles copies the tiles covering rect to dst, each placed where the
+// scroll puts it, trimmed to the page the devtools dock leaves visible. A
+// rect that misses the content copies nothing. A tile whose damage arrived
+// while it sat offscreen repaints first, so a scroll never copies stale
+// pixels.
+func (s *shell) blitTiles(dst *ebiten.Image, d *layout.Display, rect image.Rectangle) {
+	g := s.partial.tiles
+	if g == nil || dst == nil {
+		return
+	}
+
+	rect = clipDockX(rect, s.dockClipX(g.width))
+	col0, row0, col1, row1 := g.tileRange(rect)
+
+	for row := row0; row < row1; row++ {
+		for col := col0; col < col1; col++ {
+			s.blitTile(dst, d, g, col, row, rect)
+		}
+	}
+}
+
+// blitTile copies one tile's part of rect to the screen. The copy replaces
+// pixels, so a transparent page erases. The screen intersection decides the
+// source, so a rect that reaches past the window copies only what shows. A
+// dirty tile repaints whole before the copy, so a scroll into skipped tiles
+// shows current pixels.
+func (s *shell) blitTile(dst *ebiten.Image, d *layout.Display, g *tileGrid, col, row int, rect image.Rectangle) {
+	tile := g.rectAt(col, row)
+	part := rect.Intersect(tile)
+	if part.Empty() {
+		return
+	}
+
+	offset := image.Pt(s.scrollX, s.scrollY)
+	at := part.Sub(offset).Intersect(dst.Bounds())
+	if at.Empty() {
+		return
+	}
+
+	if !g.cleanAt(col, row) {
+		s.paintTile(d, g, col, row, tile)
+	}
+
+	tileImg := g.at(col, row)
+	srcRect := at.Add(offset).Sub(tile.Min)
+	var src *ebiten.Image
+	if srcRect == tileImg.Bounds() {
+		src = tileImg
+	} else {
+		var ok bool
+		src, ok = tileImg.SubImage(srcRect).(*ebiten.Image)
+		if !ok {
+			return
+		}
+	}
+
+	s.partial.blits++
+	s.partial.blitPx += at.Dx() * at.Dy()
+
+	s.partial.blitOpts.Blend = ebiten.BlendCopy
+	s.partial.blitOpts.GeoM.Reset()
+	s.partial.blitOpts.GeoM.Translate(float64(at.Min.X), float64(at.Min.Y))
+	dst.DrawImage(src, &s.partial.blitOpts)
+}
+
+// blitFromTiles copies the frame from the tile grid. false means the
+// tiles cannot supply the screen, so the caller paints a full replay.
+func (s *shell) blitFromTiles(dst *ebiten.Image, display *layout.Display, plans []repaintPlan, chrome []image.Rectangle, whole, stale bool) bool {
+	grid := s.partial.tiles
+	if stale || grid == nil || !withinTiles(grid, chrome) {
+		return s.showTilesWhole(dst, display)
+	}
+
+	full, rects := blitPlanBuf(s.partial.blitRects[:0], plans, chrome)
+	s.partial.blitRects = rects
+	if full {
+		return s.showTilesWhole(dst, display)
+	}
+
+	if whole {
+		s.blitTiles(dst, display, s.visibleRect())
+
+		return true
+	}
+
+	for _, rect := range rects {
+		s.blitTiles(dst, display, rect)
+	}
+
+	return true
+}
+
+// dockClipX returns the first page x the devtools dock hides this frame:
+// page pixels at or right of it sit under the panel. The panel is placed
+// from the live dock width, the same geometry devLayout paints later this
+// frame. With the dock off the content width comes back, so nothing clips.
+func (s *shell) dockClipX(contentW int) int {
+	if !s.dev.on || s.dev.mobile {
+		return contentW
+	}
+
+	panel := devDockRect(s.screenW, s.screenH, s.devDockWidth())
+	x := int(math.Ceil(panel.X)) + s.scrollX
+	if x < 0 {
+		x = 0
+	}
+
+	if x > contentW {
+		x = contentW
+	}
+
+	return x
+}
+
+// clipDockX trims a page rect to the page x the dock leaves visible. The
+// dock is full height, so only x clips.
+func clipDockX(r image.Rectangle, clipX int) image.Rectangle {
+	if r.Max.X > clipX {
+		r.Max.X = clipX
+	}
+
+	if r.Min.X >= r.Max.X {
+		return image.Rectangle{}
+	}
+
+	return r
+}
+
+// dockStrip is the page strip the previous frame's dock hid and this frame
+// shows. Tiles there were not repainted while hidden, so the frame must
+// catch them up. Empty unless the visible clip grew.
+func (st partialState) dockStrip(clipX, contentH int) image.Rectangle {
+	if clipX <= st.clipX || contentH <= 0 {
+		return image.Rectangle{}
+	}
+
+	return image.Rect(st.clipX, 0, clipX, contentH)
+}
+
+// paintTiles repaints the tiles that rect covers, trimmed to the page the
+// devtools dock leaves visible and to the viewport the window shows. A tile
+// fully outside the viewport keeps its old pixels out of the paint: damage
+// marks it dirty and the blit repaints it when a scroll brings it on screen.
+// Fixed and viewport-pinned operations stay off the tiles, as they stayed off
+// the single buffer.
+func (s *shell) paintTiles(d *layout.Display, rect image.Rectangle) {
+	g := s.partial.tiles
+	if g == nil {
+		return
+	}
+
+	rect = clipDockX(rect, s.dockClipX(g.width))
+	vis := clipDockX(s.visibleRect(), s.dockClipX(g.width))
+	col0, row0, col1, row1 := g.tileRange(rect)
+
+	for row := row0; row < row1; row++ {
+		for col := col0; col < col1; col++ {
+			if !g.rectAt(col, row).Overlaps(vis) {
+				g.markDirty(col, row)
+
+				continue
+			}
+
+			s.paintTile(d, g, col, row, rect)
+		}
+	}
+}
+
+// paintTile clears and replays one tile's part of rect, and marks the tile
+// clean: the tile now holds current pixels for its whole area.
+func (s *shell) paintTile(d *layout.Display, g *tileGrid, col, row int, rect image.Rectangle) {
+	tile := g.rectAt(col, row)
+	part := rect.Intersect(tile)
+	if part.Empty() {
+		return
+	}
+
+	tileImg := g.at(col, row)
+	subRect := part.Sub(tile.Min)
+	var sub *ebiten.Image
+	if subRect == tileImg.Bounds() {
+		sub = tileImg
+	} else {
+		var ok bool
+		sub, ok = tileImg.SubImage(subRect).(*ebiten.Image)
+		if !ok {
+			return
+		}
+	}
+
+	s.partial.paints++
+	s.partial.paintPx += part.Dx() * part.Dy()
+	g.markClean(col, row)
+	sub.Fill(s.pageBackground())
+	if s.renderer.LayersActive(d) {
+		s.renderer.DrawVisibleUnfixedZLayers(sub, d, -float64(tile.Min.X), -float64(tile.Min.Y), s.viewportPinZ())
+
+		return
+	}
+	s.renderer.DrawVisibleUnfixedZ(sub, d, -float64(tile.Min.X), -float64(tile.Min.Y), s.viewportPinZ())
 }

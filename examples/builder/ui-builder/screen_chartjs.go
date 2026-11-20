@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chinmay-sawant/ownframe/components/chartjs"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/chartjs"
 	"github.com/chinmay-sawant/ownframe/ui"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )

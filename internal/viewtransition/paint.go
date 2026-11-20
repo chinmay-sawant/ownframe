@@ -3,7 +3,7 @@ package viewtransition
 import (
 	"math"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 )
 
 // Fallback pixels per point from CSS and typographic resolution.
@@ -14,7 +14,7 @@ const (
 	halfDivisor = 2
 )
 
-func paintOps(d *ownframe.Display, indices []int, source, target Rect, alpha float64, classes []string, styles map[string]ClassStyle) []ownframe.DisplayOp {
+func paintOps(d *layout.Display, indices []int, source, target Rect, alpha float64, classes []string, styles map[string]ClassStyle) []layout.DisplayOp {
 	var scale float64 = 1
 	for _, name := range classes {
 		s := styles[name]
@@ -23,7 +23,7 @@ func paintOps(d *ownframe.Display, indices []int, source, target Rect, alpha flo
 		}
 	}
 	alpha = styledAlpha(alpha, classes, styles)
-	out := make([]ownframe.DisplayOp, 0, len(indices))
+	out := make([]layout.DisplayOp, 0, len(indices))
 	for _, i := range indices {
 		if i < 0 || i >= len(d.Ops) {
 			continue
@@ -39,7 +39,7 @@ func paintOps(d *ownframe.Display, indices []int, source, target Rect, alpha flo
 	return out
 }
 
-func fit(op *ownframe.DisplayOp, ppp float64, from, to Rect) {
+func fit(op *layout.DisplayOp, ppp float64, from, to Rect) {
 	if ppp <= 0 {
 		ppp = cssDPI / pointsPerInch
 	}

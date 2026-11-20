@@ -40,3 +40,15 @@ Use one state per row: implemented `[x]` with evidence, open `[ ]` awaiting work
 - [-] `EXPERIMENTS` promote another teaching example only when it teaches a missing public capability and has a maintainer. Reconsider on that evidence; experiments remain in the compatibility suite.
 
 This ledger does not award a perfect rating. Dependency pins are checked against the modules, not copied as release promises. Prepared artifacts, published releases, and platform observations are different claims.
+
+## Plan trees (active vs archived)
+
+| Path | Status | Purpose |
+|---|---|---|
+| [plans/README.md](README.md) | **Active** | Authoritative maintenance ledger checked by `make plans-check` |
+| [plans/v0.0.3/chore-improvements/](v0.0.3/chore-improvements/README.md) | **Active** | Phase-wise structural cleanup, footprint, doc truth, API, motion, cohesion, and binary/platform plan |
+| [plans/v0.0.3/](v0.0.3/README.md) | **Current cycle** | v0.0.3 release notes, PR records, and completed performance/animation/example plans |
+| [plans/v0.0.4/](v0.0.4/README.md) | **Completed** | Interaction, Linux a11y actions, component interactions, and CSS conformance tracks |
+| [plans/validation/](validation/) | **Evidence archive** | Retained device, soak, and tag-signing session logs |
+| [plans/v0.0.3/prod-ready-task/](v0.0.3/prod-ready-task/README.md) | **Archived (superseded)** | Pre-wrap production-readiness proposals; superseded by this ledger |
+| `plans/v0.0.1/`, `plans/v0.0.2/`, `plans/PR/` | **Archived** | Historical milestone and early PR planning records |

@@ -1,5 +1,7 @@
 # Independent maintenance review
 
+> **Status:** Reusable handoff review prompt (tracked under `INDEPENDENT-HANDOFF` in [plans/README.md](../plans/README.md)).
+
 Give the prompt below to a reviewer who has not implemented the changes. Record the source commit and dirty state before running checks. A second agent repeating the author's claims is not an independent maintainer handoff.
 
 ## Review prompt

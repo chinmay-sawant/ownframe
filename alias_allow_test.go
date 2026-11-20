@@ -1,37 +1,37 @@
 package ownframe
 
 func aliasAllow() map[string]bool {
-	return aliasSet(`accessibility.go:AccessibilityActionKind
-accessibility.go:AccessibilityBounds
-accessibility.go:AccessibilityNode
-accessibility.go:AccessibilityNodeID
-accessibility.go:AccessibilityRequest
-accessibility.go:AccessibilityRole
-accessibility.go:AccessibilityTree
-accessibility.go:Accessible
-api.go:Box
+	return aliasSet(`api.go:Box
 api.go:Config
 api.go:Handlers
 api.go:MenuItem
-display.go:Display
-display.go:DisplayOp
-display_patch.go:DisplayPatch
-drop.go:Drop
-element_edit.go:ElementEdit
+clipboard.go:Secret
 elements.go:Element
 elements.go:ElementKind
 elements.go:ElementLayout
 elements.go:ElementRegistry
+events.go:Drop
+events.go:HoverHandler
 fetch.go:FetchResponse
-hover.go:HoverHandler
-page_patch_el.go:ElementPatch
+page.go:ElementEdit
+page.go:ElementPatch
+page_access.go:AccessibilityActionKind
+page_access.go:AccessibilityBounds
+page_access.go:AccessibilityNode
+page_access.go:AccessibilityNodeID
+page_access.go:AccessibilityRequest
+page_access.go:AccessibilityRole
+page_access.go:AccessibilityTree
+page_access.go:Accessible
+page_probe.go:Display
+page_probe.go:DisplayOp
+page_probe.go:DisplayPatch
 page_probe.go:MotionStats
-scrollbar.go:ScrollbarMode
-secret.go:Secret
-serve.go:ServeOptions
-stats.go:Stats
-touch_scroll.go:TouchScrollOptions
-window_options.go:WindowOptions`)
+page_probe.go:Stats
+page_scroll.go:ScrollbarMode
+page_scroll.go:TouchScrollOptions
+run.go:WindowOptions
+serve.go:ServeOptions`)
 }
 
 func aliasSet(s string) map[string]bool {

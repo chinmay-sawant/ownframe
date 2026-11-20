@@ -47,6 +47,12 @@ and `examples/builder/jmap-mail` for two independent scroll panes.
 
 A finger that moves past 8 px drags the page, clamped to the content ends. After lift, the page continues with a decaying fling. Mobile updates follow the display refresh. `Page.Window().SetTouchScrollOptions` tunes finger sensitivity and how quickly the fling slows; both settings have bounded defaults. Two fingers pinch a zoom that stays between 0.25 and 4. [interaction.md](interaction.md) has the gesture details.
 
+## Pinned chrome and virtualized lists
+
+Prefer CSS `position: sticky` for standard viewport-pinned headers and bars. Blinkless derives sticky paint operations and hit boxes from the original layout at the current scroll offset, so ordinary headers stay in flow until their inset reaches the viewport edge without Go-side counter-offsets. See [screen.md](screen.md#viewport-sticky-and-height-queries) for supported constraints.
+
+For fixed-row virtualized lists with more than 200 rows (logs, chat threads, tables), compute the visible slice and top/bottom spacer heights with `ui/virtual.Window` and update the slice inside `Page.SetScrollWindow` (with `Page.Scroll().SetWindowing(true)`). When a windowed page also needs pinned chrome such as a header or composer overlay, call `Page.Scroll().SetViewportPinZ(z)` so operations at z-index `z` or above draw at the display's committed viewport offset instead of drifting with the tile blit. See [updates.md](updates.md) for how virtualization fits alongside `SetData` and `PatchElement`.
+
 ## Limits
 
 - The offset survives `Load`, `Back`, and `Forward` ([navigation.md](navigation.md)).

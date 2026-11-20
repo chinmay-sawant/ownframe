@@ -1,5 +1,7 @@
 # Code Review example map
 
+> **Status:** Example-specific architecture diagram for `examples/code-view` (recorded during `v0.0.3`).
+
 This page maps the `examples/code-view` app only. It shows how a window opens, how the shell stays fixed, and where Explorer, the editor, search, diff, and session state meet.
 
 ```mermaid

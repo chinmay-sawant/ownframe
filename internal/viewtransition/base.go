@@ -1,8 +1,8 @@
 package viewtransition
 
-import "github.com/chinmay-sawant/ownframe"
+import "github.com/chinmay-sawant/blinkless/layout"
 
-func baseOps(d *ownframe.Display, groups []group) []int {
+func baseOps(d *layout.Display, groups []group) []int {
 	hidden := make(map[int]bool)
 	for _, g := range groups {
 		for _, i := range g.newOps {
@@ -18,7 +18,7 @@ func baseOps(d *ownframe.Display, groups []group) []int {
 	return out
 }
 
-func orderedSubset(d *ownframe.Display, index map[int]int) []int {
+func orderedSubset(d *layout.Display, index map[int]int) []int {
 	order := d.Order
 	if len(order) == 0 {
 		order = make([]int, len(d.Ops))
@@ -35,9 +35,9 @@ func orderedSubset(d *ownframe.Display, index map[int]int) []int {
 	return out
 }
 
-func subset(d *ownframe.Display, keep []int) *ownframe.Display {
+func subset(d *layout.Display, keep []int) *layout.Display {
 	out := *d
-	out.Ops = make([]ownframe.DisplayOp, 0, len(keep))
+	out.Ops = make([]layout.DisplayOp, 0, len(keep))
 	out.OpOwners = make([]int, 0, len(keep))
 	index := make(map[int]int, len(keep))
 	for _, old := range keep {

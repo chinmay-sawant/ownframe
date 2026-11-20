@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chinmay-sawant/ownframe/components/tremor"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/tremor"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 

@@ -1,0 +1,220 @@
+package ownframe
+
+import (
+	"context"
+)
+
+// Window reads and sets reload, the animation and transition switches, perf,
+// devtools, and touch policy.
+type Window struct{ page *Page }
+
+// Window returns reload, the animation and transition switches, perf, devtools,
+// and touch policy for this page.
+func (p *Page) Window() Window { return Window{page: p} }
+
+// CursorPosition returns the desktop mouse position relative to the page,
+// excluding OwnFrame's title bar. The position may be outside the page.
+// Returns (0, 0) when this page is not bound to an active desktop host.
+func (w Window) CursorPosition() (int, int) {
+	if h := w.page.hostControls(); h != nil {
+		return h.cursorPosition()
+	}
+	return 0, 0
+}
+
+// PollReload rereads a watched source file.
+func (w Window) PollReload(ctx context.Context) (bool, error) {
+	p := innerPage(w.page)
+	if p == nil {
+		return false, nil
+	}
+
+	return p.PollReload(ctx)
+}
+
+// SetAnimations turns the automatic CSS motion driver on or off. It is on by
+// default; turning it off releases the bound players at once.
+func (w Window) SetAnimations(on bool) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetAnimations(on)
+}
+
+// Animations reports whether the automatic CSS motion driver is on.
+func (w Window) Animations() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.Animations()
+}
+
+// SetTransitions turns the automatic CSS transition driver on or off. It is on
+// by default. Turning it off releases the live renderers without writing, so a
+// transition in flight freezes at the paint it had already presented; turning
+// it back on lets the next style change capture. The animation switch is
+// independent.
+func (w Window) SetTransitions(on bool) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetTransitions(on)
+}
+
+// Transitions reports whether the automatic CSS transition driver is on.
+func (w Window) Transitions() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.Transitions()
+}
+
+// SetPerf turns pipeline timing, dirty counters, and alloc tracking on or off
+// independently of DevTools. Sampling stays on while DevTools is open.
+func (w Window) SetPerf(on bool) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetPerf(on)
+}
+
+// Perf reports whether pipeline timing and dirty counters are recorded.
+func (w Window) Perf() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.Perf()
+}
+
+// SetDevTools turns the window devtools overlay on or off. Opening it enables
+// page, frame, and runtime performance sampling until it closes, unless Perf
+// was separately enabled.
+func (w Window) SetDevTools(on bool) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetDevTools(on)
+}
+
+// SetTouchZoomAllowed controls two-finger touch zoom.
+func (w Window) SetTouchZoomAllowed(on bool) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetTouchZoomAllowed(on)
+}
+
+// TouchZoomAllowed reports whether two-finger touch may zoom.
+func (w Window) TouchZoomAllowed() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.TouchZoomAllowed()
+}
+
+// WheelZoomAllowed reports whether Ctrl+wheel or Command+wheel may scale the
+// page. DisableWheelZoom on Config turns it off. The wheel then scrolls.
+func (w Window) WheelZoomAllowed() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.WheelZoomAllowed()
+}
+
+// KeyZoomAllowed reports whether Ctrl+=, Ctrl++, Ctrl+-, and Ctrl+0 may
+// scale the page. DisableKeyZoom on Config turns it off. The window still
+// consumes those chords.
+func (w Window) KeyZoomAllowed() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.KeyZoomAllowed()
+}
+
+// SetTouchScrollOptions tunes finger sensitivity and inertial decay.
+func (w Window) SetTouchScrollOptions(options TouchScrollOptions) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetTouchScrollOptions(options)
+}
+
+// SetHotReload turns the file watch on or off.
+func (w Window) SetHotReload(on bool) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetHotReload(on)
+}
+
+// Watching reports whether a poll can reread a source file.
+func (w Window) Watching() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.Watching()
+}
+
+// DevTools reports whether the page requests the window devtools overlay.
+func (w Window) DevTools() bool {
+	p := innerPage(w.page)
+	return p != nil && p.DevTools()
+}
+
+// Minimize minimizes the desktop window bound to this page. It does nothing
+// when this page is not bound to an active desktop run loop, so pages shared
+// with Serve, tests, or web can wire it unconditionally.
+func (w Window) Minimize() {
+	if h := w.page.hostControls(); h != nil {
+		h.minimize()
+	}
+}
+
+// ToggleMaximize maximizes the desktop window bound to this page, or restores
+// it when it is already maximized. It does nothing when this page is not bound
+// to an active desktop run loop.
+func (w Window) ToggleMaximize() {
+	if h := w.page.hostControls(); h != nil {
+		h.toggleMaximize()
+	}
+}
+
+// Maximized reports whether the desktop window bound to this page is maximized.
+// It is false when this page is not bound to an active desktop run loop.
+func (w Window) Maximized() bool {
+	if h := w.page.hostControls(); h != nil {
+		return h.maximized()
+	}
+	return false
+}
+
+// Close asks the desktop run loop bound to this page to exit on its next frame,
+// ending Run with a nil error. Borderless windows have no OS close button, so a
+// page that draws its own window controls calls this from its close control.
+// It does nothing when this page is not bound to an active desktop loop.
+func (w Window) Close() {
+	if h := w.page.hostControls(); h != nil {
+		h.close()
+	}
+}

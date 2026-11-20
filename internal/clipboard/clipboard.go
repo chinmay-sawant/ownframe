@@ -5,6 +5,7 @@ package clipboard
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 )
 
@@ -12,11 +13,38 @@ import (
 // memory-only mode. It carries no fallback text.
 var ErrUnavailable = errors.New("ownframe: clipboard unavailable")
 
+// ErrWaylandToolsMissing reports a Wayland session with no DISPLAY fallback
+// where wl-copy and/or wl-paste are absent from PATH. When Read encounters
+// this condition it wraps both ErrUnavailable and ErrWaylandToolsMissing so
+// errors.Is(err, ErrUnavailable) remains true.
+var ErrWaylandToolsMissing = errors.New("wayland clipboard requires wl-copy and wl-paste on PATH")
+
+// Status describes the active clipboard backend and whether it is usable.
+// Calling Diagnose never touches the OS clipboard or mutates memory mode.
+type Status struct {
+	Backend   string
+	Available bool
+	Reason    string
+}
+
 var (
 	mu     sync.Mutex
 	mem    string
 	memory bool
 )
+
+// Diagnose reports which clipboard backend handles Read and Write in the
+// current process environment without touching the OS clipboard.
+func Diagnose() Status {
+	mu.Lock()
+	only := memory
+	mu.Unlock()
+	if only {
+		return Status{Backend: "memory", Available: true}
+	}
+
+	return diagnoseOS()
+}
 
 // UseMemory forces the in-memory clipboard. Tests call this
 // before any Write so they never touch the desktop clipboard.
@@ -59,7 +87,7 @@ func Read() (string, error) {
 
 	text, ok := readOS()
 	if !ok {
-		return "", ErrUnavailable
+		return "", unavailableErr()
 	}
 
 	mu.Lock()
@@ -82,4 +110,13 @@ func Clear() {
 	if !only {
 		clearOS()
 	}
+}
+
+func unavailableErr() error {
+	st := diagnoseOS()
+	if !st.Available && st.Reason == ErrWaylandToolsMissing.Error() {
+		return fmt.Errorf("%w: %w", ErrUnavailable, ErrWaylandToolsMissing)
+	}
+
+	return ErrUnavailable
 }
