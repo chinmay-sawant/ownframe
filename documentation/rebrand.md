@@ -72,8 +72,8 @@ Check the live repository settings and release state before acting.
    Update `examples/go.mod` to require that version, then remove the parent
    `replace` after the version is available. Keep earlier tags
    intact and publish the examples tag for the corresponding release.
-5. Build the website with `cd frontend && npm run build`. GitHub Pages serves
-   the generated root `docs/` directory, with assets under `/ownframe/`.
+5. Build the website with `npm --prefix frontend run build`. The Pages workflow
+   publishes `frontend/dist/` with assets under `/ownframe/`.
    Check the new Pages address after publication.
 
 GitHub redirects repository traffic and Git operations after a rename, but

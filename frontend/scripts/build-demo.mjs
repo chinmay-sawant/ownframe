@@ -1,25 +1,18 @@
 import { execFileSync } from 'node:child_process';
-import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const goroot = execFileSync('go', ['env', 'GOROOT'], { cwd: root, encoding: 'utf8' }).trim();
+const version = readFileSync(join(root, 'go.work'), 'utf8').match(/^go (\S+)/m)?.[1];
+if (!version) throw new Error('Could not locate the Go version in go.work');
+const env = { ...process.env, GOOS: 'js', GOARCH: 'wasm', GOTOOLCHAIN: `go${version}` };
+const goroot = execFileSync('go', ['env', 'GOROOT'], { cwd: root, env, encoding: 'utf8' }).trim();
 const runtime = ['lib/wasm/wasm_exec.js', 'misc/wasm/wasm_exec.js']
   .map((path) => join(goroot, path)).find(existsSync);
 if (!runtime) throw new Error('Could not locate wasm_exec.js in GOROOT');
-// Pin the exact toolchain from go.work so every machine produces
-// identical demo binaries: CI installs this version via setup-go while
-// its GOTOOLCHAIN=local would otherwise block the upgrade, and a local
-// auto toolchain could drift newer and poison the checked-in output.
-let toolchain;
-try {
-  const match = readFileSync(join(root, 'go.work'), 'utf8').match(/^go (\d+\.\d+(?:\.\d+)?)/m);
-  if (match) toolchain = `go${match[1]}`;
-} catch {
-  // Keep the default toolchain when go.work is unreadable.
-}
 for (const [example, folder, binary] of [
   ['frontend', 'demo', 'demo.wasm'],
   ['frontend/workspace', 'demos/workspace-inspector', 'demo.wasm'],
@@ -29,18 +22,24 @@ for (const [example, folder, binary] of [
   ['builder/ui-builder', 'demos/ui-builder', 'demo.wasm'],
   ['telegram', 'demos/telegram', 'ownframe.wasm'],
   ['spotify-player', 'demos/spotify-player', 'ownframe.wasm'],
+  ['wispr-flow-dashboard', 'demos/wispr-flow', 'ownframe.wasm'],
 ]) {
   const output = join(root, 'frontend/public', folder);
   mkdirSync(output, { recursive: true });
-  execFileSync('go', ['build', '-p', '1', '-trimpath', '-buildvcs=false',
-    ...(example === 'spotify-player' ? ['-ldflags=-s -w'] : []),
-    '-o', join(output, binary), `./examples/${example}`], {
-    cwd: root,
-    env: { ...process.env, GOOS: 'js', GOARCH: 'wasm', ...(toolchain ? { GOTOOLCHAIN: toolchain } : {}) },
-    stdio: 'inherit',
-  });
-  if (example === 'spotify-player') {
-    writeFileSync(join(output, `${binary}.gz`), gzipSync(readFileSync(join(output, binary)), { level: 9 }));
+  const compressed = example === 'spotify-player';
+  const scratch = compressed ? mkdtempSync(join(tmpdir(), 'ownframe-wasm-')) : null;
+  const built = join(scratch ?? output, binary);
+  try {
+    execFileSync('go', ['build', '-p', '1', '-trimpath', '-buildvcs=false',
+      ...(compressed ? ['-ldflags=-s -w'] : []),
+      '-o', built, `./examples/${example}`], { cwd: root, env, stdio: 'inherit' });
+    if (compressed) {
+      writeFileSync(join(output, `${binary}.gz`), gzipSync(readFileSync(built), { level: 9 }));
+      // Remove the raw copy left by earlier versions of this builder.
+      rmSync(join(output, binary), { force: true });
+    }
+  } finally {
+    if (scratch) rmSync(scratch, { recursive: true, force: true });
   }
   const destination = join(output, 'wasm_exec.js');
   if (existsSync(destination)) chmodSync(destination, 0o644);
