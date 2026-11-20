@@ -43,7 +43,7 @@ and these results.
 | Custom chrome | **Pass** | The window had no native caption. Clicking the page's custom Close control dispatched its action and returned from `RunWithOptions`. |
 | Clipboard read | **Pass** | The executable read nonempty text through the Windows backend. The probe recorded only whether the text was nonempty. |
 | Clipboard write | **Open** | The probe left desktop clipboard contents intact. |
-| File picker | **Partial** | The native `comdlg32` dialog opened. Automation could not complete selection. |
+| File picker | **Pass** | The native `comdlg32` dialog accepted a fixture path via its filename edit and returned `C:\Windows\win.ini`. |
 | Japanese Microsoft IME | **Open** | Windows listed en-US, en-IN, and Japanese Microsoft IME. The native probe selected a Japanese keyboard layout, but the field committed Latin `kana` directly. Native preedit, cancellation, conversion, CJK commit, and mode switching remain unverified. |
 | macOS | **Open** | No macOS host was available for this session. |
 
@@ -52,9 +52,11 @@ and these results.
 `dbus-run-session -- xvfb-run -a python3 scripts/check-atspi-actions.py`
 verified live focus, activation, Unicode set/insert/delete, and exclusion
 of disabled and password fields from `EditableText`. The page tests
-covered Unicode offsets and the in-memory clipboard. A native clipboard
-copy attempt in the isolated Xvfb session received `clipboard unavailable`.
-Orca speech remains unverified. Windows UIA, macOS NSAccessibility, and
+covered Unicode offsets and the in-memory clipboard. A follow-up run
+used Xvfb in a private mount and network namespace with its own
+`/tmp/.X11-unix` directory. The live bus verified copy, cut, and paste
+against the X11 clipboard using synthetic Unicode input. Orca speech
+remains unverified. Windows UIA, macOS NSAccessibility, and
 Android TalkBack remain open.
 
 ## Local verification
