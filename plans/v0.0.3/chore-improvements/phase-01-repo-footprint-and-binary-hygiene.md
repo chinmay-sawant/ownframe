@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 01: Repository Footprint and Binary Hygiene
 
 > **Parent:** [README.md](README.md)
-> **Status:** Open (baseline measured at `da4f12cc`)
+> **Status:** In progress (8/21 done: `FOOT-01`–`FOOT-04`, `FOOT-14`, `FOOT-15`, `FOOT-17`, `FOOT-GATE-03`)
 > **Estimated effort:** 2–4 days (excluding optional git history rewrite coordination)
 
 ---

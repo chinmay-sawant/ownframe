@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 03: Public API Boundaries and Developer Ergonomics
 
 > **Parent:** [README.md](README.md)
-> **Status:** Open (baseline measured at `da4f12cc`)
+> **Status:** In progress (11/22 done, 1 partial `[~]`: `API-01`–`API-05`, `API-07`, `API-11`, `API-12`, `API-14`, `API-GATE-01`, `API-GATE-02`; `[~]` `API-09`)
 > **Estimated effort:** 4–6 days
 
 ---

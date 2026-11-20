@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 04: Motion and Animation Package Consolidation
 
 > **Parent:** [README.md](README.md)
-> **Status:** Open (baseline measured at `da4f12cc`)
+> **Status:** In progress (4/19 done: `MOT-01`–`MOT-04` preview relocation and testing-import gate)
 > **Estimated effort:** 4–6 days
 
 ---

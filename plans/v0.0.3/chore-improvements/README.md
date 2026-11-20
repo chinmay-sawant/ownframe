@@ -1,7 +1,7 @@
 # v0.0.3 - Chore Improvements Plan
 
 > **Parent:** [plans/v0.0.3/README.md](../README.md) (and [maintenance ledger](../../README.md))
-> **Status:** In progress (baseline `da4f12cc`; **Phase 02 complete**, plus quick wins across Phases 01, 03, 04, and 07)
+> **Status:** In progress (baseline `da4f12cc`; **47 `[x]`**, **2 `[~]`**, **98 `[ ]`** of 147 rows — Phase 02 complete, Phases 01/03/04/07 in progress)
 > **Estimated effort:** 3–5 weeks across 7 incremental, independently mergeable phases
 
 ---

@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 07: Dependencies, Binary Size, and Pre-1.0 Platform Readiness
 
 > **Parent:** [README.md](README.md)
-> **Status:** Open (baseline measured at `da4f12cc`)
+> **Status:** In progress (4/24 done: `DEP-04`–`DEP-07` dependency attribution, `govulncheck`, and binary/symbol profile)
 > **Estimated effort:** Ongoing / milestone-gated (some items depend on upstream tags and OS hardware)
 
 ---
