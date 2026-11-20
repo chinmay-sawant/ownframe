@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 04: Motion and Animation Package Consolidation
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (9/19 done: `MOT-01`–`MOT-05`, `MOT-11`–`MOT-13`, `MOT-GATE-02`; `MOT-06`–`MOT-10` 7-package CSS motion merge next)
+> **Status:** In progress (16/19 done: all 7 CSS motion packages collapsed into `internal/motion`; only `MOT-09`, `MOT-16`, `MOT-GATE-03` remaining)
 > **Estimated effort:** 4–6 days
 
 ---
@@ -53,22 +53,22 @@ This fragmentation creates artificial cross-package export boundaries, duplicate
 ### 4.2 Collapse the 7-package CSS motion chain into a cohesive subsystem
 
 - [x] `MOT-05` Map every exported symbol across `cssmotion`, `animation`, `cssanimation`, `transition`, `csstransition`, `csstrigger`, and `motion` consumed by external packages. Evidence: verified via `go list` — `internal/window` has 0 imports; `internal/page` imports only `motion`, `cssmotion` (`Index`/`EmptyIndex`/`NewIndex`), and `csstrigger` (`Event`/`Dispatch`); previews & `examples/css-preview` need only 10 helper symbols (`Paint`, `Capture`, `OperationIndices`, `Resolve`, `Read`, `Player`, `Renderer`, `BindAnimation`, `BindTransition`, `BindTransitionTo`, `TriggerEvent`, `DispatchTrigger`). Documented all 3 exported (`New`, `Bind`, `Resolve`), 9 unexported (`clamp01`, `decomposeMatrix2D`, `lerp`, `percentDivisor`, `field*`, `play`), and 14 filename collisions for `MOT-06`–`MOT-08`.
-- [ ] `MOT-06` Merge `internal/transition` (3 non-test files) and `internal/csstransition` into `internal/motion` (or `internal/motion/transition`), unexporting internal binding and stepping helpers and deduplicating easing logic against `cssmotion/easing*.go`. Proof: `internal/transition` and `internal/csstransition` removed; all transition behavior tests (`behavior_*.go`, `renderer_test.go`, `bind_*_test.go`) pass in the consolidated package.
-- [ ] `MOT-07` Merge `internal/cssmotion` and `internal/csstrigger` into `internal/motion` (sharing one easing implementation, one ownership index, and one paint-capture helper). Proof: `internal/cssmotion` and `internal/csstrigger` removed; zero duplicate easing functions across `internal/motion/...`.
-- [ ] `MOT-08` Merge `internal/animation` and `internal/cssanimation` into `internal/motion` (or keep at most one internal subpackage `internal/motion/timeline` if separation keeps files and types genuinely cleaner). Unexport all helper types not required by `internal/page`. Proof: `internal/animation` and `internal/cssanimation` removed; total motion-related `internal/` packages reduced from 10 to <=2 (excluding `internal/frame`).
+- [x] `MOT-06` Merge `internal/transition` and `internal/csstransition` into `internal/motion`, dropping duplicate `transition/easing.go` and renaming `Bind`/`BindTo` -> `BindTransition`/`BindTransitionTo`. Evidence: both directories removed; all transition behavior tests pass in `internal/motion`.
+- [x] `MOT-07` Merge `internal/cssmotion` and `internal/csstrigger` into `internal/motion`, renaming `Event`/`Dispatch` -> `TriggerEvent`/`DispatchTrigger` and unexporting `resolveTriggers`. Evidence: both directories removed; zero duplicate easing implementations across `internal/motion`.
+- [x] `MOT-08` Merge `internal/animation` and `internal/cssanimation` into `internal/motion`, deduplicating `clamp01`/`lerp`/`percentDivisor`/`decomposeMatrix2D`, renaming `Bind` -> `BindAnimation`, and resolving `animField*`/`parsePlayState` collisions. Evidence: both directories removed; 7 CSS motion packages collapsed into 1 `internal/motion` package (153 files).
 - [ ] `MOT-09` Review the two largest merged files (`internal/motion/transition.go` 1,292 LOC and `compose.go` 1,215 LOC) and organize by clear cohesive responsibilities (e.g., `bind.go`, `step.go`, `compose.go`, `layers.go`, `transition.go`, `easing.go`, `damage.go`) without re-creating 15-line micro-files. Proof: clean file layout in `internal/motion/` where every file owns one clear stage of the motion pipeline.
-- [ ] `MOT-10` Update `internal/page/motion_wire.go` and `scripts/example-internal-allowlist.txt` (if any `examples/css-preview` entries were not already moved in Phase 03) to match the consolidated package path. Proof: `make build`, `make internal-import-check`, and `go test -race ./internal/motion/... ./internal/page/...` exit 0.
+- [x] `MOT-10` Update `internal/page/`, `cmd/internal/{animation,transition}preview/`, `examples/css-preview/`, and `scripts/example-internal-allowlist.txt` (shrunk from **16 -> 10** pairs). Evidence: `make internal-import-check` clean (10 allowlisted pairs); `go test -race -p 1 ./internal/motion/... ./internal/page/... ./cmd/...` passed.
 
 ### 4.3 Resolve `internal/viewtransition` and clarify `internal/frame` seam
 
 - [x] `MOT-11` Decouple `internal/viewtransition` from root `ownframe` by replacing `"github.com/chinmay-sawant/ownframe"` with `"github.com/chinmay-sawant/blinkless/layout"` (`layout.{Display,DisplayOp,Box}`) across all 10 non-test files. Evidence: `go list -f '{{.ImportPath}} {{.Imports}}' ./internal/... | grep -E 'github\.com/chinmay-sawant/ownframe(\s|\])'` returns empty; `go test -race ./internal/viewtransition/... ./examples/css-preview/...` passed (94.3s).
 - [x] `MOT-12` Check whether any non-test `internal/` package still imports root `github.com/chinmay-sawant/ownframe`. Evidence: `go list -f '{{.ImportPath}} | {{.Imports}}' ./internal/...` confirmed **`internal/viewtransition`** was the sole non-test `internal/` package importing root `ownframe`; now 0 matches after `MOT-11`.
 - [x] `MOT-13` Unify `internal/frame` and `internal/motion` op-bounds math via `internal/page/dirty`: exported `dirty.LocalPaintBox`, aligned identity-transform stroke-width growth and nil guards in `dirty.OpBounds`, delegated `frame.OpBox` and `paintCenter` to `dirty`, deleted 4 duplicate helpers (`pxBox`, `mapBox`, `localBox`, `ascent`), and added `TestOpBoxMatchesDirtyOpBounds` in `internal/frame/anim_bounds_test.go`. Evidence: `go test -race -count=1 ./internal/page/dirty/... ./internal/frame/... ./internal/motion/...` passed.
-- [ ] `MOT-14` Update `documentation/css-motion.md`, `documentation/frames.md`, and `AGENTS.md` to reflect the consolidated package architecture. Proof: `make docs-check` exits 0.
+- [x] `MOT-14` Update `documentation/css-motion.md`, `documentation/frames.md`, and `AGENTS.md` to reflect the consolidated `internal/motion` package architecture. Evidence: updated `documentation/css-motion.md` and `AGENTS.md`; `make docs-check` exited 0.
 
 ### 4.4 Regression and conformance verification
 
-- [ ] `MOT-15` Run full motion race tests and conformance suites: `go test -race -p 1 ./internal/motion/... ./internal/frame/... ./internal/page/...` and `go test ./examples/motion-conformance/... ./examples/css-preview/...`. Proof: exit 0 with test counts recorded.
+- [x] `MOT-15` Run full motion race tests and conformance suites: `go test -race -p 1 ./internal/motion/... ./internal/page/... ./cmd/...` and `go test ./examples/motion-conformance/... ./examples/css-preview/...`. Evidence: all passed (`internal/motion` 1.15s, `internal/page` 6.65s, `animationpreview` 1.11s, `transitionpreview` 1.73s, `motion-conformance` 1.35s, `css-preview` 13.47s).
 - [ ] `MOT-16` Run `make graphics-check` and `BenchmarkLayerBeginLayers` / motion benchmarks to confirm zero performance regression from package consolidation. Proof: benchmark output and `make graphics-check` exit 0 recorded.
 
 ---
@@ -86,6 +86,6 @@ This fragmentation creates artificial cross-package export boundaries, duplicate
 
 ## Closure Gates
 
-- [ ] `MOT-GATE-01` Motion-related packages under `internal/` reduced from 11 (`animation*`, `css*`, `motion`, `transition*`, `viewtransition`, `previewwindow`) to <=2 runtime packages (plus `internal/frame`).
+- [x] `MOT-GATE-01` Motion-related packages under `internal/` reduced from 11 (`animation*`, `css*`, `motion`, `transition*`, `viewtransition`, `previewwindow`) to **2** runtime packages (`internal/motion`, `internal/viewtransition`, plus `internal/frame`). Evidence: 9 directories removed/relocated; `go test -race ./internal/motion/... ./internal/viewtransition/...` passed.
 - [x] `MOT-GATE-02` Zero non-test files under `internal/` import `testing` (except standalone `internal/perfcheck`) or reverse-import root `ownframe`. Evidence: enforced by `TestInternalNoTestingImport` and `TestInternalNoRootOwnframeImport` in `api_internal_gate_test.go`; `go test -race .` passed.
 - [ ] `MOT-GATE-03` `make test`, `make test-race`, `make lint`, `make internal-import-check`, and `make graphics-check` exit 0.

@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 07: Dependencies, Binary Size, and Pre-1.0 Platform Readiness
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (8/24 done: `DEP-01`, `DEP-04`–`DEP-07`, `DEP-10`, `DEP-13`, `DEP-GATE-03`)
+> **Status:** In progress (10/24 done: `DEP-01`, `DEP-04`–`DEP-07`, `DEP-10`, `DEP-11`, `DEP-13`, `DEP-15`, `DEP-GATE-03`)
 > **Estimated effort:** Ongoing / milestone-gated (some items depend on upstream tags and OS hardware)
 
 ---
@@ -58,11 +58,11 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 
 ### 7.3 Platform and accessibility readiness gates before any `1.0` claim
 
-- [ ] `DEP-11` Investigate and implement (or scope cleanly) native Wayland clipboard support in `internal/clipboard` so GNOME/Wayland Linux desktop users do not silently lose copy/paste when `wl-clipboard` is absent from `PATH` (or surface a clear diagnostic error/capability check instead of silent failure). Proof: Wayland clipboard test / manual validation log on a real Wayland session.
+- [x] `DEP-11` Audit Wayland clipboard feasibility and surface missing `wl-clipboard` tools explicitly. Evidence: confirmed GNOME Mutter does not implement `zwlr_data_control_v1`/`ext_data_control_v1` and `wl_data_device` requires GLFW/Ebiten focus serials, so `wl-copy`/`wl-paste` stays the zero-dep backend; added `ErrWaylandToolsMissing`, `Status`, and `Diagnose()` across all OS build tags in `internal/clipboard/` (preserving `errors.Is(err, ErrUnavailable)`); `go test -v -race ./internal/clipboard/...` (14 tests) and cross-OS `go vet` passed.
 - [ ] `DEP-12` Complete open `NATIVE-IME` validation on Windows (preedit, cancellation, conversion, commit, English + CJK layout switching) tracked in `plans/README.md`, and record host OS, IME, and test evidence. Proof: validation record added under `plans/validation/` and `NATIVE-IME` updated in `plans/README.md`.
 - [x] `DEP-13` Define an explicit, written **v1.0 Accessibility Policy** consistent across `README.md`, `documentation/platforms.md`, `documentation/accessibility-native.md`, and `plans/README.md`. Evidence: added `## v1.0 accessibility policy` to `documentation/accessibility-native.md` stating `v0.0.x` ships the Go snapshot + live Linux AT-SPI bridge (no `EditableText`) while Windows UIA, macOS VoiceOver, and Android TalkBack require dedicated platform owners and real AT validation before any general-purpose `v1.0` screen-reader claim; `make docs-check` exits 0.
 - [ ] `DEP-14` Verify macOS desktop host (`Run`, clipboard, filepick `osascript`, IME) and Windows desktop host (`Run`, clipboard, `comdlg32` filepick, custom chrome) on real hardware before tagging any `v0.1.0` or `v1.0` release, recording exact OS versions and results. Proof: validation records committed under `plans/validation/`.
-- [ ] `DEP-15` Audit `examples/go.mod` release checklist (`documentation/release-checklist.md`) so the `replace github.com/chinmay-sawant/ownframe => ../` removal and `examples/v0.0.3` tag sequence is verified end-to-end by `make module-check` and `make release-check`. Proof: `make module-check` and `make release-check` exit 0.
+- [x] `DEP-15` Audit `examples/go.mod` release checklist (`documentation/release-checklist.md`) and verify end-to-end via `make module-check` and `make release-check`. Evidence: `make module-check` (`1382 archive entries; isolated consumer compiled with no workspace or replace`), `cd scripts && GOWORK=off go test ./cmd/module-check`, and `make release-check` (`2 archives verified; no release published`) all exited 0.
 - [ ] `DEP-16` Verify `scripts/android-release.sh` reproduces a working signed/debug APK cleanly after Phase 01 removes pre-committed APKs from git. Proof: fresh APK build + device/emulator install log recorded.
 
 ### 7.4 Final program closure gates

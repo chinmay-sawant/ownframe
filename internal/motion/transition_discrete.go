@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
-	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 )
 
@@ -35,7 +33,7 @@ func presenceExitReason(property string) string {
 // endpoint the eased progress selects; targetKey identifies the same
 // destination across an unrelated publish so the clock survives it.
 type discreteCapture struct {
-	rule      csstransition.Discrete
+	rule      Discrete
 	targetKey string
 	indices   []int
 }
@@ -43,7 +41,7 @@ type discreteCapture struct {
 // discreteEntry is one live non-interpolated run.
 type discreteEntry struct {
 	key       transitionKey
-	rule      csstransition.Discrete
+	rule      Discrete
 	targetKey string
 	record    layout.Transition
 	start     time.Time
@@ -86,7 +84,7 @@ func transitionReportProperty(property string) bool {
 // write.
 func (r *Runtime) captureDiscreteChange(previous *Display, old boxRef, next *Display,
 	current boxRef, property string, record layout.Transition,
-	prevIndex, nextIndex *cssmotion.Index) (TransitionCapture, bool) {
+	prevIndex, nextIndex *Index) (TransitionCapture, bool) {
 	if record.DurationMS <= 0 || record.Behavior != "allow-discrete" {
 		return TransitionCapture{}, false
 	}
@@ -108,9 +106,9 @@ func (r *Runtime) captureDiscreteChange(previous *Display, old boxRef, next *Dis
 // without an outgoing layer and is counted as blocked.
 func (r *Runtime) capturePresence(previous *Display, old boxRef, next *Display,
 	current boxRef, property string,
-	prevIndex, nextIndex *cssmotion.Index) (TransitionCapture, bool) {
-	oldIndices := prevIndex.Select(old.box, old.index, cssmotion.KindSubtree)
-	newIndices := nextIndex.Select(current.box, current.index, cssmotion.KindSubtree)
+	prevIndex, nextIndex *Index) (TransitionCapture, bool) {
+	oldIndices := prevIndex.Select(old.box, old.index, KindSubtree)
+	newIndices := nextIndex.Select(current.box, current.index, KindSubtree)
 	if len(oldIndices) == len(newIndices) {
 		return TransitionCapture{}, false
 	}
@@ -127,7 +125,7 @@ func (r *Runtime) capturePresence(previous *Display, old boxRef, next *Display,
 	for i, index := range newIndices {
 		op := &next.Ops[index]
 		ops[i] = op
-		hidden[i] = csstransition.PresenceHiddenAlpha
+		hidden[i] = PresenceHiddenAlpha
 		visible[i] = op.Alpha
 		if !entering && i < len(oldIndices) {
 			// An exiting run keeps the alpha that is on screen, which is the
@@ -138,7 +136,7 @@ func (r *Runtime) capturePresence(previous *Display, old boxRef, next *Display,
 		}
 	}
 
-	rule, err := csstransition.NewPresence(ops, visible, hidden, entering,
+	rule, err := NewPresence(ops, visible, hidden, entering,
 		property == "content-visibility")
 	if err != nil {
 		r.stats.TransitionError = err.Error()
@@ -163,9 +161,9 @@ func (r *Runtime) capturePresence(previous *Display, old boxRef, next *Display,
 // them and flipped at the midpoint.
 func (r *Runtime) captureStack(previous *Display, old boxRef, next *Display,
 	current boxRef, property string,
-	prevIndex, nextIndex *cssmotion.Index) (TransitionCapture, bool) {
-	oldIndices := prevIndex.Select(old.box, old.index, cssmotion.KindSubtree)
-	newIndices := nextIndex.Select(current.box, current.index, cssmotion.KindSubtree)
+	prevIndex, nextIndex *Index) (TransitionCapture, bool) {
+	oldIndices := prevIndex.Select(old.box, old.index, KindSubtree)
+	newIndices := nextIndex.Select(current.box, current.index, KindSubtree)
 	if len(oldIndices) != len(newIndices) ||
 		!sameOpKinds(previous, oldIndices, next, newIndices) {
 		return TransitionCapture{}, false
@@ -193,7 +191,7 @@ func (r *Runtime) captureStack(previous *Display, old boxRef, next *Display,
 
 	fromOrder := slices.Clone(previous.Order)
 	toOrder := slices.Clone(next.Order)
-	rule, err := csstransition.NewStack(ops, fromZ, toZ, fromSet, toSet, fromOrder, toOrder)
+	rule, err := NewStack(ops, fromZ, toZ, fromSet, toSet, fromOrder, toOrder)
 	if err != nil {
 		r.stats.TransitionError = err.Error()
 		r.transitionCapture.skipped++
@@ -303,7 +301,7 @@ func stackTargetKey(property string, fromZ, toZ []int, fromSet, toSet []bool,
 }
 
 // discreteBounds is the union of the operations a discrete rule writes.
-func discreteBounds(d *Display, rule csstransition.Discrete) (box image.Rectangle) {
+func discreteBounds(d *Display, rule Discrete) (box image.Rectangle) {
 	if rule == nil {
 		return box
 	}

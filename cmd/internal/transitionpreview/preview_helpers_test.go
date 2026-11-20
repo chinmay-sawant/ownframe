@@ -7,13 +7,13 @@ import (
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/cmd/internal/previewwindow"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
-func paint(ops []*ownframe.DisplayOp) []cssmotion.Paint {
-	out := make([]cssmotion.Paint, len(ops))
+func paint(ops []*ownframe.DisplayOp) []motion.Paint {
+	out := make([]motion.Paint, len(ops))
 	for i, op := range ops {
-		out[i] = cssmotion.Read(op)
+		out[i] = motion.Read(op)
 	}
 	return out
 }

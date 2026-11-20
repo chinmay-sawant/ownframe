@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/csstrigger"
 	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
@@ -694,8 +693,8 @@ func (p *Page) fireTriggers(ctx context.Context, box Box, active bool) (bool, er
 	now := time.Now()
 	for i := range passes {
 		for _, name := range names {
-			event := csstrigger.Event{Name: name, Source: index, Active: active}
-			if err := csstrigger.Dispatch(passes[i].Boxes, event, passes[i].Players, now); err != nil {
+			event := motion.TriggerEvent{Name: name, Source: index, Active: active}
+			if err := motion.DispatchTrigger(passes[i].Boxes, event, passes[i].Players, now); err != nil {
 				return true, err
 			}
 		}

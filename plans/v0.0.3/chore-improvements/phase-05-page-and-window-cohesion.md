@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 05: `internal/page`, `internal/window`, and `internal/replay` Cohesion
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (15/22 done: `internal/page` 317->52, `internal/window` 406->70, `internal/replay` 146->29; 0 dropped tests across all 3 packages)
+> **Status:** In progress (16/22 done, 1 deferred `[~]`: `internal/page` 317->52, `internal/window` 406->70, `internal/replay` 146->29; 0 dropped tests; `[~]` `COH-11`)
 > **Estimated effort:** 6–10 days (land in small, domain-scoped PRs)
 
 ---
@@ -53,11 +53,11 @@ Keeping one giant stateful struct split across 300–400 tiny files does not red
 ### 5.3 Partition and consolidate `internal/window` (406 flat files)
 
 - [x] `COH-10` Generate a domain inventory of all 406 flat `.go` files in `internal/window/` (207 production, 199 test) mapped across lifecycle, repaint/tiles/perf, devtools, input/IME, chrome/placement/debug, and a11y bridge. Evidence: all 406 files mapped and consolidated cleanly into 70 domain files (47 production + 23 test).
-- [ ] `COH-11` Extract genuinely independent subsystems in `internal/window` with clean inputs/outputs into subpackages where it reduces coupling (candidates: `internal/window/devtools` for the DevTools dock UI/state, and `internal/window/tiles` or `internal/window/surface` for tile/viewport damage buffers). Keep tight Ebiten loop state in `internal/window` to avoid artificial indirection. Proof: extracted subpackages have explicit interfaces, zero circular imports, and isolated unit tests.
+- [~] `COH-11` Evaluate extracting `internal/window/devtools` or `internal/window/surface` subpackages. Deferred by architecture review (per `plans/README.md` `PACKAGE-SPLIT`): `devtools*.go` (69 `*shell` methods touching 30+ fields) and `replay*.go` (43 `*shell` methods orchestrating Ebiten images/caches) are tightly coupled to `*shell`; extracting them would require a ~25-method forwarding adapter without reducing coupling (unlike `internal/window/pacing`, which is a pure zero-Ebiten state machine). Reconsider only if DevTools becomes a standalone pure-model package.
 - [x] `COH-12` Merge the remaining flat non-test micro-files in `internal/window/` into cohesive per-responsibility files (preserving platform build tags `*_linux.go`, `*_windows.go`, `*_darwin.go`, `*_js.go`, `*_android.go`, `*_desktop.go`, `*_mobile.go`, `*_tag.go`, `*_notag.go` cleanly). Evidence: 207 -> 47 production files; `GOOS=windows`, `GOOS=darwin`, `GOOS=js GOARCH=wasm`, `GOOS=linux`, and `-tags ownframe_debug` `go vet ./internal/window/...` all exited 0.
 - [x] `COH-13` Consolidate fragmented `internal/window/*_test.go` files by subsystem while preserving every test function name referenced by `scripts/check-graphics.sh`. Evidence: 199 -> 23 test files (total flat `.go` files **406 -> 70**, well under <=90 target); `go test -list . ./internal/window` confirmed **441/441** tests preserved (0 dropped); `go test -race ./internal/window/...` passed (2.47s).
 - [x] `COH-14` Verify zero regression on tile repaint benchmarks and `internal/window/pacing` tests. Evidence: `BenchmarkTilePaintFull` 24,701 ns/op (14,600 B/op, 100 allocs), `BenchmarkTileDrawReplayPartialDamaged` 20,903 ns/op (9,339 B/op, 54 allocs); `internal/window/pacing` passed under `-race` (1.02s).
-- [ ] `COH-15` Audit `internal/window` package-level mutable globals (especially desktop chrome/window-control singletons tied to Phase 03 `API-02`) and move per-loop state onto the `Game` / host struct where Ebiten allows. Proof: `gochecknoglobals` clean without new `//nolint` suppressions.
+- [x] `COH-15` Audit all package-level `var` declarations across non-test `internal/window/*.go` files. Evidence: zero `init()` functions and zero accidental per-loop mutable globals; tightened `stages` in `internal/window/update.go` from slice to fixed-length array `[...]updateStage`; remaining globals are immutable lookup tables/palettes, Windows DLL bindings, or Ebiten single-window process singletons in `chrome.go`; `go test -race ./internal/window/...` and `make lint` pass with zero new `//nolint` suppressions.
 
 ### 5.4 Consolidate `internal/replay` (146 files) and verify cohesion
 

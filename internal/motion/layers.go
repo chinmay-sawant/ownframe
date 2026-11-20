@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 // LayerMode names how a promoted entry composites. It is motion's own string
@@ -436,7 +435,7 @@ func (r *Runtime) transitionLayerEntry(t *transitionEntry, d *Display) (LayerEnt
 		return LayerEntry{}, false, ""
 	}
 	kind, mask, ok := transitionClass(t.key.property)
-	if !ok || kind != cssmotion.KindSubtree {
+	if !ok || kind != KindSubtree {
 		return LayerEntry{}, false, ""
 	}
 	if reason := r.transitionAnimationBlock(t.key.element); reason != "" {
@@ -466,7 +465,7 @@ func (r *Runtime) transitionLayerEntry(t *transitionEntry, d *Display) (LayerEnt
 	// One renderer writes one sampled value to every target in the set, so the
 	// first target carries the element matrix and the group opacity the layer
 	// needs.
-	current := cssmotion.Read(&d.Ops[t.indices[0]])
+	current := Read(&d.Ops[t.indices[0]])
 
 	out := LayerEntry{
 		ElementID: t.key.element.id,
@@ -476,7 +475,7 @@ func (r *Runtime) transitionLayerEntry(t *transitionEntry, d *Display) (LayerEnt
 		Mode:      LayerModeNormal,
 		Active:    true,
 	}
-	if mask&cssmotion.MaskMatrix != 0 {
+	if mask&MaskMatrix != 0 {
 		matrix := transitionMatrix(current)
 		if !layerInvertible(matrix) {
 			return LayerEntry{}, false, layerSkipSingular
@@ -484,7 +483,7 @@ func (r *Runtime) transitionLayerEntry(t *transitionEntry, d *Display) (LayerEnt
 		out.Matrix = matrix
 		out.Has2DTransform = true
 	}
-	if mask&cssmotion.MaskOpacity != 0 {
+	if mask&MaskOpacity != 0 {
 		out.Alpha = layerAlpha(current.Opacity)
 		out.HasOpacity = true
 	}
@@ -543,7 +542,7 @@ func transitionBoxIndex(d *Display, key entryKey) int {
 // identity, a static transform, or an ancestor's transform. It reports false
 // when either the base pose or the delta is singular, because a layer cannot
 // recover a pose it cannot invert.
-func layerDelta(current, base cssmotion.Paint) (layout.Matrix2D, bool) {
+func layerDelta(current, base Paint) (layout.Matrix2D, bool) {
 	currentMatrix := layout.IdentityMatrix()
 	if current.HasMatrix {
 		currentMatrix = current.Matrix

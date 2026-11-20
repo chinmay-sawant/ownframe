@@ -5,9 +5,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/animation"
-	"github.com/chinmay-sawant/ownframe/internal/cssanimation"
-	"github.com/chinmay-sawant/ownframe/internal/csstrigger"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 func (d *demo) tick(context.Context) error {
@@ -46,7 +44,7 @@ func (d *demo) rebind() error {
 			continue
 		}
 		box := boxes[boxIndex]
-		player, err := cssanimation.Bind(d.page.Probe().Display(), box, item.indices, item.base, item.start)
+		player, err := motion.BindAnimation(d.page.Probe().Display(), box, item.indices, item.base, item.start)
 		if err != nil {
 			return err
 		}
@@ -56,7 +54,7 @@ func (d *demo) rebind() error {
 			if !found {
 				continue
 			}
-			err := csstrigger.Dispatch(boxes, csstrigger.Event{Name: target.trigger, Source: source, Active: true}, map[int]*animation.Player{boxIndex: player}, item.start)
+			err := motion.DispatchTrigger(boxes, motion.TriggerEvent{Name: target.trigger, Source: source, Active: true}, map[int]*motion.Player{boxIndex: player}, item.start)
 			if err != nil {
 				return err
 			}

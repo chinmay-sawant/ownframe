@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/element"
 	"github.com/chinmay-sawant/ownframe/internal/fetch"
 	"github.com/chinmay-sawant/ownframe/internal/host"
@@ -118,7 +117,7 @@ type Page struct {
 	perf             bool
 	perfOptIn        bool
 	motion           *motion.Runtime
-	motionIndex      *cssmotion.Index
+	motionIndex      *motion.Index
 	animationsOff    bool
 	transitionsOff   bool
 	triggerPress     triggerPressState

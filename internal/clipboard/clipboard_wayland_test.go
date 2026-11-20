@@ -167,4 +167,23 @@ func TestWaylandMissingTools(t *testing.T) {
 	}
 
 	clearOS()
+
+	UseMemory(false)
+	defer UseMemory(true)
+
+	st := Diagnose()
+	if st.Backend != "none" || st.Available || st.Reason != ErrWaylandToolsMissing.Error() {
+		t.Fatalf("Diagnose() = %+v", st)
+	}
+
+	got, err := Read()
+	if got != "" {
+		t.Fatalf("Read() text = %q, want empty", got)
+	}
+	if !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("Read() err = %v, want ErrUnavailable", err)
+	}
+	if !errors.Is(err, ErrWaylandToolsMissing) {
+		t.Fatalf("Read() err = %v, want ErrWaylandToolsMissing", err)
+	}
 }

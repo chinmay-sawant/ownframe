@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 func TestEachStartButtonPlaysItsOwnKeyframes(t *testing.T) {
@@ -21,7 +21,7 @@ func TestEachStartButtonPlaysItsOwnKeyframes(t *testing.T) {
 			if !ok {
 				t.Fatalf("missing animation target %q", item.id)
 			}
-			indices := cssmotion.OperationIndices(page.Probe().Display(), box)
+			indices := motion.OperationIndices(page.Probe().Display(), box)
 			clickStart(t, ctx, page, item.button)
 			if err := demo.tick(ctx); err != nil {
 				t.Fatal(err)
@@ -30,7 +30,7 @@ func TestEachStartButtonPlaysItsOwnKeyframes(t *testing.T) {
 			if sample == nil || sample.player == nil || !data.Started[item.key] {
 				t.Fatal("Start did not bind an animation player")
 			}
-			ops := cssmotion.Resolve(page.Probe().Display(), indices)
+			ops := motion.Resolve(page.Probe().Display(), indices)
 			if len(indices) == 0 || len(ops) != len(indices) {
 				t.Fatalf("resolved %d of %d target operations", len(ops), len(indices))
 			}
@@ -43,7 +43,7 @@ func TestEachStartButtonPlaysItsOwnKeyframes(t *testing.T) {
 			active := sample.player.Step(sample.start.Add(time.Duration(record.DelayStartMS+record.DurationMS/2) * time.Millisecond))
 			changed := false
 			for i, op := range ops {
-				changed = changed || cssmotion.Read(op) != before[i]
+				changed = changed || motion.Read(op) != before[i]
 			}
 			if !active || !changed {
 				t.Fatalf("%s did not sample its keyframes: active=%v before=%+v after=%+v", item.key, active, before, paint(ops))

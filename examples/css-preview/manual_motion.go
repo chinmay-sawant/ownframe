@@ -25,11 +25,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/animation"
-	"github.com/chinmay-sawant/ownframe/internal/cssanimation"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
-	"github.com/chinmay-sawant/ownframe/internal/csstransition"
-	"github.com/chinmay-sawant/ownframe/internal/csstrigger"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 // manualSample is one preview the page runtime does not sample.
@@ -42,7 +38,7 @@ type manualSample struct {
 	from     []paint
 	to       []paint
 	origin   time.Time
-	player   *animation.Player
+	player   *motion.Player
 	renderer transitionRenderer
 	active   bool
 	pending  bool
@@ -147,7 +143,7 @@ func (d *demo) bindManual(rows []catalogRow) error {
 // bindManualSample points one manual sample at the current display.
 func (d *demo) bindManualSample(s *manualSample, box ownframe.Box) error {
 	display := d.p.Probe().Display()
-	indices := cssmotion.OperationIndices(display, box)
+	indices := motion.OperationIndices(display, box)
 	if len(indices) == 0 || len(s.from) != len(indices) {
 		s.active, s.pending = false, false
 		return nil
@@ -155,19 +151,19 @@ func (d *demo) bindManualSample(s *manualSample, box ownframe.Box) error {
 	switch {
 	case s.renderer != nil || s.kind == "transition":
 		if s.to == nil {
-			ops := cssmotion.Resolve(display, indices)
+			ops := motion.Resolve(display, indices)
 			s.to = make([]paint, len(ops))
 			for i := range ops {
-				s.to[i] = cssmotion.Read(ops[i])
+				s.to[i] = motion.Read(ops[i])
 			}
 		}
-		renderer, err := csstransition.BindTo(display, box, s.property, indices, s.from, s.to, s.origin)
+		renderer, err := motion.BindTransitionTo(display, box, s.property, indices, s.from, s.to, s.origin)
 		if err != nil {
 			return err
 		}
 		s.renderer, s.player = renderer, nil
 	default:
-		player, err := cssanimation.Bind(display, box, indices, s.from, s.origin)
+		player, err := motion.BindAnimation(display, box, indices, s.from, s.origin)
 		if err != nil {
 			return err
 		}
@@ -182,7 +178,7 @@ func (d *demo) bindManualSample(s *manualSample, box ownframe.Box) error {
 }
 
 // dispatchTrigger fires the names the target declares from its Start button.
-func (d *demo) dispatchTrigger(s *manualSample, box ownframe.Box, player *animation.Player) error {
+func (d *demo) dispatchTrigger(s *manualSample, box ownframe.Box, player *motion.Player) error {
 	boxes := d.p.Boxes()
 	target := boxIndex(boxes, box.ID)
 	source := boxIndex(boxes, s.button)
@@ -194,8 +190,8 @@ func (d *demo) dispatchTrigger(s *manualSample, box ownframe.Box, player *animat
 		return nil
 	}
 	for _, name := range names {
-		if err := csstrigger.Dispatch(boxes, csstrigger.Event{Name: name, Source: source, Active: true},
-			map[int]*animation.Player{target: player}, s.origin); err != nil {
+		if err := motion.DispatchTrigger(boxes, motion.TriggerEvent{Name: name, Source: source, Active: true},
+			map[int]*motion.Player{target: player}, s.origin); err != nil {
 			return err
 		}
 	}

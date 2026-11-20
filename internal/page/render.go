@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"html/template"
@@ -399,18 +399,18 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 // If display.Keyframes matches the previous display's keyframes (pointer equality
 // or length == 0), it reuses the previous *cssmotion.Index instead of calling
 // NewIndex on every commit.
-func (p *Page) updateMotionIndex(previous, display *Display) *cssmotion.Index {
+func (p *Page) updateMotionIndex(previous, display *Display) *motion.Index {
 	if display == nil || len(display.Keyframes) == 0 {
-		p.motionIndex = cssmotion.EmptyIndex()
+		p.motionIndex = motion.EmptyIndex()
 		return p.motionIndex
 	}
-	if previous != nil && sameKeyframes(display.Keyframes, previous.Keyframes) && p.motionIndex != nil && p.motionIndex != cssmotion.EmptyIndex() {
+	if previous != nil && sameKeyframes(display.Keyframes, previous.Keyframes) && p.motionIndex != nil && p.motionIndex != motion.EmptyIndex() {
 		if p.motionIndex.Display() == display || len(display.Ops) == p.motionIndex.NumOps() {
 			p.motionIndex.Repoint(display)
 			return p.motionIndex
 		}
 	}
-	p.motionIndex = cssmotion.NewIndex(display)
+	p.motionIndex = motion.NewIndex(display)
 	return p.motionIndex
 }
 

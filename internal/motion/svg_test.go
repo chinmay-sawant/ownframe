@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/animation"
 )
 
 // svgDisplay is one inline SVG box over a single image operation with a running
@@ -118,11 +117,11 @@ func TestSVGPaintCollectsOneRequestPerElement(t *testing.T) {
 // the keyword, not empty, and dash lengths carry the point unit the sampled
 // value already uses.
 func TestSVGPaintSerializesNoneAndDashes(t *testing.T) {
-	override, ok := svgPaintOverride(animation.SVGPaintValue{
+	override, ok := svgPaintOverride(SVGPaintValue{
 		HasFill:             true,
-		Fill:                animation.SVGPaintColor{None: true, A: 1},
+		Fill:                SVGPaintColor{None: true, A: 1},
 		HasStroke:           true,
-		Stroke:              animation.SVGPaintColor{R: 1, G: .5, B: 0, A: .5},
+		Stroke:              SVGPaintColor{R: 1, G: .5, B: 0, A: .5},
 		HasStrokeWidth:      true,
 		StrokeWidth:         3,
 		HasStrokeDashArray:  true,
@@ -146,7 +145,7 @@ func TestSVGPaintSerializesNoneAndDashes(t *testing.T) {
 		t.Fatalf("lengths = %v/%v, want the sampled values", override.StrokeWidth, override.StrokeDashOffset)
 	}
 
-	empty, ok := svgPaintOverride(animation.SVGPaintValue{
+	empty, ok := svgPaintOverride(SVGPaintValue{
 		HasStrokeDashArray: true,
 		StrokeDashArray:    nil,
 	}, testChipID)
@@ -154,7 +153,7 @@ func TestSVGPaintSerializesNoneAndDashes(t *testing.T) {
 		t.Fatalf("empty dash list = %q, want none", empty.StrokeDashArray)
 	}
 
-	if _, ok := svgPaintOverride(animation.SVGPaintValue{Deferred: "fill: url(#gradient)"},
+	if _, ok := svgPaintOverride(SVGPaintValue{Deferred: "fill: url(#gradient)"},
 		testChipID); ok {
 		t.Fatal("a fully deferred sample produced an override")
 	}

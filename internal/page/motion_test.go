@@ -3,7 +3,6 @@ package page
 import (
 	"context"
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"image"
 	"math"
@@ -74,7 +73,7 @@ func tickLayout(t *testing.T, p *Page) {
 func firstOpOf(t *testing.T, p *Page, id string) int {
 	t.Helper()
 
-	indices := cssmotion.OperationIndices(p.Display(), p.boxByID(id))
+	indices := motion.OperationIndices(p.Display(), p.boxByID(id))
 	if len(indices) == 0 {
 		t.Fatalf("%s owns no operation", id)
 	}
@@ -85,7 +84,7 @@ func firstOpOf(t *testing.T, p *Page, id string) int {
 // textOpOf returns the first text operation the element with id owns, or nil.
 func textOpOf(p *Page, id string) *DisplayOp {
 	d := p.Display()
-	for _, index := range cssmotion.OperationIndices(d, p.boxByID(id)) {
+	for _, index := range motion.OperationIndices(d, p.boxByID(id)) {
 		if d.Ops[index].Kind == layout.DisplayOpText {
 			return &d.Ops[index]
 		}
@@ -725,7 +724,7 @@ func newPerspectiveStaticPage(t *testing.T, declaration string) *Page {
 func firstElementOp(t *testing.T, p *Page, id string) *layout.DisplayOp {
 	t.Helper()
 
-	indices := cssmotion.OperationIndices(p.Display(), p.boxByID(id))
+	indices := motion.OperationIndices(p.Display(), p.boxByID(id))
 	if len(indices) == 0 {
 		t.Fatalf("%s owns no operation", id)
 	}
@@ -1235,7 +1234,7 @@ func TestRestampAppliesEveryThreeDimensionalElementInOnePass(t *testing.T) {
 	}
 
 	for _, id := range []string{"left", "right"} {
-		indices := cssmotion.OperationIndices(p.Display(), p.boxByID(id))
+		indices := motion.OperationIndices(p.Display(), p.boxByID(id))
 		if len(indices) == 0 {
 			t.Fatalf("%s owns no operation", id)
 		}
@@ -1495,7 +1494,7 @@ func boxTranslate(t *testing.T, p *Page, id string) float64 {
 	if box.ID == "" {
 		t.Fatalf("box %q is missing", id)
 	}
-	indices := cssmotion.OperationIndices(p.Display(), box)
+	indices := motion.OperationIndices(p.Display(), box)
 	if len(indices) == 0 {
 		t.Fatalf("box %q owns no operation", id)
 	}
@@ -1715,7 +1714,7 @@ func motionTargetIndex(t *testing.T, p *Page) int {
 		}
 	}
 
-	indices := cssmotion.OperationIndices(d, target)
+	indices := motion.OperationIndices(d, target)
 	if len(indices) == 0 {
 		t.Fatal("the fixture target owns no operation")
 	}
@@ -1890,7 +1889,7 @@ func TestPageMotionIndexCaching(t *testing.T) {
 		Ops: []layout.DisplayOp{{ID: 1, Kind: layout.DisplayOpFillRect}},
 	}
 	idx := p.updateMotionIndex(nil, emptyDisplay)
-	if idx != cssmotion.EmptyIndex() {
+	if idx != motion.EmptyIndex() {
 		t.Fatalf("expected emptyIndex, got %v", idx)
 	}
 
@@ -1912,7 +1911,7 @@ func TestPageMotionIndexCaching(t *testing.T) {
 	}
 
 	idx1 := p.updateMotionIndex(nil, d1)
-	if idx1 == nil || idx1 == cssmotion.EmptyIndex() {
+	if idx1 == nil || idx1 == motion.EmptyIndex() {
 		t.Fatalf("expected non-empty index, got %v", idx1)
 	}
 	if p.motionIndex != idx1 {
@@ -1947,7 +1946,7 @@ func TestPageMotionIndexCaching(t *testing.T) {
 	p.motionIndex = nil
 	allocsEmpty := testing.AllocsPerRun(100, func() {
 		idx := p.updateMotionIndex(emptyDisplay, emptyDisplay)
-		if idx != cssmotion.EmptyIndex() {
+		if idx != motion.EmptyIndex() {
 			t.Fatal("expected emptyIndex")
 		}
 	})

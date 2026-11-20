@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/csstransition"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 func (d *demo) tick(context.Context) error {
@@ -42,7 +42,7 @@ func (d *demo) rebind() error {
 		if !ok {
 			continue
 		}
-		player, err := csstransition.Bind(d.page.Probe().Display(), box, target.property,
+		player, err := motion.BindTransition(d.page.Probe().Display(), box, target.property,
 			item.indices, item.base, item.start)
 		if err != nil {
 			return err

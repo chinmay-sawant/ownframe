@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/animation"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 // Display is the retained display list a runtime samples. It is the same
@@ -29,7 +27,7 @@ type Runtime struct {
 	display *Display
 
 	// index is the cached operation lookup for display.
-	index *cssmotion.Index
+	index *Index
 
 	entries []entry
 	stats   Stats
@@ -343,7 +341,7 @@ type TriggerPass struct {
 	Boxes []layout.Box
 	// Players maps a box index in Boxes to the player its records were
 	// aligned to.
-	Players map[int]*animation.Player
+	Players map[int]*Player
 }
 
 // TriggerPasses builds the dispatch views for the current display. It returns
@@ -379,7 +377,7 @@ func (r *Runtime) TriggerPasses() []TriggerPass {
 		for i := range boxes {
 			boxes[i].Animations = nil
 		}
-		players := make(map[int]*animation.Player, len(byBox))
+		players := make(map[int]*Player, len(byBox))
 		for boxIndex, entries := range byBox {
 			if group >= len(entries) {
 				continue

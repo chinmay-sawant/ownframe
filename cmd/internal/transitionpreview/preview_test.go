@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 func TestEachStartButtonPlaysItsOwnTransition(t *testing.T) {
@@ -21,7 +21,7 @@ func TestEachStartButtonPlaysItsOwnTransition(t *testing.T) {
 			if !ok {
 				t.Fatalf("missing transition target %q", item.id)
 			}
-			indices := cssmotion.OperationIndices(page.Probe().Display(), box)
+			indices := motion.OperationIndices(page.Probe().Display(), box)
 			if len(indices) == 0 {
 				t.Fatal("target has no display operations before the transition")
 			}
@@ -33,7 +33,7 @@ func TestEachStartButtonPlaysItsOwnTransition(t *testing.T) {
 			if sample == nil || sample.player == nil || !data.Started[item.key] {
 				t.Fatal("Start did not bind a transition renderer")
 			}
-			ops := cssmotion.Resolve(page.Probe().Display(), indices)
+			ops := motion.Resolve(page.Probe().Display(), indices)
 			if len(ops) != len(indices) {
 				t.Fatalf("resolved %d of %d captured operations", len(ops), len(indices))
 			}
@@ -47,7 +47,7 @@ func TestEachStartButtonPlaysItsOwnTransition(t *testing.T) {
 			active := sample.player.Step(now)
 			changed := false
 			for i, op := range ops {
-				changed = changed || cssmotion.Read(op) != before[i]
+				changed = changed || motion.Read(op) != before[i]
 			}
 			if !active || !changed {
 				t.Fatalf("%s did not sample an intermediate frame: active=%v before=%+v after=%+v", item.key, active, before, paint(ops))

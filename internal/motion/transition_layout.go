@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssanimation"
-	"github.com/chinmay-sawant/ownframe/internal/transition"
 )
 
 // geometryEpsilon is the change in a CSS length at which a geometry transition
@@ -99,7 +97,7 @@ func layoutAnimatedProperties(d *Display, box layout.Box) map[string]struct{} {
 		if animation.Name == "" || animation.Name == "none" {
 			continue
 		}
-		frames, err := cssanimation.LayoutKeyframes(d.Keyframes, animation.Name)
+		frames, err := LayoutKeyframes(d.Keyframes, animation.Name)
 		if err != nil {
 			continue
 		}
@@ -287,7 +285,7 @@ func (r *Runtime) geometryOverrides(id string, now time.Time,
 			continue
 		}
 
-		progress, active := transition.ProgressFor(entry.record, entry.start, now)
+		progress, active := ProgressFor(entry.record, entry.start, now)
 		value := entry.to
 		if active {
 			value = entry.from + (entry.to-entry.from)*progress

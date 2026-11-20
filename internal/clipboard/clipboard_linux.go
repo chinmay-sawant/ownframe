@@ -63,3 +63,38 @@ func haveWL(look func(string) (string, bool)) bool {
 
 	return copyOK && pasteOK
 }
+
+func diagnoseOS() Status {
+	return diagnoseLinux(os.Getenv("WAYLAND_DISPLAY"), os.Getenv("DISPLAY"), lookWL)
+}
+
+func diagnoseLinux(wayland, display string, look func(string) (string, bool)) Status {
+	switch routeLinux(wayland, display, look) {
+	case hostWayland:
+		return Status{Backend: string(hostWayland), Available: true}
+	case hostX11:
+		if wayland != "" {
+			return Status{
+				Backend:   string(hostX11),
+				Available: true,
+				Reason:    "WAYLAND_DISPLAY set without wl-copy/wl-paste on PATH; using DISPLAY",
+			}
+		}
+
+		return Status{Backend: string(hostX11), Available: true}
+	default:
+		if wayland != "" {
+			return Status{
+				Backend:   string(hostNone),
+				Available: false,
+				Reason:    ErrWaylandToolsMissing.Error(),
+			}
+		}
+
+		return Status{
+			Backend:   string(hostNone),
+			Available: false,
+			Reason:    "neither WAYLAND_DISPLAY nor DISPLAY is set",
+		}
+	}
+}

@@ -5,15 +5,14 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
-	"github.com/chinmay-sawant/ownframe/internal/transition"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 type sample struct {
-	base    []cssmotion.Paint
+	base    []motion.Paint
 	indices []int
 	start   time.Time
-	player  *transition.Renderer
+	player  *motion.Renderer
 	active  bool
 }
 
@@ -40,8 +39,8 @@ func (d *demo) click(_ context.Context, box ownframe.Box) error {
 			return nil
 		}
 		d.samples[item.key] = &sample{
-			base:    cssmotion.Capture(d.page.Probe().Display(), targetBox),
-			indices: cssmotion.OperationIndices(d.page.Probe().Display(), targetBox),
+			base:    motion.Capture(d.page.Probe().Display(), targetBox),
+			indices: motion.OperationIndices(d.page.Probe().Display(), targetBox),
 		}
 	}
 	d.samples[item.key].start = time.Now()

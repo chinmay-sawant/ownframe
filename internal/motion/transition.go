@@ -6,10 +6,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
-	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
-	"github.com/chinmay-sawant/ownframe/internal/transition"
 )
 
 // transitionPaintEpsilon is the difference at which two captured paints count
@@ -36,8 +33,8 @@ type TransitionCapture struct {
 	key      transitionKey
 	kind     transitionKind
 	indices  []int
-	from     []cssmotion.Paint
-	to       []cssmotion.Paint
+	from     []Paint
+	to       []Paint
 	record   layout.Transition
 	property string
 	// geometry carries the layout-length endpoints of a geometry capture.
@@ -64,20 +61,20 @@ type transitionKey struct {
 // published list without restarting the run.
 type transitionEntry struct {
 	key      transitionKey
-	renderer *transition.Renderer
+	renderer *Renderer
 	indices  []int
 	kinds    []uint8
 	// reversingStart is the CSS reversing-adjusted start value: the value a
 	// reversal of this run returns to. A normal run starts with the same value
 	// as its captured from paint; a reversal takes the destination of the run
 	// it replaced.
-	reversingStart []cssmotion.Paint
+	reversingStart []Paint
 	// reversingFactor is the CSS reversing shortening factor. It is 1 for a
 	// normal run and the portion of the old value range a reversal crossed.
 	reversingFactor float64
 	// to is the destination the run is heading for, and the destination a
 	// reverse returns from.
-	to     []cssmotion.Paint
+	to     []Paint
 	record layout.Transition
 	start  time.Time
 	// sampled is set by the first Step after a bind, so Active asks for that
@@ -144,9 +141,9 @@ func transitionPropertyList() []string {
 // paint renderer writes. It is transitionClass plus position, which moves the
 // captured operations at the halfway point but must not offer itself to the
 // layer path as a subtree transform.
-func transitionPaintTarget(property string) (cssmotion.Kind, cssmotion.Mask, bool) {
+func transitionPaintTarget(property string) (Kind, Mask, bool) {
 	if property == "position" {
-		return cssmotion.KindSubtree, cssmotion.MaskX | cssmotion.MaskY, true
+		return KindSubtree, MaskX | MaskY, true
 	}
 
 	return transitionClass(property)
@@ -156,28 +153,28 @@ func transitionPaintTarget(property string) (cssmotion.Kind, cssmotion.Mask, boo
 // fields it writes. It mirrors the animation paint classes: a colour belongs
 // to the nearest owner and its kind, while opacity and the matrix move the
 // element's whole subtree.
-func transitionClass(property string) (cssmotion.Kind, cssmotion.Mask, bool) {
+func transitionClass(property string) (Kind, Mask, bool) {
 	switch property {
 	case "opacity":
-		return cssmotion.KindSubtree, cssmotion.MaskOpacity, true
+		return KindSubtree, MaskOpacity, true
 	case "transform":
-		return cssmotion.KindSubtree, cssmotion.MaskMatrix, true
+		return KindSubtree, MaskMatrix, true
 	case "background-color", "accent-color":
-		return cssmotion.KindFill, cssmotion.MaskRGB, true
+		return KindFill, MaskRGB, true
 	case "color", "text-decoration-color", "text-emphasis-color":
-		return cssmotion.KindInk, cssmotion.MaskRGB, true
+		return KindInk, MaskRGB, true
 	case "border-color", "border-top-color", "border-right-color",
 		"border-bottom-color", "border-left-color", "border-block-color",
 		"border-block-start-color", "border-block-end-color", "border-inline-color",
 		"border-inline-start-color", "border-inline-end-color", "outline-color",
 		"column-rule-color", "row-rule-color", "rule-color":
-		return cssmotion.KindStroke, cssmotion.MaskRGB, true
+		return KindStroke, MaskRGB, true
 	}
 	return 0, 0, false
 }
 
 // transitionMask returns the paint fields a property owns.
-func transitionMask(property string) cssmotion.Mask {
+func transitionMask(property string) Mask {
 	_, mask, _ := transitionPaintTarget(property)
 	return mask
 }
@@ -216,7 +213,7 @@ func reverseFactor(progress, previous float64) float64 {
 
 // samePaintSet reports that every captured operation carries the same masked
 // value in both sets.
-func samePaintSet(a, b []cssmotion.Paint, mask cssmotion.Mask) bool {
+func samePaintSet(a, b []Paint, mask Mask) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -359,7 +356,7 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 	// repeating them for every transitioning element. The indices are built
 	// only when some box declares a transition, so a transition-free publish
 	// pays no scan.
-	var prevIndex, nextIndex *cssmotion.Index
+	var prevIndex, nextIndex *Index
 	if hasNextTransitions {
 		prevIndex = r.indexFor(previous)
 		nextIndex = r.indexFor(next)
@@ -441,11 +438,11 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 				if property == "visibility" || property == "content-visibility" {
 					// Both names can describe one presence change. The presence
 					// rule writes the same alpha field, so one rule owns it.
-					if sameTransitionTarget(seen, capture.indices, cssmotion.MaskAlpha) {
+					if sameTransitionTarget(seen, capture.indices, MaskAlpha) {
 						continue
 					}
 					seen = append(seen, transitionTarget{indices: capture.indices,
-						mask: cssmotion.MaskAlpha})
+						mask: MaskAlpha})
 				}
 				if r.discreteTargetUnchanged(capture.key, capture.discrete) {
 					continue
@@ -508,12 +505,12 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 // element in this commit.
 type transitionTarget struct {
 	indices []int
-	mask    cssmotion.Mask
+	mask    Mask
 }
 
 // sameTransitionTarget reports whether a property resolves to a field set an
 // earlier property already owns.
-func sameTransitionTarget(seen []transitionTarget, indices []int, mask cssmotion.Mask) bool {
+func sameTransitionTarget(seen []transitionTarget, indices []int, mask Mask) bool {
 	for i := range seen {
 		if seen[i].mask != mask || len(seen[i].indices) != len(indices) {
 			continue
@@ -539,7 +536,7 @@ func sameTransitionTarget(seen []transitionTarget, indices []int, mask cssmotion
 // when the operation set itself cannot carry a transition.
 func captureTransition(previous *Display, old boxRef, next *Display, current boxRef,
 	property string, record layout.Transition,
-	counts *transitionCaptureCounts, prevIndex, nextIndex *cssmotion.Index) (capture TransitionCapture, changed, ok bool) {
+	counts *transitionCaptureCounts, prevIndex, nextIndex *Index) (capture TransitionCapture, changed, ok bool) {
 	kind, mask, ok := transitionPaintTarget(property)
 	if !ok {
 		return TransitionCapture{}, false, false
@@ -563,7 +560,7 @@ func captureTransition(previous *Display, old boxRef, next *Display, current box
 		return TransitionCapture{}, false, false
 	}
 
-	matrix := mask == cssmotion.MaskMatrix
+	matrix := mask == MaskMatrix
 	from := readTransitionPaints(previous, oldIndices, mask, matrix)
 	to := readTransitionPaints(next, newIndices, mask, matrix)
 	return TransitionCapture{indices: newIndices, from: from, to: to, record: record,
@@ -587,7 +584,7 @@ func (r *Runtime) liveTransition(key transitionKey) *transitionEntry {
 // rebuilds the static paint from the same stylesheet, so the presented paint
 // on the old display differs from the new base even though the computed value
 // did not change; the registry must survive that publish.
-func (r *Runtime) transitionTargetUnchanged(key transitionKey, to []cssmotion.Paint) bool {
+func (r *Runtime) transitionTargetUnchanged(key transitionKey, to []Paint) bool {
 	_, mask, ok := transitionClass(key.property)
 	if !ok {
 		return false
@@ -615,7 +612,7 @@ func (r *Runtime) transitionTargetUnchanged(key transitionKey, to []cssmotion.Pa
 // first tick and a paused player keeps its pose, so both own the field. A
 // finished player still owns it when a fill mode keeps its last pose, and an
 // untouched trigger player owns nothing until it fires.
-func (r *Runtime) animationOwns(key entryKey, mask cssmotion.Mask) bool {
+func (r *Runtime) animationOwns(key entryKey, mask Mask) bool {
 	if mask == 0 {
 		return false
 	}
@@ -675,11 +672,11 @@ func sameOpKinds(a *Display, aIndices []int, b *Display, bIndices []int) bool {
 // mask. A transform property always carries a matrix: an operation without a
 // baked transform reads the identity, so a class that adds the first
 // transform can interpolate from where the element stood.
-func readTransitionPaints(d *Display, indices []int, mask cssmotion.Mask,
-	matrix bool) []cssmotion.Paint {
-	paints := make([]cssmotion.Paint, len(indices))
+func readTransitionPaints(d *Display, indices []int, mask Mask,
+	matrix bool) []Paint {
+	paints := make([]Paint, len(indices))
 	for i, index := range indices {
-		paint := cssmotion.Read(&d.Ops[index])
+		paint := Read(&d.Ops[index])
 		paint.Mask = mask
 		if matrix && !paint.HasMatrix {
 			paint.Matrix, paint.HasMatrix = layout.IdentityMatrix(), true
@@ -691,7 +688,7 @@ func readTransitionPaints(d *Display, indices []int, mask cssmotion.Mask,
 
 // paintSetChanged reports whether any selected operation's masked paint
 // differs between the two captures.
-func paintSetChanged(from, to []cssmotion.Paint, mask cssmotion.Mask) bool {
+func paintSetChanged(from, to []Paint, mask Mask) bool {
 	for i := range from {
 		if paintChanged(from[i], to[i], mask) {
 			return true
@@ -701,33 +698,33 @@ func paintSetChanged(from, to []cssmotion.Paint, mask cssmotion.Mask) bool {
 }
 
 // paintChanged compares the fields a property owns.
-func paintChanged(a, b cssmotion.Paint, mask cssmotion.Mask) bool {
-	if mask&cssmotion.MaskX != 0 && math.Abs(a.X-b.X) > transitionPaintEpsilon {
+func paintChanged(a, b Paint, mask Mask) bool {
+	if mask&MaskX != 0 && math.Abs(a.X-b.X) > transitionPaintEpsilon {
 		return true
 	}
-	if mask&cssmotion.MaskY != 0 && math.Abs(a.Y-b.Y) > transitionPaintEpsilon {
+	if mask&MaskY != 0 && math.Abs(a.Y-b.Y) > transitionPaintEpsilon {
 		return true
 	}
-	if mask&cssmotion.MaskW != 0 && math.Abs(a.W-b.W) > transitionPaintEpsilon {
+	if mask&MaskW != 0 && math.Abs(a.W-b.W) > transitionPaintEpsilon {
 		return true
 	}
-	if mask&cssmotion.MaskH != 0 && math.Abs(a.H-b.H) > transitionPaintEpsilon {
+	if mask&MaskH != 0 && math.Abs(a.H-b.H) > transitionPaintEpsilon {
 		return true
 	}
-	if mask&cssmotion.MaskOpacity != 0 &&
+	if mask&MaskOpacity != 0 &&
 		math.Abs(a.Opacity-b.Opacity) > transitionPaintEpsilon {
 		return true
 	}
-	if mask&cssmotion.MaskRGB != 0 &&
+	if mask&MaskRGB != 0 &&
 		(math.Abs(a.R-b.R) > transitionPaintEpsilon ||
 			math.Abs(a.G-b.G) > transitionPaintEpsilon ||
 			math.Abs(a.B-b.B) > transitionPaintEpsilon) {
 		return true
 	}
-	if mask&cssmotion.MaskAlpha != 0 && math.Abs(a.Alpha-b.Alpha) > transitionPaintEpsilon {
+	if mask&MaskAlpha != 0 && math.Abs(a.Alpha-b.Alpha) > transitionPaintEpsilon {
 		return true
 	}
-	if mask&cssmotion.MaskMatrix != 0 {
+	if mask&MaskMatrix != 0 {
 		am, bm := transitionMatrix(a), transitionMatrix(b)
 		return math.Abs(am.A-bm.A) > transitionPaintEpsilon ||
 			math.Abs(am.B-bm.B) > transitionPaintEpsilon ||
@@ -740,7 +737,7 @@ func paintChanged(a, b cssmotion.Paint, mask cssmotion.Mask) bool {
 }
 
 // transitionMatrix treats an absent matrix as the identity.
-func transitionMatrix(paint cssmotion.Paint) layout.Matrix2D {
+func transitionMatrix(paint Paint) layout.Matrix2D {
 	if paint.HasMatrix {
 		return paint.Matrix
 	}
@@ -748,7 +745,7 @@ func transitionMatrix(paint cssmotion.Paint) layout.Matrix2D {
 }
 
 // transitionIndices resolves the operations a property owns on one box.
-func transitionIndices(ref boxRef, property string, idx *cssmotion.Index) ([]int, bool) {
+func transitionIndices(ref boxRef, property string, idx *Index) ([]int, bool) {
 	kind, _, ok := transitionPaintTarget(property)
 	if !ok {
 		return nil, false
@@ -909,7 +906,7 @@ func (r *Runtime) bindPaint(next *Display, capture TransitionCapture, record lay
 	}
 	bindBox := ref.box
 	bindBox.Transitions = []layout.Transition{bindRecord}
-	renderer, err := csstransition.BindTo(next, bindBox, capture.property,
+	renderer, err := BindTransitionTo(next, bindBox, capture.property,
 		capture.indices, capture.from, capture.to, now)
 	if err != nil {
 		r.stats.TransitionError = err.Error()
@@ -938,7 +935,7 @@ func (r *Runtime) bindGeometry(next *Display, capture TransitionCapture, record 
 	}
 	if old, ok := live[capture.key]; ok &&
 		math.Abs(old.reversingStart-capture.geometry.to) <= transitionPaintEpsilon {
-		progress, _ := transition.ProgressFor(old.record, old.start, now)
+		progress, _ := ProgressFor(old.record, old.start, now)
 		factor := reverseFactor(progress, old.reversingFactor)
 		entry.record.DurationMS *= factor
 		if entry.record.DelayMS < 0 {
@@ -1042,7 +1039,7 @@ func (r *Runtime) keepTransitions(next *Display, elements map[entryKey]boxRef,
 			r.stats.TransitionsCancelled++
 			continue
 		}
-		ops := cssmotion.Resolve(next, indices)
+		ops := Resolve(next, indices)
 		if len(ops) != len(indices) || entry.renderer.Retarget(ops) != nil {
 			r.stats.TransitionsCancelled++
 			continue
@@ -1101,7 +1098,7 @@ func (r *Runtime) keepTransitions(next *Display, elements map[entryKey]boxRef,
 				continue
 			}
 		}
-		ops := cssmotion.Resolve(next, index.Select(ref.box, ref.index, cssmotion.KindSubtree))
+		ops := Resolve(next, index.Select(ref.box, ref.index, KindSubtree))
 		if entry.rule.Retarget(next, ops) != nil {
 			r.stats.TransitionsCancelled++
 			continue
@@ -1242,7 +1239,7 @@ func (r *Runtime) stepTransitions(d *Display, now time.Time) Damage {
 			continue
 		}
 		before := discreteBounds(d, entry.rule)
-		progress, active := transition.ProgressFor(entry.record, entry.start, now)
+		progress, active := ProgressFor(entry.record, entry.start, now)
 		changed := entry.rule.Step(d, progress)
 		entry.sampled, entry.wrote, entry.active = true, true, active
 		r.stats.TransitionsSampled++

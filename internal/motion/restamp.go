@@ -1,7 +1,5 @@
 package motion
 
-import "github.com/chinmay-sawant/ownframe/internal/animation"
-
 // Request is one element whose latest sample cannot be written as a 2D matrix:
 // the element id, the canonical CSS transform list to stamp when the sample
 // carried one, and the perspective values when it carried those. The page turns
@@ -46,7 +44,7 @@ func (r *Runtime) TakeRestamp() []Request {
 // for one restamp, not five. A box without an id cannot be named in a
 // layout.TransformOverride, so it is skipped; Stats.NeedsRestamp still counts
 // the player, because the sample did need the pass.
-func (r *Runtime) addRestamp(e *entry, values []animation.RestampValue) {
+func (r *Runtime) addRestamp(e *entry, values []RestampValue) {
 	if e.key.id == "" || len(values) == 0 {
 		return
 	}

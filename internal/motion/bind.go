@@ -8,9 +8,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/animation"
-	"github.com/chinmay-sawant/ownframe/internal/cssanimation"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 )
 
@@ -21,14 +18,14 @@ import (
 // colour on the element's own fill.
 type entry struct {
 	key     entryKey
-	player  *animation.Player
+	player  *Player
 	indices []int
 	start   time.Time
 	mask    fieldMask
 	// paintMask is the CSS paint mask the player may write. It narrows the
 	// paused pose a rebind copies into the new operations, so a transform
 	// player never overwrites a sibling colour player's values.
-	paintMask cssmotion.Mask
+	paintMask Mask
 	// pageX and pageY are the element's border-box origin in layout points. A
 	// sampled perspective-origin is box-relative; the request needs the page
 	// point the engine resolves.
@@ -143,7 +140,7 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 }
 
 // BindAfterWithIndex resolves the animations of next using the provided index.
-func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *cssmotion.Index) error {
+func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *Index) error {
 	if r == nil {
 		return nil
 	}
@@ -233,7 +230,7 @@ func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *cssmotion.I
 	// resolves against, so a bind with dozens of animated boxes shares one
 	// ownership scan instead of repeating it per box per paint class. It is
 	// built lazily: a page with no animations pays no scan.
-	if index != nil && index != cssmotion.EmptyIndex() && index.Display() != next {
+	if index != nil && index != EmptyIndex() && index.Display() != next {
 		if index.NumOps() == len(next.Ops) {
 			index.Repoint(next)
 		} else {
@@ -271,10 +268,10 @@ func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *cssmotion.I
 			start = now
 		}
 
-		if index == nil || (index == cssmotion.EmptyIndex() && len(next.Keyframes) > 0) {
+		if index == nil || (index == EmptyIndex() && len(next.Keyframes) > 0) {
 			index = r.indexFor(next)
 		}
-		bounds, boxGaps, err := cssanimation.BindBoxWithIndex(next, box, boxIndex, start, index)
+		bounds, boxGaps, err := BindBoxWithIndex(next, box, boxIndex, start, index)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("motion: box %q: %w", box.ID, err))
 
@@ -284,7 +281,7 @@ func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *cssmotion.I
 		// The layout player is separate from the paint players: it owns no
 		// operation, its keyframes are the layout tier, and StepLayout samples
 		// it under the per-frame relayout budget.
-		layoutPlayer, err := cssanimation.BindLayout(next, box, start)
+		layoutPlayer, err := BindLayout(next, box, start)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("motion: box %q: %w", box.ID, err))
 
@@ -321,7 +318,7 @@ func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *cssmotion.I
 				timelines: timelines,
 				timed:     timed,
 				idle:      !runnable(box.Animations),
-				svg:       bounds[j].Mask&cssanimation.SVGPaintMask != 0,
+				svg:       bounds[j].Mask&SVGPaintMask != 0,
 			}
 			if j < len(triggerAnims) {
 				e.triggerAnims = triggerAnims[j]
@@ -395,13 +392,13 @@ func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *cssmotion.I
 // once after the bind, but the frame drawn between the publish and that tick
 // must already show the frozen pose.
 type carry struct {
-	clock     animation.Clock
+	clock     Clock
 	sampledAt time.Time
-	paints    []cssmotion.Paint
+	paints    []Paint
 	// bases is the paint the previous player composed from, one per target.
 	// A display that still carries that player's sample is repaired from it,
 	// so the next sample composes from the declared pose.
-	bases []cssmotion.Paint
+	bases []Paint
 	ok    bool
 	// sampled reports that the entry was sampled before the rebind. The
 	// layout queue uses it so a settled layout animation is not reintroduced
@@ -443,11 +440,11 @@ func (r *Runtime) snapshotCarry(previous *Display) map[entryKey][]carry {
 // the player owns. A transform player copies only the matrix and a colour
 // player only the channels, so the two entries sharing one operation do not
 // overwrite each other on the way in.
-func pausedPaints(source *Display, e *entry) []cssmotion.Paint {
+func pausedPaints(source *Display, e *entry) []Paint {
 	if source == nil {
 		return nil
 	}
-	paints := make([]cssmotion.Paint, len(e.indices))
+	paints := make([]Paint, len(e.indices))
 	for k, index := range e.indices {
 		if index < 0 || index >= len(source.Ops) {
 			// The entries were resolved against this list, so a miss means
@@ -455,7 +452,7 @@ func pausedPaints(source *Display, e *entry) []cssmotion.Paint {
 			// would be worse than showing the declared paint.
 			return nil
 		}
-		paint := cssmotion.Read(&source.Ops[index])
+		paint := Read(&source.Ops[index])
 		paint.Mask = e.paintMask
 		paints[k] = paint
 	}
@@ -537,7 +534,7 @@ func restoreBases(e *entry, c carry, next *Display) {
 		if index < 0 || index >= len(next.Ops) {
 			return
 		}
-		if !samePose(cssmotion.Read(&next.Ops[index]), c.paints[k], e.paintMask) {
+		if !samePose(Read(&next.Ops[index]), c.paints[k], e.paintMask) {
 			continue
 		}
 		base := c.bases[k]
@@ -554,23 +551,23 @@ func restoreBases(e *entry, c carry, next *Display) {
 // samePose reports whether two paints carry the same values in the fields mask
 // names. It is how a rebind tells a display that already carries its own
 // sample from one that was rebuilt from the declared styles.
-func samePose(a, b cssmotion.Paint, mask cssmotion.Mask) bool {
+func samePose(a, b Paint, mask Mask) bool {
 	switch {
-	case mask&cssmotion.MaskX != 0 && a.X != b.X:
+	case mask&MaskX != 0 && a.X != b.X:
 		return false
-	case mask&cssmotion.MaskY != 0 && a.Y != b.Y:
+	case mask&MaskY != 0 && a.Y != b.Y:
 		return false
-	case mask&cssmotion.MaskW != 0 && a.W != b.W:
+	case mask&MaskW != 0 && a.W != b.W:
 		return false
-	case mask&cssmotion.MaskH != 0 && a.H != b.H:
+	case mask&MaskH != 0 && a.H != b.H:
 		return false
-	case mask&cssmotion.MaskOpacity != 0 && a.Opacity != b.Opacity:
+	case mask&MaskOpacity != 0 && a.Opacity != b.Opacity:
 		return false
-	case mask&cssmotion.MaskRGB != 0 && (a.R != b.R || a.G != b.G || a.B != b.B):
+	case mask&MaskRGB != 0 && (a.R != b.R || a.G != b.G || a.B != b.B):
 		return false
-	case mask&cssmotion.MaskAlpha != 0 && a.Alpha != b.Alpha:
+	case mask&MaskAlpha != 0 && a.Alpha != b.Alpha:
 		return false
-	case mask&cssmotion.MaskMatrix != 0 && (a.HasMatrix != b.HasMatrix || a.Matrix != b.Matrix):
+	case mask&MaskMatrix != 0 && (a.HasMatrix != b.HasMatrix || a.Matrix != b.Matrix):
 		return false
 	}
 
@@ -580,7 +577,7 @@ func samePose(a, b cssmotion.Paint, mask cssmotion.Mask) bool {
 // writePaints copies a carried pose onto the operations the entry now targets.
 // It runs after BindBox captured the target's base paint, so the player still
 // composes from the declared paint while the op already shows the paused pose.
-func writePaints(d *Display, indices []int, paints []cssmotion.Paint) {
+func writePaints(d *Display, indices []int, paints []Paint) {
 	if d == nil {
 		return
 	}
@@ -591,7 +588,7 @@ func writePaints(d *Display, indices []int, paints []cssmotion.Paint) {
 		if index < 0 || index >= len(d.Ops) {
 			continue
 		}
-		cssmotion.Write(&d.Ops[index], paints[k])
+		Write(&d.Ops[index], paints[k])
 	}
 }
 
@@ -626,8 +623,8 @@ const opacityScanLimit = 128
 //
 // Phase 08 replaces the per-operation write with a composited layer. Until
 // then the gap is counted once per element, not written as if it were exact.
-func opacityGap(d *Display, box layout.Box, bound cssanimation.Bound) string {
-	if bound.Mask&cssmotion.MaskOpacity == 0 || len(bound.Indices) < 2 ||
+func opacityGap(d *Display, box layout.Box, bound Bound) string {
+	if bound.Mask&MaskOpacity == 0 || len(bound.Indices) < 2 ||
 		len(bound.Indices) > opacityScanLimit {
 		return ""
 	}
@@ -695,8 +692,8 @@ func displayPointsPerPixel(d *Display) float64 {
 // common case, so a page without triggers pays nothing. A returned gap string
 // reports an element whose alignment failed; the animation still plays, it
 // just cannot be triggered.
-func triggerAlignment(d *Display, box layout.Box, boxIndex int, bounds []cssanimation.Bound,
-	start time.Time, idx *cssmotion.Index) ([][]layout.Animation, string) {
+func triggerAlignment(d *Display, box layout.Box, boxIndex int, bounds []Bound,
+	start time.Time, idx *Index) ([][]layout.Animation, string) {
 	if !hasTrigger(box.Animations) || len(bounds) == 0 {
 		return nil, ""
 	}
@@ -712,7 +709,7 @@ func triggerAlignment(d *Display, box layout.Box, boxIndex int, bounds []cssanim
 	for i := range box.Animations {
 		solo := box
 		solo.Animations = box.Animations[i : i+1]
-		soloBounds, _, err := cssanimation.BindBoxWithIndex(d, solo, boxIndex, start, idx)
+		soloBounds, _, err := BindBoxWithIndex(d, solo, boxIndex, start, idx)
 		if err != nil {
 			return nil, fmt.Sprintf("box %q: animation-trigger could not be aligned: %v", box.ID, err)
 		}
@@ -738,7 +735,7 @@ func triggerAlignment(d *Display, box layout.Box, boxIndex int, bounds []cssanim
 }
 
 // matchingBound returns the bound group with the same target set, or -1.
-func matchingBound(bounds []cssanimation.Bound, indices []int) int {
+func matchingBound(bounds []Bound, indices []int) int {
 	for i := range bounds {
 		if slices.Equal(bounds[i].Indices, indices) {
 			return i
@@ -762,11 +759,11 @@ func hasTrigger(items []layout.Animation) bool {
 }
 
 // indexFor returns a cached or newly built *cssmotion.Index for d.
-func (r *Runtime) indexFor(d *Display) *cssmotion.Index {
+func (r *Runtime) indexFor(d *Display) *Index {
 	if d == nil || len(d.Ops) == 0 {
-		return cssmotion.EmptyIndex()
+		return EmptyIndex()
 	}
-	if r.index != nil && r.index != cssmotion.EmptyIndex() {
+	if r.index != nil && r.index != EmptyIndex() {
 		if r.index.Display() == d {
 			return r.index
 		}
@@ -775,7 +772,7 @@ func (r *Runtime) indexFor(d *Display) *cssmotion.Index {
 			return r.index
 		}
 	}
-	r.index = cssmotion.NewIndex(d)
+	r.index = NewIndex(d)
 	return r.index
 }
 

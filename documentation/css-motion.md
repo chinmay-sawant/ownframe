@@ -155,7 +155,7 @@ directly. The animation switch is separate: either driver can run with the
 other off, and a page with only transitions still asks for frames while a run
 is active.
 
-A page that steps `csstransition.Bind` or `BindTo` by hand turns this switch off
+A page that steps `motion.BindTransition` or `BindTransitionTo` by hand turns this switch off
 for the elements it drives. Both paths write the same retained operations.
 
 ## What a keyframe may write
@@ -171,21 +171,21 @@ Two paths carry the sampled values.
 | border, outline, and rule colours | the element's own stroke and line operations | in place |
 | 3D `transform` lists, `perspective`, `perspective-origin` | the element's projection | engine re-projection |
 
-The property map is `internal/cssanimation/keyframes.go`, `propertyClass`. A
+The property map is `internal/motion/cssanim_keyframes.go`, `propertyClass`. A
 target carries a field mask, so a transform player never writes colour and a
 colour player never writes the matrix. A keyframed transform writes the matrix,
 not the operation's laid-out X and Y. W, H, and alpha are not keyframe write
 fields: a size or inset change is layout state, and a colour's own alpha stays
 at the element's base paint. A keyframed colour with alpha is counted in `Gaps`
-rather than painted as if the alpha moved (`internal/animation/compose.go`,
-`applyTransform`; `internal/cssmotion/paint.go`, `Mask`).
+rather than painted as if the alpha moved (`internal/motion/anim_compose.go`,
+`applyTransform`; `internal/motion/cssmotion_paint.go`, `Mask`).
 
 A declaration the binder cannot place stays at the element's base paint and is
 reported once per element and reason in `Gaps`. That covers `filter`,
 `backdrop-filter`, `clip-path`, the mask position and size properties,
 `mix-blend-mode`, and `isolation`; the individual `translate`, `rotate`, and
 `scale` properties; and shadows, background position and size, outline
-geometry, and radii (`internal/cssanimation/keyframes.go`, `deferredPhase`).
+geometry, and radii (`internal/motion/cssanim_keyframes.go`, `deferredPhase`).
 
 Layout properties such as `width`, `height`, insets, `font-size`, `line-height`,
 and letter and word spacing take the layout tier: the page relayouts one element
@@ -206,14 +206,14 @@ operations, and a border colour only its stroke and line operations. Transform
 and opacity take the element's whole captured subtree, because a moved parent
 moves its children. A box with no display index, or a display without owner IDs,
 falls back to the box's subtree, and the bind reports that fallback
-(`internal/cssmotion/ownership.go`, `Select`; `internal/cssanimation/bind.go`,
+(`internal/motion/cssmotion_ownership.go`, `Select`; `internal/motion/cssanim_bind.go`,
 `BindBox`).
 
 ### Colour forms
 
 A keyframe colour may be `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, `rgb()`,
 `rgba()`, `hsl()`, `hsla()`, a CSS named colour, `transparent`, or
-`currentColor` (`internal/cssanimation/values.go`, `parseColor`). Every form
+`currentColor` (`internal/motion/cssanim_values.go`, `parseColor`). Every form
 resolves to sRGB channels and blends in sRGB. `currentColor` resolves against
 the element's own text operation; an element that paints no text makes that bind
 error for its box, and the other boxes still bind.
@@ -235,7 +235,7 @@ M_target = Parent * M_anim * World^-1 * Base
 `M_anim` is the sampled transform with the element's transform origin baked in,
 and `Base` is the matrix the operation carried at bind. The element's static
 transform is replaced, not stacked, while any transform deeper than the element
-survives (`internal/animation/compose.go`, `applyTransform`). The operation's
+survives (`internal/motion/anim_compose.go`, `applyTransform`). The operation's
 `X` and `Y` stay at their laid-out values; translation, rotation, scale, and
 skew live in the matrix. Replay draws the operation through that matrix, so each
 frame moves the element without a parse, cascade, or layout.
@@ -314,7 +314,7 @@ the two cases.
 `animation-trigger` fires on activation. A click or tap on the element or a
 descendant, Enter or Space on the focused control, and the press/release pair
 raise the dashed names the activated element and its ancestors declare; the
-release applies the second action of each name. `internal/csstrigger` resolves
+release applies the second action of each name. `internal/motion` resolves
 the scope and the action list, and the runtime aligns each box animation index
 to the effect index of the player it actually built, because one element can
 bind several players. A timeline-only player does not request frames; a
@@ -381,8 +381,8 @@ counters, and the page probe does not mirror them.
 - **Perspective implicit endpoints are `none`.** Every parsed frame carries the
   element's 50% 50% origin resolved on its border box, and a keyframe that omits
   `perspective` is padded with a `none` camera at that default origin
-  (`internal/cssanimation/perspective.go`, `defaultPerspective`;
-  `internal/animation/compose.go`, `padPerspectiveStops`). The host cannot read
+  (`internal/motion/cssanim_perspective.go`, `defaultPerspective`;
+  `internal/motion/anim_compose.go`, `padPerspectiveStops`). The host cannot read
   the element's static perspective, so an animation that declares a camera only
   from 50% to 100% starts at no perspective rather than at the declared base
   camera. A keyframe that omits `perspective-origin` uses that resolved default
@@ -419,22 +419,22 @@ them. They are the preview and implementation path, not the application API.
 They are also how a caller supplies a custom clock, timeline progress, or
 trigger event.
 
-`cssanimation.Bind` builds a player for a box and a full-paint target set, the
+`motion.BindAnimation` builds a player for a box and a full-paint target set, the
 whole-subtree behaviour the property catalog drives by hand;
-`cssanimation.BindBox` is the narrower binder the automatic runtime uses
-(`internal/cssanimation/bind.go`). `animation.Player.Step` samples a player with
+`motion.BindBox` is the narrower binder the automatic runtime uses
+(`internal/motion/cssanim_bind.go`). `motion.Player.Step` samples a player with
 a caller-supplied time, and `StepWithInput` also accepts scroll progress, view
-progress, named timelines, and range values (`internal/animation/player.go`).
+progress, named timelines, and range values (`internal/motion/anim_player.go`).
 
 An animation with a CSS trigger waits for an event. The page dispatches
 activation events itself; a manual caller can send its own through
-`csstrigger.Dispatch`, which applies matching actions to animation players
-(`internal/csstrigger/dispatch.go`).
+`motion.DispatchTrigger`, which applies matching actions to animation players
+(`internal/motion/trigger_dispatch.go`).
 
-`csstransition.Bind` and `csstransition.BindTo` select a transition record and
+`motion.BindTransition` and `motion.BindTransitionTo` select a transition record and
 build a renderer; the caller steps it with time
-(`internal/csstransition/bind.go`, `internal/transition/step.go`). The automatic
-driver uses the same packages. The manual entry points remain the preview path
+(`internal/motion/transition_bind.go`, `internal/motion/transition_step.go`). The automatic
+driver uses the same package. The manual entry points remain the preview path
 for a custom clock or a property whose phase has not landed.
 
 `viewtransition.New` pairs elements with the same view-transition name in old

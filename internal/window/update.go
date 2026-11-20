@@ -26,7 +26,7 @@ func void(f func(*shell)) func(*shell) error {
 	return func(s *shell) error { f(s); return nil }
 }
 
-var stages = []updateStage{
+var stages = [...]updateStage{
 	{"ctx", func(s *shell) error { return s.ctx.Err() }, false},
 	{"a11y", void((*shell).runA11yActions), false},
 	{"close", func(s *shell) error {

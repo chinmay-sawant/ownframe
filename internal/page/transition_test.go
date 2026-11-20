@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"image"
@@ -1161,7 +1161,7 @@ func transitionWireOp(t *testing.T, p *Page) *DisplayOp {
 	if box.ID == "" {
 		t.Fatal("the target box is missing")
 	}
-	for _, index := range cssmotion.OperationIndices(p.Display(), box) {
+	for _, index := range motion.OperationIndices(p.Display(), box) {
 		return &p.Display().Ops[index]
 	}
 	t.Fatal("the target box owns no operation")
