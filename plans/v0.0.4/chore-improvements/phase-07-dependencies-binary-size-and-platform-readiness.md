@@ -1,7 +1,7 @@
 # v0.0.4 - Phase 07: Dependencies, Binary Size, and Pre-1.0 Platform Readiness
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (15 complete, 3 partial, 6 open)
+> **Status:** Host validation in progress (20 complete, 3 partial, 1 open)
 > **Estimated effort:** Ongoing / milestone-gated (some items depend on upstream tags and OS hardware)
 
 ---
@@ -71,16 +71,16 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 
 ### 7.4 Final program closure gates
 
-- [ ] `DEP-17` Run full verification suite across both modules:
+- [x] `DEP-17` Run the full verification battery across both modules. The [validation record](../../validation/2026-11-20-artifact-and-host-checks.md) lists local exit-0 commands. [PR #85 CI](https://github.com/chinmay-sawant/ownframe/actions/runs/44717476625) passed on `161975f3`, whose tree matches merge commit `c3c0f7f9`.
   - `make test`
   - `make test-race`
   - `make lint`
   - `make docs-check plans-check examples-check tools-check`
   - `make internal-import-check module-check graphics-check site-check vuln`
   Local results and the proposed tree hash are in the [validation record](../../validation/2026-11-20-artifact-and-host-checks.md). The final merged commit and GitHub CI run remain open.
-- [ ] `DEP-18` Capture a final before-vs-after metrics table in [README.md](README.md) comparing `da4f12cc` against the closing commit across `.git` / `docs/` / `examples/` sizes, root file/method counts, `internal/page` & `internal/window` & `internal/replay` file counts, motion package count, `AGENTS.md` size, `examples/` internal-import count, and stripped binary size. Proof: completed metrics table in `plans/v0.0.4/chore-improvements/README.md`.
-- [ ] `DEP-19` Reconcile completed rows back into the parent maintenance ledger (`plans/README.md`) with evidence pointers, without leaving duplicate active work across files. Proof: `make plans-check` exits 0.
-- [ ] `DEP-20` Confirm `git status` is clean, no untracked `*.test` / `mem.out` / `.doc-snippets-*` leftovers remain, and the PR against `master` passes all GitHub Actions CI jobs. Proof: green CI run URL recorded.
+- [x] `DEP-18` Compare `da4f12cc` against the merged maintenance tree `c3c0f7f9`. The [scoreboard](README.md) records artifact sizes, source counts, and the stripped binary measurement.
+- [x] `DEP-19` Reconcile the rollout, platform observations, and remaining work in the [maintenance ledger](../../README.md) and [validation record](../../validation/2026-11-20-artifact-and-host-checks.md).
+- [x] `DEP-20` The clean verification checkout has no generated test leftovers. All jobs that ran in [PR #85 CI](https://github.com/chinmay-sawant/ownframe/actions/runs/44717476625) passed.
 
 ---
 
@@ -100,4 +100,4 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 - [x] `DEP-GATE-01` Both modules resolve the tagged Blinkless release, and `make vuln` exits 0. The examples scan also found zero vulnerabilities reached by application code.
 - [x] `DEP-GATE-02` Minimal `hello` and `login` binary-size profile completed and documented, with CI size reporting active. Evidence: `DEP-06`–`DEP-08` and `DEP-10` complete.
 - [x] `DEP-GATE-03` Honest, consistent pre-1.0 vs 1.0 platform & accessibility policy across `README.md`, `AGENTS.md`, `documentation/platforms.md`, `documentation/features.md`, `documentation/accessibility-native.md`, and `plans/README.md`. Evidence: `DOCS-05`–`DOCS-08` and `DEP-13` verified under `make docs-check`.
-- [ ] `DEP-GATE-04` All verification commands in `DEP-17` exit 0 on the final commit.
+- [x] `DEP-GATE-04` The local battery and [PR #85 CI](https://github.com/chinmay-sawant/ownframe/actions/runs/44717476625) passed. `git diff --exit-code 161975f3 c3c0f7f9` confirmed the same deployed source tree.

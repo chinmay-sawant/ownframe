@@ -1,7 +1,7 @@
 # v0.0.4 - Chore Improvements Plan
 
 > **Parent:** [plans/v0.0.4/README.md](../README.md) (and [maintenance ledger](../../README.md))
-> **Status:** In progress (129 complete, 9 partial, 9 open)
+> **Status:** Artifact migration complete (139 complete, 7 partial, 1 open)
 
 ---
 
@@ -10,10 +10,9 @@
 This directory is the canonical phase-wise plan to address structural debt, repository footprint, API leaks, package fragmentation, documentation drift, binary weight, and pre-1.0 readiness gaps audited on `master` at baseline commit `da4f12cc` (2026-11-20), with Waves 1–4 merged into `master` via [PR #83](../pr/pr-chore-improvements-v003.md) (`63464cd0`) and Wave 5 completing all in-repo code and refactor phases (Phases 03, 04, 05, and 06).
 
 Each phase file owns its task rows and evidence. This scoreboard compares
-`da4f12cc` with the proposed local tree based on `b27c49c2`. File sizes
-are Git blob bytes at baseline and proposed tracked file bytes at review.
+`da4f12cc` with the merged maintenance tree at `c3c0f7f9`. File sizes are Git blob bytes.
 
-| Measure | Baseline | Proposed |
+| Measure | Baseline | Merged |
 | --- | ---: | ---: |
 | Tracked `docs/` | **589,435,263 B** | **61,131,046 B** |
 | Tracked `examples/` | **359,129,491 B** | **117,225,014 B** |
@@ -45,14 +44,14 @@ contains the commands and the open checks.
 
 | Phase | Complete | Partial | Open |
 | --- | ---: | ---: | ---: |
-| [Repository footprint](phase-01-repo-footprint-and-binary-hygiene.md) | 14 | 4 | 3 |
+| [Repository footprint](phase-01-repo-footprint-and-binary-hygiene.md) | 19 | 2 | 0 |
 | [Docs and plan alignment](phase-02-docs-plans-and-truth-alignment.md) | 20 | 1 | 0 |
 | [API boundaries](phase-03-api-boundaries-and-developer-ergonomics.md) | 22 | 0 | 0 |
 | [Motion and animation](phase-04-motion-and-animation-consolidation.md) | 19 | 0 | 0 |
 | [Page, window, and replay](phase-05-page-and-window-cohesion.md) | 21 | 1 | 0 |
 | [Components and modules](phase-06-components-and-module-boundaries.md) | 18 | 0 | 0 |
-| [Dependencies and platform readiness](phase-07-dependencies-binary-size-and-platform-readiness.md) | 15 | 3 | 6 |
-| **Total** | **129** | **9** | **9** |
+| [Dependencies and platform readiness](phase-07-dependencies-binary-size-and-platform-readiness.md) | 20 | 3 | 1 |
+| **Total** | **139** | **7** | **1** |
 
 
 ---
