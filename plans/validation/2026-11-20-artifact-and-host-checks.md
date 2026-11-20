@@ -65,9 +65,8 @@ of disabled and password fields from `EditableText`. The page tests
 covered Unicode offsets and the in-memory clipboard. A follow-up run
 used Xvfb in a private mount and network namespace with its own
 `/tmp/.X11-unix` directory. The live bus verified copy, cut, and paste
-against the X11 clipboard using synthetic Unicode input. Orca speech
-remains unverified. Windows UIA, macOS NSAccessibility, and
-Android TalkBack remain open.
+against the X11 clipboard using synthetic Unicode input. Windows UIA,
+macOS NSAccessibility, and Android TalkBack remain open.
 
 ## Local verification
 
@@ -90,5 +89,22 @@ The following also exited 0 on the local changes.
 
 The scans reported zero vulnerabilities reached by application code and two
 uncalled findings in imported packages. The size gate lists ten retained
-media files over 5 MiB and no violations. Final verification on the merged
-tree and the independent teammate handoff remain open.
+media files over 5 MiB and no violations.
+
+## Published rollout
+
+[PR #85](https://github.com/chinmay-sawant/ownframe/pull/85) passed [its CI run](https://github.com/chinmay-sawant/ownframe/actions/runs/44717476625) at `161975f3` and merged
+at `c3c0f7f9`. `git diff --exit-code 161975f3 c3c0f7f9` confirmed
+identical trees. The checked-out merge tree tracks no WASM or APK files.
+All 18 blobs still resolve from historical commit `63464cd0`. GitHub's
+asset digests still match the tracked manifest for all eight APKs.
+
+[The manual Pages dispatch](https://github.com/chinmay-sawant/ownframe/actions/runs/44716609360) passed before the removals.
+[The post-merge Pages deployment](https://github.com/chinmay-sawant/ownframe/actions/runs/44718807029) rebuilt all nine demos from
+`c3c0f7f9`. Live requests returned the expected WASM or gzip headers,
+and headless Chrome loaded all nine demos and created their canvases.
+
+Orca 42.0 discovered the editable entry on a private X11 accessibility
+bus and generated speech for the original value and the edited Unicode
+value. Speech Dispatcher used a non-audible output backend. Audible
+output remains open.

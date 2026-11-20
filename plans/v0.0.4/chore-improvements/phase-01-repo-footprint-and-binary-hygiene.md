@@ -1,7 +1,7 @@
 # v0.0.4 - Phase 01: Repository Footprint and Binary Hygiene
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (14 complete, 4 partial, 3 open)
+> **Status:** Artifact migration complete (19 complete, 2 partial, 0 open)
 > **Estimated effort:** 2–4 days (excluding optional git history rewrite coordination)
 
 ---
@@ -46,7 +46,7 @@ Every site rebuild or Android artifact refresh commits hundreds of megabytes of 
 
 - [x] `FOOT-05` Audit `.github/workflows/` and GitHub Pages settings to determine how `docs/` is currently published. Evidence: 6 workflows (`ci.yml`, `release.yml`, `codeql.yml`, `dependency-review.yml`, `semgrep.yml`, `vuln.yml`), zero Pages deploy workflows; GitHub Pages serves committed `docs/` from `master`. `frontend/scripts/build-demo.mjs` builds 8 `.wasm` demos while `frontend/public/demos/wispr-flow/ownframe.wasm` (53.48 MB) is copied statically (10 tracked `.wasm`/`.wasm.gz` files = ~581.8 MB). `ci.yml` `site` job runs `scripts/check-generated-site.py --build-only` on PRs and full `docs/` hash comparison on `master`.
 - [x] `FOOT-06` Deploy the site and all nine demos through GitHub Actions. The [first deployment](https://github.com/chinmay-sawant/ownframe/actions/runs/44716541603) succeeded and Chrome opened all nine live demos while `master` still tracked the old payloads.
-- [~] `FOOT-07` The [maintenance PR](https://github.com/chinmay-sawant/ownframe/pull/85) removes the ten WebAssembly payloads, including the former Wispr Flow source binary. The Actions cutover passed. Verify the removal on `master` after merge.
+- [x] `FOOT-07` [PR #85](https://github.com/chinmay-sawant/ownframe/pull/85) removed all ten WebAssembly payloads after the first Actions deployment passed. The [post-merge deployment](https://github.com/chinmay-sawant/ownframe/actions/runs/44718807029) rebuilt every demo, and Chrome opened them on the live site.
 - [~] `FOOT-08` Review tracked media assets in `docs/` (`teams.webp`, `trade.webp`, `desktop-cat.webp`, `wispr-flow.webp`, `eyes2-60fps-*.webp`). Deferred by owner decision (2026-11-20): keep existing `.webp` demo captures intact at current quality; revisit only if site bandwidth or repo size requires re-encoding later.
 - [x] `FOOT-09` Document the Pages workflow, local preview, and artifact policy in root and frontend READMEs, `AGENTS.md`, and the testing guide. The local `make docs-check` completed successfully.
 
@@ -54,7 +54,7 @@ Every site rebuild or Android artifact refresh commits hundreds of megabytes of 
 
 - [x] `FOOT-10` Inventory all tracked binary artifacts under `examples/*/android/artifacts/` and record every doc, script, or CI job referencing them. Evidence: **8** tracked APKs (`depth-alert`, `digital-wellbeing`, `dino`, `eyes`, `lg-remote`, `login`, `platform`, `telegram`) totaling **242,063,242 bytes (230.85 MiB)**; 0 CI workflow refs; referenced by `scripts/android-release.sh:80`, `scripts/repo-size-allowlist.txt`, `showcase.md`, `frontend/src/showcase.js`, `examples/android-host/{APK-SHA256SUMS,APPS.md}`, and per-example Android READMEs.
 - [x] `FOOT-11` Publish eight signed arm64 APKs and a SHA-256 manifest in the [Android reference release](https://github.com/chinmay-sawant/ownframe/releases/tag/android-reference-2026-11-20). All eight downloads passed `sha256sum -c APK-SHA256SUMS`. The [Android guide](../../../documentation/android-build.md) links the download and checksum instructions.
-- [~] `FOOT-12` Untrack all eight APKs in the local index and ignore `*.apk`. The release is live. The `master` branch still contains the reference files.
+- [x] `FOOT-12` [PR #85](https://github.com/chinmay-sawant/ownframe/pull/85) removed all eight APK paths from `master`. The GitHub reference release serves the same bytes, verified against the tracked SHA-256 manifest.
 - [x] `FOOT-13` Document APK release downloads and verify a fresh signed build from local sources. The example and release-bundle checks use source builds and do not require checked-in APKs. Evidence is in the [validation record](../../validation/2026-11-20-artifact-and-host-checks.md).
 
 ### 1.4 Git history shrink assessment and size guardrails
@@ -87,7 +87,7 @@ Every site rebuild or Android artifact refresh commits hundreds of megabytes of 
 
 ## Closure Gates
 
-- [ ] `FOOT-GATE-01` Verify `git ls-files '*.wasm' '*.wasm.gz' '*.apk'` is empty on `master`. It returns no paths in the proposed local index.
-- [ ] `FOOT-GATE-02` Verify GitHub Pages deploys the Actions artifact and `master` excludes all APKs.
+- [x] `FOOT-GATE-01` `git ls-tree -r --name-only origin/master` found no `*.wasm`, `*.wasm.gz`, or `*.apk` paths at `c3c0f7f9`. All 18 historical blobs remain reachable from the parent history.
+- [x] `FOOT-GATE-02` The [Actions deployment from `c3c0f7f9`](https://github.com/chinmay-sawant/ownframe/actions/runs/44718807029) succeeded. The tracked `docs/` files total 61,131,046 bytes, and `examples/` contains no tracked APKs.
 - [x] `FOOT-GATE-03` `scripts/check-repo-size.py` wired into `make lint` and passing. Evidence: `scripts/run-lint.py` stage added; `make repo-size-check` printed `28 allowlisted >5 MiB files; 0 new violations` (exit 0).
-- [ ] `FOOT-GATE-04` `make lint`, `make site-check`, `make examples-check`, `make tools-check`, and `make test` passed locally. Repeat on the final publishing tree. See the [validation record](../../validation/2026-11-20-artifact-and-host-checks.md).
+- [x] `FOOT-GATE-04` `make lint`, `make site-check`, `make examples-check`, `make tools-check`, and `make test` passed locally and through [PR #85 CI](https://github.com/chinmay-sawant/ownframe/actions/runs/44717476625). The merge commit has the same tree as its checked PR head.
