@@ -133,4 +133,12 @@ type Stats struct {
 	// TransitionError is the last bind failure for a captured transition. The
 	// other transitions still bind; a failed one snaps to the committed paint.
 	TransitionError string
+	// ManualOverlap counts how many times a Page.SetTick callback mutated a
+	// display operation currently owned by an active automatic CSS animation
+	// or transition. Turn off SetAnimations(false) or SetTransitions(false)
+	// before driving those elements manually.
+	ManualOverlap int
+	// ManualOverlapID is the element ID of the most recent manual/CSS motion
+	// overlap detected during a tick.
+	ManualOverlapID string
 }

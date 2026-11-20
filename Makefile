@@ -83,7 +83,7 @@ repo-size-check:
 
 # Remove untracked local build, test, and profile leftovers without touching git history or temp/.
 clean-local:
-	rm -f *.test examples/*.test *.out *.prof
+	rm -f *.test examples/*.test examples/*/*.test *.out *.prof
 	rm -rf .doc-snippets-* examples/*/android/build
 	@if [ -d temp ]; then echo "Note: temp/ is $$(du -sh temp | cut -f1); prune manually when ready."; fi
 

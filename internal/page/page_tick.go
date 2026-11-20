@@ -141,6 +141,9 @@ func (p *Page) captureTickOps() *opBuffer {
 
 func (p *Page) noteTickDamage(gen uint64, snap *opBuffer) {
 	if p.Generation() == gen && p.draw.Display != nil && snap != nil {
+		if p.motion != nil && p.motion.Active() {
+			p.motion.CheckManualOverlap(snap.Ops, p.draw.Display.Ops)
+		}
 		before := *p.draw.Display
 		before.Ops = snap.Ops
 		d, full, _ := diffDisplay(&before, p.draw.Display)
