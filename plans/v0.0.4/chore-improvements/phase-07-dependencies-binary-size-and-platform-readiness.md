@@ -1,4 +1,4 @@
-# v0.0.3 - Phase 07: Dependencies, Binary Size, and Pre-1.0 Platform Readiness
+# v0.0.4 - Phase 07: Dependencies, Binary Size, and Pre-1.0 Platform Readiness
 
 > **Parent:** [README.md](README.md)
 > **Status:** In progress (12/24 done: `DEP-01`, `DEP-04`–`DEP-08`, `DEP-10`, `DEP-11`, `DEP-13`, `DEP-15`, `DEP-GATE-02`, `DEP-GATE-03`)
@@ -19,7 +19,7 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 - Move `blinkless` and `ebiten/v2` off pseudo-versions onto tagged releases before tagging `v0.0.3` / `v0.1.0`, audit the indirect dependency tree, and run `make vuln`.
 - Profile minimal app binaries (`examples/login`, a bare `hello` app, and wasm builds) by symbol and embedded asset to quantify and shrink the 43–46 MB footprint.
 - Replace external `wl-clipboard` dependency on Wayland with a native path (or clearly bounded fallback) and define concrete, measurable exit criteria for native accessibility adapters and IME validation prior to any `v1.0` claim.
-- Run the complete verification battery and record before/after metrics in `plans/v0.0.3/chore-improvements/README.md`.
+- Run the complete verification battery and record before/after metrics in `plans/v0.0.4/chore-improvements/README.md`.
 
 ## Current Source Baseline (`da4f12cc`)
 
@@ -78,7 +78,7 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
   - `make docs-check plans-check examples-check tools-check`
   - `make internal-import-check module-check graphics-check site-check vuln`
   Proof: exact command list, commit SHA, and exit-0 outcomes recorded here.
-- [ ] `DEP-18` Capture a final before-vs-after metrics table in [README.md](README.md) comparing `da4f12cc` against the closing commit across `.git` / `docs/` / `examples/` sizes, root file/method counts, `internal/page` & `internal/window` & `internal/replay` file counts, motion package count, `AGENTS.md` size, `examples/` internal-import count, and stripped binary size. Proof: completed metrics table in `plans/v0.0.3/chore-improvements/README.md`.
+- [ ] `DEP-18` Capture a final before-vs-after metrics table in [README.md](README.md) comparing `da4f12cc` against the closing commit across `.git` / `docs/` / `examples/` sizes, root file/method counts, `internal/page` & `internal/window` & `internal/replay` file counts, motion package count, `AGENTS.md` size, `examples/` internal-import count, and stripped binary size. Proof: completed metrics table in `plans/v0.0.4/chore-improvements/README.md`.
 - [ ] `DEP-19` Reconcile completed rows back into the parent maintenance ledger (`plans/README.md`) with evidence pointers, without leaving duplicate active work across files. Proof: `make plans-check` exits 0.
 - [ ] `DEP-20` Confirm `git status` is clean, no untracked `*.test` / `mem.out` / `.doc-snippets-*` leftovers remain, and the PR against `master` passes all GitHub Actions CI jobs. Proof: green CI run URL recorded.
 

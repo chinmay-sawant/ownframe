@@ -1,4 +1,4 @@
-# v0.0.3 - Phase 03: Public API Boundaries and Developer Ergonomics
+# v0.0.4 - Phase 03: Public API Boundaries and Developer Ergonomics
 
 > **Parent:** [README.md](README.md)
 > **Status:** Complete (21/22 done, 1 intentional `[~]`: `API-01`–`API-08`, `API-10`–`API-18`, `API-GATE-01`–`API-GATE-04`; `[~]` `API-09` freezes the 5 `Testing()` demo harnesses)

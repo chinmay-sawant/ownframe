@@ -1,6 +1,6 @@
-# v0.0.3 - Chore Improvements Plan
+# v0.0.4 - Chore Improvements Plan
 
-> **Parent:** [plans/v0.0.3/README.md](../README.md) (and [maintenance ledger](../../README.md))
+> **Parent:** [plans/v0.0.4/README.md](../README.md) (and [maintenance ledger](../../README.md))
 > **Status:** In progress — **Phases 02, 03, 04, 05 & 06 Complete** (**121 `[x]`** · **5 `[~]`** · **21 `[ ]`** of 147 rows = **85.7% resolved**)
 > **Estimated effort:** Only external/CI artifact decoupling (Phase 01: 9 rows) and upstream tags/host validation (Phase 07: 12 rows) remain
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This directory is the canonical phase-wise plan to address structural debt, repository footprint, API leaks, package fragmentation, documentation drift, binary weight, and pre-1.0 readiness gaps audited on `master` at baseline commit `da4f12cc` (2026-11-20), with Waves 1–4 merged into `master` via [PR #83](../../v0.0.4/pr/pr-chore-improvements-v003.md) (`63464cd0`) and Wave 5 completing all in-repo code and refactor phases (Phases 03, 04, 05, and 06).
+This directory is the canonical phase-wise plan to address structural debt, repository footprint, API leaks, package fragmentation, documentation drift, binary weight, and pre-1.0 readiness gaps audited on `master` at baseline commit `da4f12cc` (2026-11-20), with Waves 1–4 merged into `master` via [PR #83](../pr/pr-chore-improvements-v003.md) (`63464cd0`) and Wave 5 completing all in-repo code and refactor phases (Phases 03, 04, 05, and 06).
 
 Each linked phase file owns its atomic task rows and evidence. This index holds the before/after scoreboard, phase progress breakdown, and the roadmap for the remaining 21 external/CI open rows without duplicating active checklists.
 

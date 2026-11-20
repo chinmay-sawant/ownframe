@@ -1,4 +1,4 @@
-# v0.0.3 - Phase 06: Components, Generated UI, and Module Boundaries
+# v0.0.4 - Phase 06: Components, Generated UI, and Module Boundaries
 
 > **Parent:** [README.md](README.md)
 > **Status:** Complete (18/18 done: chart skins decoupled to `examples/builder/charts/`, `ui/properties_generated.go` trimmed 10,198 -> 2,053 LOC (-79.9%), superseded `SKIP_OPEN` legacy input folders migrated to `examples/input-lab` and deleted)

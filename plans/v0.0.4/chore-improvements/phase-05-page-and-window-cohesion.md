@@ -1,4 +1,4 @@
-# v0.0.3 - Phase 05: `internal/page`, `internal/window`, and `internal/replay` Cohesion
+# v0.0.4 - Phase 05: `internal/page`, `internal/window`, and `internal/replay` Cohesion
 
 > **Parent:** [README.md](README.md)
 > **Status:** Complete (21/22 done, 1 deferred `[~]`: `internal/page` 317->52 files & 360->170 `*Page` methods, `internal/window` 406->70, `internal/replay` 146->29; 0 dropped tests; `[~]` `COH-11`)

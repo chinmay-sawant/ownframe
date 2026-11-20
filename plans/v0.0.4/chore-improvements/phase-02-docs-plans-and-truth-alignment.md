@@ -1,4 +1,4 @@
-# v0.0.3 - Phase 02: Documentation, Plans, and Truth Alignment
+# v0.0.4 - Phase 02: Documentation, Plans, and Truth Alignment
 
 > **Parent:** [README.md](README.md)
 > **Status:** Complete (`DOCS-10` explicitly deferred `[~]` due to `frontend/` compare routes)

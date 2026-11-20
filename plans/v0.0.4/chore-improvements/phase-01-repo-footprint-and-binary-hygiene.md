@@ -1,4 +1,4 @@
-# v0.0.3 - Phase 01: Repository Footprint and Binary Hygiene
+# v0.0.4 - Phase 01: Repository Footprint and Binary Hygiene
 
 > **Parent:** [README.md](README.md)
 > **Status:** In progress (10/21 done, 2 deferred `[~]`: `FOOT-01`–`FOOT-05`, `FOOT-10`, `FOOT-14`, `FOOT-15`, `FOOT-17`, `FOOT-GATE-03`; `[~]` `FOOT-08`, `FOOT-16`)

@@ -1,4 +1,4 @@
-# v0.0.3 - Phase 04: Motion and Animation Package Consolidation
+# v0.0.4 - Phase 04: Motion and Animation Package Consolidation
 
 > **Parent:** [README.md](README.md)
 > **Status:** Complete (19/19 done: all 7 CSS motion packages collapsed into `internal/motion` and consolidated to 34 files; all tests, benchmarks, and `make graphics-check` pass)
