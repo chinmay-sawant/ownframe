@@ -36,11 +36,11 @@ Package `ownframe` currently spans **63 root `.go` files** and **149 exported me
 
 ### 3.1 Separate process-global window controls from page-scoped `Window` door
 
-- [ ] `API-01` Audit every method in `page_window_door.go` (lines 1–206) and classify each as **page-scoped** (`PollReload`, `SetAnimations`, `SetTransitions`, `SetPerf`, `SetDevTools`, `SetTouchZoomAllowed`, `SetTouchScrollOptions`, `SetHotReload`, etc.) vs **host/process-global** (`CursorPosition`, `Minimize`, `ToggleMaximize`, `Maximized`, `Close`). Proof: classification table recorded in PR/phase notes.
-- [ ] `API-02` Design and implement a clean host-control seam so page-scoped configuration and desktop-host window actions are not conflated: either bind host callbacks onto the page when `Run`/`NewGame` attaches (so detached/secondary pages don't silently act on another page's global Ebiten window and tests can inject fakes cleanly) OR expose explicit package-level `HostWindow` / `DesktopWindow` functions (`ownframe.MinimizeWindow()`, etc.). Record the chosen design and rationale. Proof: unit test verifying a detached `Page` does not trigger global desktop window mutations or returns an explicit inactive/no-op bound state.
-- [ ] `API-03` Remove `page_window_door.go`'s direct calls to global `window.Minimize()`, `window.ToggleMaximize()`, `window.Maximized()`, `window.RequestClose()`, and `window.ContentCursorPosition()` in favor of the chosen seam from `API-02`. Proof: `grep -n "window\." page_window_door.go` shows zero unmediated global host calls.
-- [ ] `API-04` Update all example callers (e.g., custom-chrome titlebars in `examples/`) and `documentation/window.md` to use the clean seam. Proof: `make build`, `make test`, and `make docs-check` exit 0.
-- [ ] `API-05` Add a host-control unit test covering minimize, maximize toggle, close request, and cursor position without needing a live display server. Proof: new test passes under `go test -race .`.
+- [x] `API-01` Audit every method in `page_window.go` and classify each as **page-scoped** (`PollReload`, `SetAnimations`, `Animations`, `SetTransitions`, `Transitions`, `SetPerf`, `Perf`, `SetDevTools`, `DevTools`, `SetTouchZoomAllowed`, `TouchZoomAllowed`, `WheelZoomAllowed`, `KeyZoomAllowed`, `SetTouchScrollOptions`, `SetHotReload`, `Watching`) vs **host-bound desktop controls** (`CursorPosition`, `Minimize`, `ToggleMaximize`, `Maximized`, `Close`). Evidence: all 21 methods classified; only those 5 called `internal/window`.
+- [x] `API-02` Design and implement a clean host-control seam so page-scoped configuration and desktop-host window actions are not conflated: added unexported `windowHost` interface and `bindHost`/`hostControls` on `ownframe.Page` (`api.go`), attached via `desktopWindowHost` in `RunWithOptions` (detached with `defer page.bindHost(nil)`) and `NewGame` (`run.go`), with zero new methods on `internal/page.Page`. Detached pages, `Serve`, and headless tests safely no-op without mutating global Ebiten window state. Evidence: `TestPageWindowHostControlsDetachedAndBound` in `page_window_host_test.go` passed under `go test -race .`.
+- [x] `API-03` Remove `page_window.go`'s direct calls to global `window.Minimize()`, `window.ToggleMaximize()`, `window.Maximized()`, `window.RequestClose()`, and `window.ContentCursorPosition()` in favor of `w.page.hostControls()`. Evidence: dropped `internal/window` import from `page_window.go`; `grep -n "window\." page_window.go` returns empty.
+- [x] `API-04` Update `documentation/window.md` to document bound-host semantics while preserving all 25 existing example call sites without breaking changes. Evidence: updated `documentation/window.md`; `make build BUILD_P=4` and `make docs-check` exit 0.
+- [x] `API-05` Add a host-control unit test covering nil page, detached page, and bound fake host (`Minimize`, `ToggleMaximize`, `Maximized`, `Close`, `CursorPosition`) without needing a live display server. Evidence: `TestPageWindowHostControlsDetachedAndBound` in `page_window_host_test.go` passes under `go test -race .`.
 
 ### 3.2 Consolidate the 63 root `.go` files and audit the 149 exported methods
 
@@ -52,13 +52,8 @@ Package `ownframe` currently spans **63 root `.go` files** and **149 exported me
 
 ### 3.3 Simplify the 4-path update and virtualization mental model
 
-- [ ] `API-11` Write a concise, decision-tree guide (`documentation/updates.md`, linked from Quick Start) answering "Which update API do I call?" covering:
-  1. `SetData` (default template redraw for most state changes),
-  2. `PatchElement` / `PatchElements` (targeted sub-tree text/attribute updates without full template rebuild),
-  3. Windowed lists via `SetScrollWindow` (large lists >200 rows),
-  4. Motion: CSS `@keyframes`/`transition` (declarative) vs `SetTick` (imperative non-CSS state like audio seekbars).
-  Proof: `documentation/updates.md` compiles all snippets under `make docs-check`.
-- [ ] `API-12` Extract the repeated virtualized-list + fixed-row windowing math currently duplicated in `examples/code-view/app.go` and `examples/telegram` into a small, well-tested helper package under `ui/virtual` (or `ui` helper functions: `WindowRange(scrollY, viewportH, rowH, totalRows, overscan)` + spacer height calculation). Proof: helper unit tests covering top/middle/bottom clamping, resize, and zero-row edge cases; adopt in at least one example.
+- [x] `API-11` Write a concise decision-tree guide (`documentation/updates.md`, linked from `documentation/README.md`) answering "Which update API do I call?" covering `SetData`, `PatchElement`/`PatchElements`, `ui/virtual.Window` + `SetScrollWindow`, and CSS motion vs `SetTick`. Evidence: created `documentation/updates.md` and linked in `documentation/README.md`; `make docs-check` exits 0.
+- [x] `API-12` Extract fixed-row virtualized-list windowing math into a reusable, well-tested helper package `ui/virtual` (`Range`, `Window(scrollY, viewportH, rowH, totalRows, overscan)` with top/bottom spacer calculations). Evidence: created `ui/virtual/virtual.go` and `ui/virtual/virtual_test.go`; `go test -race -v ./ui/virtual/...` passed (empty/invalid, top/mid/bottom clamping, spacer invariant, small list, resize).
 - [ ] `API-13` Add a pinned-chrome helper or documented pattern in `ui/` so apps don't have to hand-roll fragile `SetScrollWindow` counter-offsets for sticky headers/composers (and link to `blinkless` sticky support once adopted per `plans/v0.0.4/04-css-conformance-and-engine-adoption.md`). Proof: helper + test or verified sticky replacement documented.
 - [ ] `API-14` Add a defensive runtime guard / DevTools warning when `Page.SetTick` mutates retained ops on an element that also has an active automatic CSS animation/transition track (replacing the silent "never drive one op with both" footgun documented in `AGENTS.md`). Proof: unit test demonstrating deterministic warning/counter increment in `Page.Probe().Motion()` when both paths target the same element.
 - [ ] `API-15` Document or eliminate the one-tick delay quirk when 3D transforms auto-enable `Config.RetainState` (ensure callers either opt in explicitly via `Config` or see clear documentation + probe visibility). Proof: test covering 3D transform first-tick behavior and updated `documentation/css-motion.md`.
@@ -83,7 +78,7 @@ Package `ownframe` currently spans **63 root `.go` files** and **149 exported me
 
 ## Closure Gates
 
-- [ ] `API-GATE-01` Zero process-global `window.*` singleton calls left on `Page.Window()` without explicit page-to-host binding or separation.
+- [x] `API-GATE-01` Zero process-global `window.*` singleton calls left on `Page.Window()` without explicit page-to-host binding. Evidence: `page_window.go` no longer imports `internal/window`; `TestPageWindowHostControlsDetachedAndBound` passes under `-race`.
 - [x] `API-GATE-02` Root non-test `.go` files consolidated to <=18; `TestRootAliasAllowlist` and `TestOwnframeTestNoInternal` gates pass. Evidence: 48 -> 18 root non-test `.go` files; `go test -race .` exited 0.
 - [ ] `API-GATE-03` `scripts/example-internal-allowlist.txt` reduced from 16 pairs to <=1 pair.
 - [ ] `API-GATE-04` `make test`, `make test-race`, `make lint`, `make docs-check`, and `make internal-import-check` exit 0.

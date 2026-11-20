@@ -35,6 +35,7 @@ Build screens with HTML and CSS and handle data and actions in Go. Target native
 - [Tips and patterns](tricks-tips.md)
 
 ### Architecture, performance, and tooling
+- [Choosing an update path](updates.md)
 - [Repaint, tiles, and layers](repaint.md)
 - [Optimization paths](optimizations.md)
 - [Performance profiling](performance.md)

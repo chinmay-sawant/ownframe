@@ -57,10 +57,19 @@ func savePanic(page *Page, errp *error) {
 	*errp = reportError(page, errors.Join(ErrPanicked, recErr))
 }
 
+type desktopWindowHost struct{}
+
+func (desktopWindowHost) cursorPosition() (int, int) { return window.ContentCursorPosition() }
+func (desktopWindowHost) minimize()                  { window.Minimize() }
+func (desktopWindowHost) toggleMaximize()            { window.ToggleMaximize() }
+func (desktopWindowHost) maximized() bool            { return window.Maximized() }
+func (desktopWindowHost) close()                     { window.RequestClose() }
+
 // NewGame returns the Ebiten game Run and BindMobile use.
 // Tests that need the window loop call this instead of reaching
 // into internal/window. It does not export host.Screen.
 func NewGame(ctx context.Context, page *Page) ebiten.Game {
+	page.bindHost(desktopWindowHost{})
 	return window.NewGame(ctx, innerPage(page))
 }
 
@@ -86,6 +95,9 @@ func RunWithOptions(ctx context.Context, page *Page, options WindowOptions) (err
 	if !options.NoAudio {
 		ensureAudio()
 	}
+
+	page.bindHost(desktopWindowHost{})
+	defer page.bindHost(nil)
 
 	if err := window.RunWithOptions(ctx, innerPage(page), options); err != nil {
 		return reportRunErr(page, err)

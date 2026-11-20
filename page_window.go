@@ -2,8 +2,6 @@ package ownframe
 
 import (
 	"context"
-
-	"github.com/chinmay-sawant/ownframe/internal/window"
 )
 
 // Window reads and sets reload, the animation and transition switches, perf,
@@ -16,7 +14,13 @@ func (p *Page) Window() Window { return Window{page: p} }
 
 // CursorPosition returns the desktop mouse position relative to the page,
 // excluding OwnFrame's title bar. The position may be outside the page.
-func (w Window) CursorPosition() (int, int) { return window.ContentCursorPosition() }
+// Returns (0, 0) when this page is not bound to an active desktop host.
+func (w Window) CursorPosition() (int, int) {
+	if h := w.page.hostControls(); h != nil {
+		return h.cursorPosition()
+	}
+	return 0, 0
+}
 
 // PollReload rereads a watched source file.
 func (w Window) PollReload(ctx context.Context) (bool, error) {
@@ -178,29 +182,39 @@ func (w Window) DevTools() bool {
 	return p != nil && p.DevTools()
 }
 
-// Minimize minimizes the desktop window. It does nothing when no desktop
-// run loop is active, so pages shared with Serve or web can wire it
-// unconditionally.
+// Minimize minimizes the desktop window bound to this page. It does nothing
+// when this page is not bound to an active desktop run loop, so pages shared
+// with Serve, tests, or web can wire it unconditionally.
 func (w Window) Minimize() {
-	window.Minimize()
+	if h := w.page.hostControls(); h != nil {
+		h.minimize()
+	}
 }
 
-// ToggleMaximize maximizes the desktop window, or restores it when it is
-// already maximized. It does nothing when no desktop run loop is active.
+// ToggleMaximize maximizes the desktop window bound to this page, or restores
+// it when it is already maximized. It does nothing when this page is not bound
+// to an active desktop run loop.
 func (w Window) ToggleMaximize() {
-	window.ToggleMaximize()
+	if h := w.page.hostControls(); h != nil {
+		h.toggleMaximize()
+	}
 }
 
-// Maximized reports whether the desktop window is maximized. It is false
-// when no desktop run loop is active.
+// Maximized reports whether the desktop window bound to this page is maximized.
+// It is false when this page is not bound to an active desktop run loop.
 func (w Window) Maximized() bool {
-	return window.Maximized()
+	if h := w.page.hostControls(); h != nil {
+		return h.maximized()
+	}
+	return false
 }
 
-// Close asks the desktop run loop to exit on its next frame, ending Run
-// with a nil error. Borderless windows have no OS close button, so a page
-// that draws its own window controls calls this from its close control.
-// It does nothing when no desktop loop is running.
+// Close asks the desktop run loop bound to this page to exit on its next frame,
+// ending Run with a nil error. Borderless windows have no OS close button, so a
+// page that draws its own window controls calls this from its close control.
+// It does nothing when this page is not bound to an active desktop loop.
 func (w Window) Close() {
-	window.RequestClose()
+	if h := w.page.hostControls(); h != nil {
+		h.close()
+	}
 }

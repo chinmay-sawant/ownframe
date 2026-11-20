@@ -37,8 +37,31 @@ type MenuItem = page.MenuItem
 // Page belongs to one application loop. Call its methods and callbacks on that
 // loop; concurrent access to the same Page is unsupported. Queue background
 // results onto the loop before calling SetData, editing, or redrawing.
+type windowHost interface {
+	cursorPosition() (int, int)
+	minimize()
+	toggleMaximize()
+	maximized() bool
+	close()
+}
+
 type Page struct {
 	inner *page.Page
+	host  windowHost
+}
+
+func (p *Page) bindHost(h windowHost) {
+	if p == nil {
+		return
+	}
+	p.host = h
+}
+
+func (p *Page) hostControls() windowHost {
+	if p == nil {
+		return nil
+	}
+	return p.host
 }
 
 const MaxSourceSize = page.MaxSourceSize
