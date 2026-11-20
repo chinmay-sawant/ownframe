@@ -1,75 +1,37 @@
+import gzip
 import importlib.util
 from pathlib import Path
 import tempfile
-import types
 import unittest
-from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location('generated_site', Path(__file__).with_name('check-generated-site.py'))
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-def _listing(argv, tracked='docs/index.html\0'):
-    if argv[0] == 'npm':
-        return types.SimpleNamespace(stdout='')
-    if '--others' in argv:
-        return types.SimpleNamespace(stdout='')
-    return types.SimpleNamespace(stdout=tracked)
-
-
 class GeneratedSiteTests(unittest.TestCase):
-    def test_stale_and_unchanged_builds(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / 'docs').mkdir()
-            page = root / 'docs/index.html'
-            page.write_text('current')
-            with patch.object(MODULE, 'ROOT', root), \
-                    patch.object(MODULE.subprocess, 'run',
-                                 side_effect=lambda *a, **k: _listing(a[0])):
-                MODULE.main([])
-            def rebuilding(*args, **kwargs):
-                if args[0][0] == 'npm':
-                    page.write_text('rebuilt')
-                    return types.SimpleNamespace(stdout='')
-                return _listing(args[0])
-            with patch.object(MODULE, 'ROOT', root), \
-                    patch.object(MODULE.subprocess, 'run', side_effect=rebuilding):
-                with self.assertRaisesRegex(ValueError, 'stale'):
-                    MODULE.main([])
+    def setUp(self):
+        self.site = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        (self.site / 'index.html').touch()
+        for folder, binary in MODULE.DEMOS.items():
+            directory = self.site / folder
+            directory.mkdir(parents=True)
+            (directory / 'index.html').touch()
+            (directory / 'wasm_exec.js').touch()
+            payload = MODULE.WASM_HEADER
+            if binary.endswith('.gz'):
+                payload = gzip.compress(payload)
+            (directory / binary).write_bytes(payload)
 
-    def test_ignored_files_are_not_compared(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / 'docs').mkdir()
-            page = root / 'docs/index.html'
-            page.write_text('current')
-            ignored = root / 'docs/big.wasm'
-            ignored.write_bytes(b'v1')
-            def rebuilding(*args, **kwargs):
-                if args[0][0] == 'npm':
-                    ignored.write_bytes(b'v2')
-                    return types.SimpleNamespace(stdout='')
-                return _listing(args[0])
-            with patch.object(MODULE, 'ROOT', root), \
-                    patch.object(MODULE.subprocess, 'run', side_effect=rebuilding):
-                MODULE.main([])
+    def test_complete_artifact(self):
+        MODULE.check_site(self.site)
 
-    def test_build_only_skips_comparison(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / 'docs').mkdir()
-            page = root / 'docs/index.html'
-            page.write_text('current')
-            calls = []
-            def rebuilding(*args, **kwargs):
-                calls.append(args[0])
-                if args[0][0] == 'npm':
-                    page.write_text('rebuilt')
-                    return types.SimpleNamespace(stdout='')
-                return _listing(args[0])
-            with patch.object(MODULE, 'ROOT', root), \
-                    patch.object(MODULE.subprocess, 'run', side_effect=rebuilding):
-                MODULE.main(['--build-only'])
-            assert ['npm', 'run', 'build'] in calls
+    def test_missing_wispr_flow(self):
+        (self.site / 'demos/wispr-flow/ownframe.wasm').unlink()
+        with self.assertRaisesRegex(ValueError, 'Missing WebAssembly.*wispr-flow'):
+            MODULE.check_site(self.site)
+
+    def test_uncompressed_spotify_copy(self):
+        (self.site / 'demos/spotify-player/ownframe.wasm').touch()
+        with self.assertRaisesRegex(ValueError, 'Unexpected WebAssembly.*spotify-player'):
+            MODULE.check_site(self.site)

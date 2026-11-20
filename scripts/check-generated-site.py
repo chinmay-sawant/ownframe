@@ -1,70 +1,54 @@
 #!/usr/bin/env python3
-"""Fail when rebuilding the website changes the checked-in output."""
+"""Build the Pages artifact and check its WebAssembly payloads."""
+import gzip
 from pathlib import Path
-import argparse
-import hashlib
 import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
+WASM_HEADER = b'\x00asm\x01\x00\x00\x00'
+DEMOS = {
+    'demo': 'demo.wasm',
+    'demos/builder': 'demo.wasm',
+    'demos/expense-tracker': 'demo.wasm',
+    'demos/hello': 'demo.wasm',
+    'demos/spotify-player': 'ownframe.wasm.gz',
+    'demos/telegram': 'ownframe.wasm',
+    'demos/ui-builder': 'demo.wasm',
+    'demos/wispr-flow': 'ownframe.wasm',
+    'demos/workspace-inspector': 'demo.wasm',
+}
 
 
-def snapshot(directory):
-    """Hash the files git would commit: tracked plus untracked non-ignored.
-
-    Build intermediates that git ignores (such as the unpacked Spotify
-    wasm, which stays under no circumstances in the repo past GitHub's
-    100 MB cap) must not fail the check; they differ per machine and can
-    never be checked in.
-    """
-    rel = str(directory.relative_to(ROOT))
-    tracked = subprocess.run(['git', 'ls-files', '-z', '--', rel],
-                             cwd=ROOT, check=True, capture_output=True,
-                             text=True).stdout.split('\0')
-    others = subprocess.run(['git', 'ls-files', '--others', '--exclude-standard',
-                             '-z', '--', rel],
-                            cwd=ROOT, check=True, capture_output=True,
-                            text=True).stdout.split('\0')
-    # A rebuild can delete a tracked hashed asset and add its replacement.
-    # The deleted path is still listed by ls-files but no longer on disk;
-    # record it as missing so the comparison below reports it as changed
-    # instead of crashing on the read.
-    snapshot = {}
-    for name in tracked + others:
-        if not name:
-            continue
-        path = ROOT / name
-        snapshot[name] = hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
-    return snapshot
+def check_site(site):
+    if not (site / 'index.html').is_file():
+        raise ValueError('Pages index.html is missing')
+    expected = {site / folder / binary for folder, binary in DEMOS.items()}
+    actual = set(site.rglob('*.wasm')) | set(site.rglob('*.wasm.gz'))
+    if missing := expected - actual:
+        raise ValueError(f'Missing WebAssembly: {", ".join(str(p.relative_to(site)) for p in sorted(missing))}')
+    if extra := actual - expected:
+        raise ValueError(f'Unexpected WebAssembly: {", ".join(str(p.relative_to(site)) for p in sorted(extra))}')
+    for folder, binary in DEMOS.items():
+        directory = site / folder
+        for name in ('index.html', 'wasm_exec.js'):
+            if not (directory / name).is_file():
+                raise ValueError(f'Missing demo file: {folder}/{name}')
+        wasm = directory / binary
+        open_wasm = gzip.open if wasm.suffix == '.gz' else open
+        with open_wasm(wasm, 'rb') as stream:
+            if stream.read(len(WASM_HEADER)) != WASM_HEADER:
+                raise ValueError(f'Invalid WebAssembly header: {folder}/{binary}')
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--build-only', action='store_true',
-                        help='Rebuild the site and exit without comparing the '
-                             'result against the checked-in output. Pull-request '
-                             'CI uses this: feature branches must not commit '
-                             'regenerated site output (see '
-                             'documentation/testing.md), because two branches '
-                             'rebuilding the same binaries can never merge '
-                             'cleanly. The freshness comparison runs on pushes '
-                             'to master instead.')
-    args = parser.parse_args(argv)
-    if args.build_only:
-        subprocess.run(['npm', 'run', 'build'], cwd=ROOT / 'frontend', check=True)
-        print('site-check: site builds cleanly (output not compared)')
-        return
-    before = snapshot(ROOT / 'docs')
+def main():
     subprocess.run(['npm', 'run', 'build'], cwd=ROOT / 'frontend', check=True)
-    after = snapshot(ROOT / 'docs')
-    changed = sorted(name for name in before.keys() | after.keys() if before.get(name) != after.get(name))
-    if changed:
-        raise ValueError('site-check: generated output was stale; review and include the rebuilt files: ' + ', '.join(changed))
-    print('site-check: generated output matches the source')
+    check_site(ROOT / 'frontend/dist')
+    print(f'site-check: Pages artifact contains {len(DEMOS)} WebAssembly demos')
 
 
 if __name__ == '__main__':
     try:
         main()
-    except (ValueError, subprocess.CalledProcessError) as error:
+    except (ValueError, OSError, EOFError, subprocess.CalledProcessError) as error:
         sys.exit(str(error))
