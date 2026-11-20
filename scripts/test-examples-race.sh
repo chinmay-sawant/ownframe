@@ -21,4 +21,6 @@ if (( ${#selected[@]} == 0 )); then
     echo 'race shard has no packages' >&2
     exit 1
 fi
-go test -race -p 1 "${selected[@]}"
+# Full gallery and snapshot tests can exceed Go's 10-minute package limit
+# while rasterizing frames with race instrumentation.
+go test -race -p 1 -timeout=20m "${selected[@]}"
