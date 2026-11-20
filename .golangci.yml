@@ -198,12 +198,12 @@ linters:
       # names, state pseudos, transition property list, and the preview
       # target lists.
       - linters: [gochecknoglobals]
-        path: "internal/(emoji/emoji_(table|more)\\.go|masking/blend\\.go|motion/transition\\.go|window/(chord_watch|devtools_keys|devtools_ops_lines|devtools_tabs|update)\\.go|render/state_pseudos\\.go)|cmd/internal/(animation|transition)preview/targets\\.go"
+        path: "internal/(emoji/emoji_(table|more)\\.go|masking/blend\\.go|motion/transition\\.go|window/(devtools|devtools_dock|devtools_ops|keys|update)\\.go|render/state_pseudos\\.go)|cmd/internal/(animation|transition)preview/targets\\.go"
       # Intentional process caches: the fetch client, the file dialog list,
       # the page patch pool and source registry, the replay raster caches,
       # and the precomputed window palette and scrollbar art.
       - linters: [gochecknoglobals]
-        path: "internal/(fetch/scheme\\.go|filepick/pick_linux\\.go|page/(page_patch|page_source_reader)\\.go|replay/(chunk_cache_types|chunk_count|group_plan|group_shader|image_cache_store|raster_cache|text_cache|text_raster_cache)\\.go|window/(badge|devtools_measure|devtools_palette|menu_draw|scrollbar)\\.go)"
+        path: "internal/(fetch/scheme\\.go|filepick/pick_linux\\.go|page/(page_patch|page_source_reader)\\.go|replay/(blend|chunk_cache|group_shader|raster_cache|text_cache)\\.go|window/(context_menu|devtools_paint|draw|scrollbar)\\.go)"
       # Intentional process clients: the desktop-cat media poster keeps one
       # hardened client (own timeouts, TLS 1.2 minimum), like fetch/scheme.go.
       - linters: [gochecknoglobals]

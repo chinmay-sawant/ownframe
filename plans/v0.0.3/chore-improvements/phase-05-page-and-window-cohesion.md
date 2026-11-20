@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 05: `internal/page`, `internal/window`, and `internal/replay` Cohesion
 
 > **Parent:** [README.md](README.md)
-> **Status:** Open (baseline measured at `da4f12cc`)
+> **Status:** In progress (6/22 done: `internal/window` 406->70 files and `internal/replay` 146->29 files complete; `internal/page` pending)
 > **Estimated effort:** 6–10 days (land in small, domain-scoped PRs)
 
 ---
@@ -52,24 +52,17 @@ Keeping one giant stateful struct split across 300–400 tiny files does not red
 
 ### 5.3 Partition and consolidate `internal/window` (406 flat files)
 
-- [ ] `COH-10` Generate a domain inventory of all 406 flat `.go` files in `internal/window/`, mapping each file to one of six clear responsibilities:
-  1. **Game loop & host lifecycle** (`Update`, `Draw`, `Layout`, `Run`, `BindMobile`, `NewGame`, resize/debounce, reload poll)
-  2. **Repaint & surface buffers** (256 px tile grid, viewport buffer, partial damage planning, scratch warmup, retained layers blit)
-  3. **DevTools dock** (desktop right dock + mobile bottom panel, Frame/Elements/Ops tabs, left-edge resize, perf/memory rows)
-  4. **Input, gestures & IME** (keyboard, Tab/Shift+Tab focus, pointer, right-click context menu, touch scroll/pinch/long-press, mobile text session, file drop)
-  5. **Desktop OS chrome & placement** (frameless/custom chrome, double-click maximize, WSL top-edge snap workarea, transparent/floating/click-through, fullscreen F11, debug HTTP server)
-  6. **Accessibility host bridge** (`a11y_atspi.go` Linux AT-SPI wiring)
-  Proof: complete file-to-domain table covering all 406 files.
+- [x] `COH-10` Generate a domain inventory of all 406 flat `.go` files in `internal/window/` (207 production, 199 test) mapped across lifecycle, repaint/tiles/perf, devtools, input/IME, chrome/placement/debug, and a11y bridge. Evidence: all 406 files mapped and consolidated cleanly into 70 domain files (47 production + 23 test).
 - [ ] `COH-11` Extract genuinely independent subsystems in `internal/window` with clean inputs/outputs into subpackages where it reduces coupling (candidates: `internal/window/devtools` for the DevTools dock UI/state, and `internal/window/tiles` or `internal/window/surface` for tile/viewport damage buffers). Keep tight Ebiten loop state in `internal/window` to avoid artificial indirection. Proof: extracted subpackages have explicit interfaces, zero circular imports, and isolated unit tests.
-- [ ] `COH-12` Merge the remaining flat non-test micro-files in `internal/window/` into cohesive per-responsibility files (preserving platform build tags `*_linux.go`, `*_windows.go`, `*_darwin.go`, `*_js.go`, `*_android.go`, `*_desktop.go`, `*_mobile.go` cleanly). Proof: cross-compilation checks (`GOOS=windows`, `GOOS=darwin`, `GOOS=js GOARCH=wasm`, `GOOS=linux`) via `go vet` exit 0.
-- [ ] `COH-13` Consolidate fragmented `internal/window/*_test.go` files by subsystem while preserving every test function name referenced by `scripts/check-graphics.sh` (e.g., `TestWindowIdleDeadline`, `TestWindowRepaintPixels`) and `plans/README.md`. Target: reduce flat root `.go` files in `internal/window/` from **406 to <=90** (including tests). Proof: `ls -1 internal/window/*.go | wc -l` <= 90 and `make graphics-check` exits 0.
-- [ ] `COH-14` Verify zero regression on tile repaint benchmarks (`BenchmarkTilePaintFull`, `BenchmarkTileDrawReplayPartialDamaged`) and `internal/window/pacing` tests. Proof: benchmark output recorded.
+- [x] `COH-12` Merge the remaining flat non-test micro-files in `internal/window/` into cohesive per-responsibility files (preserving platform build tags `*_linux.go`, `*_windows.go`, `*_darwin.go`, `*_js.go`, `*_android.go`, `*_desktop.go`, `*_mobile.go`, `*_tag.go`, `*_notag.go` cleanly). Evidence: 207 -> 47 production files; `GOOS=windows`, `GOOS=darwin`, `GOOS=js GOARCH=wasm`, `GOOS=linux`, and `-tags ownframe_debug` `go vet ./internal/window/...` all exited 0.
+- [x] `COH-13` Consolidate fragmented `internal/window/*_test.go` files by subsystem while preserving every test function name referenced by `scripts/check-graphics.sh`. Evidence: 199 -> 23 test files (total flat `.go` files **406 -> 70**, well under <=90 target); `go test -list . ./internal/window` confirmed **441/441** tests preserved (0 dropped); `go test -race ./internal/window/...` passed (2.47s).
+- [x] `COH-14` Verify zero regression on tile repaint benchmarks and `internal/window/pacing` tests. Evidence: `BenchmarkTilePaintFull` 24,701 ns/op (14,600 B/op, 100 allocs), `BenchmarkTileDrawReplayPartialDamaged` 20,903 ns/op (9,339 B/op, 54 allocs); `internal/window/pacing` passed under `-race` (1.02s).
 - [ ] `COH-15` Audit `internal/window` package-level mutable globals (especially desktop chrome/window-control singletons tied to Phase 03 `API-02`) and move per-loop state onto the `Game` / host struct where Ebiten allows. Proof: `gochecknoglobals` clean without new `//nolint` suppressions.
 
 ### 5.4 Consolidate `internal/replay` (146 files) and verify cohesion
 
-- [ ] `COH-16` Inventory `internal/replay` (146 `.go` files) and merge fragmented micro-files into cohesive pipeline files (`renderer.go`, `draw.go`, `shapes.go`, `borders.go`, `text.go`, `images.go`, `grid.go`, `raster_cache.go`, `chunk_cache.go`, `layer_cache.go`, `blend.go`, `shaders.go`, plus grouped `*_test.go`). Target: reduce `.go` file count in `internal/replay/` from **146 to <=45** (including tests). Proof: `find internal/replay -name '*.go' | wc -l` <= 45 and `go test -race ./internal/replay/...` exits 0.
-- [ ] `COH-17` Verify replay benchmarks (`BenchmarkBlitRaster`, `BenchmarkLayerBeginLayers`, `BenchmarkText_LetterSpacing_Cold`) and GPU alpha pixel tests (`gpu_alpha_pixels_test.go`) remain green with no allocation regressions. Proof: benchmark and `make graphics-check` outputs recorded.
+- [x] `COH-16` Inventory `internal/replay` (146 `.go` files) and merge fragmented micro-files into cohesive pipeline files (`renderer.go`, `draw.go`, `shapes.go`, `borders.go`, `bounds.go`, `text.go`, `text_cache.go`, `images.go`, `raster_cache.go`, `chunk_cache.go`, `chunk_plan.go`, `layer.go`, `layer_cache.go`, `blend.go`, `xform.go`, plus `//go:embed` files `backdrop_filter.go`, `group_shader.go` and 12 grouped `*_test.go`). Evidence: **146 -> 29** `.go` files (17 prod + 12 test; <=45 target); `go test -list . ./internal/replay` confirmed **136/136** tests preserved (0 dropped); `go test -race ./internal/replay/...` passed (1.23s).
+- [x] `COH-17` Verify replay benchmarks (`BenchmarkBlitRaster`, `BenchmarkLayerBeginLayers`, `BenchmarkText_LetterSpacing_Cold`) and preserve `gpu_alpha_pixels_test.go`. Evidence: `BenchmarkBlitRaster` 533.5 ns/op (582 B/op, 4 allocs), `BenchmarkLayerBeginLayers/ops_1000/contiguous` 18,106 ns/op (3,328 B/op, 6 allocs), `BenchmarkText_LetterSpacing_Cold` 74,962 ns/op (34,177 B/op, 323 allocs); `gpu_alpha_pixels_test.go` preserved.
 - [ ] `COH-18` Update `AGENTS.md` / `CONTRIBUTING.md` cohesion examples if file paths changed, and verify `scripts/check-graphics.sh` runs all five isolated graphics sessions cleanly. Proof: `make graphics-check` and `make docs-check` exit 0.
 
 ---

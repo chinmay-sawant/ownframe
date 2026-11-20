@@ -258,10 +258,13 @@ The pass needs the retained box tree that `Config.RetainState` keeps. A bind
 that reports `NeedsRetainedState` turns retained state on by itself and owes one
 redraw. The frame the flag lands on does not move: that redraw commits a
 retained display, and the next tick re-projects. A page that already drew with
-retained state re-projects on its first tick. A failure keeps the display the
-page already draws and records `RestampError`; the next sample tries again. A
-request needs an element id, so an anonymous box is counted in `NeedsRestamp`
-but cannot be re-projected.
+retained state re-projects on its first tick. Set `Config.RetainState` to
+`true` when constructing a page with 3D transforms or perspective animations to
+avoid that one-tick delay; callers can observe the state through
+`Page.Probe().Motion().NeedsRetainedState` and `Restamped`. A failure keeps the
+display the page already draws and records `RestampError`; the next sample tries
+again. A request needs an element id, so an anonymous box is counted in
+`NeedsRestamp` but cannot be re-projected.
 
 Adopting the re-projected display bumps the generation, rebuilds the hit list,
 rebinds every player to the new operations, and marks the engine patch's old

@@ -1,10 +1,12 @@
 package window
 
 import (
+	"github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-
-	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 // menuState is the shell context menu.
@@ -125,4 +127,139 @@ func (s *shell) menuClick(x, y int) (bool, error) {
 	s.closeMenu()
 
 	return true, nil
+}
+
+const (
+	menuRowH = 22
+	menuPadX = 10
+	menuPadY = 4
+	menuMinW = 96
+	// menuSides pads both the left and the right of a row label.
+	menuSides = 2
+)
+
+// menuRect returns the menu box for its rows, pulled inside the screen.
+func (s *shell) menuRect() (x, y, w, h float64) {
+	for _, item := range s.menu.items {
+		tw, _ := menuTextWidth(item.Label)
+		if tw+menuSides*menuPadX > w {
+			w = tw + menuSides*menuPadX
+		}
+	}
+
+	if w < menuMinW {
+		w = menuMinW
+	}
+
+	h = float64(len(s.menu.items)) * menuRowH
+	x = float64(s.menu.x)
+	y = float64(s.menu.y)
+	viewW, viewH := s.viewSize()
+
+	if viewW > 0 && x+w > float64(viewW) {
+		x = float64(viewW) - w
+	}
+
+	if viewH > 0 && y+h > float64(viewH) {
+		y = float64(viewH) - h
+	}
+
+	if x < 0 {
+		x = 0
+	}
+
+	if y < 0 {
+		y = 0
+	}
+
+	return x, y, w, h
+}
+
+// menuIndex returns the row at a point, or -1 outside the rows.
+func (s *shell) menuIndex(x, y int) int {
+	mx, my, mw, _ := s.menuRect()
+	if float64(x) < mx || float64(x) > mx+mw || float64(y) < my {
+		return -1
+	}
+
+	row := int((float64(y) - my) / menuRowH)
+	if row < 0 || row >= len(s.menu.items) {
+		return -1
+	}
+
+	return row
+}
+
+// menuAction runs one context menu row through the existing screen methods.
+func (s *shell) menuAction(id string) error {
+	switch id {
+	case "cut":
+		return s.copy(true)
+	case "copy":
+		return s.copy(false)
+	case "paste":
+		text, err := clipboard.Read()
+		if err != nil {
+			return nil
+		}
+
+		return s.clip().Paste(s.ctx, text)
+	case "select-all":
+		return s.clip().SelectAll(s.ctx)
+	case "undo":
+		return s.clip().Undo(s.ctx)
+	case "redo":
+		return s.clip().Redo(s.ctx)
+	}
+
+	if app, ok := s.app.(host.MenuActioner); ok {
+		return app.MenuAction(s.ctx, id)
+	}
+
+	return nil
+}
+
+const (
+	menuFillHex     = 0xfffffff2
+	menuEdgeHex     = 0xbdbdbdff
+	menuInkHex      = 0x1c1915ff
+	menuDisabledHex = 0x9c9c9cff
+)
+
+var (
+	menuFill     = devRGBA(menuFillHex)
+	menuEdge     = devRGBA(menuEdgeHex)
+	menuInk      = devRGBA(menuInkHex)
+	menuDisabled = devRGBA(menuDisabledHex)
+)
+
+// menuTextWidth measures one row label with the badge face.
+func menuTextWidth(label string) (float64, float64) {
+	return text.Measure(label, badgeFace, 0)
+}
+
+// drawMenu paints the context menu over the frame. The menu is chrome: it
+// never enters the page picture and no redraw sees it.
+func (s *shell) drawMenu(screen *ebiten.Image) {
+	if !s.menu.open || len(s.menu.items) == 0 {
+		return
+	}
+
+	x, y, w, h := s.menuRect()
+	vector.FillRect(screen, float32(x), float32(y), float32(w), float32(h), menuFill, false)
+	vector.StrokeRect(screen, float32(x), float32(y), float32(w), float32(h), 1, menuEdge, false)
+
+	for i, item := range s.menu.items {
+		ink := menuInk
+		if !item.Enabled {
+			ink = menuDisabled
+		}
+
+		var op text.DrawOptions
+		op.GeoM.Translate(x+menuPadX, y+float64(i)*menuRowH+menuPadY)
+		op.ColorScale.ScaleWithColor(ink)
+		text.Draw(screen, item.Label, badgeFace, &op)
+	}
+
+	s.frameNote(frameRect(x, y, w, h))
 }

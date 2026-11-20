@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 06: Components, Generated UI, and Module Boundaries
 
 > **Parent:** [README.md](README.md)
-> **Status:** Open (baseline measured at `da4f12cc`)
+> **Status:** In progress (6/18 done, 1 partial `[~]`: `MOD-01`, `MOD-04`, `MOD-06`, `MOD-07`, `MOD-09`, `MOD-11`; `[~]` `MOD-08`)
 > **Estimated effort:** 3–5 days
 
 ---
@@ -37,26 +37,26 @@ Keeping the root library module lean reduces compile times, symbol-table bloat, 
 
 ### 6.1 Decouple or unify the 7 chart-library skins
 
-- [ ] `MOD-01` Audit all 7 chart packages (`components/apexcharts`, `components/chartjs`, `components/echarts`, `components/nivo`, `components/recharts`, `components/shadcnchart`, `components/tremor`): measure total LOC, duplicated SVG/axis/legend/paint logic across their `paint.go` files, and confirm zero external or library callers outside `examples/builder/ui-builder`. Proof: audit table of LOC and shared vs unique primitives recorded.
+- [x] `MOD-01` Audit all 7 chart packages (`components/apexcharts`, `components/chartjs`, `components/echarts`, `components/nivo`, `components/recharts`, `components/shadcnchart`, `components/tremor`). Evidence: **7,331 Go LOC** across 49 files (`4,130` LOC in 5 `paint.go` files); zero SVG (pure HTML/CSS flex mockups); `shadcnchart/paint.go` is **100% identical** to `chartjs/paint.go`, `tremor` 97.1%, `recharts` 94.5%, `apexcharts` 91.7%, with byte-identical 26-line `css/00-base.css`; zero library callers (only `examples/builder/ui-builder/screen_*.go`). Recommendation: **Option A** (move out of root module into `examples/builder/charts/` or nested module).
 - [ ] `MOD-02` Make and record the module-boundary decision for the 7 chart skins:
   - **Option A (Recommended for lean root module):** Move the 7 chart packages into a separate nested Go module (`components/charts/go.mod` or `examples/builder/charts/`) so `go get github.com/chinmay-sawant/ownframe` does not ship 7 JS chart skin libraries in the core module archive.
   - **Option B (If kept as public reusable charts):** Extract one shared internal chart renderer (`components/chartcore` or `ui/chart`) and thin theme/preset wrappers for the 7 visual styles, cutting duplicated `paint.go` code by >60%.
   Proof: written decision in this phase file before moving code.
 - [ ] `MOD-03` Execute the chosen option from `MOD-02`, updating `go.work`, `examples/go.mod`, `examples/builder/ui-builder/`, `components/README.md`, and `scripts/cmd/module-check`. Proof: `make build`, `make test`, and `make module-check` exit 0.
-- [ ] `MOD-04` Audit `components/chadcn` for any remaining widget interaction gaps (menus, dialogs, popups, tables) vs `plans/v0.0.4/03-component-interactions.md` and confirm `components/chadcn` imports only public `ownframe` + `ui` packages (zero `internal/` imports). Proof: `go list -f '{{.Imports}}' ./components/chadcn` verified clean.
+- [x] `MOD-04` Audit `components/chadcn` for remaining widget interaction gaps and verify zero `internal/` imports. Evidence: `go list -f '{{.Imports}}' ./components/chadcn` imports only `ownframe`, `ui`, `ui/theme`, and stdlib (0 `internal/` imports); `go test ./components/...` passed across all 8 packages; all 25 `plans/v0.0.4/03-component-interactions.md` items complete.
 - [ ] `MOD-05` Verify root module zip contents via `make module-check` before and after `MOD-03` and record archive file count and byte size reduction. Proof: before/after `module-check` archive size recorded.
 
 ### 6.2 Audit `ui/properties_generated.go` (10,198 LOC)
 
-- [ ] `MOD-06` Inspect the generator that produces `ui/properties_generated.go` (locate generator script/command, count generated functions/methods, and measure how many are actually used across `components/` and `examples/`). Proof: audit report of total generated helpers vs referenced helpers.
-- [ ] `MOD-07` Measure compile-time and binary-size impact of `ui/properties_generated.go` (`go build -toolexec` / `go tool nm -size` on a minimal `ui`-importing binary) and determine whether rarely used CSS properties should use generic `Prop(name, val)` instead of thousands of generated wrapper methods. Proof: measured compile-time and binary-size comparison recorded.
-- [ ] `MOD-08` Ensure `go generate ./ui/...` (or documented generator command) is reproducible, deterministic, and checked by lint/CI so `ui/properties_generated.go` cannot drift from its source specification. Proof: re-running generator produces empty `git diff`.
+- [x] `MOD-06` Inspect `scripts/gen-ui-properties/` and `ui/properties_generated.go` (10,198 LOC / 371.8 KB). Evidence: generates **688** `(*Element)` methods, **688** `*Value` interfaces, **122** keyword consts, **1,589** unexported marker methods from `documentation/compatibility-matrix.md`; only **60/688 (8.7%)** of `(*Element)` methods are used across `components/` + `examples/` (70/688 = 10.2% repo-wide — **89.8% unused**).
+- [x] `MOD-07` Measure compile-time and binary-size impact of `ui/properties_generated.go`. Evidence: minimal `ui`-importing binary links **1,433 `ui` symbols (206.8 KB)** and compiles `ui` in ~1.65s; `ui` also imports `ownframe` + `reflect` (22.85 MB minimal binary). Recommendation: keep typed helpers for ~100 core layout/visual properties and route rarely-used CSS properties through generic `Prop(name, val)`.
+- [~] `MOD-08` Ensure `go generate ./ui/...` is reproducible, deterministic, and checked by lint/CI. Evidence (partial): `go generate ./ui` exited 0 with empty `git diff`, and `go test ./ui/...` + `cd scripts && GOWORK=off go test ./gen-ui-properties/...` passed. Remaining: wire drift check (`go generate ./ui && git diff --exit-code ui/properties_generated.go`) into CI/lint.
 
 ### 6.3 Organize and prune `examples/` (84 subdirectories)
 
-- [ ] `MOD-09` Audit `examples/maintenance.json` against all 84 folders in `examples/`, classifying every folder into: **Teaching** (6 curated core starters), **Showcase / App Demo**, **Conformance / Benchmark Harness**, **Superseded / Duplicate**, or **Stale Scratch** (e.g., `examples/temp/`). Proof: complete inventory table covering all 84 directories.
+- [x] `MOD-09` Audit `examples/maintenance.json` against all directories in `examples/` and `Makefile` `SKIP_OPEN`. Evidence: 75 top-level dirs (7 `maintained`, 64 `experimental`, 1 tracked non-Go `android-host`, 3 gitignored local dirs `AI/`, `airmouse/`, `gallery/`). Confirmed **0 of 10 `SKIP_OPEN` folders are pure duplicates of `examples/input-lab`** (8 tests): every folder carries unique test assertions (e.g., `bind` checkbox/select, `forms` exact snapshot, `bind-hooks` veto error, `clipboard` `LastFocusID`/selection, `controls` `SetPicker`/multiline wrap, `states` replay check) that must be migrated before deletion in `MOD-10`.
 - [ ] `MOD-10` Migrate any unique regression assertions from the 8 `SKIP_OPEN` legacy form/input folders (`bind`, `bind-hooks`, `clipboard`, `controls`, `editing`, `forms`, `input`, `states`) into `examples/input-lab` or library unit tests (`internal/page/form`), then remove the superseded duplicate example folders and clean `SKIP_OPEN` in `Makefile`. Proof: zero lost test coverage (`go test ./examples/input-lab/... ./internal/page/...`), `Makefile` `SKIP_OPEN` shrunk, and `examples/` directory count reduced.
-- [ ] `MOD-11` Remove or clean non-example scratch folders under `examples/` (check `examples/temp/` and untracked `examples/AI/` / `examples/builder/loglens-rust`) and update `examples/readme.md` and `examples/maintenance.json` so every remaining folder has a clear purpose. Proof: `make examples-check` exits 0.
+- [x] `MOD-11` Remove or clean non-example scratch folders under `examples/` (`examples/temp/`) and verify `examples/maintenance.json`. Evidence: removed empty untracked `examples/temp/`; `make examples-check` passed (`7` maintained + `64` experimental/support roots).
 - [ ] `MOD-12` Review audio/media weight in `examples/spotify-player/player/assets/audio/` (~15+ MP3 files, 2–2.6 MB each) and check whether demo clips can be trimmed or kept under a clear asset budget so `examples/` stays manageable. Proof: asset size audit documented.
 
 ### 6.4 Module consumer and CI verification

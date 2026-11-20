@@ -1,4 +1,3 @@
-// Package ownframe re-exports the retained element model.
 package ownframe
 
 import (

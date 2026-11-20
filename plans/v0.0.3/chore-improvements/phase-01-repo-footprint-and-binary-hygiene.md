@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 01: Repository Footprint and Binary Hygiene
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (8/21 done: `FOOT-01`–`FOOT-04`, `FOOT-14`, `FOOT-15`, `FOOT-17`, `FOOT-GATE-03`)
+> **Status:** In progress (8/21 done, 1 deferred `[~]`: `FOOT-01`–`FOOT-04`, `FOOT-14`, `FOOT-15`, `FOOT-17`, `FOOT-GATE-03`; `[~]` `FOOT-08`)
 > **Estimated effort:** 2–4 days (excluding optional git history rewrite coordination)
 
 ---
@@ -47,7 +47,7 @@ Every site rebuild or Android artifact refresh commits hundreds of megabytes of 
 - [ ] `FOOT-05` Audit `.github/workflows/` and GitHub Pages settings to determine how `docs/` is currently published (`docs/` on `master` vs `actions/deploy-pages`). Record exact workflow files and triggers. Proof: written audit note referencing exact workflow filenames.
 - [ ] `FOOT-06` Add a GitHub Actions Pages workflow (`.github/workflows/pages.yml`) that builds `frontend/` and the starter `.wasm` demos via `frontend/scripts/build-demo.mjs` and publishes them via `actions/upload-pages-artifact` + `actions/deploy-pages` (using CI caching for Go/npm builds). Proof: successful workflow run publishing the full site + live demos.
 - [ ] `FOOT-07` Update `scripts/check-generated-site.py`, `Makefile` (`site-check`), and `.gitignore` (removing the `!docs/demos/*.wasm` force-track exceptions) so `docs/demos/*.wasm` and `docs/demos/*.wasm.gz` are no longer committed to `master`. Note: preserve or automate `wispr-flow/ownframe.wasm` via a reproducible build script before removing it from git. Proof: `git ls-files docs/ | grep -E '\.wasm(\.gz)?$'` returns empty and `make site-check` passes against freshly built output.
-- [ ] `FOOT-08` Review tracked media assets in `docs/` (`teams.webp` 11 MB, `trade.webp` 7.7 MB, `desktop-cat.webp` 6.6 MB, `wispr-flow.webp` 6.2 MB, `eyes2-60fps-*.webp` 5.7 MB) and compress/re-encode or host heavy demo recordings outside git where lossless quality is unnecessary. Proof: `du -sh docs/` tracked footprint drops from 668 MB to <50 MB (or 0 MB if `docs/` is fully CI-built).
+- [~] `FOOT-08` Review tracked media assets in `docs/` (`teams.webp`, `trade.webp`, `desktop-cat.webp`, `wispr-flow.webp`, `eyes2-60fps-*.webp`). Deferred by owner decision (2026-11-20): keep existing `.webp` demo captures intact at current quality; revisit only if site bandwidth or repo size requires re-encoding later.
 - [ ] `FOOT-09` Update `README.md`, `frontend/README.md`, and `AGENTS.md` to document the CI-built site flow and remove instructions assuming committed `docs/demos/*.wasm` binaries. Proof: `make docs-check` exits 0.
 
 ### 1.3 Decouple Android release APKs from git history

@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 03: Public API Boundaries and Developer Ergonomics
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (11/22 done, 1 partial `[~]`: `API-01`–`API-05`, `API-07`, `API-11`, `API-12`, `API-14`, `API-GATE-01`, `API-GATE-02`; `[~]` `API-09`)
+> **Status:** In progress (14/22 done, 1 partial `[~]`: `API-01`–`API-07`, `API-10`–`API-12`, `API-14`, `API-15`, `API-GATE-01`, `API-GATE-02`; `[~]` `API-09`)
 > **Estimated effort:** 4–6 days
 
 ---
@@ -44,11 +44,11 @@ Package `ownframe` currently spans **63 root `.go` files** and **149 exported me
 
 ### 3.2 Consolidate the 63 root `.go` files and audit the 149 exported methods
 
-- [ ] `API-06` Generate a complete method inventory of all 149 exported methods in root `*.go` (`go doc -all .`), marking each as: Core App API, Advanced/Escape Hatch, Testing-Only, or Redundant/Candidate-for-Removal. Proof: inventory attached or committed in review notes.
+- [x] `API-06` Generate a complete method inventory of all 149 exported methods in root `*.go` (`go doc -all .`), categorized by door (`Page` 41, `Form` 11, `Edit` 19, `Scroll` 8, `Window` 21, `Access` 2, `Probe` 27, `Testing` 20). Evidence: flagged top `API-08` removal/consolidation candidates: duplicate `Testing.DevTools()` vs `Window.DevTools()`, unused `Probe.Elements()`, `Testing.TakeChangedProperties()`, `Page.Audio()`/`AudioPlayback()`, `Scroll.ViewportPinZ()`, and 6-method changed-property split across `Probe`/`Testing`.
 - [x] `API-07` Consolidate single-function micro-files at the module root into cohesive domain files using `scripts/merge-go.go` (48 non-test `.go` files -> **18** cohesive files: `api.go`, `clipboard.go`, `crash.go`, `elements.go`, `events.go`, `fetch.go`, `ipc.go`, `page.go`, `page_access.go`, `page_edit.go`, `page_form.go`, `page_nav.go`, `page_probe.go`, `page_scroll.go`, `page_testing.go`, `page_window.go`, `run.go`, `serve.go`). Evidence: `ls -1 *.go | grep -v _test.go | wc -l` = 18; updated `alias_allow_test.go` filenames (same 31 aliases); `go test -race .` (`TestRootAliasAllowlist`, `TestOwnframeTestNoInternal`), `make docs-check`, and `make build` exit 0.
 - [ ] `API-08` Identify and remove or consolidate redundant exported methods and redundant `Probe()` / `Testing()` overlaps before locking `v0.1.0` / `v1.0` (remember `v0.0.x` may break; document any breaking renames in release notes). Keep `alias_gate_test.go` and `api_internal_gate_test.go` passing and tighten allowlists as aliases shrink. Proof: `go test -v -run 'TestAlias|TestAPI' .` exits 0 with reduced method count recorded.
 - [~] `API-09` Verify `Page.Testing()` is strictly unused in `examples/` and non-test library files via an automated check. Evidence (partial): added AST-based `TestNoUnauthorizedPageTestingCalls` in `api_testing_test.go` enforcing zero non-test `.Testing()` calls across `internal/`, `components/`, `ui/`, and freezing the 5 pre-existing experimental example harnesses (`examples/blackhole/main.go`, `examples/blinkless-all/nav_scripted.go`, `examples/blinkless-all/snapshot.go`, `examples/blinkless-scroll/demo.go`, `examples/blinkless-scroll/main.go`) so no new non-test example can call `.Testing()`. Next gate: refactor those 5 experimental harnesses off `.Testing()` and empty `allowExamples`.
-- [ ] `API-10` Ensure `go doc github.com/chinmay-sawant/ownframe` reads cleanly with package-level overview grouped by core workflow (`New` -> `SetData` -> `Handle` -> `Run`). Proof: manual review of `go doc .` output.
+- [x] `API-10` Ensure `go doc github.com/chinmay-sawant/ownframe` reads cleanly with package-level overview and attached `Page` doc comment. Evidence: fixed detached `Page` doc comment in `api.go` (moved unexported `windowHost` below `Page`) and removed duplicate package comment in `elements.go`.
 
 ### 3.3 Simplify the 4-path update and virtualization mental model
 
@@ -56,7 +56,7 @@ Package `ownframe` currently spans **63 root `.go` files** and **149 exported me
 - [x] `API-12` Extract fixed-row virtualized-list windowing math into a reusable, well-tested helper package `ui/virtual` (`Range`, `Window(scrollY, viewportH, rowH, totalRows, overscan)` with top/bottom spacer calculations). Evidence: created `ui/virtual/virtual.go` and `ui/virtual/virtual_test.go`; `go test -race -v ./ui/virtual/...` passed (empty/invalid, top/mid/bottom clamping, spacer invariant, small list, resize).
 - [ ] `API-13` Add a pinned-chrome helper or documented pattern in `ui/` so apps don't have to hand-roll fragile `SetScrollWindow` counter-offsets for sticky headers/composers (and link to `blinkless` sticky support once adopted per `plans/v0.0.4/04-css-conformance-and-engine-adoption.md`). Proof: helper + test or verified sticky replacement documented.
 - [x] `API-14` Add a defensive runtime diagnostic counter when `Page.SetTick` mutates retained ops on an element that also has an active automatic CSS animation or transition (`MotionStats.ManualOverlap` and `ManualOverlapID`, checked via `motion.Runtime.CheckManualOverlap` during `noteTickDamage`). Evidence: added `ManualOverlap` / `ManualOverlapID` in `internal/motion/stats.go`, `CheckManualOverlap` in `internal/motion/runtime.go`, wired in `internal/page/page_tick.go`, and verified with `TestTickManualOverlapDiagnostic` in `internal/page/motion_overlap_test.go` (`go test -race` passed).
-- [ ] `API-15` Document or eliminate the one-tick delay quirk when 3D transforms auto-enable `Config.RetainState` (ensure callers either opt in explicitly via `Config` or see clear documentation + probe visibility). Proof: test covering 3D transform first-tick behavior and updated `documentation/css-motion.md`.
+- [x] `API-15` Document and verify the one-tick delay quirk when 3D transforms auto-enable `Config.RetainState`. Evidence: verified passing tests `TestFirstTickEnablesRetainedStateAndSecondTickMoves` (`internal/page/motion_restamp_test.go`) and `TestPerspectiveOnlyPageEnablesRetentionOnFirstTick` (`internal/page/motion_perspective_test.go`) (0.073s), and added explicit `Config.RetainState: true` opt-in + `NeedsRetainedState`/`Restamped` probe guidance in `documentation/css-motion.md` (`make docs-check` exit 0).
 
 ### 3.4 Drain the example `internal/` import allowlist
 

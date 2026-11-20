@@ -2,13 +2,14 @@ package window
 
 import (
 	"context"
-	"testing"
-
+	"errors"
 	"github.com/chinmay-sawant/blinkless/layout"
-
 	"github.com/chinmay-sawant/ownframe/internal/clipboard"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page"
+	"io/fs"
+	"testing"
+	"testing/fstest"
 )
 
 func TestDevToolsRightClickFileTabAndCloseAll(t *testing.T) {
@@ -289,5 +290,392 @@ func TestMenuContextMenuForWithoutHitPassesEmptyID(t *testing.T) {
 
 	if !s.menu.open || len(s.menu.items) != 1 {
 		t.Fatalf("menu = %+v", s.menu)
+	}
+}
+
+// TestMenuClaimActsOnRowPress gives the open menu first refusal on a left
+// press. A custom-chrome draggable strip runs before the menu in pointer(),
+// so without this a press on a menu row inside the strip starts a window
+// drag: the row never acts and the release lands a stray page click.
+func TestMenuClaimActsOnRowPress(t *testing.T) {
+	t.Parallel()
+
+	app := &menuForScreen{
+		menuScreen: &menuScreen{
+			fakeScreen: &fakeScreen{width: 300, height: 300},
+			items: []host.MenuItem{
+				{ID: "do-thing", Label: "Do thing", Enabled: true},
+			},
+		},
+		rows: map[string][]host.MenuItem{},
+	}
+	s := &shell{app: app, ctx: context.Background(), screenW: 300, screenH: 300}
+	s.openMenu(10, 20)
+	if !s.menu.open {
+		t.Fatal("menu did not open")
+	}
+
+	mx, my, mw, _ := s.menuRect()
+	cx, cy := int(mx+mw/2), int(my+menuRowH/2)
+	if got := s.menuIndex(cx, cy); got != 0 {
+		t.Fatalf("row centre index = %d, want 0", got)
+	}
+
+	handled, err := s.menuClaim(cx, cy, true, true)
+	if err != nil || !handled {
+		t.Fatalf("claim = %v, %v", handled, err)
+	}
+
+	if app.acted != "do-thing" {
+		t.Fatalf("acted = %q, want do-thing", app.acted)
+	}
+
+	if s.menu.open {
+		t.Fatal("menu stayed open after a row press")
+	}
+
+	if !s.mouseDown {
+		t.Fatal("menu claim left mouseDown false, so the press would fire twice")
+	}
+}
+
+// TestMenuClaimOutsideDismisses checks that a left press outside the open
+// menu still dismisses it through the same first-refusal path, instead of
+// reaching the window drag or the page.
+func TestMenuClaimOutsideDismisses(t *testing.T) {
+	t.Parallel()
+
+	app := &menuScreen{fakeScreen: &fakeScreen{}, items: []host.MenuItem{
+		{ID: "copy", Label: "Copy", Enabled: true},
+	}}
+	s := &shell{app: app, ctx: context.Background(), screenW: 300, screenH: 300}
+	s.openMenu(10, 20)
+
+	handled, err := s.menuClaim(250, 250, true, true)
+	if err != nil || !handled {
+		t.Fatalf("claim = %v, %v", handled, err)
+	}
+
+	if s.menu.open {
+		t.Fatal("menu stayed open after an outside press")
+	}
+}
+
+// TestMenuClaimIgnoresWithoutPress checks the claim stays quiet when the
+// menu is closed or the press is not a fresh left edge, so normal pointer
+// flow is untouched.
+func TestMenuClaimIgnoresWithoutPress(t *testing.T) {
+	t.Parallel()
+
+	app := &menuScreen{fakeScreen: &fakeScreen{}, items: []host.MenuItem{
+		{ID: "copy", Label: "Copy", Enabled: true},
+	}}
+	s := &shell{app: app, ctx: context.Background(), screenW: 300, screenH: 300}
+
+	if handled, err := s.menuClaim(15, 25, true, true); err != nil || handled {
+		t.Fatalf("closed menu claim = %v, %v", handled, err)
+	}
+
+	s.openMenu(10, 20)
+
+	if handled, err := s.menuClaim(15, 25, false, true); err != nil || handled {
+		t.Fatalf("held level claim = %v, %v", handled, err)
+	}
+
+	if !s.menu.open {
+		t.Fatal("claim disturbed the menu without a fresh press")
+	}
+}
+
+// TestMenuDockGeometryClicksRow checks that with the devtools dock open the
+// menu draws and hit-tests in the same coordinates: a left click at the
+// drawn centre of a row acts, and a click outside closes and consumes.
+func TestMenuDockGeometryClicksRow(t *testing.T) {
+	t.Parallel()
+
+	app := &menuForScreen{
+		menuScreen: &menuScreen{
+			fakeScreen: &fakeScreen{width: 940, height: 800},
+			items: []host.MenuItem{
+				{ID: "do-thing", Label: "Do thing", Enabled: true},
+				{ID: "do-other", Label: "Do other", Enabled: true},
+				{ID: "do-more", Label: "Do more", Enabled: true},
+			},
+		},
+		rows: map[string][]host.MenuItem{},
+	}
+	const screenW, screenH = 1280, 800
+	s := &shell{app: app, ctx: context.Background(), screenW: screenW, screenH: screenH}
+	s.dev.on = true
+	s.dev.panel = devDockRect(screenW, screenH, s.devDockWidth())
+
+	viewW, _ := s.viewSize()
+	if s.dev.panel.X != float64(viewW) {
+		t.Fatalf("panel X = %v, view width = %d", s.dev.panel.X, viewW)
+	}
+
+	// Right-click near the right and bottom edges of the content strip so
+	// the menu must clamp inside the shrunken viewport.
+	handled, err := s.devMenuPointer(viewW-10, 780, true, false)
+	if err != nil || !handled || !s.menu.open {
+		t.Fatalf("right click: handled=%v err=%v menu=%+v", handled, err, s.menu)
+	}
+
+	mx, my, mw, mh := s.menuRect()
+	if mx+mw > float64(viewW) || my+mh > float64(screenH) {
+		t.Fatalf("menu rect (%v, %v, %v, %v) escapes the content strip", mx, my, mw, mh)
+	}
+
+	for i := range s.menu.items {
+		cx := int(mx + mw/2)
+		cy := int(my + float64(i)*menuRowH + menuRowH/2)
+		if got := s.menuIndex(cx, cy); got != i {
+			t.Fatalf("row %d centre index = %d", i, got)
+		}
+	}
+
+	cx := int(mx + mw/2)
+	cy := int(my + menuRowH + menuRowH/2)
+	handled, err = s.devMenuPointer(cx, cy, false, true)
+	if err != nil || !handled {
+		t.Fatalf("menu click: handled=%v err=%v", handled, err)
+	}
+
+	if s.menu.open {
+		t.Fatal("menu stayed open after a row click")
+	}
+
+	if app.acted != "do-other" {
+		t.Fatalf("acted = %q, want do-other", app.acted)
+	}
+
+	s.openMenu(10, 20)
+
+	handled, err = s.devMenuPointer(viewW-2, screenH-2, false, true)
+	if err != nil || !handled {
+		t.Fatalf("outside click: handled=%v err=%v", handled, err)
+	}
+
+	if s.menu.open {
+		t.Fatal("menu stayed open after an outside click")
+	}
+
+	if app.acted != "do-other" {
+		t.Fatalf("outside click acted: %q", app.acted)
+	}
+}
+
+func TestMenuOutsideClickCloses(t *testing.T) {
+	t.Parallel()
+
+	app := &menuScreen{fakeScreen: &fakeScreen{}, items: []host.MenuItem{
+		{ID: "copy", Label: "Copy", Enabled: true},
+	}}
+	s := &shell{app: app, ctx: context.Background(), screenW: 300, screenH: 300}
+	s.openMenu(10, 20)
+
+	handled, err := s.menuClick(250, 250)
+	if err != nil || !handled {
+		t.Fatalf("click = %v, %v", handled, err)
+	}
+
+	if s.menu.open {
+		t.Fatal("menu stayed open")
+	}
+}
+
+func TestMenuEmptyRowsStayClosed(t *testing.T) {
+	t.Parallel()
+
+	app := &menuScreen{fakeScreen: &fakeScreen{}}
+	s := &shell{app: app, ctx: context.Background(), screenW: 300, screenH: 300}
+	s.openMenu(10, 20)
+
+	if s.menu.open {
+		t.Fatal("menu opened with no rows")
+	}
+}
+
+func TestMenuPlainScreenStaysClosed(t *testing.T) {
+	t.Parallel()
+
+	s := &shell{app: &fakeScreen{}, ctx: context.Background(), screenW: 300, screenH: 300}
+	s.openMenu(10, 20)
+
+	if s.menu.open {
+		t.Fatal("menu opened without a context menu")
+	}
+}
+
+func TestMenuRectPullsInsideTheScreen(t *testing.T) {
+	t.Parallel()
+
+	app := &menuScreen{fakeScreen: &fakeScreen{}, items: []host.MenuItem{
+		{ID: "copy", Label: "Copy", Enabled: true},
+	}}
+	s := &shell{app: app, ctx: context.Background(), screenW: 120, screenH: 80}
+	s.openMenu(110, 70)
+
+	x, y, w, h := s.menuRect()
+	if x+w > 120 || y+h > 80 {
+		t.Fatalf("rect = %v, %v, %v, %v", x, y, w, h)
+	}
+
+	if s.menuIndex(int(x)+1, int(y)+1) != 0 {
+		t.Fatal("first row missed")
+	}
+}
+
+// dropScreen is a fakeScreen that accepts drops.
+type dropScreen struct {
+	*fakeScreen
+	calls int
+	files []host.Drop
+	err   error
+}
+
+func (s *dropScreen) Drop(_ context.Context, files []host.Drop) error {
+	s.calls++
+	s.files = files
+
+	return s.err
+}
+
+func TestDropPassCallsScreenOnce(t *testing.T) {
+	t.Parallel()
+
+	screen := &dropScreen{fakeScreen: &fakeScreen{}}
+	s := &shell{app: screen, ctx: context.Background()}
+
+	fsys := fstest.MapFS{
+		"a.txt": {Data: []byte("hello")},
+		"b.png": {Data: []byte("bytes")},
+	}
+
+	if err := s.dropPass(fsys); err != nil {
+		t.Fatalf("dropPass: %v", err)
+	}
+
+	if screen.calls != 1 {
+		t.Fatalf("calls = %d, want 1", screen.calls)
+	}
+
+	if len(screen.files) != 2 {
+		t.Fatalf("files = %d, want 2", len(screen.files))
+	}
+
+	first := screen.files[0]
+	if first.Name != "a.txt" || first.Size != 5 || first.IsDir {
+		t.Fatalf("first = %+v", first)
+	}
+
+	if first.Path != "" {
+		t.Fatalf("path = %q, want empty without AbsPath", first.Path)
+	}
+
+	data, err := first.Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(data) != "hello" {
+		t.Fatalf("data = %q", data)
+	}
+}
+
+func TestDropPassKeepsDirectoryAsOneEntry(t *testing.T) {
+	t.Parallel()
+
+	screen := &dropScreen{fakeScreen: &fakeScreen{}}
+	s := &shell{app: screen, ctx: context.Background()}
+
+	fsys := fstest.MapFS{"docs": {Mode: fs.ModeDir | 0o755}}
+
+	if err := s.dropPass(fsys); err != nil {
+		t.Fatalf("dropPass: %v", err)
+	}
+
+	if len(screen.files) != 1 {
+		t.Fatalf("files = %d, want 1", len(screen.files))
+	}
+
+	file := screen.files[0]
+	if !file.IsDir || file.Name != "docs" {
+		t.Fatalf("file = %+v", file)
+	}
+}
+
+func TestDropPassSkipsPlainScreen(t *testing.T) {
+	t.Parallel()
+
+	s := &shell{app: &fakeScreen{}, ctx: context.Background()}
+
+	if err := s.dropPass(fstest.MapFS{"a.txt": {Data: []byte("x")}}); err != nil {
+		t.Fatalf("dropPass: %v", err)
+	}
+}
+
+func TestDropPassEmptyFSCallsNothing(t *testing.T) {
+	t.Parallel()
+
+	screen := &dropScreen{fakeScreen: &fakeScreen{}}
+	s := &shell{app: screen, ctx: context.Background()}
+
+	if err := s.dropPass(fstest.MapFS{}); err != nil {
+		t.Fatalf("dropPass: %v", err)
+	}
+
+	if screen.calls != 0 {
+		t.Fatalf("calls = %d, want 0", screen.calls)
+	}
+}
+
+func TestDropPassReturnsScreenError(t *testing.T) {
+	t.Parallel()
+
+	want := errors.New("drop failed")
+	screen := &dropScreen{fakeScreen: &fakeScreen{}, err: want}
+	s := &shell{app: screen, ctx: context.Background()}
+
+	if err := s.dropPass(fstest.MapFS{"a.txt": {Data: []byte("x")}}); !errors.Is(err, want) {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+// absFS adds AbsPath to the entries of a MapFS, the way Ebiten's desktop
+// dropped-files system does.
+type absFS struct{ fstest.MapFS }
+
+func (f absFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	entries, err := f.MapFS.ReadDir(name)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, entry := range entries {
+		entries[i] = absEntry{entry}
+	}
+
+	return entries, nil
+}
+
+type absEntry struct{ fs.DirEntry }
+
+func (e absEntry) AbsPath() string { return "/real/" + e.Name() }
+
+func TestDropPassCarriesAbsPath(t *testing.T) {
+	t.Parallel()
+
+	screen := &dropScreen{fakeScreen: &fakeScreen{}}
+	s := &shell{app: screen, ctx: context.Background()}
+
+	fsys := absFS{MapFS: fstest.MapFS{"a.txt": {Data: []byte("x")}}}
+
+	if err := s.dropPass(fsys); err != nil {
+		t.Fatalf("dropPass: %v", err)
+	}
+
+	if got := screen.files[0].Path; got != "/real/a.txt" {
+		t.Fatalf("path = %q", got)
 	}
 }

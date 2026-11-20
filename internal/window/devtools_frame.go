@@ -2,10 +2,12 @@ package window
 
 import (
 	"fmt"
+	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"image/color"
 	"strings"
 	"time"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // devFrameRows returns the Frame tab: uppercase headers and right-aligned rows.
@@ -81,4 +83,125 @@ func (s *shell) devFrameRows(width float64) []devRow {
 	rs = append(rs, devFrameRow(width, "Reload error", devErr(st.LastReloadError), ink))
 
 	return rs[1:]
+}
+
+// bytesPerKB and bytesPerMB size the MEMORY rows.
+const (
+	bytesPerKB = 1024
+	bytesPerMB = 1024 * bytesPerKB
+)
+
+// devFrameRow builds one right-aligned row. The label and separator widths
+// come from the panel memo; only the value, which moves as counters change,
+// is measured per call. The value span right-aligns at draw time, so no
+// padding run is built or drawn.
+func devFrameRow(w float64, l, v string, ink color.RGBA) devRow {
+	vw, _ := text.Measure(v, badgeFace, 0)
+
+	return devRow{
+		line: devLine{spans: []devSpan{
+			{text: l, ink: devDim, w: devTextWidth(l)},
+			{text: " ", ink: devPunctInk, w: devTextWidth(" ")},
+			{text: v, ink: ink, w: vw, right: true},
+		}},
+		w: w,
+	}
+}
+
+// addMemoryRows prints the MEMORY section. A shell without Perf reports
+// !ok, so end users see dashes and developers see live runtime numbers.
+func (s *shell) addMemoryRows(rs *[]devRow, w float64, h func(string), n func(string, any)) {
+	h("Memory")
+	if s.perfHooks.devRuntimePerf == nil {
+		for _, l := range []string{"Alloc/frame", "Go heap", "RSS", "Goroutines"} {
+			n(l, "-")
+		}
+		return
+	}
+	alloc, heap, rss, gr, ok := s.perfHooks.devRuntimePerf()
+	if !ok {
+		for _, l := range []string{"Alloc/frame", "Go heap", "RSS", "Goroutines"} {
+			n(l, "-")
+		}
+		return
+	}
+	n("Alloc/frame", devBytes(alloc))
+	n("Go heap", devBytes(heap))
+	n("RSS", devRSS(rss))
+	n("Goroutines", gr)
+}
+
+// devRSS prints a resident byte count for the panel. Zero means the
+// platform reader reported nothing, since genuine RSS is never zero,
+// so the row reads "-" instead of "0B".
+func devRSS(b uint64) string {
+	if b == 0 {
+		return "-"
+	}
+	return devBytes(b)
+}
+
+// devBytes prints a byte count for the panel.
+func devBytes(b uint64) string {
+	if b < bytesPerKB {
+		return fmt.Sprintf("%dB", b)
+	}
+	if b < bytesPerMB {
+		return fmt.Sprintf("%.1fKB", float64(b)/bytesPerKB)
+	}
+	return fmt.Sprintf("%.1fMB", float64(b)/bytesPerMB)
+}
+
+// Each window owns its hooks. Parallel windows cannot replace each other.
+type perfHooks struct {
+	devFramePerf    func() (avg, p95, p99 time.Duration, long uint64, ok bool)
+	devPipelinePerf func(st host.Stats) (tpl, lay, dsp, pnt time.Duration, dOps, dReg, chOps int, ok bool)
+	devRuntimePerf  func() (alloc, heap, rss uint64, gr int, ok bool)
+}
+
+func (s *shell) addPerfRows(rs *[]devRow, w float64, h func(string), n func(string, any)) {
+	h("Performance")
+	if s.perfHooks.devFramePerf == nil {
+		for _, l := range []string{"Frame avg", "Frame p95", "Frame p99", "Long frames"} {
+			n(l, "-")
+		}
+		return
+	}
+	avg, p95, p99, long, ok := s.perfHooks.devFramePerf()
+	if !ok {
+		for _, l := range []string{"Frame avg", "Frame p95", "Frame p99", "Long frames"} {
+			n(l, "-")
+		}
+		return
+	}
+	n("Frame avg", devMS(avg))
+	n("Frame p95", devMS(p95))
+	n("Frame p99", devMS(p99))
+	n("Long frames", long)
+}
+
+func (s *shell) addPipelinePerfRows(rs *[]devRow, w float64, h func(string), n func(string, any), st host.Stats) {
+	h("Last redraw detail")
+	if s.perfHooks.devPipelinePerf == nil {
+		for _, l := range []string{"Template", "Style", "Layout", "Paint", "Dirty ops", "Dirty regions", "Changed ops"} {
+			n(l, "-")
+		}
+		return
+	}
+	tpl, lay, dsp, pnt, dOps, dReg, chOps, ok := s.perfHooks.devPipelinePerf(st)
+	if !ok {
+		for _, l := range []string{"Template", "Style", "Layout", "Paint", "Dirty ops", "Dirty regions", "Changed ops"} {
+			n(l, "-")
+		}
+		return
+	}
+	n("Template", devMS(tpl))
+	n("Style", devMS(lay))
+	n("Layout", devMS(dsp))
+	n("Paint", devMS(pnt))
+	n("Other", devMS(st.OtherTime))
+	n("Dirty area", st.DirtyArea)
+	n("Dirty ops", dOps)
+	n("Dirty regions", dReg)
+	n("Changed ops", chOps)
 }

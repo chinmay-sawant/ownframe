@@ -1,10 +1,9 @@
 package window
 
 import (
-	"image"
-
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
+	"image"
 )
 
 type viewportKey struct {
@@ -127,4 +126,203 @@ func (s *shell) dropContentBuffers() {
 		s.scaleBuf.Deallocate()
 		s.scaleBuf = nil
 	}
+}
+
+// moveViewport keeps the already painted overlap when scrolling crosses the
+// overscan. Only the newly exposed strips need a replay of the display list.
+func (s *shell) moveViewport(d *layout.Display, previous image.Rectangle) {
+	v := &s.viewport
+	if v.spare == nil {
+		bounds := v.buf.Bounds()
+		v.spare = ebiten.NewImageWithOptions(bounds, &ebiten.NewImageOptions{Unmanaged: true})
+	}
+	v.buf, v.spare = v.spare, v.buf
+	v.buf.Clear()
+	var options ebiten.DrawImageOptions
+	options.GeoM.Translate(float64(previous.Min.X-v.area.Min.X), float64(previous.Min.Y-v.area.Min.Y))
+	v.buf.DrawImage(v.spare, &options)
+	for _, strip := range viewportExposed(v.area, previous) {
+		s.paintViewport(d, strip, s.viewportPinZ())
+	}
+}
+
+func viewportExposed(next, previous image.Rectangle) [4]image.Rectangle {
+	shared := next.Intersect(previous)
+	if shared.Empty() {
+		return [4]image.Rectangle{next}
+	}
+	return [4]image.Rectangle{
+		image.Rect(next.Min.X, next.Min.Y, next.Max.X, shared.Min.Y),
+		image.Rect(next.Min.X, shared.Max.Y, next.Max.X, next.Max.Y),
+		image.Rect(next.Min.X, shared.Min.Y, shared.Min.X, shared.Max.Y),
+		image.Rect(shared.Max.X, shared.Min.Y, next.Max.X, shared.Max.Y),
+	}
+}
+
+const viewportOverscan = 256
+
+// viewportSides counts the top and bottom overscan bands.
+const viewportSides = 2
+
+func (s *shell) setViewportArea(bounds image.Rectangle) {
+	gap := min(viewportOverscan, bounds.Dy())
+	width, height := bounds.Dx(), bounds.Dy()+viewportSides*gap
+	if limit := ebiten.MaxImageSize(); limit > 0 {
+		height = min(height, limit)
+	}
+	if s.viewport.buf == nil || s.viewport.buf.Bounds().Size() != image.Pt(width, height) {
+		s.disposeViewport()
+		// This image alternates between a render target and a scroll source.
+		// Keep it out of the sprite atlas so those switches never migrate it.
+		s.viewport.buf = ebiten.NewImageWithOptions(
+			image.Rect(0, 0, width, height), &ebiten.NewImageOptions{Unmanaged: true},
+		)
+	}
+	top := max(0, s.scrollY-gap)
+	s.viewport.area = image.Rect(s.scrollX, top, s.scrollX+width, top+height)
+}
+
+// viewportDirtyBounds is the fallback region a viewport repaint covers: the
+// bounding box of the list. paintViewportRects uses it only when the list is
+// longer than one frame should scan; a short list paints rect by rect.
+func viewportDirtyBounds(rects []image.Rectangle) image.Rectangle {
+	if len(rects) == 0 {
+		return image.Rectangle{}
+	}
+	box := rects[0]
+	for _, r := range rects[1:] {
+		box = box.Union(r)
+	}
+	return box
+}
+
+// paintViewportRects repaints each dirty rect in turn. A moving chip then
+// costs its own box, not the bounding box of every moving card on screen. A
+// list past the frame cap falls back to one bounding-box pass.
+func (s *shell) paintViewportRects(d *layout.Display, rects []image.Rectangle) {
+	if len(rects) == 0 {
+		return
+	}
+	if len(rects) > maxRepaintRects {
+		s.paintViewport(d, viewportDirtyBounds(rects), s.viewportPinZ())
+
+		return
+	}
+	for _, rect := range rects {
+		s.paintViewport(d, rect, s.viewportPinZ())
+	}
+}
+
+func (s *shell) paintViewport(d *layout.Display, rect image.Rectangle, pinZ int) {
+	rect = rect.Intersect(s.viewport.area).Sub(s.viewport.area.Min)
+	if rect.Empty() {
+		return
+	}
+	clip, ok := s.viewport.buf.SubImage(rect).(*ebiten.Image)
+	if !ok {
+		return
+	}
+	s.partial.paints++
+	s.partial.paintPx += rect.Dx() * rect.Dy()
+	clip.Clear()
+	clip.Fill(s.pageBackground())
+	s.renderer.DrawVisibleUnfixedZBackground(clip, d, -float64(s.viewport.area.Min.X), -float64(s.viewport.area.Min.Y), pinZ)
+}
+
+const (
+	prewarmMaxPixels  = 12 << 20
+	prewarmBandHeight = 128
+)
+
+// viewportWarmup spreads cold raster work over frames. Large documents warm
+// a bounded neighbourhood and start another sweep when scrolling leaves it.
+type viewportWarmup struct {
+	generation uint64
+	content    image.Point
+	view       image.Point
+	area       image.Rectangle
+	next       image.Point
+	scratch    *ebiten.Image
+}
+
+func (w *viewportWarmup) take(content, view, scroll image.Point, generation uint64, windowing bool) image.Rectangle {
+	if content.X <= 0 || content.Y <= view.Y || view.X <= 0 || view.Y <= 0 {
+		return image.Rectangle{}
+	}
+	reset := w.content != content || w.view != view || w.generation != generation
+	if reset || scroll.Y < w.area.Min.Y || scroll.Y+view.Y > w.area.Max.Y {
+		top := 0
+		height := content.Y
+		if windowing {
+			// A windowed page renders only the viewport slice between
+			// full-height spacers, so sweep the viewport plus overscan
+			// instead of the full spacer height.
+			gap := min(viewportOverscan, view.Y)
+			top = max(0, scroll.Y-gap)
+			height = min(content.Y-top, view.Y+viewportSides*gap)
+		} else if int64(content.X)*int64(content.Y) > prewarmMaxPixels {
+			top = max(0, scroll.Y-view.Y)
+			height = max(view.Y, prewarmMaxPixels/content.X)
+		}
+		w.content, w.view, w.generation = content, view, generation
+		w.area = image.Rect(0, top, content.X, min(content.Y, top+height))
+		w.next = w.area.Min
+	}
+	if w.next.Y >= w.area.Max.Y {
+		return image.Rectangle{}
+	}
+	r := image.Rect(
+		w.next.X,
+		w.next.Y,
+		min(w.next.X+view.X, content.X),
+		min(w.next.Y+prewarmBandHeight, w.area.Max.Y),
+	)
+	w.next.X += view.X
+	if w.next.X >= content.X {
+		w.next.X = 0
+		w.next.Y += prewarmBandHeight
+	}
+	return r
+}
+
+// prewarmViewport submits at most one narrow band per frame. Keeping the
+// scratch image small also bounds the graphics queue's cold-frame growth.
+func (s *shell) prewarmViewport(d *layout.Display, bounds image.Rectangle) bool {
+	if d == nil {
+		return false
+	}
+	contentW, contentH := s.contentSize()
+	w := &s.viewport.warmup
+	r := w.take(
+		image.Pt(contentW, contentH),
+		bounds.Size(),
+		image.Pt(s.scrollX, s.scrollY),
+		s.layerGeneration(),
+		s.windowing(),
+	)
+	if r.Empty() {
+		if w.scratch != nil {
+			w.scratch.Deallocate()
+			w.scratch = nil
+		}
+		return false
+	}
+	size := image.Pt(min(contentW, bounds.Dx()), prewarmBandHeight)
+	if w.scratch == nil || w.scratch.Bounds().Size() != size {
+		if w.scratch != nil {
+			w.scratch.Deallocate()
+		}
+		// A transient render target: keep it out of the sprite atlas.
+		w.scratch = ebiten.NewImageWithOptions(
+			image.Rectangle{Max: size}, &ebiten.NewImageOptions{Unmanaged: true},
+		)
+	}
+	clip, ok := w.scratch.SubImage(image.Rectangle{Max: r.Size()}).(*ebiten.Image)
+	if !ok {
+		return false
+	}
+	clip.Clear()
+	clip.Fill(s.pageBackground())
+	s.renderer.DrawVisibleUnfixedZBackground(clip, d, -float64(r.Min.X), -float64(r.Min.Y), s.viewportPinZ())
+	return true
 }

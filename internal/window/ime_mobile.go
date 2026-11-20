@@ -3,12 +3,12 @@
 package window
 
 import (
+	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/hajimehoshi/ebiten/v2/exp/textinput"
 	"image"
 	"time"
-
-	"github.com/hajimehoshi/ebiten/v2/exp/textinput"
-
-	"github.com/chinmay-sawant/ownframe/internal/host"
+	"unicode/utf8"
 )
 
 // imeState is the platform text input session for the focused control.
@@ -77,4 +77,58 @@ func (s *shell) imeUpdate() error {
 	}
 
 	return s.ime.err
+}
+
+func (s *shell) imeCaretScreenRect(box layout.Box) image.Rectangle {
+	return s.imeScreenRect(box)
+}
+
+func (s *shell) imeEndByUser() {
+	if s.ime.rotation.endByUser(time.Now()) {
+		return
+	}
+	s.ime.last = ""
+	s.ime.pendingEnd = true
+}
+
+func (s *shell) imeLayoutChanged(w, h int) {
+	s.ime.rotation.layout(w, h, time.Now())
+}
+
+// imeComposition shows the preedit in the field.
+func (s *shell) imeComposition(c *textinput.Composition) {
+	s.imeShow(c.Text())
+}
+
+// imeShow replaces the shown preedit with text.
+func (s *shell) imeShow(text string) {
+	if !s.imeTargetCurrent(s.ime.field) || text == s.ime.last {
+		return
+	}
+
+	s.imeDrop()
+
+	if text != "" {
+		if err := s.kbd().Type(s.ctx, text); err != nil {
+			s.ime.err = err
+		}
+	}
+
+	s.ime.last = text
+}
+
+// imeDrop removes the shown preedit from the field.
+func (s *shell) imeDrop() {
+	if !s.imeTargetCurrent(s.ime.field) {
+		s.ime.last = ""
+		return
+	}
+	n := utf8.RuneCountInString(s.ime.last)
+	for i := 0; i < n; i++ {
+		if err := s.kbd().Backspace(s.ctx); err != nil {
+			s.ime.err = err
+		}
+	}
+
+	s.ime.last = ""
 }

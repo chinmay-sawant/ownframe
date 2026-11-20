@@ -2,14 +2,17 @@ package replay
 
 import (
 	"bytes"
+	"context"
+	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
+	"github.com/chinmay-sawant/ownframe/internal/render"
 	"image"
 	"image/color"
 	"image/png"
+	"math"
 	"reflect"
 	"testing"
 	"unsafe"
-
-	"github.com/chinmay-sawant/blinkless/layout"
 )
 
 // tinyPNG builds a 2x2 PNG whose first pixel carries shade, enough to
@@ -58,4 +61,202 @@ func set(t *testing.T, field, value reflect.Value) {
 	}
 
 	reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Set(value) //nolint:gosec // reason: test-only write to an unexported field.
+}
+
+func TestImageBadPayloadSkips(t *testing.T) {
+	src := `<body style="margin:0"><img src="bad.png" style="width:20px;height:20px"></body>`
+	st := render.State{Images: func(s string) ([]byte, error) { return []byte("not an image"), nil }}
+	d, err := render.DisplayListState(context.Background(), src, 100, 100, st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	op := imageKind(d)
+	if op == nil {
+		t.Fatal("no image op")
+	}
+	if _, _, skip, err := masking.DecodeImage(op); skip || err == nil {
+		t.Fatalf("skip %v err %v", skip, err)
+	}
+	if decodedImage(op) != nil {
+		t.Fatal("bad payload decoded")
+	}
+}
+
+// testImage builds a small in-memory image for cache-level tests without an
+// encoded payload, so the tests do not depend on shared renderer state.
+func testImage(w, h int) image.Image {
+	return image.NewNRGBA(image.Rect(0, 0, w, h))
+}
+
+func TestDecodedImageCacheHitAndMiss(t *testing.T) {
+	data := tinyPNG(t, 255)
+	op := imageOp(t, data, 2, 2, false)
+
+	first := decodedImage(&op)
+	if first == nil {
+		t.Fatal("valid PNG did not decode")
+	}
+
+	same := imageOp(t, append([]byte(nil), data...), 2, 2, false)
+	if decodedImage(&same) != first {
+		t.Fatal("identical payload was not cached")
+	}
+
+	other := imageOp(t, tinyPNG(t, 7), 2, 2, false)
+	if decodedImage(&other) == first {
+		t.Fatal("different payloads share a decoded image")
+	}
+}
+
+func TestDecodedImageSkipsBadPayloads(t *testing.T) {
+	if decodedImage(nil) != nil {
+		t.Fatal("nil op decoded")
+	}
+
+	empty := layout.DisplayOp{Kind: layout.DisplayOpImage}
+	if decodedImage(&empty) != nil {
+		t.Fatal("empty payload decoded")
+	}
+
+	bad := imageOp(t, []byte("not an image"), 1, 1, false)
+	if decodedImage(&bad) != nil {
+		t.Fatal("bad payload decoded")
+	}
+}
+
+func TestDecodedImageEvictsOldest(t *testing.T) {
+	target := imageOp(t, tinyPNG(t, 200), 2, 2, false)
+
+	first := decodedImage(&target)
+	if first == nil {
+		t.Fatal("target did not decode")
+	}
+
+	for i := range imageCacheLimit {
+		filler := imageOp(t, tinyPNG(t, uint8(100+i)), 2, 2, false)
+		if decodedImage(&filler) == nil {
+			t.Fatalf("filler %d did not decode", i)
+		}
+	}
+
+	if decodedImage(&target) == first {
+		t.Fatal("oldest entry was not evicted")
+	}
+}
+
+func TestImageCacheHitRefreshesRecency(t *testing.T) {
+	var c imageCache
+	for i := range imageCacheLimit {
+		c.put(uint64(i+1), testImage(4, 4), 16)
+	}
+	if c.get(1) == nil {
+		t.Fatal("first entry missing before refresh")
+	}
+	c.put(uint64(imageCacheLimit+1), testImage(4, 4), 16)
+
+	if c.get(1) == nil {
+		t.Fatal("recently used entry was evicted before an untouched one")
+	}
+	if c.get(2) != nil {
+		t.Fatal("least recently used entry survived eviction")
+	}
+}
+
+func TestImageCacheCapsTotalPixels(t *testing.T) {
+	var c imageCache
+	third := maxImageCachePixels/3 + 1
+	c.put(1, testImage(4, 4), third)
+	c.put(2, testImage(4, 4), third)
+	c.put(3, testImage(4, 4), third)
+
+	if c.get(1) != nil {
+		t.Fatal("pixel cap did not evict the oldest entry")
+	}
+	if c.total > maxImageCachePixels {
+		t.Fatalf("cache holds %d pixels over the %d cap", c.total, maxImageCachePixels)
+	}
+	if len(c.order) != 2 {
+		t.Fatalf("cache holds %d entries, want 2 after pixel eviction", len(c.order))
+	}
+}
+
+func TestImageGeomScalesAndTranslates(t *testing.T) {
+	op := layout.DisplayOp{X: 10, Y: 20, W: 30, H: 40}
+	geom := imageGeom(&op, 5, -3, 15, 20)
+
+	x, y := geom.Apply(0, 0)
+	assertNear(t, x, op.X*pxPerPt+5)
+	assertNear(t, y, op.Y*pxPerPt-3)
+
+	x, y = geom.Apply(15, 20)
+	assertNear(t, x, (op.X+op.W)*pxPerPt+5)
+	assertNear(t, y, (op.Y+op.H)*pxPerPt-3)
+}
+
+func TestImageGeomKeepsTranslateWhenBoundsMissing(t *testing.T) {
+	op := layout.DisplayOp{X: 4, Y: 6, W: 30, H: 40}
+	geom := imageGeom(&op, 1, 2, 0, 0)
+
+	x, y := geom.Apply(15, 20)
+	assertNear(t, x, 15+op.X*pxPerPt+1)
+	assertNear(t, y, 20+op.Y*pxPerPt+2)
+}
+
+func TestImageGeomAppliesTransform(t *testing.T) {
+	source := `<html><body><div style="width:20px;height:20px;` +
+		`background:linear-gradient(red,blue);transform:rotate(20deg)"></div></body></html>`
+
+	display, err := render.DisplayList(context.Background(), source, 320, 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, op := range display.Ops {
+		if op.Kind != layout.DisplayOpImage || !op.XformSet {
+			continue
+		}
+
+		geom := imageGeom(&op, 0, 0, 10, 10)
+		_, y0 := geom.Apply(0, 0)
+		_, y1 := geom.Apply(10, 0)
+		if math.Abs(y1-y0) < 1e-6 {
+			t.Fatal("rotation did not tilt the top edge")
+		}
+
+		return
+	}
+
+	t.Fatal("no transformed image op")
+}
+
+func assertNear(t *testing.T, got, want float64) {
+	t.Helper()
+
+	if math.Abs(got-want) > 1e-9 {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+}
+
+func TestImageBytesKeyStableAndDistinct(t *testing.T) {
+	data := tinyPNG(t, 255)
+
+	first := imageOp(t, data, 2, 2, false)
+	same := imageOp(t, append([]byte(nil), data...), 2, 2, false)
+	if imageBytesKey(&first) != imageBytesKey(&same) {
+		t.Fatal("same payload produced different keys")
+	}
+
+	other := imageOp(t, tinyPNG(t, 7), 2, 2, false)
+	if imageBytesKey(&first) == imageBytesKey(&other) {
+		t.Fatal("different payloads share a key")
+	}
+
+	jpeg := imageOp(t, data, 2, 2, true)
+	if imageBytesKey(&first) == imageBytesKey(&jpeg) {
+		t.Fatal("IsJPEG is not folded into the key")
+	}
+
+	if imageBytesKey(nil) != 0 {
+		t.Fatal("nil op key is not zero")
+	}
 }
