@@ -15,6 +15,4 @@ const (
 	degreesInHalfCircle = 180
 	fakeObliqueShear    = -0.2
 	textPadScale        = 2
-	rightSideFirst      = 1
-	bottomRowFirst      = 2
 )

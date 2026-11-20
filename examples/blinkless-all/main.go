@@ -27,6 +27,7 @@ func main() {
 	demoOut := flag.String("demo-out", "", "directory for the -demo frames (default: a temp directory)")
 	web := flag.String("web", "", "serve the page at this address (for example 127.0.0.1:8099) instead of opening a window; GET /frame.png returns the picture")
 	snapshot := flag.String("snapshot", "", "window mode only: also serve a picture of the window as it is now at this loopback address (for example 127.0.0.1:8099); GET /frame.png returns it and / shows it")
+	perf := flag.Bool("perf", false, "enable performance counters (and /debug/state + /debug/pprof/* in -web mode)")
 	flag.Parse()
 
 	if *demo {
@@ -38,13 +39,13 @@ func main() {
 		return
 	}
 
-	if err := run(*width, *height, *tab, *pngOut, *web, *snapshot); err != nil {
+	if err := run(*width, *height, *tab, *pngOut, *web, *snapshot, *perf); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run(width, height int, tab, pngOut, web, snapshot string) error {
+func run(width, height int, tab, pngOut, web, snapshot string, perf bool) error {
 	app, err := NewApp(catalogPath())
 	if err != nil {
 		return err
@@ -59,6 +60,9 @@ func run(width, height int, tab, pngOut, web, snapshot string) error {
 	page, err := app.NewPage(ctx, tab, width, height)
 	if err != nil {
 		return err
+	}
+	if perf {
+		page.Window().SetPerf(true)
 	}
 
 	if pngOut != "" {
@@ -76,6 +80,13 @@ func run(width, height int, tab, pngOut, web, snapshot string) error {
 		}
 
 		attachWebLive(page)
+
+		if perf {
+			return ownframe.ServeWithOptions(ctx, page, web, ownframe.ServeOptions{
+				InsecureAllowDebugState: true,
+				InsecureAllowPprof:      true,
+			})
+		}
 
 		return ownframe.Serve(ctx, page, web)
 	}
@@ -96,7 +107,7 @@ func run(width, height int, tab, pngOut, web, snapshot string) error {
 
 	attachLive(page, hub)
 
-	return ownframe.RunWithOptions(ctx, page, ownframe.WindowOptions{NoAudio: true})
+	return ownframe.RunWithOptions(ctx, page, ownframe.WindowOptions{NoAudio: true, Perf: perf})
 }
 
 // runDemoCommand plays the scripted session of a tab headless and writes its
