@@ -99,7 +99,7 @@ func BenchmarkHoverParseCycle(b *testing.B) {
 	open := false
 	for i := 0; i < b.N; i++ {
 		for _, id := range ids {
-			box := p.boxByID(id)
+			box := boxByID(p, id)
 			if err := p.Hover(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 				b.Fatal(err)
 			}
@@ -156,7 +156,7 @@ func BenchmarkHoverBinCascade(b *testing.B) {
 	})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		box := p.boxByID(ids[i%len(ids)])
+		box := boxByID(p, ids[i%len(ids)])
 		if err := p.Hover(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 			b.Fatal(err)
 		}
@@ -205,7 +205,7 @@ func BenchmarkHoverBinCascadeWithTransition(b *testing.B) {
 	})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		box := p.boxByID(ids[i%len(ids)])
+		box := boxByID(p, ids[i%len(ids)])
 		if err := p.Hover(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 			b.Fatal(err)
 		}
@@ -390,7 +390,7 @@ func newHoverPatchPage(t *testing.T, retain bool) *Page {
 }
 
 func hoverCenter(p *Page, id string) (float64, float64) {
-	b := p.boxByID(id)
+	b := boxByID(p, id)
 
 	return b.X + b.W/2, b.Y + b.H/2
 }
@@ -570,10 +570,10 @@ func TestHoverPatchFailureCountsStayBounded(t *testing.T) {
 	}
 	p.SetPerf(true)
 	for i := range maxHoverFailureKeys + 16 {
-		p.noteHoverPatchFailure("selector", "target-missing", []string{fmt.Sprintf("target-%03d", i)})
+		noteHoverPatchFailure(p, "selector", "target-missing", []string{fmt.Sprintf("target-%03d", i)})
 	}
 
-	items := p.hoverPatchFailureSnapshot()
+	items := hoverPatchFailureSnapshot(p)
 	if len(items) > maxHoverFailureKeys {
 		t.Fatalf("failure keys = %d, want at most %d", len(items), maxHoverFailureKeys)
 	}
@@ -708,7 +708,7 @@ func TestHoverPendingFullRecoversChangeSet(t *testing.T) {
 	p := newHoverPatchPage(t, true)
 	p.TakeDirtyRects()
 
-	p.markFull()
+	markFull(p)
 	p.generation++ // a display commit landed after the paint, before this hover
 
 	hoverAt(t, p, "row-b")
@@ -732,7 +732,7 @@ func TestHoverPendingFullRecoversChangeSet(t *testing.T) {
 // first paint there is no baseline to recover from, so the frame stays full.
 func TestHoverPendingFullWithoutPaintStaysFull(t *testing.T) {
 	p := newHoverPatchPage(t, true)
-	p.markFull()
+	markFull(p)
 
 	hoverAt(t, p, "row-b")
 
@@ -788,13 +788,13 @@ func TestHoverRedrawReusesPatchedCascade(t *testing.T) {
 	}
 	// Mirror the reordered setHover: the id moves first, then the handler
 	// patch cascades with the new hover state.
-	p.setHoverID("a")
+	setHoverID(p, "a")
 	text := "Aisle A"
 	if err := p.PatchElement(ctx, "detail", ElementEdit{Text: &text}); err != nil {
 		t.Fatal(err)
 	}
 	relayed := p.cache.Styled()
-	doc, err := p.styleStaged(ctx, false, p.source, p.renderState())
+	doc, err := styleStaged(p, ctx, false, p.source, renderState(p))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1009,10 +1009,10 @@ func TestHoverPatchScopedHasInsideScopeFallsBack(t *testing.T) {
 	// Hovering inside the risky scope (on item-1 inside .of-dropdown) should be flagged as risky.
 	// If blinkless HoverChangedScopes doesn't fit or is display:none, it must fall back to full layout
 	// instead of using geometric roots that assume no escaping.
-	if !p.hoverIsRisky("", "item-1") {
+	if !hoverIsRisky(p, "", "item-1") {
 		t.Fatalf("item-1 inside .of-dropdown should be flagged as hoverIsRisky")
 	}
-	if p.hoverIsRisky("", "btn-1") {
+	if hoverIsRisky(p, "", "btn-1") {
 		t.Fatalf("btn-1 outside .of-dropdown should NOT be hoverIsRisky")
 	}
 }

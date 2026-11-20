@@ -136,7 +136,7 @@ func renderPNG(ctx context.Context, html string, width, height, scroll int) ([]b
 }
 
 func pngOf(ctx context.Context, s *session) ([]byte, error) {
-	picture := s.page.Testing().PNGWithContext(ctx)
+	picture := s.page.Probe().PNGWithContext(ctx)
 	if len(picture) == 0 {
 		return nil, fmt.Errorf("png: empty picture")
 	}

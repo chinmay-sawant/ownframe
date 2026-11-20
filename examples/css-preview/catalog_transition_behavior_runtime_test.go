@@ -3,13 +3,8 @@ package main
 import (
 	"testing"
 	"time"
-
-	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
-// TestCatalogTransitionBehaviorReachesOwnFrameFrames keeps the position
-// transition on csstransition; the automatic driver does not capture position
-// yet.
 func TestCatalogTransitionBehaviorReachesOwnFrameFrames(t *testing.T) {
 	for _, behavior := range []string{"allow-discrete", "normal"} {
 		t.Run(behavior, func(t *testing.T) {
@@ -21,23 +16,23 @@ func TestCatalogTransitionBehaviorReachesOwnFrameFrames(t *testing.T) {
 			if len(box.Transitions) != 1 || box.Transitions[0].Behavior != behavior {
 				t.Fatalf("Blinkless transition metadata = %+v", box.Transitions)
 			}
-			from := motion.Capture(old, oldBox)
-			to, ops := motion.Capture(next, box), motion.Resolve(next, indices)
+			from := capture(old, oldBox)
+			to, ops := capture(next, box), resolveOps(next, indices)
 			if len(from) != 1 || len(to) != 1 || len(ops) != 1 || from[0].X == to[0].X {
 				t.Fatalf("old/new position paints = %+v / %+v", from, to)
 			}
 			start := time.Unix(9, 0)
-			player, err := motion.BindTransition(next, box, "position", indices, from, start)
+			player, err := bindLocalTransitionTo(next, box, "position", indices, from, nil, start)
 			if err != nil {
 				t.Fatal(err)
 			}
 			active := player.Step(start.Add(499 * time.Millisecond))
-			if behavior == "allow-discrete" && (!active || motion.Read(ops[0]) != from[0]) {
+			if behavior == "allow-discrete" && (!active || readPaint(ops[0]) != from[0]) {
 				t.Fatal("allow-discrete did not hold the old frame before midpoint")
 			}
 			active = player.Step(start.Add(500 * time.Millisecond))
-			if behavior == "allow-discrete" && !active || behavior == "normal" && active || motion.Read(ops[0]) != to[0] {
-				t.Fatalf("%s midpoint active=%v paint=%+v want=%+v", behavior, active, motion.Read(ops[0]), to[0])
+			if behavior == "allow-discrete" && !active || behavior == "normal" && active || readPaint(ops[0]) != to[0] {
+				t.Fatalf("%s midpoint active=%v paint=%+v want=%+v", behavior, active, readPaint(ops[0]), to[0])
 			}
 		})
 	}

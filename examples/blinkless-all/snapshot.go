@@ -110,14 +110,14 @@ type snapshotSession struct{ hub *snapshotHub }
 // TabID is empty: the session works on every tab.
 func (s *snapshotSession) TabID() string { return "" }
 
-// Frame takes a picture when a request is waiting. Page.PNG paints the
+// Frame takes a picture when a request is waiting. The probe paints the
 // retained display list, so live patches and hover are in it. It returns the
 // zero time: the session never asks for a frame of its own.
 func (s *snapshotSession) Frame(
 	ctx context.Context, page *ownframe.Page, _ liveInput, _ time.Time,
 ) (time.Time, error) {
 	if s.hub.take() {
-		s.hub.publish(page.Testing().PNGWithContext(ctx))
+		s.hub.publish(page.Probe().PNGWithContext(ctx))
 	}
 
 	return time.Time{}, nil

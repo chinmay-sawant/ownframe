@@ -112,7 +112,7 @@ EXAMPLES := $(patsubst examples/%/,%,$(wildcard examples/*/))
 # The form and input demos below now live in `input-lab`; the old folders
 # stay for their tests, so open skips them. Run one alone when needed:
 #   go run ./examples/login
-SKIP_OPEN := desktop-cat bind bind-hooks clipboard controls editing forms input login states
+SKIP_OPEN := desktop-cat bind forms login
 
 # The folder named after `open`, if one was given.
 OPEN_FROM := $(word 2,$(MAKECMDGOALS))

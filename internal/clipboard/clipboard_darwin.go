@@ -7,8 +7,9 @@ package clipboard
 #cgo LDFLAGS: -framework AppKit
 #import <AppKit/AppKit.h>
 #import <stdlib.h>
+#include <stdbool.h>
 
-static void ownframePut(const void *p, size_t n) {
+static bool ownframePut(const void *p, size_t n) {
 	@autoreleasepool {
 		NSPasteboard *pb = [NSPasteboard generalPasteboard];
 		[pb clearContents];
@@ -16,11 +17,11 @@ static void ownframePut(const void *p, size_t n) {
 			length:(NSUInteger)n
 			encoding:NSUTF8StringEncoding];
 		if (s == nil) {
-			[pb setString:@"" forType:NSPasteboardTypeString];
-			return;
+			return [pb setString:@"" forType:NSPasteboardTypeString];
 		}
-		[pb setString:s forType:NSPasteboardTypeString];
+		bool ok = [pb setString:s forType:NSPasteboardTypeString];
 		[s release];
+		return ok;
 	}
 }
 
@@ -36,20 +37,21 @@ static char *ownframeGet(void) {
 }
 */
 import "C"
-import "unsafe"
+import (
+	"context"
+	"unsafe"
+)
 
-func writeOS(text string) {
+func writeOS(_ context.Context, text string) bool {
 	if text == "" {
-		C.ownframePut(nil, 0)
-
-		return
+		return bool(C.ownframePut(nil, 0))
 	}
 
 	p := unsafe.Pointer(unsafe.StringData(text))
-	C.ownframePut(p, C.size_t(len(text)))
+	return bool(C.ownframePut(p, C.size_t(len(text))))
 }
 
-func readOS() (string, bool) {
+func readOS(context.Context) (string, bool) {
 	p := C.ownframeGet()
 	if p == nil {
 		return "", false

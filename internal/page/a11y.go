@@ -14,12 +14,12 @@ type accessibilityState = a11y.State
 // AccessibilityTree returns current semantics in document order. Call it on
 // the page's owning loop; native adapters must queue actions back to that loop.
 func (p *Page) AccessibilityTree() (host.AccessibilityTree, error) {
-	return a11y.Tree(p.a11yState(), p.accessibilityView())
+	return a11y.Tree(a11yState(p), accessibilityView(p))
 }
 
-func (p *Page) accessibilityView() a11y.View {
+func accessibilityView(p *Page) a11y.View {
 	controls := map[string]a11y.Control{}
-	if st := p.formState(); st != nil {
+	if st := formState(p); st != nil {
 		controls = make(map[string]a11y.Control, len(st.ByID))
 		for id, c := range st.ByID {
 			controls[id] = accessibilityControl(c)
@@ -73,14 +73,14 @@ func (a accessibilityActor) Focus(ctx context.Context, id string) error {
 func (a accessibilityActor) FocusID() string { return a.p.FocusID() }
 
 func (a accessibilityActor) Control(id string) (a11y.Control, bool) {
-	c, ok := a.p.control(id)
+	c, ok := control(a.p, id)
 	if !ok {
 		return a11y.Control{}, false
 	}
 	return accessibilityControl(c), true
 }
 
-func (a accessibilityActor) BoxByID(id string) Box { return a.p.boxByID(id) }
+func (a accessibilityActor) BoxByID(id string) Box { return boxByID(a.p, id) }
 
 func (a accessibilityActor) Lookup(action string) (string, bool) {
 	return a.p.nav.Lookup(action)
@@ -91,7 +91,7 @@ func (a accessibilityActor) Load(ctx context.Context, html string) error {
 }
 
 func (a accessibilityActor) ClickControl(ctx context.Context, box Box) error {
-	return a.p.clickControl(ctx, box)
+	return clickControl(a.p, ctx, box)
 }
 
 func (a accessibilityActor) IMEReplace(ctx context.Context, start, end int, insert string, caret int) error {
@@ -104,17 +104,17 @@ func (a accessibilityActor) IMEReplace(ctx context.Context, start, end int, inse
 	)
 }
 
-func (p *Page) commitAccessibility(source string) {
-	s := p.a11yState()
+func commitAccessibility(p *Page, source string) {
+	s := a11yState(p)
 	if s == nil {
 		s = &accessibilityState{}
-		p.setA11yState(s)
+		setA11yState(p, s)
 	}
 	s.Commit(source)
 }
 
-func (p *Page) invalidateAccessibilityDocument() {
-	p.a11yState().Invalidate()
+func invalidateAccessibilityDocument(p *Page) {
+	a11yState(p).Invalidate()
 }
 
 // refreshAccessibility puts the patch's edits into the accessibility tree and
@@ -122,14 +122,14 @@ func (p *Page) invalidateAccessibilityDocument() {
 // client asked for yet has no parsed root to edit, so the patch is skipped and
 // the next client parses the committed source. A tree that is attached walks
 // only the edited root.
-func (p *Page) refreshAccessibility(id string, edits []ElementEdit) {
-	s := p.a11yState()
+func refreshAccessibility(p *Page, id string, edits []ElementEdit) {
+	s := a11yState(p)
 	if s == nil || !s.Attached() {
 		return
 	}
 	s.Apply(id, accessibilityEdits(edits))
-	p.invalidateAccessibilityDocument()
-	p.commitAccessibility(s.Source())
+	invalidateAccessibilityDocument(p)
+	commitAccessibility(p, s.Source())
 }
 
 func accessibilityEdits(edits []ElementEdit) []a11y.Edit {

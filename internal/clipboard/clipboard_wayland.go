@@ -8,7 +8,10 @@
 // ErrWaylandToolsMissing surface missing helpers explicitly.
 package clipboard
 
-import "os/exec"
+import (
+	"context"
+	"os/exec"
+)
 
 func wlCopyArgs() []string {
 	return []string{"--type", "text/plain", "--"}
@@ -22,16 +25,16 @@ func wlPasteArgs() []string {
 	return []string{"--no-newline"}
 }
 
-func wlWrite(text string) {
-	runWL("wl-copy", wlCopyArgs(), text)
+func wlWrite(ctx context.Context, text string) bool {
+	return runWL(ctx, "wl-copy", wlCopyArgs(), text)
 }
 
 func wlClear() {
-	runWL("wl-copy", wlClearArgs(), "")
+	runWL(context.Background(), "wl-copy", wlClearArgs(), "")
 }
 
-func wlRead() (string, bool) {
-	return outWL("wl-paste", wlPasteArgs())
+func wlRead(ctx context.Context) (string, bool) {
+	return outWL(ctx, "wl-paste", wlPasteArgs())
 }
 
 func lookWL(name string) (string, bool) {

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 // motionPage builds a page from raw HTML and CSS, draws it, and returns it.
@@ -29,7 +28,7 @@ func targetOp(t *testing.T, p *ownframe.Page, id string) *ownframe.DisplayOp {
 	if !ok {
 		t.Fatalf("missing target box %q", id)
 	}
-	indices := motion.OperationIndices(p.Probe().Display(), box)
+	indices := operationIndices(p.Probe().Display(), box)
 	if len(indices) == 0 {
 		t.Fatalf("target %q owns no display operation", id)
 	}
@@ -43,7 +42,7 @@ func targetPaints(t *testing.T, p *ownframe.Page, id string) []paint {
 	if !ok {
 		t.Fatalf("missing target box %q", id)
 	}
-	return motion.Capture(p.Probe().Display(), box)
+	return capture(p.Probe().Display(), box)
 }
 
 // xformX is the painted x translation of an operation in CSS pixels. A

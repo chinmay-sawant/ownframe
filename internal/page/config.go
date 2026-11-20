@@ -65,13 +65,13 @@ type Config struct {
 }
 
 // renderState is the input, theme, and image state Redraw and PNG share.
-func (p *Page) renderState() render.State {
+func renderState(p *Page) render.State {
 	focus := ""
-	if st := p.formState(); st != nil {
+	if st := formState(p); st != nil {
 		focus = st.FocusID
 	}
 
-	return draw.RenderState(p.HoverID(), p.activeID(), focus, p.theme, p.imageResolver, p.retainState)
+	return draw.RenderState(p.HoverID(), activeID(p), focus, p.theme, p.imageResolver, p.retainState)
 }
 
 // allocSampleGap bounds ReadMemStats on a Perf redraw to about twice a second.
@@ -83,12 +83,12 @@ const allocSampleGap = 500 * time.Millisecond
 // Each call clears the allocator sample clock, so the next tracked redraw
 // samples immediately.
 func (p *Page) SetPerf(on bool) {
-	defer p.notifyFrame()
+	defer notifyFrame(p)
 	p.perfOptIn = on
-	p.setPerfEnabled(on || p.devtools)
+	setPerfEnabled(p, on || p.devtools)
 }
 
-func (p *Page) setPerfEnabled(on bool) {
+func setPerfEnabled(p *Page, on bool) {
 	p.perf = on
 	p.allocAt = time.Time{}
 }
@@ -96,7 +96,7 @@ func (p *Page) setPerfEnabled(on bool) {
 // allocDue reports whether this redraw should read the allocator.
 // A zero clock is due. A later call inside allocSampleGap is not and does
 // not move the clock. A call at the gap is due.
-func (p *Page) allocDue(now time.Time) bool {
+func allocDue(p *Page, now time.Time) bool {
 	if !p.allocAt.IsZero() && now.Sub(p.allocAt) < allocSampleGap {
 		return false
 	}
@@ -110,7 +110,7 @@ func (p *Page) Perf() bool { return p.perf }
 
 // clearPerf zeroes the opt-in Stats fields after an untracked Redraw, so a
 // page that opts out never shows stale developer numbers.
-func (p *Page) clearPerf() {
+func clearPerf(p *Page) {
 	p.stats.lastTemplate = 0
 	p.stats.styleTime = 0
 	p.stats.layoutTime = 0
@@ -165,9 +165,9 @@ func (p *Page) DevTools() bool {
 
 // SetDevTools turns the window devtools overlay on or off.
 func (p *Page) SetDevTools(on bool) {
-	defer p.notifyFrame()
+	defer notifyFrame(p)
 	p.devtools = on
-	p.setPerfEnabled(on || p.perfOptIn)
+	setPerfEnabled(p, on || p.perfOptIn)
 }
 
 // SetDrawTime records how long the window spent drawing the last frame, so
@@ -192,8 +192,8 @@ func (p *Page) SetTheme(source string) error {
 
 	p.theme = sheet
 	p.themeSrc = source
-	p.invalidateCache()
-	p.markFull()
+	invalidateCache(p)
+	markFull(p)
 
 	return nil
 }

@@ -13,7 +13,7 @@ import (
 )
 
 func synonymAllow() map[string]bool {
-	return splitNames("DisplayPatch,ElementRegistry,FocusNext,FocusPrev,MarkRect,PNG,PatchReport,PressedID,Redo,Redraw,RedrawIfChanged,SelectLineAt,SelectWordAt,Undo,WantFrameIn")
+	return splitNames("DisplayPatch,PNG,WantFrameIn")
 }
 
 func splitNames(s string) map[string]bool {

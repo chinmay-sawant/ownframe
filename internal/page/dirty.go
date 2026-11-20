@@ -73,8 +73,8 @@ func boxRect(b Box) image.Rectangle {
 
 // markRect queues one dirty rect on the page tracker and drops a cached
 // picture when the rect paints something.
-func (p *Page) markRect(r image.Rectangle) {
-	defer p.notifyFrame()
+func markRect(p *Page, r image.Rectangle) {
+	defer notifyFrame(p)
 	p.tickMutated.Store(true)
 	if !r.Empty() {
 		p.draw.DropPNG()
@@ -84,7 +84,7 @@ func (p *Page) markRect(r image.Rectangle) {
 }
 
 // markFull dirties the whole content on the page tracker.
-func (p *Page) markFull() {
+func markFull(p *Page) {
 	p.tickMutated.Store(true)
 	p.draw.DropPNG()
 	p.dirty.MarkFull()
@@ -95,13 +95,13 @@ func (p *Page) markFull() {
 // previous call and clears them. The tracker owns the damage state; the
 // page only supplies its content rect. See dirty.Tracker.Take.
 func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
-	rects, ok := p.dirty.Take(p.contentRect())
+	rects, ok := p.dirty.Take(contentRect(p))
 	oldPainted := p.painted
 	p.painted = p.draw.Display
 	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
 		oldPainted.Release()
 	}
-	p.maybeReleasePainted()
+	maybeReleasePainted(p)
 
 	return rects, ok
 }
@@ -111,13 +111,13 @@ func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
 // whole-content change returns the content rect. ok is false when nothing
 // changed since the previous call.
 func (p *Page) TakeDirty() (image.Rectangle, bool) {
-	rects, ok := p.dirty.Take(p.contentRect())
+	rects, ok := p.dirty.Take(contentRect(p))
 	oldPainted := p.painted
 	p.painted = p.draw.Display
 	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
 		oldPainted.Release()
 	}
-	p.maybeReleasePainted()
+	maybeReleasePainted(p)
 	if !ok {
 		return image.Rectangle{}, false
 	}
@@ -147,14 +147,14 @@ func (p *Page) TakeDirty() (image.Rectangle, bool) {
 //
 // A stale fullGen below the current generation is fine: the Take drained
 // the mark it belonged to, and any future mark refreshes the binding.
-func (p *Page) maybeReleasePainted() {
+func maybeReleasePainted(p *Page) {
 	if p.painted == nil {
 		return
 	}
 	if p.restampRedraw || p.retainState {
 		return
 	}
-	if !p.motionCommitIdle() {
+	if !motionCommitIdle(p) {
 		return
 	}
 	if p.fullGen > p.generation {
@@ -172,47 +172,47 @@ func (p *Page) maybeReleasePainted() {
 // handler calls it for the ids it changed before the next Redraw. A page
 // that never calls it stays correct: Redraw diffs the display lists.
 func (p *Page) Invalidate(id string) {
-	if id == "" || !p.hasBox(id) {
-		p.markFull()
+	if id == "" || !hasBox(p, id) {
+		markFull(p)
 
 		return
 	}
 
-	p.markPending(id)
+	markPending(p, id)
 }
 
 // markPending marks the id's box now and its box after the next Redraw, so
 // an element that grew repaints the space it used and the space it now
 // uses.
-func (p *Page) markPending(id string) {
+func markPending(p *Page, id string) {
 	if id == "" {
 		return
 	}
 
-	p.markID(id)
+	markID(p, id)
 	p.dirty.Pend(id)
 }
 
 // markPair marks the boxes of two element ids, one before and one after a
 // state change.
-func (p *Page) markPair(oldID, newID string) {
-	p.markPending(oldID)
-	p.markPending(newID)
+func markPair(p *Page, oldID, newID string) {
+	markPending(p, oldID)
+	markPending(p, newID)
 }
 
 // markID marks the box an id names, or the whole frame when no box has it.
-func (p *Page) markID(id string) {
+func markID(p *Page, id string) {
 	if id == "" {
 		return
 	}
 
-	if !p.hasBox(id) {
-		p.markFull()
+	if !hasBox(p, id) {
+		markFull(p)
 
 		return
 	}
 
-	p.markElement(id)
+	markElement(p, id)
 }
 
 // markElement marks the id's box, the boxes inside its element subtree,
@@ -221,34 +221,34 @@ func (p *Page) markID(id string) {
 // box scan: a box geometrically inside the id's rect adds nothing to
 // the union, so only descendants outside it change the region, and
 // those repaint with the parent rather than being missed.
-func (p *Page) markElement(id string) {
-	r := p.subtreeRect(id)
-	p.markRect(r)
-	p.markRect(p.dirty.Prev(id))
+func markElement(p *Page, id string) {
+	r := subtreeRect(p, id)
+	markRect(p, r)
+	markRect(p, p.dirty.Prev(id))
 	p.dirty.Note(id, r)
 }
 
 // subtreeRect returns the union of the id's box and its descendants'
 // boxes from the parent-to-children index, falling back to the id's own
 // box when the index has no entry for it.
-func (p *Page) subtreeRect(id string) image.Rectangle {
+func subtreeRect(p *Page, id string) image.Rectangle {
 	if r, ok := kidRect(p, id); ok {
 		return r
 	}
-	return dirty.BoxRect(p.boxByID(id))
+	return dirty.BoxRect(boxByID(p, id))
 }
 
 // markToggle marks a checkbox or radio, its label box when the layout has
 // one, and a halo that covers an inline label it does not.
-func (p *Page) markToggle(id string) {
-	p.markID(id)
+func markToggle(p *Page, id string) {
+	markID(p, id)
 
-	ctl := dirty.BoxRect(p.boxByID(id))
-	p.markRect(dirty.ToggleHalo(ctl))
+	ctl := dirty.BoxRect(boxByID(p, id))
+	markRect(p, dirty.ToggleHalo(ctl))
 
 	for _, b := range p.boxes {
 		if r, ok := dirty.LabelNear(ctl, b); ok {
-			p.markRect(r)
+			markRect(p, r)
 		}
 	}
 }
@@ -257,11 +257,11 @@ func (p *Page) markToggle(id string) {
 // dirty region. The first draw and a size change dirty the frame. With Perf
 // on it also stores the changed, dirty, and region counters Stats reports;
 // TakeDirty clears only the region, never these counters.
-func (p *Page) dirtyFromDisplay(prev, display *Display) {
+func dirtyFromDisplay(p *Page, prev, display *Display) {
 	if prev == nil {
-		p.markFull()
+		markFull(p)
 		if p.perf {
-			p.recordFull(len(display.Ops))
+			recordFull(p, len(display.Ops))
 		}
 		p.lastPatch = DisplayPatch{
 			Changed: len(display.Ops),
@@ -285,7 +285,7 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 			d, full, changed := diffDisplayMemo(p.painted, display)
 			if !full {
 				p.dirty.Full = false
-				p.markDisplayPartial(d, display, changed)
+				markDisplayPartial(p, d, display, changed)
 
 				return
 			}
@@ -294,14 +294,14 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 			// seen, so no second diff runs: one diff carries the area
 			// budget that decides full, and its result is the report.
 			d.freeMemo()
-			p.markFull()
+			markFull(p)
 			// This commit carries a mark that was already pending, so a later
 			// diff from painted cannot recover what the mark covered (an
 			// in-place tick, for example). Bind the mark to the new generation;
 			// only a full diff from this commit stays recoverable.
 			p.fullGen = p.generation + 1
 			if p.perf {
-				p.recordFullChanged(changed, len(display.Ops))
+				recordFullChanged(p, changed, len(display.Ops))
 			}
 			p.lastPatch = DisplayPatch{
 				Changed: changed,
@@ -315,14 +315,14 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		}
 
 		d, _, changed := diffDisplay(prev, display)
-		p.markFull()
+		markFull(p)
 		// This commit carries a mark that was already pending, so a later
 		// diff from painted cannot recover what the mark covered (an
 		// in-place tick, for example). Bind the mark to the new generation;
 		// only a full diff from this commit stays recoverable.
 		p.fullGen = p.generation + 1
 		if p.perf {
-			p.recordFullChanged(changed, len(display.Ops))
+			recordFullChanged(p, changed, len(display.Ops))
 		}
 		p.lastPatch = DisplayPatch{
 			Changed: changed,
@@ -338,9 +338,9 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 	d, full, changed := diffDisplayMemo(prev, display)
 	if full {
 		d.freeMemo()
-		p.markFull()
+		markFull(p)
 		if p.perf {
-			p.recordFullChanged(changed, len(display.Ops))
+			recordFullChanged(p, changed, len(display.Ops))
 		}
 		p.lastPatch = DisplayPatch{
 			Changed: changed,
@@ -353,23 +353,23 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		return
 	}
 
-	p.markDisplayPartial(d, display, changed)
+	markDisplayPartial(p, d, display, changed)
 }
 
 // markDisplayPartial queues the regions one partial display diff found and
 // records the counters and report that describe it. It frees the diff's
 // bounds memo on every path.
-func (p *Page) markDisplayPartial(d dirtySet, display *Display, changed int) {
+func markDisplayPartial(p *Page, d dirtySet, display *Display, changed int) {
 	defer d.freeMemo()
 	for i := range d.n {
-		p.markRect(d.rects[i])
+		markRect(p, d.rects[i])
 	}
 
 	if p.perf {
 		if d.memo != nil && d.memo.Len() == len(display.Ops) {
-			p.recordPartialBounds(changed, d.rects[:d.n], d.memo, display)
+			recordPartialBounds(p, changed, d.rects[:d.n], d.memo, display)
 		} else {
-			p.recordPartial(changed, d.rects[:d.n], display)
+			recordPartial(p, changed, d.rects[:d.n], display)
 		}
 	}
 
@@ -385,9 +385,9 @@ func (p *Page) markDisplayPartial(d dirtySet, display *Display, changed int) {
 // applyPending marks the new box of every pending id, so an element that
 // grew or shrank repaints the space it now uses too, then clears the map
 // for reuse instead of dropping it.
-func (p *Page) applyPending() {
+func applyPending(p *Page) {
 	for id := range p.dirty.Pending {
-		p.markElement(id)
+		markElement(p, id)
 	}
 
 	clear(p.dirty.Pending)
@@ -395,24 +395,24 @@ func (p *Page) applyPending() {
 
 // recordFull stores whole-frame dirty counters for a first draw, a size
 // change, or a paint fallback. n is the ops or boxes now on screen.
-func (p *Page) recordFull(n int) {
-	p.recordFullChanged(n, n)
+func recordFull(p *Page, n int) {
+	recordFullChanged(p, n, n)
 }
 
 // recordFullChanged is recordFull with the operations that actually differ
 // kept separate from the operations the full repaint meets. A full damage
 // region still counts every operation as dirty; only the changed count is
 // the display diff's own result.
-func (p *Page) recordFullChanged(changed, n int) {
+func recordFullChanged(p *Page, changed, n int) {
 	p.stats.changedOps = changed
 	p.stats.dirtyOps = n
 	p.stats.dirtyRegions = 1
-	r := p.contentRect()
+	r := contentRect(p)
 	p.stats.dirtyArea = r.Dx() * r.Dy()
 }
 
 // recordPartial counts the diff regions and each intersecting operation once.
-func (p *Page) recordPartial(changed int, rects []image.Rectangle, d *Display) {
+func recordPartial(p *Page, changed int, rects []image.Rectangle, d *Display) {
 	p.stats.changedOps = changed
 	p.stats.dirtyOps = 0
 	p.stats.dirtyRegions = len(rects)
@@ -435,7 +435,7 @@ func (p *Page) recordPartial(changed int, rects []image.Rectangle, d *Display) {
 // the display diff already computed instead of running a second bounds
 // pass over every operation. An index the diff never computed falls
 // back to OpBounds, so the counts always equal recordPartial's.
-func (p *Page) recordPartialBounds(changed int, rects []image.Rectangle, memo *dirty.BoundsMemo, d *Display) {
+func recordPartialBounds(p *Page, changed int, rects []image.Rectangle, memo *dirty.BoundsMemo, d *Display) {
 	p.stats.changedOps = changed
 	p.stats.dirtyOps = 0
 	p.stats.dirtyRegions = len(rects)
@@ -509,12 +509,12 @@ type displayDecls struct {
 // later mark walks only the changed element's subtree. An unchanged id set
 // repoints the index without clearing it, so a redraw of the same page keeps
 // the map's capacity and buckets.
-func (p *Page) setBoxes(boxes []Box) {
+func setBoxes(p *Page, boxes []Box) {
 	old := p.boxes
-	w, h := p.canvasSize()
+	w, h := canvasSize(p)
 	// Delta the content rect before the index is rebuilt in place: p.index
 	// still describes old here, and Index clears it.
-	content, ok := p.extendContent(p.index, boxes, w, h)
+	content, ok := extendContent(p, p.index, boxes, w, h)
 	sameIDs := hit.SameIDs(old, boxes)
 	p.boxes = boxes
 	if sameIDs {
@@ -523,13 +523,13 @@ func (p *Page) setBoxes(boxes []Box) {
 		p.index = hit.Index(p.index, boxes)
 	}
 	p.hits = nil
-	p.finishContent(old, content, ok, w, h)
+	finishContent(p, old, content, ok, w, h)
 	noteBoxes(p, old, boxes, sameIDs)
 }
 
 // canvasSize is the canvas the content rect covers: the committed
 // display's size, or the window size before the first commit.
-func (p *Page) canvasSize() (int, int) {
+func canvasSize(p *Page) (int, int) {
 	if p.draw.Display != nil {
 		return p.draw.Display.Width, p.draw.Display.Height
 	}
@@ -542,7 +542,7 @@ func (p *Page) canvasSize() (int, int) {
 // resized canvas, a shrink, a move, or a missing old index. A pure
 // grow stays incremental: the old rect sits inside the new one, so
 // unioning the new rect keeps the union exact.
-func (p *Page) extendContent(oldIndex map[string]*Box, boxes []Box, w, h int) (image.Rectangle, bool) {
+func extendContent(p *Page, oldIndex map[string]*Box, boxes []Box, w, h int) (image.Rectangle, bool) {
 	if !p.contentOK || oldIndex == nil || p.contentW != w || p.contentH != h {
 		return image.Rectangle{}, false
 	}
@@ -571,7 +571,7 @@ func (p *Page) extendContent(oldIndex map[string]*Box, boxes []Box, w, h int) (i
 // boxes. Duplicate ids that lose one copy keep the survivor's rect
 // covered: the union over-covers rather than recomputes, which
 // repaints more, never less.
-func (p *Page) finishContent(old []Box, content image.Rectangle, ok bool, w, h int) {
+func finishContent(p *Page, old []Box, content image.Rectangle, ok bool, w, h int) {
 	if ok {
 		for i := range old {
 			if _, found := p.index[old[i].ID]; !found {
@@ -623,7 +623,7 @@ func noteBoxes(p *Page, old, boxes []Box, sameIDs bool) {
 // It is a method on *Page to sit beside setBoxes and displayDeclarations;
 // it is unexported, so ownframe.Page gains no new API until an explicit
 // delegation is added.
-func (p *Page) forgetBoxes() {
+func forgetBoxes(p *Page) {
 	if p == nil {
 		return
 	}
@@ -693,7 +693,7 @@ func kidRect(p *Page, id string) (image.Rectangle, bool) {
 // same display is asked about: a publish captures transitions against the
 // display it is about to install and then binds animations to it, so the pair
 // costs one scan instead of two.
-func (p *Page) displayDeclarations(d *Display) (animations, transitions bool) {
+func displayDeclarations(p *Page, d *Display) (animations, transitions bool) {
 	if d == nil {
 		return false, false
 	}
@@ -724,26 +724,26 @@ func (p *Page) displayDeclarations(d *Display) (animations, transitions bool) {
 	return e.decls.animations, e.decls.transitions
 }
 
-func (p *Page) setPlacedBoxes(d *Display) {
+func setPlacedBoxes(p *Page, d *Display) {
 	fixed := fixedBoxes(d)
 	if len(fixed) == 0 {
-		p.setBoxes(d.Boxes)
+		setBoxes(p, d.Boxes)
 		p.hits = nil
 
 		return
 	}
-	if p.hitsReusable(d.Boxes, fixed) {
+	if hitsReusable(p, d.Boxes, fixed) {
 		// Same elements, same rectangles, same pins: the stored list already
 		// describes the new display, so keep it and its capacity instead of
 		// recopying every item. The index still repoints at the new boxes.
 		keep := p.hits
-		p.setBoxes(d.Boxes)
+		setBoxes(p, d.Boxes)
 		p.hits = keep
 
 		return
 	}
 	hits := p.hits
-	p.setBoxes(d.Boxes)
+	setBoxes(p, d.Boxes)
 	p.hits = hit.List(hits, d.Boxes, fixed)
 }
 
@@ -751,7 +751,7 @@ func (p *Page) setPlacedBoxes(d *Display) {
 // with the same pins: the same elements with the same rectangles in order,
 // and the same fixed roots as sets. The markings are a pure function of the
 // box links and the roots, so equal inputs mean an identical list.
-func (p *Page) hitsReusable(boxes, fixed []Box) bool {
+func hitsReusable(p *Page, boxes, fixed []Box) bool {
 	if len(p.hits) != len(boxes) {
 		return false
 	}
@@ -824,7 +824,7 @@ func (p *Page) BoxAt(x, y float64) (Box, bool) {
 	}
 
 	if p.hasViewportSticky {
-		return p.hitBox(x, y)
+		return hitBox(p, x, y)
 	}
 	return hit.Hit(p.boxes, x, y)
 }
@@ -833,12 +833,12 @@ var _ host.BoxSlicer = (*Page)(nil)
 
 // boxByID returns the last box laid out with that id, or Box{ID: id}. The
 // lookup is one map read, never a walk over p.boxes.
-func (p *Page) boxByID(id string) Box {
+func boxByID(p *Page, id string) Box {
 	return hit.ByID(p.index, id)
 }
 
 // hasBox reports whether the last layout has a box for id, in one map read.
-func (p *Page) hasBox(id string) bool {
+func hasBox(p *Page, id string) bool {
 	return hit.Has(p.index, id)
 }
 
@@ -848,8 +848,8 @@ func (p *Page) hasBox(id string) bool {
 // per-frame TakeDirty costs O(1) on large pages. setBoxes maintains it
 // incrementally; the size check stays as the backstop for restores that
 // bypass setBoxes.
-func (p *Page) contentRect() image.Rectangle {
-	w, h := p.canvasSize()
+func contentRect(p *Page) image.Rectangle {
+	w, h := canvasSize(p)
 	if p.contentOK && p.contentW == w && p.contentH == h {
 		return p.content
 	}
@@ -959,35 +959,35 @@ func (p *Page) SetScrollViewport(x, y, width, height float64) {
 		return
 	}
 	p.stickyViewport = &next
-	p.refreshStickyBoxes(x, y, width, height)
+	refreshStickyBoxes(p, x, y, width, height)
 }
 
-func (p *Page) refreshStickyBoxes(x, y, width, height float64) {
+func refreshStickyBoxes(p *Page, x, y, width, height float64) {
 	display := p.Display()
 	if !p.hasViewportSticky || display == nil {
 		return
 	}
-	p.setStickyBoxes(layout.StickyView(display, x, y, width, height))
+	setStickyBoxes(p, layout.StickyView(display, x, y, width, height))
 }
 
-func (p *Page) setDisplayBoxes(display *Display) {
+func setDisplayBoxes(p *Page, display *Display) {
 	p.hasViewportSticky = layout.HasViewportSticky(display)
 	if !p.hasViewportSticky {
 		p.stickyViewport = nil
-		p.setPlacedBoxes(display)
+		setPlacedBoxes(p, display)
 		return
 	}
 	viewport := scrollViewport{x: float64(p.scroll.Windowing.X), y: float64(p.scroll.Windowing.Y), width: float64(p.width), height: float64(p.height)}
 	if p.stickyViewport != nil {
 		viewport = *p.stickyViewport
 	}
-	p.setStickyBoxes(layout.StickyView(display, viewport.x, viewport.y, viewport.width, viewport.height))
+	setStickyBoxes(p, layout.StickyView(display, viewport.x, viewport.y, viewport.width, viewport.height))
 }
 
 // A sticky stacking context can paint above a later in-flow sibling. Preserve
 // document order in Boxes, but route pointer input in the engine's paint order.
-func (p *Page) setStickyBoxes(display *Display) {
-	p.setPlacedBoxes(display)
+func setStickyBoxes(p *Page, display *Display) {
+	setPlacedBoxes(p, display)
 	items := hit.List(nil, display.Boxes, fixedBoxes(display))
 	ranks := make([]int, len(items))
 	for rank, operation := range display.Order {

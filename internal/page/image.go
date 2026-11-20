@@ -19,7 +19,7 @@ func (p *Page) Image() image.Image {
 // rasterized picture.
 func (p *Page) Display() *layout.Display {
 	if p.tickActive && p.tickSnap == nil {
-		p.tickSnap = p.captureTickOps()
+		p.tickSnap = captureTickOps(p)
 		p.tickMutated.Store(true)
 	}
 	return p.draw.Display
@@ -39,7 +39,7 @@ func (p *Page) PNGWithContext(ctx context.Context) []byte {
 		ctx = context.Background()
 	}
 
-	return p.draw.Bytes(ctx, p.source, p.viewport(), p.renderState())
+	return p.draw.Bytes(ctx, p.source, viewport(p), renderState(p))
 }
 
 // SetImage registers encoded image bytes (PNG, JPEG, or SVG) for one source
@@ -60,7 +60,7 @@ func (p *Page) ImageData(src string) ([]byte, bool) {
 		return nil, false
 	}
 
-	data, err := p.imageBytes(src)
+	data, err := imageBytes(p, src)
 	if err != nil || len(data) == 0 {
 		return nil, false
 	}
@@ -72,7 +72,7 @@ func (p *Page) ImageData(src string) ([]byte, bool) {
 // page never registered falls back to the bundled emoji pictures, so the
 // replacer needs no per-page setup. Blocked schemes (GEN-30) fail before
 // any lookup.
-func (p *Page) imageBytes(src string) ([]byte, error) {
+func imageBytes(p *Page, src string) ([]byte, error) {
 	if err := checkImageSrc(src); err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (p *Page) imageBytes(src string) ([]byte, error) {
 // state the engine patches. A page that started without it turns the state on
 // and owes one redraw, the same debt the re-projection pass pays; the request is
 // collected again on the frame that can apply it.
-func (p *Page) stepSVGPaintMotion(ctx context.Context) {
+func stepSVGPaintMotion(p *Page, ctx context.Context) {
 	if p.motion == nil || p.animationsOff {
 		return
 	}
@@ -122,7 +122,7 @@ func (p *Page) stepSVGPaintMotion(ctx context.Context) {
 
 	applied := 0
 	for i := range requests {
-		if err := p.applySVGPaint(ctx, requests[i]); err != nil {
+		if err := applySVGPaint(p, ctx, requests[i]); err != nil {
 			p.motion.NoteSVGPaint(applied, err)
 
 			return
@@ -136,7 +136,7 @@ func (p *Page) stepSVGPaintMotion(ctx context.Context) {
 // applySVGPaint restyles one element and adopts the engine patch. The override
 // strings are parsed by the engine, so the host does not carry a second colour
 // or dash parser.
-func (p *Page) applySVGPaint(ctx context.Context, request motion.SVGPaintRequest) error {
+func applySVGPaint(p *Page, ctx context.Context, request motion.SVGPaintRequest) error {
 	if request.ElementID == "" || len(request.Overrides) == 0 {
 		return nil
 	}
@@ -147,7 +147,7 @@ func (p *Page) applySVGPaint(ctx context.Context, request motion.SVGPaintRequest
 		return fmt.Errorf("motion: restyle svg %q: %w", request.ElementID, err)
 	}
 
-	p.adoptSVGPaint(patch)
+	adoptSVGPaint(p, patch)
 
 	return nil
 }
@@ -157,7 +157,7 @@ func (p *Page) applySVGPaint(ctx context.Context, request motion.SVGPaintRequest
 // does not restart on its own patch. Damage comes from the patch image bounds:
 // the paint changed inside the same box, so the display diff cannot tell which
 // pixels moved and the engine already measured them.
-func (p *Page) adoptSVGPaint(patch *layout.ElementPatch) bool {
+func adoptSVGPaint(p *Page, patch *layout.ElementPatch) bool {
 	if patch == nil {
 		return false
 	}
@@ -166,16 +166,16 @@ func (p *Page) adoptSVGPaint(patch *layout.ElementPatch) bool {
 		return false
 	}
 
-	previous := p.adoptSpliced(d)
+	previous := adoptSpliced(p, d)
 	p.motion.MarkSVGPaintKept()
-	p.bindMotion(previous, d)
-	p.bindTransitions(nil)
+	bindMotion(p, previous, d)
+	bindTransitions(p, nil)
 	if previous != nil && previous != d {
 		previous.Release()
 	}
-	p.markRect(patch.Old)
+	markRect(p, patch.Old)
 	if patch.New != patch.Old {
-		p.markRect(patch.New)
+		markRect(p, patch.New)
 	}
 
 	return true

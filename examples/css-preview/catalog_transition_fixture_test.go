@@ -1,17 +1,11 @@
 package main
 
-// These transition cases exercise csstransition directly. The automatic
-// transition driver covers the colour and opacity cards (see
-// catalog_transition_automatic_test.go); the left and width cases stay here
-// until the transition track's geometry phase lands.
-
 import (
 	"context"
 	"testing"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/motion"
 )
 
 type transitionRuntimeCase struct {
@@ -20,9 +14,7 @@ type transitionRuntimeCase struct {
 }
 
 // motionFixture builds one page and returns the display, the target box, its
-// operation indices, and the declared paints. The transition tests compare two
-// pages because a transition starts between them; the transition runtime does
-// not capture a style change yet.
+// operation indices, and the declared paints.
 func motionFixture(t *testing.T, html, css string) (*ownframe.Display, ownframe.Box, []int, []paint) {
 	t.Helper()
 	p, err := ownframe.New(ownframe.Config{HTML: html, Theme: css, Width: 300, Height: 120})
@@ -37,8 +29,8 @@ func motionFixture(t *testing.T, html, css string) (*ownframe.Display, ownframe.
 	if d == nil || !ok {
 		t.Fatal("fixture did not produce target box and display")
 	}
-	indices := motion.OperationIndices(d, b)
-	initial := motion.Capture(d, b)
+	indices := operationIndices(d, b)
+	initial := capture(d, b)
 	if len(indices) == 0 || len(initial) != len(indices) {
 		t.Fatal("fixture did not produce target paint operations")
 	}
@@ -68,10 +60,10 @@ func sampleTransition(t *testing.T, c transitionRuntimeCase, value string) (pain
 		property = value
 	}
 	start := time.Unix(200, 0)
-	p, err := motion.BindTransition(d, b, property, indices, initial, start)
+	p, err := bindLocalTransitionTo(d, b, property, indices, initial, nil, start)
 	if err != nil {
 		t.Fatal(err)
 	}
 	active := p.Step(start.Add(c.at))
-	return motion.Read(&d.Ops[indices[0]]), active
+	return readPaint(&d.Ops[indices[0]]), active
 }

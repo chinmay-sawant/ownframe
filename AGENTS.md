@@ -57,6 +57,8 @@ CI (`.github/workflows/ci.yml`) runs `make test`, `make lint`, `make test-race` 
 
 Do not run `go build ./...` (it links every example and leaves binaries in the repo root). Use `make build` (`go vet -p 1 ./... ./examples/...`, or `make build BUILD_P=4`). For one example: `go vet -p 1 ./examples/login`.
 
+- **Website:** `npm --prefix frontend run build` builds the site and nine WebAssembly demos into `frontend/dist/`. GitHub Actions publishes that directory. Commit website sources and preview images. Generated WebAssembly and Android APKs stay out of Git.
+
 ## Testing an app by driving it
 
 Follow `documentation/testing.md` ("Testing an app by driving it"):

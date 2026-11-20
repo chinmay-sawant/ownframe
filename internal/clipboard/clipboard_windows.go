@@ -3,6 +3,7 @@
 package clipboard
 
 import (
+	"context"
 	"runtime"
 	"unsafe"
 
@@ -52,10 +53,10 @@ func getMem(src, n uintptr, dst []uint16) {
 	runtime.KeepAlive(dst)
 }
 
-func writeOS(text string) {
+func writeOS(_ context.Context, text string) bool {
 	opened, _, _ := openClip.Call(0)
 	if opened == 0 {
-		return
+		return false
 	}
 
 	defer closeClip.Call()
@@ -63,18 +64,18 @@ func writeOS(text string) {
 
 	buf := utf16Clipboard(text)
 	if len(buf) == 0 {
-		return
+		return false
 	}
 	h, _, _ := gAlloc.Call(gmemMove, uintptr(len(buf)))
 	if h == 0 {
-		return
+		return false
 	}
 
 	ptr, _, _ := gLock.Call(h)
 	if ptr == 0 {
 		gFree.Call(h)
 
-		return
+		return false
 	}
 
 	putMem(ptr, buf)
@@ -84,6 +85,7 @@ func writeOS(text string) {
 	if set == 0 {
 		gFree.Call(h)
 	}
+	return set != 0
 }
 
 // clearOS empties the desktop clipboard.

@@ -4,9 +4,11 @@
 
 package clipboard
 
-func writeOS(string) {}
+import "context"
 
-func readOS() (string, bool) { return "", false }
+func writeOS(context.Context, string) bool { return false }
+
+func readOS(context.Context) (string, bool) { return "", false }
 
 func clearOS() {}
 

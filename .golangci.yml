@@ -122,7 +122,7 @@ linters:
       # ctx through these APIs. Keep checks on every other call chain.
       - linters: [contextcheck]
         path: "examples/"
-        text: 'Function `[^`]*(PNG->PNG->PNG|Read->Read->readOS->wlRead->outWL|Write->Write->writeOS->wlWrite->runWL)` should pass the context parameter'
+        text: 'Function `[^`]*(PNG->PNG->PNG|Read->Read|Write->Write)` should pass the context parameter'
       # View refresh and the palette/disk loaders are synchronous local work
       # with no cancellation source. Every palette chain sinks at
       # paletteRows, which owns a bounded 750ms timeout for the disk

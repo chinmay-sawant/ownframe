@@ -165,6 +165,9 @@ func (v *serverView) interfaces(obj Object) []string {
 	if textCapable(obj) {
 		out = append(out, atspiText)
 	}
+	if editableTextCapable(obj) {
+		out = append(out, atspiEditableText)
+	}
 	if obj.Role == RoleComboBox {
 		out = append(out, atspiValue)
 	}
@@ -212,6 +215,8 @@ func (v *serverView) handle(ctx context.Context, msg *dbusMsg) callResult {
 		return v.handleComponent(ctx, msg)
 	case atspiText:
 		return v.handleText(msg)
+	case atspiEditableText:
+		return v.handleEditableText(ctx, msg)
 	case atspiAction:
 		return v.handleAction(ctx, msg)
 	}
@@ -426,6 +431,11 @@ func (v *serverView) properties(obj Object, iface string) map[string]propertyVal
 		props["InterfaceVersion"] = propertyValue{"u", func(e *dbusEncoder) { e.uint32Val(1) }}
 		props["Id"] = propertyValue{"i", func(e *dbusEncoder) { e.int32Val(*v.appID) }}
 	case atspiComponent:
+		props["version"] = propertyValue{"u", func(e *dbusEncoder) { e.uint32Val(1) }}
+	case atspiEditableText:
+		if !editableTextCapable(obj) {
+			return nil
+		}
 		props["version"] = propertyValue{"u", func(e *dbusEncoder) { e.uint32Val(1) }}
 	case atspiText:
 		if !textCapable(obj) {
@@ -1021,6 +1031,9 @@ func introspectXML(obj Object, rootPath string) string {
 	if obj.Path == rootPath {
 		interfaces = append(interfaces, atspiApplication)
 	}
+	if editableTextCapable(obj) {
+		interfaces = append(interfaces, atspiEditableText)
+	}
 	var b strings.Builder
 	b.WriteString(`<node>`)
 	for _, iface := range interfaces {
@@ -1064,6 +1077,8 @@ func introspectXML(obj Object, rootPath string) string {
 <method name="GetMDIZOrder"><arg type="n" direction="out"/></method>
 <method name="GrabFocus"><arg type="b" direction="out"/></method>
 </interface>`)
+		case atspiEditableText:
+			b.WriteString(editableTextXML)
 		case atspiText:
 			b.WriteString(`<interface name="org.a11y.atspi.Text">
 <method name="GetText"><arg type="i" direction="in"/><arg type="i" direction="in"/><arg type="s" direction="out"/></method>

@@ -69,7 +69,7 @@ func svgRaster(t *testing.T, p *Page, id string) []byte {
 	if d == nil {
 		t.Fatalf("the page painted no display list")
 	}
-	box := p.boxByID(id)
+	box := boxByID(p, id)
 	if box.ID != id {
 		t.Fatalf("the page has no box %q", id)
 	}

@@ -56,7 +56,7 @@ func (p *Page) HTML() string { return p.nav.Current() }
 // template is parsed, or it is a builder document that needs no template.
 // The identical-source checks require it so a page with no loaded source
 // never claims a match.
-func (p *Page) sourceReady() bool { return p.tpl != nil || p.staticSource }
+func sourceReady(p *Page) bool { return p.tpl != nil || p.staticSource }
 
 // Load parses html, drops later history, and draws that page. html is
 // trusted author content: Go template actions in it may read fields and
@@ -76,7 +76,7 @@ func (p *Page) Load(ctx context.Context, html string) error {
 	// no delimiter, so it skips the parse and keeps tpl nil.
 	static := isBuilderDocument(html)
 	incomingHash, incomingDelim := nav.Scan(html)
-	identical := p.sourceReady() && navIdentical(html, incomingHash, p.nav.CurrentHash(), p.nav.Current())
+	identical := sourceReady(p) && navIdentical(html, incomingHash, p.nav.CurrentHash(), p.nav.Current())
 	if !identical && !static {
 		if err := checkDOMLimits(html); err != nil {
 			return err
@@ -107,12 +107,12 @@ func (p *Page) Load(ctx context.Context, html string) error {
 		p.tplProbeTpl = tpl
 		p.tplProbeHas = incomingDelim
 	}
-	p.markFormDirty()
-	p.invalidateAccessibilityDocument()
+	markFormDirty(p)
+	invalidateAccessibilityDocument(p)
 	if !identical {
-		p.invalidateCache()
+		invalidateCache(p)
 	}
-	p.markFull()
+	markFull(p)
 	return p.Redraw(ctx)
 }
 
@@ -133,7 +133,7 @@ func ReplaceHTML(ctx context.Context, p *Page, source string) error {
 	// any other source keeps the full guards and the parsed template.
 	static := isBuilderDocument(source)
 	incomingHash, incomingDelim := nav.Scan(source)
-	identical := p.sourceReady() && navIdentical(source, incomingHash, p.nav.CurrentHash(), p.nav.Current())
+	identical := sourceReady(p) && navIdentical(source, incomingHash, p.nav.CurrentHash(), p.nav.Current())
 	var tpl *template.Template
 	if !static {
 		if identical {
@@ -154,11 +154,11 @@ func ReplaceHTML(ctx context.Context, p *Page, source string) error {
 	previousProbeTpl, previousProbeHas := p.tplProbeTpl, p.tplProbeHas
 	previousFrame, previousBoxes := p.draw, p.boxes
 	previousBody, previousSynced := p.source, p.lastSyncBody
-	previousForm := p.formState()
+	previousForm := formState(p)
 	previousRequest, previousHasRequest := p.ff.requestFocus, p.ff.hasFocusRequest
 	if previousForm != nil {
 		next := *previousForm
-		p.setFormState(&next)
+		setFormState(p, &next)
 	}
 	p.tpl = tpl
 	p.staticSource = static
@@ -169,10 +169,10 @@ func ReplaceHTML(ctx context.Context, p *Page, source string) error {
 		p.tplProbeTpl = tpl
 		p.tplProbeHas = incomingDelim
 	}
-	p.invalidateAccessibilityDocument()
-	p.markFormDirty()
+	invalidateAccessibilityDocument(p)
+	markFormDirty(p)
 	if !identical {
-		p.invalidateCache()
+		invalidateCache(p)
 	}
 	if err := p.Redraw(ctx); err != nil {
 		p.tpl = previous
@@ -181,18 +181,18 @@ func ReplaceHTML(ctx context.Context, p *Page, source string) error {
 		p.draw, p.boxes = previousFrame, previousBoxes
 		p.source, p.lastSyncBody = previousBody, previousSynced
 		p.nav.Retarget(previousSource)
-		p.setFormState(previousForm)
+		setFormState(p, previousForm)
 		p.ff.requestFocus, p.ff.hasFocusRequest = previousRequest, previousHasRequest
-		p.markFormDirty()
+		markFormDirty(p)
 		if !identical {
-			p.invalidateCache()
+			invalidateCache(p)
 		}
 		return err
 	}
 	// The success path needs no rollback: the rollback state above is dead
 	// from here, so the old sources release before the state resolve.
 	if p.redrawBatch == 0 {
-		p.resolveStates()
+		resolveStates(p)
 	}
 	return nil
 }
@@ -205,7 +205,7 @@ func (p *Page) Back(ctx context.Context) error {
 	if !p.nav.CanBack() {
 		return ErrNoHistory
 	}
-	return p.drawAt(ctx, p.nav.BackIndex())
+	return drawAt(p, ctx, p.nav.BackIndex())
 }
 
 // Forward draws the next template source.
@@ -216,7 +216,7 @@ func (p *Page) Forward(ctx context.Context) error {
 	if !p.nav.CanForward() {
 		return ErrNoHistory
 	}
-	return p.drawAt(ctx, p.nav.ForwardIndex())
+	return drawAt(p, ctx, p.nav.ForwardIndex())
 }
 
 // Route maps a data-action value to HTML for Click to load. html is
@@ -237,7 +237,7 @@ func (p *Page) Route(action, html string) error {
 	return nil
 }
 
-func (p *Page) drawAt(ctx context.Context, at int) error {
+func drawAt(p *Page, ctx context.Context, at int) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func (p *Page) drawAt(ctx context.Context, at int) error {
 	static := isBuilderDocument(target)
 	// Both sides are stored entries: the hashes compare with no rehash of
 	// either side, and the string compare guards the collision.
-	identical := p.sourceReady() && navIdentical(target, p.nav.HashAt(at), p.nav.CurrentHash(), p.nav.Current())
+	identical := sourceReady(p) && navIdentical(target, p.nav.HashAt(at), p.nav.CurrentHash(), p.nav.Current())
 	if !identical {
 		if static {
 			// A stored builder document needs no template, so the redraw
@@ -267,17 +267,17 @@ func (p *Page) drawAt(ctx context.Context, at int) error {
 		}
 	}
 	p.nav.GoTo(at)
-	p.markFormDirty()
-	p.invalidateAccessibilityDocument()
+	markFormDirty(p)
+	invalidateAccessibilityDocument(p)
 	if !identical {
-		p.invalidateCache()
+		invalidateCache(p)
 	}
-	p.markFull()
+	markFull(p)
 	return p.Redraw(ctx)
 }
 
-func (p *Page) openLinkAt(ctx context.Context, x, y float64) (bool, error) {
-	target, found := p.linkTargetAt(x, y)
+func openLinkAt(p *Page, ctx context.Context, x, y float64) (bool, error) {
+	target, found := linkTargetAt(p, x, y)
 	if !found {
 		return false, nil
 	}
@@ -307,7 +307,7 @@ func parseOutboundLink(target string) (*url.URL, error) {
 	}
 }
 
-func (p *Page) linkTargetAt(x, y float64) (string, bool) {
+func linkTargetAt(p *Page, x, y float64) (string, bool) {
 	d := p.draw.Display
 	if d == nil || d.PointsPerPixel <= 0 {
 		return "", false

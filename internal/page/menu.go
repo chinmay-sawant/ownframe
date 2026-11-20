@@ -14,7 +14,7 @@ func (p *Page) ContextMenuAt(x, y float64) []host.MenuItem {
 	if p == nil {
 		return nil
 	}
-	spot := p.boxAt(x, y)
+	spot := boxAt(p, x, y)
 	return p.ContextMenuFor(spot.id)
 }
 

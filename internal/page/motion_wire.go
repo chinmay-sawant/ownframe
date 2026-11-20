@@ -26,7 +26,7 @@ type MotionStats = motion.Stats
 // from the entry list it installed, and only a bind changes either one, so a
 // zero Bound means RequeueLayout would loop over nothing and the queue it
 // would report is the empty one the gate also requires.
-func (p *Page) motionCommitIdle() bool {
+func motionCommitIdle(p *Page) bool {
 	if p.motion == nil {
 		return true
 	}
@@ -64,8 +64,8 @@ func (p *Page) motionCommitIdle() bool {
 // means the bind would take its no-animation fast path. The verdict is cached
 // per display and shares one box walk with the transitions verdict, so a
 // publish scans the page's boxes once instead of once per predicate.
-func (p *Page) displayDeclaresAnimations(d *Display) bool {
-	animations, _ := p.displayDeclarations(d)
+func displayDeclaresAnimations(p *Page, d *Display) bool {
+	animations, _ := displayDeclarations(p, d)
 
 	return animations
 }
@@ -73,8 +73,8 @@ func (p *Page) displayDeclaresAnimations(d *Display) bool {
 // displayDeclaresTransitions reports whether any box in d declares a CSS
 // transition. The predicate matches the capture's own scan, so a false
 // answer means the capture would walk both displays and return nothing.
-func (p *Page) displayDeclaresTransitions(d *Display) bool {
-	_, transitions := p.displayDeclarations(d)
+func displayDeclaresTransitions(p *Page, d *Display) bool {
+	_, transitions := displayDeclarations(p, d)
 
 	return transitions
 }
@@ -93,7 +93,7 @@ func (p *Page) displayDeclaresTransitions(d *Display) bool {
 // on does not move; the next tick applies the pass. A later publish of a
 // retained display pays that debt, so a page that drew itself again before the
 // tick does not wait an extra frame.
-func (p *Page) bindMotion(previous, display *Display) {
+func bindMotion(p *Page, previous, display *Display) {
 	if p.motion == nil {
 		return
 	}
@@ -109,7 +109,7 @@ func (p *Page) bindMotion(previous, display *Display) {
 	// the box tree the re-projection pass patches.
 	retained := p.retainState
 
-	if display != nil && p.motionCommitIdle() && !p.displayDeclaresAnimations(display) {
+	if display != nil && motionCommitIdle(p) && !displayDeclaresAnimations(p, display) {
 		// No box declares an animation and the runtime holds nothing: the
 		// bind would only zero counters that already read zero, so installing
 		// the display is the whole bind. The retained-state debt below is
@@ -122,7 +122,7 @@ func (p *Page) bindMotion(previous, display *Display) {
 		return
 	}
 
-	idx := p.updateMotionIndex(previous, display)
+	idx := updateMotionIndex(p, previous, display)
 	_ = p.motion.BindAfterWithIndex(previous, display, idx)
 	if display == nil {
 		return
@@ -159,16 +159,16 @@ func (p *Page) bindMotion(previous, display *Display) {
 // the driver is off) and the bind must run to publish its counters. Callers
 // pass the result straight through; the two nil literals at the fallback and
 // restamp sites deliberately take the slow path, which is always correct.
-func (p *Page) captureTransitions(previous, next *Display) []motion.TransitionCapture {
+func captureTransitions(p *Page, previous, next *Display) []motion.TransitionCapture {
 	if p.motion == nil || p.transitionsOff {
 		return nil
 	}
 	roots := p.commitRoots
 	p.commitRoots = nil
-	if next == nil || !p.motionCommitIdle() {
+	if next == nil || !motionCommitIdle(p) {
 		return p.motion.CaptureTransitions(previous, next)
 	}
-	if !p.displayDeclaresTransitions(next) {
+	if !displayDeclaresTransitions(p, next) {
 		// No box declares a transition and the runtime holds no live run a
 		// capture could cancel or reverse, so the capture would walk both
 		// displays and return nothing with zeroed counters.
@@ -225,7 +225,7 @@ func scopeDeclaresTransitions(next *Display, roots []string) bool {
 // registries already read empty, so the bind would only rewrite zeroes and
 // ask the clock for a start time no renderer needs. Anything else runs the
 // bind, which publishes the capture's diagnostic counters.
-func (p *Page) bindTransitions(captures []motion.TransitionCapture) {
+func bindTransitions(p *Page, captures []motion.TransitionCapture) {
 	if p.motion == nil {
 		return
 	}
@@ -234,7 +234,7 @@ func (p *Page) bindTransitions(captures []motion.TransitionCapture) {
 
 		return
 	}
-	if captures != nil && len(captures) == 0 && p.motionCommitIdle() {
+	if captures != nil && len(captures) == 0 && motionCommitIdle(p) {
 		return
 	}
 	p.motion.BindTransitions(p.draw.Display, captures, time.Now())
@@ -246,30 +246,30 @@ func (p *Page) bindTransitions(captures []motion.TransitionCapture) {
 // before animations, so an animation on the same field writes second and wins.
 // The pass runs before the user tick callback, so the callback's snapshot
 // already carries the sampled paint and its diff never covers a motion change.
-func (p *Page) stepMotion(ctx context.Context) {
+func stepMotion(p *Page, ctx context.Context) {
 	if p.motion == nil || (p.animationsOff && p.transitionsOff) {
 		return
 	}
 
-	p.setMotionView()
+	setMotionView(p)
 	now := time.Now()
 	var damage motion.Damage
 	if p.animationsOff {
 		// A geometry transition reaches the engine through the same relayout
 		// pass as a layout keyframe, so the pass runs even when the animation
 		// driver is off.
-		p.stepLayoutMotion(ctx, now)
+		stepLayoutMotion(p, ctx, now)
 		damage = p.motion.StepTransitions(p.draw.Display, now)
 	} else {
-		p.stepLayoutMotion(ctx, now)
+		stepLayoutMotion(p, ctx, now)
 		damage = p.motion.Step(p.draw.Display, now)
-		p.stepSVGPaintMotion(ctx)
+		stepSVGPaintMotion(p, ctx)
 	}
 	if damage.Overflow {
-		p.markFull()
+		markFull(p)
 	} else {
 		for i := 0; i < damage.N; i++ {
-			p.markRect(damage.Rects[i])
+			markRect(p, damage.Rects[i])
 		}
 	}
 
@@ -287,7 +287,7 @@ func (p *Page) stepMotion(ctx context.Context) {
 // enables the state here and owes one redraw, the same debt the re-projection
 // pass pays; the sample goes back to the head of the queue and runs on the
 // frame that can apply it.
-func (p *Page) stepLayoutMotion(ctx context.Context, now time.Time) {
+func stepLayoutMotion(p *Page, ctx context.Context, now time.Time) {
 	requests := p.motion.StepLayout(now)
 	if len(requests) == 0 {
 		return
@@ -307,17 +307,17 @@ func (p *Page) stepLayoutMotion(ctx context.Context, now time.Time) {
 		return
 	}
 
-	p.applyLayout(ctx, requests)
+	applyLayout(p, ctx, requests)
 }
 
 // applyLayout hands this frame's layout requests to the engine and adopts the
 // patched display. A failure keeps the display the page already draws and is
 // recorded in the motion stats, so one bad override never leaves a half-laid-out
 // frame on screen.
-func (p *Page) applyLayout(ctx context.Context, requests []motion.LayoutRequest) {
+func applyLayout(p *Page, ctx context.Context, requests []motion.LayoutRequest) {
 	applied := 0
 	for i := range requests {
-		if err := p.applyLayoutRequest(ctx, requests[i]); err != nil {
+		if err := applyLayoutRequest(p, ctx, requests[i]); err != nil {
 			p.motion.NoteLayout(applied, err)
 			// The requests this frame did not apply go back to the head of the
 			// queue. A geometry run's final destination is then retried on the
@@ -336,7 +336,7 @@ func (p *Page) applyLayout(ctx context.Context, requests []motion.LayoutRequest)
 // adopts the result. The override values are the sampled CSS values, so the
 // engine resolves percentages and relative units against the same containing
 // block the static page used, and min/max clamping stays the engine's job.
-func (p *Page) applyLayoutRequest(ctx context.Context, request motion.LayoutRequest) error {
+func applyLayoutRequest(p *Page, ctx context.Context, request motion.LayoutRequest) error {
 	if request.ElementID == "" || len(request.Overrides) == 0 {
 		return nil
 	}
@@ -356,13 +356,13 @@ func (p *Page) applyLayoutRequest(ctx context.Context, request motion.LayoutRequ
 		p.draw.Display,
 		request.ElementID,
 		overrides,
-		layout.Options{Images: p.renderState().Images, RetainState: true},
+		layout.Options{Images: renderState(p).Images, RetainState: true},
 	)
 	if err != nil {
 		return fmt.Errorf("motion: relayout %q: %w", request.ElementID, err)
 	}
 
-	p.adoptLayout(patch)
+	adoptLayout(p, patch)
 
 	return nil
 }
@@ -372,17 +372,17 @@ func (p *Page) applyLayoutRequest(ctx context.Context, request motion.LayoutRequ
 // not restart its own animation and its neighbours keep their phases. Damage
 // comes from the display diff inside adoptSpliced: a width change moves the
 // siblings outside the patched element's own box.
-func (p *Page) adoptLayout(patch *layout.ElementPatch) bool {
+func adoptLayout(p *Page, patch *layout.ElementPatch) bool {
 	d := patch.Display
 	if d == nil || d == p.draw.Display {
 		return false
 	}
 
-	previous := p.adoptSpliced(d)
+	previous := adoptSpliced(p, d)
 	p.layoutAdopting = true
-	p.bindMotion(previous, d)
+	bindMotion(p, previous, d)
 	p.layoutAdopting = false
-	p.adoptTransitions(d)
+	adoptTransitions(p, d)
 	if previous != nil && previous != d {
 		previous.Release()
 	}
@@ -394,7 +394,7 @@ func (p *Page) adoptLayout(patch *layout.ElementPatch) bool {
 // relayout patch produced. The patch already carries the sampled values, so the
 // paint, layout-length, and discrete runs keep their clocks and endpoints; only
 // the operations, boxes, and paint order they write move.
-func (p *Page) adoptTransitions(d *Display) {
+func adoptTransitions(p *Page, d *Display) {
 	if p.motion == nil {
 		return
 	}
@@ -409,13 +409,13 @@ func (p *Page) adoptTransitions(d *Display) {
 // setMotionView reports the page scroller state a scroll or view timeline
 // samples against. The offset is the one the window last reported, so the
 // animation follows the same geometry the picture is drawn at.
-func (p *Page) setMotionView() {
+func setMotionView(p *Page) {
 	if p.motion == nil {
 		return
 	}
 
 	x, y := p.scroll.Offset()
-	content := p.contentRect()
+	content := contentRect(p)
 	p.motion.SetView(motion.View{
 		ScrollX:       float64(x),
 		ScrollY:       float64(y),
@@ -434,7 +434,7 @@ func (p *Page) setMotionView() {
 // without it enables the state here and owes one redraw, so the first frame may
 // not move; the next tick restamps. A 2D-only page collects no requests and
 // never reaches the pass.
-func (p *Page) restampMotion(ctx context.Context) {
+func restampMotion(p *Page, ctx context.Context) {
 	if p.motion == nil || p.animationsOff {
 		return
 	}
@@ -451,14 +451,14 @@ func (p *Page) restampMotion(ctx context.Context) {
 		return
 	}
 
-	p.applyRestamp(ctx, requests)
+	applyRestamp(p, ctx, requests)
 }
 
 // applyRestamp hands this tick's overrides to the engine and adopts the patched
 // display. A failure keeps the display the page already draws and is recorded in
 // the motion stats, so one bad override never leaves a half-projected frame on
 // screen.
-func (p *Page) applyRestamp(ctx context.Context, requests []motion.Request) {
+func applyRestamp(p *Page, ctx context.Context, requests []motion.Request) {
 	if p.draw.Display == nil || p.cache == nil {
 		return
 	}
@@ -476,7 +476,7 @@ func (p *Page) applyRestamp(ctx context.Context, requests []motion.Request) {
 		return
 	}
 
-	if !p.adoptRestamp(patch) {
+	if !adoptRestamp(p, patch) {
 		// The engine found no effective change, so it handed the page back.
 		p.motion.NoteRestamp(0, nil)
 
@@ -527,25 +527,25 @@ func restampOverride(request motion.Request) layout.TransformOverride {
 // does not re-place anything, so the two are the same rectangle unless the
 // projection moved what the subtree paints; marking the pair once is what keeps
 // a 3D frame from dirtying the page twice through the display diff.
-func (p *Page) adoptRestamp(patch *layout.ElementPatch) bool {
+func adoptRestamp(p *Page, patch *layout.ElementPatch) bool {
 	d := patch.Display
 	if d == nil || d == p.draw.Display {
 		return false
 	}
 
 	previous := p.draw.SwapList(d)
-	p.setDisplayBoxes(d)
-	p.markRect(patch.Old)
+	setDisplayBoxes(p, d)
+	markRect(p, patch.Old)
 	if patch.New != patch.Old {
-		p.markRect(patch.New)
+		markRect(p, patch.New)
 	}
 	p.generation++
 	if sameOpSlice(previous, d) {
 		p.motion.AdoptDisplay(d)
 	} else {
-		p.bindMotion(previous, d)
+		bindMotion(p, previous, d)
 	}
-	p.bindTransitions(nil)
+	bindTransitions(p, nil)
 	if previous != nil && previous != d {
 		previous.Release()
 	}
@@ -611,13 +611,13 @@ type triggerPressState struct {
 // made: the box the point hit, or its innermost id-bearing ancestor. Click
 // passes the one spot it scanned into the sequence, so the trigger pass and
 // the click never disagree and never scan twice.
-func (p *Page) activationSpot(spot boxSpot) (Box, bool) {
+func activationSpot(p *Page, spot boxSpot) (Box, bool) {
 	box, ok := spot.box, spot.ok
 	if !ok {
 		return Box{}, false
 	}
 	if box.ID == "" && spot.id != "" {
-		box = p.boxByID(spot.id)
+		box = boxByID(p, spot.id)
 	}
 
 	return box, true
@@ -625,15 +625,15 @@ func (p *Page) activationSpot(spot boxSpot) (Box, bool) {
 
 // activationBox resolves the innermost box under a point the way the click
 // sequence does: the box the point hit, or its innermost id-bearing ancestor.
-func (p *Page) activationBox(x, y float64) (Box, bool) {
-	return p.activationSpot(p.boxAt(x, y))
+func activationBox(p *Page, x, y float64) (Box, bool) {
+	return activationSpot(p, boxAt(p, x, y))
 }
 
 // pressTriggers fires the activated element's animation-trigger entry actions
 // and remembers the gesture, so the click that follows does not fire them
 // again and the release can fire the exit actions.
-func (p *Page) pressTriggers(ctx context.Context, box Box) error {
-	fired, err := p.fireTriggers(ctx, box, true)
+func pressTriggers(p *Page, ctx context.Context, box Box) error {
+	fired, err := fireTriggers(p, ctx, box, true)
 	if err != nil {
 		return err
 	}
@@ -645,13 +645,13 @@ func (p *Page) pressTriggers(ctx context.Context, box Box) error {
 }
 
 // releaseTriggers fires the exit actions of the box the press activated.
-func (p *Page) releaseTriggers(ctx context.Context) error {
+func releaseTriggers(p *Page, ctx context.Context) error {
 	state := p.triggerPress
 	p.triggerPress = triggerPressState{}
 	if !state.armed {
 		return nil
 	}
-	_, err := p.fireTriggers(ctx, state.box, false)
+	_, err := fireTriggers(p, ctx, state.box, false)
 
 	return err
 }
@@ -666,7 +666,7 @@ func (p *Page) releaseTriggers(ctx context.Context) error {
 // comes from, with the trigger scope the stylesheet declared. The page does
 // not expose a programmatic trigger: an app that wants one changes the
 // element's class or attribute, which is CSS.
-func (p *Page) fireTriggers(ctx context.Context, box Box, active bool) (bool, error) {
+func fireTriggers(p *Page, ctx context.Context, box Box, active bool) (bool, error) {
 	if err := useContext(ctx); err != nil {
 		return false, err
 	}
@@ -773,7 +773,7 @@ func sameBox(a, b Box) bool {
 
 // activationTarget reports whether a focused control takes keyboard activation
 // for its triggers: an enabled, non-editable control such as a button.
-func (p *Page) activationTarget(field Control) bool {
+func activationTarget(p *Page, field Control) bool {
 	return field.ID != "" && !field.Disabled && !canEdit(field)
 }
 

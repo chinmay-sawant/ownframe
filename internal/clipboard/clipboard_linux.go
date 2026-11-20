@@ -2,7 +2,10 @@
 
 package clipboard
 
-import "os"
+import (
+	"context"
+	"os"
+)
 
 type clipHost string
 
@@ -12,19 +15,21 @@ const (
 	hostX11     clipHost = "x11"
 )
 
-func writeOS(text string) {
+func writeOS(ctx context.Context, text string) bool {
 	switch linuxHost() {
 	case hostWayland:
-		wlWrite(text)
+		return wlWrite(ctx, text)
 	case hostX11:
-		xWrite(text)
+		return xWrite(text)
+	default:
+		return false
 	}
 }
 
-func readOS() (string, bool) {
+func readOS(ctx context.Context) (string, bool) {
 	switch linuxHost() {
 	case hostWayland:
-		return wlRead()
+		return wlRead(ctx)
 	case hostX11:
 		return xRead()
 	default:

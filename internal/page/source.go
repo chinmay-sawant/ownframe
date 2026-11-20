@@ -185,16 +185,16 @@ func (p *Page) PlaceCaret(id string, caret int) {
 	if p == nil {
 		return
 	}
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil || fs.FocusID != id {
 		return
 	}
-	if _, ok := p.focusedEditable(); !ok {
+	if _, ok := focusedEditable(p); !ok {
 		return
 	}
 	p.tickMutated.Store(true)
 	n := 0
-	if c, ok := p.focusedEditable(); ok {
+	if c, ok := focusedEditable(p); ok {
 		n = runeLen(c.Value)
 	}
 	fs.SetCaret(caret, n, false)
@@ -208,7 +208,7 @@ func (p *Page) SelectControls() map[string][]SelectOption {
 	if p == nil {
 		return nil
 	}
-	fs := p.formState()
+	fs := formState(p)
 	if fs == nil {
 		return nil
 	}

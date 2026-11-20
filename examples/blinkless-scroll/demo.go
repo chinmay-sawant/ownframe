@@ -18,10 +18,7 @@ import (
 
 // The demo plays a scripted session with no window. Each step sets what the
 // window would report (page scroll offset, cursor, a click, a key), advances a
-// manual clock, and runs the page's registered tick through
-// Page.Testing().Tick. That is the same callback and the same session.frame
-// that the real window drives, so a state change in the log is a state change
-// a person would see.
+// manual clock, and calls the same session.frame function the window uses.
 
 // manualClock is the demo's time source.
 type manualClock struct{ t time.Time }
@@ -279,31 +276,23 @@ func runDemo(ctx context.Context, html string, width, height int, dir string, fr
 		return nil, err
 	}
 
-	var cur demoStep
-
-	s.attach(inputSource{
-		cursor: func() (float64, float64) { return cur.CursorX, cur.CursorY },
-		click:  func() bool { return cur.Click },
-		keys:   func() []string { return cur.Keys },
-	})
-
 	steps := demoScript(s)
 	prev := map[string]string{}
 	logs := make([]StepLog, 0, len(steps))
 
 	for n, step := range steps {
-		cur = step
 		clock.t = clock.t.Add(demoStepTime)
 
 		// The window reports the offset to the page after its wheel stage.
 		s.page.Scroll().SetScrollOffset(0, int(step.Scroll))
 		s.host.SetScrollerOffset("inner-scroller", 0, step.InnerY)
 
-		if err = s.page.Testing().Tick(ctx); err != nil {
+		_, scrollY := s.page.Scroll().ScrollOffset()
+		res, err := s.frame(ctx, FrameInput{ScrollY: float64(scrollY), CursorX: step.CursorX, CursorY: step.CursorY, Click: step.Click, Keys: step.Keys})
+		if err != nil {
 			return logs, fmt.Errorf("step %d: %w", n, err)
 		}
 
-		res := s.last
 		state := s.host.describe(res.Frame, res.Frame.InterestOn)
 
 		l := StepLog{N: n, Label: step.Label, Scroll: int(s.viewport(step.Scroll).ScrollY),

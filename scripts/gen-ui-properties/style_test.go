@@ -30,7 +30,7 @@ func TestGeneratedStylesGrowWithRegistry(t *testing.T) {
 	if _, err := format.Source(out.Bytes()); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"FutureProperty(v FuturePropertyValue)", `setValue("future-property", v)`} {
+	for _, want := range []string{"FutureProperty(v Value)", `setValue("future-property", v)`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("new registry entry missing %q", want)
 		}

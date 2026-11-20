@@ -3,6 +3,7 @@
 package clipboard
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -65,8 +66,8 @@ func TestWaylandRoundTrip(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		writeOS(tt.in)
-		got, ok := readOS()
+		writeOS(context.Background(), tt.in)
+		got, ok := readOS(context.Background())
 		if !ok || got != tt.in {
 			t.Fatalf("read %q = %q %v", tt.in, got, ok)
 		}
@@ -91,10 +92,10 @@ func TestWaylandRoundTrip(t *testing.T) {
 
 func TestWaylandClear(t *testing.T) {
 	dir := withWaylandStub(t)
-	writeOS("secret")
+	writeOS(context.Background(), "secret")
 	clearOS()
 
-	if got, ok := readOS(); ok || got != "" {
+	if got, ok := readOS(context.Background()); ok || got != "" {
 		t.Fatalf("read = %q %v", got, ok)
 	}
 
@@ -110,7 +111,7 @@ func TestWaylandClear(t *testing.T) {
 func TestWaylandWriteStaysOnStdin(t *testing.T) {
 	dir := withWaylandStub(t)
 	text := "evil; rm -rf / --help"
-	writeOS(text)
+	writeOS(context.Background(), text)
 
 	args, err := readWLFixture(dir, "copy-args")
 	if err != nil {
@@ -120,7 +121,7 @@ func TestWaylandWriteStaysOnStdin(t *testing.T) {
 		t.Fatalf("user text in argv")
 	}
 
-	got, ok := readOS()
+	got, ok := readOS(context.Background())
 	if !ok || got != text {
 		t.Fatalf("read = %q %v", got, ok)
 	}
@@ -161,8 +162,8 @@ func TestWaylandMissingTools(t *testing.T) {
 	t.Setenv("WAYLAND_DISPLAY", "wayland-test")
 	t.Setenv("DISPLAY", "")
 
-	writeOS("dropped")
-	if got, ok := readOS(); ok || got != "" {
+	writeOS(context.Background(), "dropped")
+	if got, ok := readOS(context.Background()); ok || got != "" {
 		t.Fatalf("read = %q %v", got, ok)
 	}
 

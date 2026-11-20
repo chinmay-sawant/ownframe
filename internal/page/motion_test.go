@@ -73,7 +73,7 @@ func tickLayout(t *testing.T, p *Page) {
 func firstOpOf(t *testing.T, p *Page, id string) int {
 	t.Helper()
 
-	indices := motion.OperationIndices(p.Display(), p.boxByID(id))
+	indices := motion.OperationIndices(p.Display(), boxByID(p, id))
 	if len(indices) == 0 {
 		t.Fatalf("%s owns no operation", id)
 	}
@@ -84,7 +84,7 @@ func firstOpOf(t *testing.T, p *Page, id string) int {
 // textOpOf returns the first text operation the element with id owns, or nil.
 func textOpOf(p *Page, id string) *DisplayOp {
 	d := p.Display()
-	for _, index := range motion.OperationIndices(d, p.boxByID(id)) {
+	for _, index := range motion.OperationIndices(d, boxByID(p, id)) {
 		if d.Ops[index].Kind == layout.DisplayOpText {
 			return &d.Ops[index]
 		}
@@ -100,13 +100,13 @@ func TestLayoutWidthKeyframeWidensTheBoxAndMovesASibling(t *testing.T) {
 	t.Parallel()
 
 	p := newLayoutPage(t, true)
-	before := p.boxByID("grow")
-	nextBefore := p.boxByID("next")
+	before := boxByID(p, "grow")
+	nextBefore := boxByID(p, "next")
 
 	tickLayout(t, p)
 
-	after := p.boxByID("grow")
-	nextAfter := p.boxByID("next")
+	after := boxByID(p, "grow")
+	nextAfter := boxByID(p, "next")
 	if after.W <= before.W {
 		t.Fatalf("grow width = %v, want it past the base %v", after.W, before.W)
 	}
@@ -123,7 +123,7 @@ func TestLayoutWidthKeyframeWidensTheBoxAndMovesASibling(t *testing.T) {
 	// The relayout rebinds the element's own player too, so the next frame has
 	// to continue past the first one instead of restarting at the base width.
 	tickLayout(t, p)
-	if again := p.boxByID("grow").W; again < after.W {
+	if again := boxByID(p, "grow").W; again < after.W {
 		t.Fatalf("grow width = %v on the second tick, want at least the first %v", again, after.W)
 	}
 }
@@ -196,7 +196,7 @@ func TestLayoutBudgetRunsOneElementPerFrame(t *testing.T) {
 	}
 	p.TakeDirty()
 
-	aBefore, bBefore := p.boxByID("a").W, p.boxByID("b").W
+	aBefore, bBefore := boxByID(p, "a").W, boxByID(p, "b").W
 
 	tickLayout(t, p)
 	stats := p.Motion()
@@ -211,7 +211,7 @@ func TestLayoutBudgetRunsOneElementPerFrame(t *testing.T) {
 			stats.LayoutBudgetHit, stats.LayoutQueued)
 	}
 
-	aFirst, bFirst := p.boxByID("a").W, p.boxByID("b").W
+	aFirst, bFirst := boxByID(p, "a").W, boxByID(p, "b").W
 	switch {
 	case aFirst == aBefore && bFirst == bBefore:
 		t.Fatal("neither element moved on the first frame")
@@ -221,12 +221,12 @@ func TestLayoutBudgetRunsOneElementPerFrame(t *testing.T) {
 
 	tickLayout(t, p)
 	if aFirst == aBefore {
-		if got := p.boxByID("a").W; got == aFirst {
+		if got := boxByID(p, "a").W; got == aFirst {
 			t.Fatalf("the queued first element never ran: width %v", got)
 		}
 	}
 	if bFirst == bBefore {
-		if got := p.boxByID("b").W; got == bFirst {
+		if got := boxByID(p, "b").W; got == bFirst {
 			t.Fatalf("the queued second element never ran: width %v", got)
 		}
 	}
@@ -274,7 +274,7 @@ func TestLayoutFirstTickPaysTheRetainedStateRedraw(t *testing.T) {
 	gen := p.Generation()
 
 	tickLayout(t, p)
-	if got := p.boxByID("grow").W; got != 40 {
+	if got := boxByID(p, "grow").W; got != 40 {
 		t.Fatalf("grow width = %v on the redraw frame, want the base 40", got)
 	}
 	if p.restampRedraw {
@@ -285,7 +285,7 @@ func TestLayoutFirstTickPaysTheRetainedStateRedraw(t *testing.T) {
 	}
 
 	tickLayout(t, p)
-	if got := p.boxByID("grow").W; got <= 40 {
+	if got := boxByID(p, "grow").W; got <= 40 {
 		t.Fatalf("grow width = %v on the frame after the redraw, want it past the base", got)
 	}
 	if got := p.Motion().LayoutRelayouts; got != 1 {
@@ -361,7 +361,7 @@ func TestLayoutRelayoutDamagesTheMovedSibling(t *testing.T) {
 	p.TakeDirty()
 	tickLayout(t, p)
 
-	next := p.boxByID("next")
+	next := boxByID(p, "next")
 	want := image.Rect(
 		int(next.X), int(next.Y), int(next.X+next.W), int(next.Y+next.H))
 	rects, ok := p.TakeDirtyRects()
@@ -407,7 +407,7 @@ func TestQueuedLayoutSamplesAtTheFrameItRuns(t *testing.T) {
 	if err := p.Tick(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if got := p.boxByID("b").W; got != 40 {
+	if got := boxByID(p, "b").W; got != 40 {
 		t.Fatalf("b width = %v on the frame it waited, want the base 40", got)
 	}
 
@@ -415,7 +415,7 @@ func TestQueuedLayoutSamplesAtTheFrameItRuns(t *testing.T) {
 	if err := p.Tick(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if got := p.boxByID("b").W; got <= 40 {
+	if got := boxByID(p, "b").W; got <= 40 {
 		t.Fatalf("b width = %v on the frame it ran, want it past the base", got)
 	}
 }
@@ -573,7 +573,7 @@ func TestLayoutTierOverridesAreAccepted(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = p.applyLayoutRequest(context.Background(), motion.LayoutRequest{
+			err = applyLayoutRequest(p, context.Background(), motion.LayoutRequest{
 				ElementID: "target",
 				Overrides: []motion.LayoutOverride{{Property: test.property, Value: test.value}},
 			})
@@ -724,7 +724,7 @@ func newPerspectiveStaticPage(t *testing.T, declaration string) *Page {
 func firstElementOp(t *testing.T, p *Page, id string) *layout.DisplayOp {
 	t.Helper()
 
-	indices := motion.OperationIndices(p.Display(), p.boxByID(id))
+	indices := motion.OperationIndices(p.Display(), boxByID(p, id))
 	if len(indices) == 0 {
 		t.Fatalf("%s owns no operation", id)
 	}
@@ -812,7 +812,7 @@ func TestPerspectiveRestampMatchesAFreshLayoutAtTheMidpoint(t *testing.T) {
 	p := newPerspectiveCameraPage(t, true)
 	pointsPerPixel := p.Display().PointsPerPixel
 
-	p.applyRestamp(context.Background(), []motion.Request{{
+	applyRestamp(p, context.Background(), []motion.Request{{
 		ElementID:      "stage",
 		Perspective:    750 * pointsPerPixel,
 		HasPerspective: true,
@@ -1234,7 +1234,7 @@ func TestRestampAppliesEveryThreeDimensionalElementInOnePass(t *testing.T) {
 	}
 
 	for _, id := range []string{"left", "right"} {
-		indices := motion.OperationIndices(p.Display(), p.boxByID(id))
+		indices := motion.OperationIndices(p.Display(), boxByID(p, id))
 		if len(indices) == 0 {
 			t.Fatalf("%s owns no operation", id)
 		}
@@ -1251,7 +1251,7 @@ func TestAdoptRestampMarksTheDamageOnce(t *testing.T) {
 	box := image.Rect(10, 10, 90, 50)
 
 	clone := *p.Display()
-	p.adoptRestamp(&layout.ElementPatch{Display: &clone, Old: box, New: box})
+	adoptRestamp(p, &layout.ElementPatch{Display: &clone, Old: box, New: box})
 
 	if got := len(p.dirty.Rects); got != 1 {
 		t.Fatalf("damage rects = %d (%v), want the shared old and new box marked once",
@@ -1264,7 +1264,7 @@ func TestAdoptRestampMarksTheDamageOnce(t *testing.T) {
 	// A projection that changes what the subtree paints marks the space it
 	// left and the space it now covers.
 	elsewhere := *p.Display()
-	p.adoptRestamp(&layout.ElementPatch{Display: &elsewhere,
+	adoptRestamp(p, &layout.ElementPatch{Display: &elsewhere,
 		Old: image.Rect(10, 10, 90, 50), New: image.Rect(110, 10, 190, 50)})
 	if got := len(p.dirty.Rects); got != 2 {
 		t.Fatalf("damage rects = %d (%v), want the old and new box", got, p.dirty.Rects)
@@ -1278,7 +1278,7 @@ func TestAdoptRestampBumpsTheGenerationAndRebinds(t *testing.T) {
 	gen := p.Generation()
 
 	clone := *p.Display()
-	p.adoptRestamp(&layout.ElementPatch{Display: &clone,
+	adoptRestamp(p, &layout.ElementPatch{Display: &clone,
 		Old: image.Rect(10, 10, 90, 50), New: image.Rect(10, 10, 90, 50)})
 
 	if got := p.Generation(); got != gen+1 {
@@ -1301,7 +1301,7 @@ func TestFailingRestampKeepsThePreviousDisplay(t *testing.T) {
 
 	// The engine rejects the unterminated list, so the page must keep drawing
 	// the display it already had.
-	p.applyRestamp(context.Background(), []motion.Request{{
+	applyRestamp(p, context.Background(), []motion.Request{{
 		ElementID: "target",
 		Transform: "rotateY(45deg",
 	}})
@@ -1327,7 +1327,7 @@ func TestRestampNamesAMissingElementWithoutChangingThePage(t *testing.T) {
 	p := newRestampPage(t, true)
 	before := p.Display()
 
-	p.applyRestamp(context.Background(), []motion.Request{{
+	applyRestamp(p, context.Background(), []motion.Request{{
 		ElementID: "missing",
 		Transform: "rotateY(45deg)",
 	}})
@@ -1369,7 +1369,7 @@ func newPageTimelinePage(t *testing.T) *Page {
 
 // pageScrollSpan is the page scroller range the fixture produces.
 func pageScrollSpan(p *Page) float64 {
-	content := p.contentRect()
+	content := contentRect(p)
 
 	return float64(content.Max.Y - p.height)
 }
@@ -1490,7 +1490,7 @@ func newTriggerPage(t *testing.T) *Page {
 func boxTranslate(t *testing.T, p *Page, id string) float64 {
 	t.Helper()
 
-	box := p.boxByID(id)
+	box := boxByID(p, id)
 	if box.ID == "" {
 		t.Fatalf("box %q is missing", id)
 	}
@@ -1512,7 +1512,7 @@ func boxTranslate(t *testing.T, p *Page, id string) float64 {
 func clickCenter(t *testing.T, p *Page, id string) {
 	t.Helper()
 
-	box := p.boxByID(id)
+	box := boxByID(p, id)
 	if box.ID == "" {
 		t.Fatalf("box %q is missing", id)
 	}
@@ -1641,7 +1641,7 @@ func TestKeyboardActivationFiresTrigger(t *testing.T) {
 	if err := p.Focus(ctx, "play"); err != nil {
 		t.Fatalf("focus: %v", err)
 	}
-	if got := p.formState().FocusID; got != "play" {
+	if got := formState(p).FocusID; got != "play" {
 		t.Fatalf("focused id = %q, want play", got)
 	}
 	if err := p.KeyDown(ctx, "enter"); err != nil {
@@ -1888,7 +1888,7 @@ func TestPageMotionIndexCaching(t *testing.T) {
 	emptyDisplay := &Display{
 		Ops: []layout.DisplayOp{{ID: 1, Kind: layout.DisplayOpFillRect}},
 	}
-	idx := p.updateMotionIndex(nil, emptyDisplay)
+	idx := updateMotionIndex(p, nil, emptyDisplay)
 	if idx != motion.EmptyIndex() {
 		t.Fatalf("expected emptyIndex, got %v", idx)
 	}
@@ -1910,7 +1910,7 @@ func TestPageMotionIndexCaching(t *testing.T) {
 		Keyframes: keyframes,
 	}
 
-	idx1 := p.updateMotionIndex(nil, d1)
+	idx1 := updateMotionIndex(p, nil, d1)
 	if idx1 == nil || idx1 == motion.EmptyIndex() {
 		t.Fatalf("expected non-empty index, got %v", idx1)
 	}
@@ -1926,14 +1926,14 @@ func TestPageMotionIndexCaching(t *testing.T) {
 		Keyframes: keyframes, // identical slice
 	}
 
-	idx2 := p.updateMotionIndex(d1, d2)
+	idx2 := updateMotionIndex(p, d1, d2)
 	if idx2 != idx1 {
 		t.Fatalf("expected reused index %p, got %p", idx1, idx2)
 	}
 
 	// 4. Zero allocs on repeated commits with same keyframes.
 	allocs := testing.AllocsPerRun(100, func() {
-		idx := p.updateMotionIndex(d1, d2)
+		idx := updateMotionIndex(p, d1, d2)
 		if idx == nil {
 			t.Fatal("unexpected nil index")
 		}
@@ -1945,7 +1945,7 @@ func TestPageMotionIndexCaching(t *testing.T) {
 	// 5. Zero allocs when both have empty keyframes.
 	p.motionIndex = nil
 	allocsEmpty := testing.AllocsPerRun(100, func() {
-		idx := p.updateMotionIndex(emptyDisplay, emptyDisplay)
+		idx := updateMotionIndex(p, emptyDisplay, emptyDisplay)
 		if idx != motion.EmptyIndex() {
 			t.Fatal("expected emptyIndex")
 		}

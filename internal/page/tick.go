@@ -29,7 +29,7 @@ func (p *Page) SetTick(fn func(ctx context.Context) error) {
 	p.fn = fn
 	p.hasFn.Store(fn != nil)
 	p.mu.Unlock()
-	p.notifyFrame()
+	notifyFrame(p)
 }
 
 // Tick steps the automatic CSS motion driver, runs the frame callback
@@ -46,7 +46,7 @@ func (p *Page) Tick(ctx context.Context) error {
 		p.mu.Unlock()
 	}
 
-	return p.runTick(ctx, fn)
+	return runTick(p, ctx, fn)
 }
 
 // runTick runs the CSS layout pass, steps the paint driver, runs fn, then the
@@ -56,17 +56,17 @@ func (p *Page) Tick(ctx context.Context) error {
 // diff never covers an animation change. A no-op leaves FrameDirty unset so
 // idle park can sleep. The 3D re-projection runs last, so it cannot invalidate
 // the callback's snapshot.
-func (p *Page) runTick(ctx context.Context, fn func(context.Context) error) error {
+func runTick(p *Page, ctx context.Context, fn func(context.Context) error) error {
 	gen := p.Generation()
-	p.stepMotion(ctx)
+	stepMotion(p, ctx)
 	if fn == nil {
-		err := p.caretBlink(ctx)
-		p.flagTickDirty(gen)
+		err := caretBlink(p, ctx)
+		flagTickDirty(p, gen)
 		if err != nil {
 			return err
 		}
 
-		return p.restampTick(ctx, gen)
+		return restampTick(p, ctx, gen)
 	}
 
 	p.tickMutated.Store(false)
@@ -77,19 +77,19 @@ func (p *Page) runTick(ctx context.Context, fn func(context.Context) error) erro
 	p.tickActive = false
 	if err != nil {
 		if p.tickSnap != nil {
-			p.freeOps(p.tickSnap)
+			freeOps(p, p.tickSnap)
 			p.tickSnap = nil
 		}
 
 		return err
 	}
 
-	blinkErr := p.caretBlink(ctx)
+	blinkErr := caretBlink(p, ctx)
 
 	mutated := p.tickMutated.Load() || p.Generation() != gen || p.dirty.Full || len(p.dirty.Rects) > 0 || p.tickSnap != nil
 	if !mutated {
 		if p.restampRedraw {
-			return p.restampTick(ctx, gen)
+			return restampTick(p, ctx, gen)
 		}
 
 		return blinkErr
@@ -98,25 +98,25 @@ func (p *Page) runTick(ctx context.Context, fn func(context.Context) error) erro
 	snap := p.tickSnap
 	p.tickSnap = nil
 	if snap != nil {
-		p.noteTickDamage(gen, snap)
-		p.freeOps(snap)
+		noteTickDamage(p, gen, snap)
+		freeOps(p, snap)
 	} else {
-		p.flagTickDirty(gen)
+		flagTickDirty(p, gen)
 	}
 
 	if blinkErr != nil {
 		return blinkErr
 	}
 
-	return p.restampTick(ctx, gen)
+	return restampTick(p, ctx, gen)
 }
 
 // restampTick applies the 3D re-projection requests of the sample stepMotion
 // just took, then performs the one redraw that turns retained layout state on
 // when the pass needed it. Both replace the display the tick started with, so
 // the tick is marked dirty even when the callback changed nothing.
-func (p *Page) restampTick(ctx context.Context, gen uint64) error {
-	p.restampMotion(ctx)
+func restampTick(p *Page, ctx context.Context, gen uint64) error {
+	restampMotion(p, ctx)
 	if p.restampRedraw {
 		p.restampRedraw = false
 		if err := p.Redraw(ctx); err != nil {
@@ -125,22 +125,22 @@ func (p *Page) restampTick(ctx context.Context, gen uint64) error {
 			return err
 		}
 	}
-	p.flagTickDirty(gen)
+	flagTickDirty(p, gen)
 
 	return nil
 }
 
-func (p *Page) captureTickOps() *opBuffer {
+func captureTickOps(p *Page) *opBuffer {
 	if p.draw.Display == nil {
 		return nil
 	}
 
-	buf := p.rentOps(len(p.draw.Display.Ops))
+	buf := rentOps(p, len(p.draw.Display.Ops))
 	buf.Ops = append(buf.Ops, p.draw.Display.Ops...)
 	return buf
 }
 
-func (p *Page) noteTickDamage(gen uint64, snap *opBuffer) {
+func noteTickDamage(p *Page, gen uint64, snap *opBuffer) {
 	if p.Generation() == gen && p.draw.Display != nil && snap != nil {
 		if p.motion != nil && p.motion.Active() {
 			p.motion.CheckManualOverlap(snap.Ops, p.draw.Display.Ops)
@@ -149,18 +149,18 @@ func (p *Page) noteTickDamage(gen uint64, snap *opBuffer) {
 		before.Ops = snap.Ops
 		d, full, _ := diffDisplay(&before, p.draw.Display)
 		if full {
-			p.markFull()
+			markFull(p)
 		} else {
 			for i := 0; i < d.n; i++ {
-				p.markRect(d.rects[i])
+				markRect(p, d.rects[i])
 			}
 		}
 	}
 
-	p.flagTickDirty(gen)
+	flagTickDirty(p, gen)
 }
 
-func (p *Page) flagTickDirty(gen uint64) {
+func flagTickDirty(p *Page, gen uint64) {
 	if p.Generation() != gen || p.dirty.Full || len(p.dirty.Rects) > 0 {
 		p.frameDirty.Store(true)
 	}
@@ -177,13 +177,13 @@ func (p *Page) Ticking() bool {
 
 // MarkRect adds a CSS-pixel region to the dirty rect. A tick uses it for a
 // line that has no element id, so the id is not what a click hits.
-func (p *Page) MarkRect(r image.Rectangle) { p.markRect(r) }
+func (p *Page) MarkRect(r image.Rectangle) { markRect(p, r) }
 
 // UseFrameDirty is a kept alias. Tick sets the flag when ops change or dirty
 // rects remain. An explicit call still sets it, including a no-op tick that
 // wants the buffer path without damage.
 func (p *Page) UseFrameDirty() {
-	defer p.notifyFrame()
+	defer notifyFrame(p)
 	p.tickMutated.Store(true)
 	p.frameDirty.Store(true)
 }
@@ -205,7 +205,7 @@ var _ host.FrameWanter = (*Page)(nil)
 // mobile views do not read it. WantFrameAt may be called from the tick or from
 // an event handler.
 func (p *Page) WantFrameAt(at time.Time) {
-	defer p.notifyFrame()
+	defer notifyFrame(p)
 	if at.IsZero() {
 		atomic.StoreInt64(&p.frameAt, 0)
 		return
@@ -226,7 +226,7 @@ func (p *Page) NextFrameAt() time.Time {
 	if n != 0 {
 		at = time.Unix(0, n)
 	}
-	if blink := p.caretDeadline(); !blink.IsZero() && (at.IsZero() || blink.Before(at)) {
+	if blink := caretDeadline(p); !blink.IsZero() && (at.IsZero() || blink.Before(at)) {
 		at = blink
 	}
 	return at
@@ -259,7 +259,7 @@ func (p *Page) FrameEvents() <-chan struct{} {
 	return p.frameEvents
 }
 
-func (p *Page) notifyFrame() {
+func notifyFrame(p *Page) {
 	if p.tickRunning.Load() {
 		return
 	}
@@ -274,9 +274,9 @@ func (p *Page) notifyFrame() {
 // existing file reload contract. Static pages need neither keep-alive.
 func (p *Page) FramePolling() bool { return p.hasFn.Load() || p.Watching() }
 
-func (p *Page) caretDeadline() time.Time {
-	c, ok := p.focusedEditable()
-	fs := p.formState()
+func caretDeadline(p *Page) time.Time {
+	c, ok := focusedEditable(p)
+	fs := formState(p)
 	if !ok || fs == nil || form.IsFileInput(c) {
 		return time.Time{}
 	}

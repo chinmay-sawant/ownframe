@@ -87,6 +87,16 @@ func (pr Probe) PNG() []byte {
 	return p.PNG()
 }
 
+// PNGWithContext encodes the page to PNG bytes using ctx for on-demand rendering.
+func (pr Probe) PNGWithContext(ctx context.Context) []byte {
+	p := innerPage(pr.page)
+	if p == nil {
+		return nil
+	}
+
+	return p.PNGWithContext(ctx)
+}
+
 // Display returns the last display list, or nil for a rasterized page.
 func (pr Probe) Display() *Display {
 	p := innerPage(pr.page)

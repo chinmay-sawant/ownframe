@@ -47,7 +47,7 @@ func layerTransitionOp(t *testing.T, p *Page) *DisplayOp {
 
 // targetOpIndices resolves the target box's operations from the display.
 func targetOpIndices(p *Page) []int {
-	box := p.boxByID("target")
+	box := boxByID(p, "target")
 	if box.ID == "" {
 		return nil
 	}
@@ -70,7 +70,7 @@ func targetOpIndices(p *Page) []int {
 func advanceTransitions(t *testing.T, p *Page, after time.Duration) {
 	t.Helper()
 
-	p.setMotionView()
+	setMotionView(p)
 	if p.animationsOff {
 		p.motion.StepTransitions(p.draw.Display, time.Now().Add(after))
 
@@ -720,28 +720,28 @@ func TestStyleTriggerStateNoopReusesDocument(t *testing.T) {
 	}
 
 	// Focus is unused by these sheets, so moving it must not restyle.
-	focused := p.renderState()
+	focused := renderState(p)
 	focused.Focus = "e"
-	doc, ok := p.styleNoop(focused)
+	doc, ok := styleNoop(p, focused)
 	if !ok {
 		t.Fatal("unused focus move was not a style noop")
 	}
 	if doc != cached {
 		t.Fatal("unused focus move replaced the styled document")
 	}
-	if routed, err := p.styleStaged(ctx, false, p.source, focused); err != nil {
+	if routed, err := styleStaged(p, ctx, false, p.source, focused); err != nil {
 		t.Fatal(err)
 	} else if routed != cached {
 		t.Fatal("styleStaged re-cascaded an unused focus move")
 	}
 
 	// Hover is used, so moving it must restyle.
-	hovered := p.renderState()
+	hovered := renderState(p)
 	hovered.Hover = "e"
-	if _, ok := p.styleNoop(hovered); ok {
+	if _, ok := styleNoop(p, hovered); ok {
 		t.Fatal("used hover move skipped the restyle")
 	}
-	if doc, err := p.styleStaged(ctx, false, p.source, hovered); err != nil {
+	if doc, err := styleStaged(p, ctx, false, p.source, hovered); err != nil {
 		t.Fatal(err)
 	} else if doc == cached {
 		t.Fatal("used hover move reused the styled document")
@@ -970,9 +970,9 @@ body { margin: 0 }
 		t.Fatalf("bound transitions = %d, want the width run", got)
 	}
 	p.TakeDirty()
-	p.stepLayoutMotion(context.Background(), start.Add(200*time.Millisecond))
+	stepLayoutMotion(p, context.Background(), start.Add(200*time.Millisecond))
 
-	a, b := p.boxByID("a"), p.boxByID("b")
+	a, b := boxByID(p, "a"), boxByID(p, "b")
 	if a.W <= 40 || a.W >= 120 {
 		t.Fatalf("midpoint width = %v, want between 40 and 120", a.W)
 	}
@@ -1002,11 +1002,11 @@ body { margin: 0 }
 		t.Fatalf("damage %v does not cover the moved sibling %v", rects, want)
 	}
 
-	p.stepLayoutMotion(context.Background(), start.Add(600*time.Millisecond))
-	if got := p.boxByID("a").W; got != 120 {
+	stepLayoutMotion(p, context.Background(), start.Add(600*time.Millisecond))
+	if got := boxByID(p, "a").W; got != 120 {
 		t.Fatalf("final width = %v, want the destination 120", got)
 	}
-	if got := p.boxByID("b").X; got != 120 {
+	if got := boxByID(p, "b").X; got != 120 {
 		t.Fatalf("final sibling X = %v, want 120 beside the final width", got)
 	}
 }
@@ -1029,16 +1029,16 @@ body { margin: 0 }
 	redrawClass(t, p, data, "on")
 	start := time.Now()
 
-	p.stepLayoutMotion(context.Background(), start.Add(200*time.Millisecond))
-	if got := p.boxByID("a").H; got <= 20 || got >= 80 {
+	stepLayoutMotion(p, context.Background(), start.Add(200*time.Millisecond))
+	if got := boxByID(p, "a").H; got <= 20 || got >= 80 {
 		t.Fatalf("midpoint height = %v, want between 20 and 80", got)
 	}
 	if got := p.Motion().LayoutError; got != "" {
 		t.Fatalf("height relayout error = %q, want none", got)
 	}
 
-	p.stepLayoutMotion(context.Background(), start.Add(600*time.Millisecond))
-	if got := p.boxByID("a").H; got != 80 {
+	stepLayoutMotion(p, context.Background(), start.Add(600*time.Millisecond))
+	if got := boxByID(p, "a").H; got != 80 {
 		t.Fatalf("final height = %v, want 80", got)
 	}
 }
@@ -1065,8 +1065,8 @@ body { margin: 0 }
 	if got := p.Motion().TransitionsBound; got != 2 {
 		t.Fatalf("bound transitions = %d, want left and top", got)
 	}
-	p.stepLayoutMotion(context.Background(), start.Add(200*time.Millisecond))
-	box := p.boxByID("a")
+	stepLayoutMotion(p, context.Background(), start.Add(200*time.Millisecond))
+	box := boxByID(p, "a")
 	if box.X <= 0 || box.X >= 100 {
 		t.Fatalf("midpoint left = %v, want between 0 and 100", box.X)
 	}
@@ -1077,8 +1077,8 @@ body { margin: 0 }
 		t.Fatalf("inset relayout error = %q, want none", got)
 	}
 
-	p.stepLayoutMotion(context.Background(), start.Add(600*time.Millisecond))
-	box = p.boxByID("a")
+	stepLayoutMotion(p, context.Background(), start.Add(600*time.Millisecond))
+	box = boxByID(p, "a")
 	if box.X != 100 || box.Y != 60 {
 		t.Fatalf("final box = (%v,%v), want (100,60)", box.X, box.Y)
 	}
@@ -1102,7 +1102,7 @@ body { margin: 0 }
 	redrawClass(t, p, data, "on")
 	start := time.Now()
 
-	box := p.boxByID("target")
+	box := boxByID(p, "target")
 	if len(box.OperationIDs) == 0 {
 		t.Fatal("the hidden element kept no operation to fade")
 	}
@@ -1110,7 +1110,7 @@ body { margin: 0 }
 	if op.Alpha != 1 {
 		t.Fatalf("alpha at the bind = %v, want the visible 1", op.Alpha)
 	}
-	p.setMotionView()
+	setMotionView(p)
 	p.motion.Step(p.draw.Display, start.Add(200*time.Millisecond))
 	op = transitionWireOp(t, p)
 	if op.Alpha != 1 {
@@ -1157,7 +1157,7 @@ func newTransitionWirePage(t *testing.T) *Page {
 func transitionWireOp(t *testing.T, p *Page) *DisplayOp {
 	t.Helper()
 
-	box := p.boxByID("target")
+	box := boxByID(p, "target")
 	if box.ID == "" {
 		t.Fatal("the target box is missing")
 	}

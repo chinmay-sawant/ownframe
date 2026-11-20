@@ -180,24 +180,24 @@ func TestHitIndexSameIDsRepoint(t *testing.T) {
 		{ID: "", X: 14, W: 1, H: 1},
 		{ID: "", X: 15, W: 1, H: 1},
 	}
-	p.setBoxes(first)
-	p.setBoxes(moved)
+	setBoxes(p, first)
+	setBoxes(p, moved)
 
-	if got := p.boxByID("a"); got.X != 11 {
+	if got := boxByID(p, "a"); got.X != 11 {
 		t.Fatalf("boxByID(a) = %+v, want the new rect", got)
 	}
-	if got := p.boxByID("dup"); got.X != 13 {
+	if got := boxByID(p, "dup"); got.X != 13 {
 		t.Fatalf("boxByID(dup) = %+v, want the last box wins", got)
 	}
-	if got := p.boxByID(""); got.X != 15 {
+	if got := boxByID(p, ""); got.X != 15 {
 		t.Fatalf("anonymous lookup = %+v, want the last anonymous box", got)
 	}
-	if !p.hasBox("dup") || p.hasBox("missing") {
+	if !hasBox(p, "dup") || hasBox(p, "missing") {
 		t.Fatal("hasBox did not answer from the repointed index")
 	}
 
-	p.setBoxes([]Box{{ID: "fresh", W: 1, H: 1}})
-	if p.hasBox("a") || p.hasBox("dup") || p.hasBox("") {
+	setBoxes(p, []Box{{ID: "fresh", W: 1, H: 1}})
+	if hasBox(p, "a") || hasBox(p, "dup") || hasBox(p, "") {
 		t.Fatal("the index kept a stale entry after the id set changed")
 	}
 
@@ -274,13 +274,13 @@ func TestHitListPinnedAndReuse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p.setDisplayBoxes(pinnedDisplay(boxes))
+	setDisplayBoxes(p, pinnedDisplay(boxes))
 	if len(p.hits) != 3 {
 		t.Fatalf("page hit list length = %d, want 3", len(p.hits))
 	}
 	first := &p.hits[0]
 
-	p.setDisplayBoxes(pinnedDisplay(pinnedBoxesFixture()))
+	setDisplayBoxes(p, pinnedDisplay(pinnedBoxesFixture()))
 	if len(p.hits) != 3 || &p.hits[0] != first {
 		t.Fatal("an unchanged recommit recopied the hit list")
 	}
@@ -290,15 +290,15 @@ func TestHitListPinnedAndReuse(t *testing.T) {
 
 	moved := pinnedBoxesFixture()
 	moved[1].X = 40
-	p.setDisplayBoxes(pinnedDisplay(moved))
-	if got := p.boxByID("in"); got.X != 40 {
+	setDisplayBoxes(p, pinnedDisplay(moved))
+	if got := boxByID(p, "in"); got.X != 40 {
 		t.Fatalf("boxByID(in) = %+v, want the moved rect", got)
 	}
 	if !p.hits[0].Fixed || !p.hits[1].Fixed || p.hits[2].Fixed {
 		t.Fatal("the rebuilt hit list lost its pinned flags")
 	}
 
-	p.setDisplayBoxes(&Display{Boxes: moved})
+	setDisplayBoxes(p, &Display{Boxes: moved})
 	if len(p.hits) != 0 {
 		t.Fatal("a display with no pins kept a hit list")
 	}
@@ -314,39 +314,39 @@ func TestContentRectCacheHit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p.setBoxes([]Box{
+	setBoxes(p, []Box{
 		{ID: "a", W: 50, H: 50},
 		{ID: "b", X: 150, Y: 80, W: 100, H: 100},
 	})
-	want := p.contentRect()
+	want := contentRect(p)
 	if want.Min.X != 0 || want.Min.Y != 0 || want.Max.X != 250 || want.Max.Y != 180 {
 		t.Fatalf("contentRect = %v, want (0,0)-(250,180)", want)
 	}
-	if got := p.contentRect(); got != want || !p.contentOK {
+	if got := contentRect(p); got != want || !p.contentOK {
 		t.Fatalf("second contentRect = %v ok %v, want the cached %v", got, p.contentOK, want)
 	}
 
-	p.setBoxes([]Box{
+	setBoxes(p, []Box{
 		{ID: "a", W: 50, H: 50},
 		{ID: "b", X: 150, Y: 80, W: 100, H: 100},
 	})
 	if !p.contentOK {
 		t.Fatal("an unchanged recommit dropped the cached rect")
 	}
-	if got := p.contentRect(); got != want {
+	if got := contentRect(p); got != want {
 		t.Fatalf("recomputed rect = %v, want the cached %v", got, want)
 	}
 
-	p.setBoxes([]Box{
+	setBoxes(p, []Box{
 		{ID: "a", W: 50, H: 50},
 		{ID: "b", X: 300, Y: 80, W: 100, H: 100},
 	})
-	if got := p.contentRect(); got.Max.X != 400 || got.Max.Y != 180 {
+	if got := contentRect(p); got.Max.X != 400 || got.Max.Y != 180 {
 		t.Fatalf("moved contentRect = %v, want max (400,180)", got)
 	}
 
 	p.width = 500
-	if got := p.contentRect(); got.Max.X != 500 || got.Max.Y != 180 {
+	if got := contentRect(p); got.Max.X != 500 || got.Max.Y != 180 {
 		t.Fatalf("resized contentRect = %v, want max (500,180)", got)
 	}
 }
@@ -373,7 +373,7 @@ func TestCommitSourceCopiesStayConsistent(t *testing.T) {
 	if !strings.Contains(p.source, "hi a") {
 		t.Fatalf("source = %q, want the rendered data", p.source)
 	}
-	if got := p.a11yState().Source(); got != p.source {
+	if got := a11yState(p).Source(); got != p.source {
 		t.Fatal("the accessibility source disagrees with the stored source")
 	}
 	before := p.source
@@ -459,7 +459,7 @@ func TestAdoptPatchedSourceKeepsHTMLInStep(t *testing.T) {
 		t.Fatalf("render key source = (%d, %d, %d), want (%d, %d, %d)",
 			got, p.last.SourceLen, p.last.SourceRev, wantHash, len(newSource), p.sourceRev)
 	}
-	if got := p.last; got != p.keyFor(p.renderState()) {
+	if got := p.last; got != keyFor(p, renderState(p)) {
 		t.Fatal("render key does not match the adopted source")
 	}
 	layouts := p.Stats().Layouts
@@ -686,13 +686,13 @@ func TestAllocDueGap(t *testing.T) {
 
 	p := &Page{}
 	start := time.Unix(0, 0)
-	if !p.allocDue(start) {
+	if !allocDue(p, start) {
 		t.Fatal("first sample")
 	}
-	if p.allocDue(start.Add(499 * time.Millisecond)) {
+	if allocDue(p, start.Add(499*time.Millisecond)) {
 		t.Fatal("inside the gap")
 	}
-	if !p.allocDue(start.Add(allocSampleGap)) {
+	if !allocDue(p, start.Add(allocSampleGap)) {
 		t.Fatal("at the gap")
 	}
 }
@@ -740,28 +740,28 @@ func overlapPage(t *testing.T) *Page {
 func TestBoxAtUnifiesPointerWinners(t *testing.T) {
 	ctx := context.Background()
 	p := overlapPage(t)
-	p.setBoxes(overlapFixture())
+	setBoxes(p, overlapFixture())
 
 	box, ok := hit.Hit(p.Boxes(), 13, 13)
 	if !ok || box.ID != "" {
 		t.Fatalf("hit = %+v, %v, want the innermost anonymous box", box, ok)
 	}
-	if id := p.boxIDAt(13, 13); id != "inner" {
+	if id := boxIDAt(p, 13, 13); id != "inner" {
 		t.Fatalf("boxIDAt = %q, want inner", id)
 	}
-	if spot := p.boxAt(13, 13); !spot.ok || spot.id != "inner" {
+	if spot := boxAt(p, 13, 13); !spot.ok || spot.id != "inner" {
 		t.Fatalf("boxAt = %+v, want inner", spot)
 	}
 
-	p.setBoxes(overlapFixture())
+	setBoxes(p, overlapFixture())
 	if err := p.Press(ctx, 13, 13); err != nil {
 		t.Fatal(err)
 	}
-	if p.activeID() != "inner" {
-		t.Fatalf("press = %q, want inner", p.activeID())
+	if activeID(p) != "inner" {
+		t.Fatalf("press = %q, want inner", activeID(p))
 	}
 
-	p.setBoxes(overlapFixture())
+	setBoxes(p, overlapFixture())
 	if err := p.Hover(ctx, 13, 13); err != nil {
 		t.Fatal(err)
 	}
@@ -769,7 +769,7 @@ func TestBoxAtUnifiesPointerWinners(t *testing.T) {
 		t.Fatalf("hover = %q, want inner", p.HoverID())
 	}
 
-	p.setBoxes(overlapFixture())
+	setBoxes(p, overlapFixture())
 	var clicked Box
 	p.Handle(Handlers{Click: func(_ context.Context, b Box) error {
 		clicked = b
@@ -786,7 +786,7 @@ func TestBoxAtUnifiesPointerWinners(t *testing.T) {
 func TestBoxesSliceAndBoxAt(t *testing.T) {
 	p := overlapPage(t)
 	fixture := overlapFixture()
-	p.setBoxes(fixture)
+	setBoxes(p, fixture)
 
 	slice := p.BoxesSlice()
 	if len(slice) != len(fixture) {
@@ -842,36 +842,36 @@ func TestBoxIndexLeavesNoScan(t *testing.T) {
 
 	boxes = append(boxes, Box{ID: "dup", X: 1, W: 1, H: 1})
 	boxes = append(boxes, Box{ID: "dup", X: 2, W: 1, H: 1})
-	p.setBoxes(boxes)
+	setBoxes(p, boxes)
 	p.boxes = nil
 
-	if !p.hasBox("dup") || p.hasBox("missing") {
+	if !hasBox(p, "dup") || hasBox(p, "missing") {
 		t.Fatal("hasBox did not answer from the index")
 	}
 
-	if got := p.boxByID("dup"); got.X != 2 {
+	if got := boxByID(p, "dup"); got.X != 2 {
 		t.Fatalf("boxByID = %+v, want the last box", got)
 	}
 
-	if got := p.boxByID("b3999"); got.ID != "b3999" {
+	if got := boxByID(p, "b3999"); got.ID != "b3999" {
 		t.Fatalf("boxByID = %+v, want b3999", got)
 	}
 
-	if got := p.boxByID("missing"); got.ID != "missing" || got.X != 0 {
+	if got := boxByID(p, "missing"); got.ID != "missing" || got.X != 0 {
 		t.Fatalf("boxByID = %+v, want Box{ID: missing}", got)
 	}
 
-	p.setBoxes([]Box{
+	setBoxes(p, []Box{
 		{ID: "", X: 7, W: 1, H: 1},
 		{ID: "k", W: 1, H: 1},
 		{ID: "", X: 8, W: 1, H: 1},
 	})
 
-	if got := p.boxByID(""); got.X != 8 {
+	if got := boxByID(p, ""); got.X != 8 {
 		t.Fatalf("anonymous lookup = %+v, want the last anonymous box", got)
 	}
 
-	if p.hasBox("dup") {
+	if hasBox(p, "dup") {
 		t.Fatal("the index kept a stale entry")
 	}
 }
@@ -941,11 +941,11 @@ func TestEmojiImageResolves(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := p.imageBytes("emoji/1f602"); err != nil {
+	if _, err := imageBytes(p, "emoji/1f602"); err != nil {
 		t.Fatalf("bundled emoji: %v", err)
 	}
 
-	if _, err := p.imageBytes("emoji/1fae0"); err == nil {
+	if _, err := imageBytes(p, "emoji/1fae0"); err == nil {
 		t.Fatal("unsupported emoji resolved")
 	}
 }
@@ -1023,7 +1023,7 @@ func kidCacheFlags(t *testing.T, p *Page) (ready, staleRects bool) {
 // box list, and the first subtree query builds the parent-to-children index.
 func TestKidIndexBuildsOnFirstUse(t *testing.T) {
 	p := &Page{}
-	p.setBoxes([]Box{{ID: "root", ParentIndex: -1, W: 10, H: 10}})
+	setBoxes(p, []Box{{ID: "root", ParentIndex: -1, W: 10, H: 10}})
 
 	if ready, _ := kidCacheFlags(t, p); ready {
 		t.Fatal("setBoxes must not build the kid index")
@@ -1047,7 +1047,7 @@ func TestKidIndexBuildsOnFirstUse(t *testing.T) {
 // is rewritten and a second query answers with the new geometry.
 func TestKidIndexUpdatesRectsInPlace(t *testing.T) {
 	p := &Page{}
-	p.setBoxes([]Box{
+	setBoxes(p, []Box{
 		{ID: "card", ParentIndex: -1, X: 0, Y: 0, W: 100, H: 100},
 		{ID: "badge", ParentIndex: 0, X: 90, Y: 90, W: 40, H: 40},
 	})
@@ -1056,7 +1056,7 @@ func TestKidIndexUpdatesRectsInPlace(t *testing.T) {
 		t.Fatal("kidRect missed the card")
 	}
 
-	p.setBoxes([]Box{
+	setBoxes(p, []Box{
 		{ID: "card", ParentIndex: -1, X: 0, Y: 0, W: 100, H: 100},
 		{ID: "badge", ParentIndex: 0, X: 200, Y: 200, W: 40, H: 40},
 	})
@@ -1083,7 +1083,7 @@ func TestKidIndexUpdatesRectsInPlace(t *testing.T) {
 // the id sequence changes, so the subtree query follows the new tree.
 func TestKidIndexRebuildsOnStructuralChange(t *testing.T) {
 	p := &Page{}
-	p.setBoxes([]Box{
+	setBoxes(p, []Box{
 		{ID: "card", ParentIndex: -1, X: 0, Y: 0, W: 100, H: 100},
 		{ID: "badge", ParentIndex: 0, X: 200, Y: 200, W: 40, H: 40},
 	})
@@ -1092,7 +1092,7 @@ func TestKidIndexRebuildsOnStructuralChange(t *testing.T) {
 		t.Fatalf("built card rect = %v, %v, want the badge inside", r, ok)
 	}
 
-	p.setBoxes([]Box{
+	setBoxes(p, []Box{
 		{ID: "card", ParentIndex: -1, X: 0, Y: 0, W: 100, H: 100},
 		{ID: "badge", ParentIndex: -1, X: 200, Y: 200, W: 40, H: 40},
 	})
@@ -1109,7 +1109,7 @@ func TestKidIndexRebuildsOnStructuralChange(t *testing.T) {
 		t.Fatalf("rebuilt card rect = %v, want the badge detached %v", r, want)
 	}
 
-	p.setBoxes([]Box{{ID: "card", ParentIndex: -1, X: 0, Y: 0, W: 100, H: 100}})
+	setBoxes(p, []Box{{ID: "card", ParentIndex: -1, X: 0, Y: 0, W: 100, H: 100}})
 
 	if ready, _ := kidCacheFlags(t, p); ready {
 		t.Fatal("a removed box must drop the kid index")

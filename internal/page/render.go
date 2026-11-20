@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-func (p *Page) redraw(ctx context.Context, skipSame bool) error {
+func redraw(p *Page, ctx context.Context, skipSame bool) error {
 	return draw.Run(ctx, p.surf, skipSame)
 }
 
@@ -46,37 +46,37 @@ func (s redrawSurface) BeginSample() (draw.Sample, bool) {
 		return draw.BeginSample(false, false)
 	}
 
-	return draw.BeginSample(true, s.p.allocDue(time.Now()))
+	return draw.BeginSample(true, allocDue(s.p, time.Now()))
 }
 
-func (s redrawSurface) ClearPerf() { s.p.clearPerf() }
+func (s redrawSurface) ClearPerf() { clearPerf(s.p) }
 
 func (s redrawSurface) CountRedraw() { s.p.stats.redraws++ }
 
 func (s redrawSurface) FinishRedraw(track, memOK bool, mem runtime.MemStats, start time.Time) {
-	s.p.finishRedraw(track, memOK, mem, start)
+	finishRedraw(s.p, track, memOK, mem, start)
 }
 
 func (s redrawSurface) ExecTemplate(track bool) (string, error) {
-	return s.p.execTemplate(track)
+	return execTemplate(s.p, track)
 }
 
 func (s redrawSurface) SyncForm(executed string) string {
-	out := s.p.syncForm(executed)
+	out := syncForm(s.p, executed)
 	s.p.source = out
 	// A clean fast-path sync leaves the source byte-identical, so the
 	// memoized hash, length, and revision from the last real sync are
 	// still valid and the rehash is pure overhead on the skip path.
 	if !s.p.syncClean {
-		s.p.noteSource(out)
+		noteSource(s.p, out)
 	}
 
 	return out
 }
 
-func (s redrawSurface) RenderState() render.State { return s.p.renderState() }
+func (s redrawSurface) RenderState() render.State { return renderState(s.p) }
 
-func (s redrawSurface) Unchanged(state render.State) bool { return s.p.unchanged(state) }
+func (s redrawSurface) Unchanged(state render.State) bool { return unchanged(s.p, state) }
 
 func (s redrawSurface) DropPNG() { s.p.draw.DropPNG() }
 
@@ -86,7 +86,7 @@ func (s redrawSurface) StyleStaged(
 	source string,
 	state render.State,
 ) (*css.Document, error) {
-	return s.p.styleStaged(ctx, track, source, state)
+	return styleStaged(s.p, ctx, track, source, state)
 }
 
 func (s redrawSurface) DrawStaged(
@@ -96,11 +96,11 @@ func (s redrawSurface) DrawStaged(
 	state render.State,
 	executed string,
 ) error {
-	return s.p.drawStaged(ctx, track, styled, state, executed)
+	return drawStaged(s.p, ctx, track, styled, state, executed)
 }
 
 func (s redrawSurface) AfterRedrawDraw(ctx context.Context) error {
-	return s.p.afterRedrawDraw(ctx)
+	return afterRedrawDraw(s.p, ctx)
 }
 
 var _ draw.RedrawSurface = redrawSurface{}
@@ -112,8 +112,8 @@ var _ draw.RedrawSurface = redrawSurface{}
 // scan. A clean form reuses the last merged body with no Execute. A dirty
 // frame executes into a pooled buffer and keeps one copy; its hash is taken
 // once in the sync path, which pairs it with the body for the next reuse.
-func (p *Page) execTemplate(track bool) (string, error) {
-	p.applyScrollWindow()
+func execTemplate(p *Page, track bool) (string, error) {
+	applyScrollWindow(p)
 	if p.tplProbeTpl != p.tpl {
 		p.tplProbeHas = strings.Contains(p.nav.Current(), "{{")
 		p.tplProbeTpl = p.tpl
@@ -171,21 +171,19 @@ func (p *Page) execTemplate(track bool) (string, error) {
 // the page relayouts directly: the revision, hash, and length compare with no
 // cache lock, and the relayout takes one. Only a new source (or a dropped
 // cache) pays the Source memcmp and the fresh parse inside StyleDocument.
-func (p *Page) styleStaged(
-	ctx context.Context,
+func styleStaged(p *Page, ctx context.Context,
 	track bool,
 	source string,
-	state render.State,
-) (*css.Document, error) {
-	if doc, ok := p.styleNoop(state); ok {
+	state render.State) (*css.Document, error) {
+	if doc, ok := styleNoop(p, state); ok {
 		return doc, nil
 	}
 
-	changed := p.themeChanged(state)
-	if !changed && p.cacheFresh() {
+	changed := themeChanged(p, state)
+	if !changed && cacheFresh(p) {
 		// An element patch the hover handler just committed already
 		// relayed the cache for this state, so reuse its document.
-		if doc, ok := p.relayedDoc(state); ok {
+		if doc, ok := relayedDoc(p, state); ok {
 			return doc, nil
 		}
 		ds := draw.Clock(track)
@@ -196,7 +194,7 @@ func (p *Page) styleStaged(
 			return nil, err
 		}
 
-		p.noteRelayed(state)
+		noteRelayed(p, state)
 		return doc, nil
 	}
 
@@ -206,7 +204,7 @@ func (p *Page) styleStaged(
 		&p.stats.styleTime,
 		styleCache(p.cache, changed),
 		source,
-		p.viewport(),
+		viewport(p),
 		state,
 	)
 	if err != nil {
@@ -224,8 +222,8 @@ func (p *Page) styleStaged(
 		p.statePseudos = p.cache.StatePseudos()
 	}
 
-	p.noteCacheSource()
-	p.noteRelayed(state)
+	noteCacheSource(p)
+	noteRelayed(p, state)
 
 	return styled.Doc, nil
 }
@@ -244,7 +242,7 @@ func styleCache(cache *render.Cache, themeChanged bool) *render.Cache {
 // themeChanged reports that the theme sheet differs from the one the last
 // committed frame was styled with. The cache still reflects the old sheet,
 // so the caller must not take the cacheFresh relayout for it.
-func (p *Page) themeChanged(state render.State) bool {
+func themeChanged(p *Page, state render.State) bool {
 	return p.cache != nil && p.last.Theme != state.Theme
 }
 
@@ -252,7 +250,7 @@ func (p *Page) themeChanged(state render.State) bool {
 // pointer or focus state the sheets cannot match, so a relayout would
 // reproduce the same styles. ok is false when the frame changed anything
 // else, or when a changed state can match, and the caller restyles.
-func (p *Page) styleNoop(state render.State) (doc *css.Document, ok bool) {
+func styleNoop(p *Page, state render.State) (doc *css.Document, ok bool) {
 	if p.cache == nil || !p.hasLast {
 		return nil, false
 	}
@@ -262,7 +260,7 @@ func (p *Page) styleNoop(state render.State) (doc *css.Document, ok bool) {
 		return nil, false
 	}
 
-	next, last := p.keyFor(state), p.last
+	next, last := keyFor(p, state), p.last
 	next.Focus, next.Hover, next.Active = "", "", ""
 	last.Focus, last.Hover, last.Active = "", "", ""
 
@@ -279,68 +277,66 @@ func (p *Page) styleNoop(state render.State) (doc *css.Document, ok bool) {
 }
 
 // drawStaged builds the list and commits either path.
-func (p *Page) drawStaged(
-	ctx context.Context,
+func drawStaged(p *Page, ctx context.Context,
 	track bool,
 	styled *css.Document,
 	state render.State,
-	executed string,
-) error {
+	executed string) error {
 	drawStart := draw.Clock(true)
 	ds := draw.Clock(track)
-	display, err := p.layoutStaged(ctx, styled, state)
+	display, err := layoutStaged(p, ctx, styled, state)
 	draw.Note(track, &p.stats.layoutTime, ds)
 	if err != nil {
 		return err
 	}
 
-	p.paintCaret(display)
+	paintCaret(p, display)
 	if draw.Choose(display) == draw.PathList {
-		p.commitDisplay(display, executed, drawStart, state)
+		commitDisplay(p, display, executed, drawStart, state)
 
 		return nil
 	}
-	if err := p.paintFallback(display, drawStart, track, state); err != nil {
+	if err := paintFallback(p, display, drawStart, track, state); err != nil {
 		return err
 	}
 
-	p.commitAccessibility(executed)
+	commitAccessibility(p, executed)
 
 	return nil
 }
 
 // commitDisplay installs a replayable list and its dirty region.
-func (p *Page) commitDisplay(display *Display, executed string, drawStart time.Time, state render.State) {
+func commitDisplay(p *Page, display *Display, executed string, drawStart time.Time, state render.State) {
 	previous := p.draw.Display
 	previousFallback := p.draw.FallbackDisplay
-	p.updateMotionIndex(previous, display)
-	captures := p.captureTransitions(previous, display)
-	p.dirtyFromDisplay(previous, display)
-	p.noteCommit(drawStart)
+	updateMotionIndex(p, previous, display)
+	captures := captureTransitions(p, previous, display)
+	dirtyFromDisplay(p, previous, display)
+	noteCommit(p, drawStart)
 	p.draw.CommitList(display)
-	p.setDisplayBoxes(display)
+	setDisplayBoxes(p, display)
 	p.generation++
 	p.layerGen++
-	p.bindMotion(previous, display)
-	p.bindTransitions(captures)
+	bindMotion(p, previous, display)
+	bindTransitions(p, captures)
 	if previous != nil && previous != display {
 		previous.Release()
 	}
 	if previousFallback != nil && previousFallback != display && previousFallback != previous {
 		previousFallback.Release()
 	}
-	p.remember(state)
-	p.commitAccessibility(executed)
-	p.applyPending()
-	p.runAfterRedraw()
+	remember(p, state)
+	commitAccessibility(p, executed)
+	applyPending(p)
+	runAfterRedraw(p)
 }
 
-func (p *Page) noteCommit(drawStart time.Time) {
+func noteCommit(p *Page, drawStart time.Time) {
 	draw.NoteCommit(&p.stats.layouts, &p.stats.repaints, &p.stats.lastDraw, drawStart)
 }
 
-func (p *Page) finishRedraw(track, memOK bool, m0 runtime.MemStats, start time.Time) {
-	defer p.notifyFrame()
+func finishRedraw(p *Page, track, memOK bool, m0 runtime.MemStats, start time.Time) {
+	defer notifyFrame(p)
 	p.stats.lastRedraw = time.Since(start)
 	if track {
 		p.stats.otherTime = max(0, p.stats.lastRedraw-p.stats.lastTemplate-
@@ -355,7 +351,7 @@ func (p *Page) finishRedraw(track, memOK bool, m0 runtime.MemStats, start time.T
 // picture is a replay of that same list. blinkless does not paint a page
 // bitmap of its own. The hit map is built here too, so a fixed box still
 // wins over the content it covers on the bitmap path.
-func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, state render.State) error {
+func paintFallback(p *Page, display *Display, drawStart time.Time, track bool, state render.State) error {
 	bitmap, err := draw.PaintBitmap(track, &p.stats.paintTime, display)
 	if err != nil {
 		return err
@@ -363,23 +359,23 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 
 	previous := p.draw.Display
 	previousFallback := p.draw.FallbackDisplay
-	p.updateMotionIndex(previous, nil)
-	p.captureTransitions(previous, display)
-	p.noteCommit(drawStart)
+	updateMotionIndex(p, previous, nil)
+	captureTransitions(p, previous, display)
+	noteCommit(p, drawStart)
 	p.draw.CommitBitmap(display, bitmap.Image)
-	p.setDisplayBoxes(display)
+	setDisplayBoxes(p, display)
 	p.generation++
 	p.layerGen++
-	p.bindMotion(previous, nil)
-	p.bindTransitions(nil)
+	bindMotion(p, previous, nil)
+	bindTransitions(p, nil)
 	if previous != nil && previous != display {
 		previous.Release()
 	}
 	if previousFallback != nil && previousFallback != display && previousFallback != previous {
 		previousFallback.Release()
 	}
-	p.remember(state)
-	p.markFull()
+	remember(p, state)
+	markFull(p)
 	p.lastPatch = DisplayPatch{
 		Changed: bitmap.Changed,
 		Added:   bitmap.Added,
@@ -387,10 +383,10 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 		Full:    bitmap.Full,
 	}
 	if track {
-		p.recordFull(len(display.Boxes))
+		recordFull(p, len(display.Boxes))
 	}
-	p.applyPending()
-	p.runAfterRedraw()
+	applyPending(p)
+	runAfterRedraw(p)
 
 	return nil
 }
@@ -399,7 +395,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 // If display.Keyframes matches the previous display's keyframes (pointer equality
 // or length == 0), it reuses the previous *cssmotion.Index instead of calling
 // NewIndex on every commit.
-func (p *Page) updateMotionIndex(previous, display *Display) *motion.Index {
+func updateMotionIndex(p *Page, previous, display *Display) *motion.Index {
 	if display == nil || len(display.Keyframes) == 0 {
 		p.motionIndex = motion.EmptyIndex()
 		return p.motionIndex
@@ -436,7 +432,7 @@ func sameKeyframes(a, b []layout.KeyframesRule) bool {
 // concurrently on the same Page; keep Tick, MarkRect, and Redraw on the
 // page loop the way Run and Serve each own their Page.
 func (p *Page) Redraw(ctx context.Context) error {
-	return p.redraw(ctx, false)
+	return redraw(p, ctx, false)
 }
 
 // RedrawIfChanged renders unless the executed source, viewport, focus,
@@ -445,7 +441,7 @@ func (p *Page) Redraw(ctx context.Context) error {
 // way. It is for callers that redraw after every event and would otherwise
 // lay the same frame out again. A skipped call counts no layout or repaint.
 func (p *Page) RedrawIfChanged(ctx context.Context) error {
-	return p.redraw(ctx, true)
+	return redraw(p, ctx, true)
 }
 
 // Stats returns one snapshot of the page counters and the last frame sizes.
@@ -486,7 +482,7 @@ func (p *Page) Stats() host.Stats {
 	}
 
 	stats := draw.Snapshot(&counts, len(p.boxes), ops)
-	stats.HoverPatchFailures = p.hoverPatchFailureSnapshot()
+	stats.HoverPatchFailures = hoverPatchFailureSnapshot(p)
 	return stats
 }
 
@@ -587,11 +583,11 @@ type renderTrack struct {
 	execSkipped bool
 }
 
-func (p *Page) viewport() draw.Viewport {
+func viewport(p *Page) draw.Viewport {
 	return draw.Viewport{Width: p.width, Height: p.height}
 }
 
-func (p *Page) keyFor(state render.State) draw.Key {
+func keyFor(p *Page, state render.State) draw.Key {
 	// The hash, length, and revision memoized beside p.source travel in
 	// the key, and the hashed constructor drops the source string once
 	// the revision is nonzero, so neither the transient key nor the
@@ -601,14 +597,14 @@ func (p *Page) keyFor(state render.State) draw.Key {
 		p.sourceHash,
 		p.sourceLen,
 		p.sourceRev,
-		p.viewport(),
+		viewport(p),
 		state,
 		p.statePseudos,
 		p.imagesRev,
 	)
 }
 
-func (p *Page) unchanged(state render.State) bool {
+func unchanged(p *Page, state render.State) bool {
 	// A retained-state debt, or a retained flag the last commit did not lay
 	// out with, needs a fresh placement. So does a running animation or an
 	// in-flight transition, whose pose lives in the operations a publish
@@ -624,7 +620,7 @@ func (p *Page) unchanged(state render.State) bool {
 	blink := false
 	caret := 0
 	anchor := 0
-	if fs := p.formState(); fs != nil {
+	if fs := formState(p); fs != nil {
 		blink = fs.BlinkOn
 		caret = fs.Caret
 		anchor = fs.Anchor
@@ -635,11 +631,11 @@ func (p *Page) unchanged(state render.State) bool {
 	if caret != p.lastCaret || anchor != p.lastAnchor {
 		return false
 	}
-	return draw.Unchanged(p.hasLast, p.last, p.keyFor(state))
+	return draw.Unchanged(p.hasLast, p.last, keyFor(p, state))
 }
 
-func (p *Page) remember(state render.State) {
-	p.last = p.keyFor(state)
+func remember(p *Page, state render.State) {
+	p.last = keyFor(p, state)
 	// The committed key keeps identity, not bytes: with a nonzero
 	// revision Unchanged never reads Source, so drop the second copy of
 	// the page. A zero revision (no noteSourceHashed yet) keeps the string
@@ -652,7 +648,7 @@ func (p *Page) remember(state render.State) {
 	p.lastBlink = false
 	p.lastCaret = 0
 	p.lastAnchor = 0
-	if fs := p.formState(); fs != nil {
+	if fs := formState(p); fs != nil {
 		p.lastBlink = fs.BlinkOn
 		p.lastCaret = fs.Caret
 		p.lastAnchor = fs.Anchor
@@ -661,12 +657,12 @@ func (p *Page) remember(state render.State) {
 
 // noteSource records a newly synced source with a fresh hash. noteSourceHashed
 // carries the store so a caller that already hashed the bytes skips the fold.
-func (p *Page) noteSource(next string) {
-	p.noteSourceHashed(next, draw.HashString(next))
+func noteSource(p *Page, next string) {
+	noteSourceHashed(p, next, draw.HashString(next))
 }
 
 // noteCacheSource records the source the style cache now reflects.
-func (p *Page) noteCacheSource() {
+func noteCacheSource(p *Page) {
 	p.cacheRev = p.sourceRev
 	p.cacheHash = p.sourceHash
 	p.cacheLen = p.sourceLen
@@ -674,7 +670,7 @@ func (p *Page) noteCacheSource() {
 
 // cacheFresh reports that the style cache reflects the current source memo,
 // so a restyle can relayout directly: one cache lock, no Source memcmp.
-func (p *Page) cacheFresh() bool {
+func cacheFresh(p *Page) bool {
 	return p.cache != nil && p.sourceRev != 0 && p.cacheRev == p.sourceRev &&
 		p.cacheHash == p.sourceHash && p.cacheLen == p.sourceLen
 }
@@ -683,7 +679,7 @@ func (p *Page) cacheFresh() bool {
 // every path that (re)cascades the cache: an element patch relay and a
 // committed styleStaged relayout alike, so a later Redraw for the same state
 // reuses the document instead of cascading again.
-func (p *Page) noteRelayed(state render.State) {
+func noteRelayed(p *Page, state render.State) {
 	p.relayedOK = true
 	p.relayedW, p.relayedH = p.width, p.height
 	p.relayedHover, p.relayedActive, p.relayedFocus = state.Hover, state.Active, state.Focus
@@ -695,7 +691,7 @@ func (p *Page) noteRelayed(state render.State) {
 // reflects state: same viewport, pointer/focus ids, theme, and image
 // revision as the last relay. The caller must have checked cacheFresh, so
 // the tree is also the current source's. A hit skips one css.Relayout.
-func (p *Page) relayedDoc(state render.State) (*css.Document, bool) {
+func relayedDoc(p *Page, state render.State) (*css.Document, bool) {
 	if !p.relayedOK || p.cache == nil {
 		return nil, false
 	}
@@ -718,10 +714,10 @@ func (p *Page) relayedDoc(state render.State) (*css.Document, bool) {
 // invalidateCache drops the parsed tree so the next Redraw rebuilds it. It
 // also evicts the box-cache entry for the discarded boxes, so a source
 // change on a live page does not pin the old box list until the next commit.
-func (p *Page) invalidateCache() {
+func invalidateCache(p *Page) {
 	p.cache = nil
 	p.relayedOK = false
-	p.forgetBoxes()
+	forgetBoxes(p)
 	p.motionIndex = nil
 	// Unknown sheets keep every state redraw until the next Redraw reports
 	// what the new sheets can match.
@@ -757,7 +753,7 @@ func (p *Page) SetAfterRedraw(fn func()) {
 // runAfterRedraw calls the registered callback after a commit installed the
 // display and the boxes. A callback that asks for a redraw does not re-enter
 // the commit: the request waits for the callback to return.
-func (p *Page) runAfterRedraw() {
+func runAfterRedraw(p *Page) {
 	p.afterRedraw.Run()
 }
 
@@ -765,14 +761,14 @@ func (p *Page) runAfterRedraw() {
 // after the callback returned, so the commit is never re-entered, and the
 // callback runs again in it, so state reapplied to a rebuilt tree lands. One
 // draw is enough: a callback that always asks for a draw cannot loop.
-func (p *Page) afterRedrawDraw(ctx context.Context) error {
+func afterRedrawDraw(p *Page, ctx context.Context) error {
 	if !p.afterRedraw.Take() {
 		return nil
 	}
 
 	defer p.afterRedraw.Done()
 
-	return p.redraw(ctx, false)
+	return redraw(p, ctx, false)
 }
 
 // BeginRedrawBatch defers page draws until EndRedrawBatch. The window wraps a
@@ -798,7 +794,7 @@ func (p *Page) EndRedrawBatch(ctx context.Context) error {
 		return nil
 	}
 
-	if err := p.redraw(ctx, !force); err != nil {
+	if err := redraw(p, ctx, !force); err != nil {
 		draw.RestoreBatch(&p.redrawPending, &p.redrawForce, force)
 
 		return err

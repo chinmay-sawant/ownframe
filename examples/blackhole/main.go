@@ -68,12 +68,11 @@ type benchResult struct {
 // step advances by, the results table's capacity, and the mode of the
 // optional results file.
 const (
-	benchRows        = 6
+	benchRows        = 5
 	benchCameraOps   = 10000
 	benchThrottleOps = 600
 	benchRecoverOps  = 2000
 	benchHUDPatches  = 200
-	benchPageTicks   = 200
 
 	throttleFrame = 1.0 / 20.0  // slow frame that drives DRS step-down
 	recoveryFrame = 1.0 / 120.0 // fast frame that drives DRS recovery
@@ -162,15 +161,6 @@ func runBench(benchFile string) error {
 		return err
 	}
 	rows = append(rows, r5)
-
-	// 6. Ownframe page tick
-	r6, err := measure("page-testing-tick", benchPageTicks, func() error {
-		return app.Page().Testing().Tick(ctx)
-	})
-	if err != nil {
-		return err
-	}
-	rows = append(rows, r6)
 
 	out := "\n=== Ownframe Black Hole Headless Benchmark Results ===\n"
 	for _, r := range rows {

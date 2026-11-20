@@ -40,5 +40,16 @@ func (a *App) selectAllClip(ctx context.Context) error {
 		a.setClip("nothing to select")
 		return nil
 	}
-	return a.page.Edit().SelectAll(ctx)
+	if err := a.page.Edit().SelectAll(ctx); err != nil {
+		return err
+	}
+	a.selectedAll = a.page.Edit().FocusedField() != ""
+	return nil
+}
+
+func (a *App) restoreSelectedAll(ctx context.Context) error {
+	if !a.selectedAll {
+		return nil
+	}
+	return a.selectAllClip(ctx)
 }

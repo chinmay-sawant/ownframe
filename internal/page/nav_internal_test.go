@@ -27,7 +27,7 @@ func navCacheNewPage(t *testing.T, html string) *Page {
 func navCacheMustHaveBox(t *testing.T, p *Page, id string) {
 	t.Helper()
 
-	if !p.hasBox(id) {
+	if !hasBox(p, id) {
 		t.Fatalf("missing box %q", id)
 	}
 }

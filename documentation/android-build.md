@@ -1,5 +1,7 @@
 # Build and check the Android application
 
+The [Android example download guide](../examples/android-host/APPS.md) lists the eight signed reference APKs and their SHA-256 checksums.
+
 Run these commands from the repository root. Keep `go.work` in place and leave
 `GOWORK` unset for the mobile bind, because gomobile builds a temporary module.
 

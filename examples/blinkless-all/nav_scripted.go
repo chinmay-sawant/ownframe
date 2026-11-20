@@ -15,10 +15,8 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
-// liveRig plays input into a page with a manual clock and no window. It runs
-// the page's registered tick (Page.Testing().Tick), the same callback the real
-// window drives, so what it reports is what a person would see. The tests and
-// the -demo mode both use it.
+// liveRig drives the navigation session with scripted input and a manual clock.
+// The tests and the -demo mode both use it.
 type liveRig struct {
 	ctx    context.Context
 	page   *ownframe.Page
@@ -53,7 +51,6 @@ func newLiveRig(ctx context.Context, app *App, tab string, width, height int) (*
 		keys:   func() []string { return r.keys },
 		text:   func() string { return r.text },
 	}}
-	r.runner.attach()
 
 	return r, nil
 }
@@ -63,7 +60,7 @@ func newLiveRig(ctx context.Context, app *App, tab string, width, height int) (*
 func (r *liveRig) step(d time.Duration) error {
 	r.clock.advance(d)
 
-	err := r.page.Testing().Tick(r.ctx)
+	err := r.runner.tick(r.ctx)
 
 	r.click, r.keys, r.text = false, nil, ""
 
@@ -189,7 +186,7 @@ func (r *liveRig) textOf(id string) string {
 //
 //nolint:mnd // pixel sizes, timings and markup of the live demo
 func (r *liveRig) writeFrame(dir string, n int) error {
-	full := r.page.Testing().PNGWithContext(r.ctx)
+	full := r.page.Probe().PNGWithContext(r.ctx)
 	if len(full) == 0 {
 		return fmt.Errorf("png: empty picture")
 	}
