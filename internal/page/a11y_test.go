@@ -3,8 +3,10 @@ package page
 import (
 	"context"
 	"errors"
-	"github.com/chinmay-sawant/ownframe/internal/host"
 	"testing"
+
+	"github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 func TestAccessibilitySetValueUsesEditHooks(t *testing.T) {
@@ -28,6 +30,45 @@ func TestAccessibilitySetValueUsesEditHooks(t *testing.T) {
 	check := accessibilityTestNode(t, tree, "id:check")
 	if !check.Checked || !check.HasChecked {
 		t.Fatalf("checkbox state: %+v", check)
+	}
+}
+
+func TestAccessibilityEditableTextOffsetsAndClipboard(t *testing.T) {
+	clipboard.UseMemory(true)
+	t.Cleanup(func() {
+		clipboard.Clear()
+		clipboard.UseMemory(false)
+	})
+	p := accessibilityTestPage(t, `<input id="name" value="a界🙂"><input id="secret" type="password" value="hidden"><input id="readonly" readonly value="fixed">`)
+	ctx := context.Background()
+	tree, err := p.AccessibilityTree()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	edit := func(id host.AccessibilityNodeID, kind host.AccessibilityTextEditKind, start, end int, value string) error {
+		return p.AccessibilityPerform(ctx, host.AccessibilityRequest{
+			Document: tree.Document, Node: id, Kind: host.AccessibilitySetValue, Value: value,
+			TextEdit: &host.AccessibilityTextEdit{Kind: kind, Start: start, End: end},
+		})
+	}
+	if err = edit("id:name", host.AccessibilityCutText, 1, 2, ""); err != nil {
+		t.Fatal(err)
+	}
+	text, err := clipboard.Read()
+	if err != nil || text != "界" || p.FormValue("name") != "a🙂" {
+		t.Fatalf("cut value %q, clipboard %q, err %v", p.FormValue("name"), text, err)
+	}
+	if err = edit("id:name", host.AccessibilityPasteText, 2, 2, ""); err != nil || p.FormValue("name") != "a🙂界" {
+		t.Fatalf("paste value %q, err %v", p.FormValue("name"), err)
+	}
+	if err = edit("id:name", host.AccessibilityReplaceText, 4, 4, "x"); !errors.Is(err, host.ErrAccessibilityRange) {
+		t.Fatalf("out-of-range insertion: %v", err)
+	}
+	for _, id := range []host.AccessibilityNodeID{"id:secret", "id:readonly"} {
+		if err = edit(id, host.AccessibilityCopyText, 0, 1, ""); !errors.Is(err, host.ErrAccessibilityAction) {
+			t.Fatalf("copy of %s: %v", id, err)
+		}
 	}
 }
 

@@ -143,12 +143,7 @@ func (t Testing) SelectAt(ctx context.Context, x, y float64) error {
 
 // PNGWithContext threads ctx to the on-demand render.
 func (t Testing) PNGWithContext(ctx context.Context) []byte {
-	p := innerPage(t.page)
-	if p == nil {
-		return nil
-	}
-
-	return p.PNGWithContext(ctx)
+	return Probe(t).PNGWithContext(ctx)
 }
 
 // ChangedProperties returns changed-property metadata surfaced to the page.

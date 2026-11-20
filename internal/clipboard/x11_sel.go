@@ -4,15 +4,17 @@ package clipboard
 
 import "time"
 
-func xWrite(text string) {
+func xWrite(text string) bool {
 	x, err := xOpen()
 	if err != nil {
-		return
+		return false
 	}
 
 	if err = x.claim(text); err != nil {
 		x.fail()
+		return false
 	}
+	return true
 }
 
 func xRead() (string, bool) {

@@ -1,5 +1,7 @@
 # Examples
 
+Download the [eight signed arm64 reference APKs](android-host/APPS.md), with links and SHA-256 verification instructions.
+
 ## Maintained teaching examples
 
 Start with `login`, then use `bind`, `forms`, and `list` for individual library capabilities. `desktop-cat` teaches desktop window behavior; `telegram` is the Android integration reference. These six examples are the maintained teaching set in [maintenance.json](maintenance.json).

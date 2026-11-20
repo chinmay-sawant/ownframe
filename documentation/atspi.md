@@ -53,13 +53,14 @@ target.
 
 ## Limits
 
-The bridge supports tree queries, focus, and activation, with these limits:
+The bridge supports tree queries, focus, activation, and `EditableText` for
+enabled text controls with an element ID. The interface accepts replacement,
+insertion, deletion, copy, cut, and paste. Offsets count Unicode characters.
+Copy, cut, and paste use the active clipboard backend. Disabled, read-only,
+and password controls do not expose `EditableText`.
 
-- The set-text action is not dispatched. AT-initiated text editing remains
-  unsupported.
-- There is no `EditableText`, `Selection`, `Document`, `Table`, or `Hyperlink`
-  interface, so `SetTextContents` is not exposed. Text caret offset and
-  selection are reported as zero and empty.
+- `Selection`, `Document`, `Table`, and `Hyperlink` are absent. The text
+  interface reports a zero caret offset and empty selection.
 - Link activation is not supported.
 - Anonymous labels whose tag and text match more than one placed box have no
   bounds. The snapshot still contains them.
@@ -92,9 +93,11 @@ python3 scripts/check-atspi-actions.py --out temp/atspi-actions.json
 
 The script opens the accessibility example, focuses its field through AT-SPI,
 checks the focused state, activates a button, and observes the updated counter.
-It also checks disabled focus and password redaction, then closes the example.
-The JSON contains results and source provenance without accessible text or field
-values. This checks live bus actions; it does not establish Orca speech behavior.
+It also checks Unicode edits, disabled focus, and password redaction before
+closing the example. The live script leaves the desktop clipboard untouched.
+Page tests cover copy, cut, and paste with the in-memory clipboard. The JSON
+records results and source provenance. Orca speech behavior requires its own
+validation.
 
 Live tree check with the Atspi 2.0 client library (the same library Accerciser
 and Orca use):

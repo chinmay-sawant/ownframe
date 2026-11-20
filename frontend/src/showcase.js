@@ -112,7 +112,7 @@ export const showcaseSections = [
     title: 'Eyes',
     layout: 'grid-4',
     before: '`examples/eyes` is a cute robot-eyes demo: two big boxy rounded eyes on black that blink, look around, breathe, and cycle moods. The same page runs on desktop with `go run ./examples/eyes` and on Android through `ebitenmobile`. `sh scripts/android-eyes.sh install` binds it, builds a debug APK with Gradle, and installs it over `adb`.',
-    after: 'Taps change the mood, swipes look around, keys 1-5 pick a mood, and the phone build auto-cycles a mood every 8 seconds with random glances and blinks.\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/eyes)\n\n[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/eyes/android/artifacts/eyes-arm64-release.apk)',
+    after: 'Taps change the mood, swipes look around, keys 1-5 pick a mood, and the phone build auto-cycles a mood every 8 seconds with random glances and blinks.\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/eyes)\n\n[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/releases/download/android-reference-2026-11-20/eyes-arm64-release.apk)',
     media: [
       { src: 'assets/screenshots/android/eyes/eyes-idle.webp', alt: 'Idle robot eyes on a black phone screen', caption: 'Idle', width: 2400, height: 1080 },
       { src: 'assets/screenshots/android/eyes/eyes-curious.webp', alt: 'Curious robot eyes with one eye stretched tall', caption: 'Curious', width: 2400, height: 1080 },
@@ -187,7 +187,7 @@ export const showcaseSections = [
     title: 'Depth Alert',
     layout: 'portrait',
     before: 'Depth Alert is an experimental Android app that reads ARCore depth from the center of the camera view and maps it to haptic signals. WALK requires twelve consecutive clear observations. A nearby surface reports STOP, and a surface within 1.2 m reports STOP NOW. It is a prototype, not a mobility aid.',
-    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/depth-alert)\n\n[Download signed arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/depth-alert/android/artifacts/depth-alert-arm64-release.apk)\u00a0·\u00a0[Build and safety notes](examples/depth-alert/README.md)',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/depth-alert)\n\n[Download signed arm64 APK](https://github.com/chinmay-sawant/ownframe/releases/download/android-reference-2026-11-20/depth-alert-arm64-release.apk)\u00a0·\u00a0[Build and safety notes](examples/depth-alert/README.md)',
     media: [
       { src: 'assets/screenshots/android/depth-alert/depth-alert-pixel7.webp', alt: 'Depth Alert running on a Pixel 7 with its live camera preview, current signal, distance, and depth coverage', caption: 'Depth Alert on Pixel 7', width: 1080, height: 2400 },
     ],

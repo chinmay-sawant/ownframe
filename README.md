@@ -12,6 +12,8 @@ Write screens in HTML and CSS, and application logic in Go. ownframe renders wit
 
 Target native hosts (currently in the `v0.0.x` preview cycle; no `v1.0` tag yet) are desktop (Linux, Windows, macOS) and Android, for an operator you control. Native means one compiled Go process and an Ebiten window or Activity. On Linux, the experimental AT-SPI bridge makes the window visible to Accerciser and Orca. NVDA, VoiceOver, and TalkBack cannot inspect the window because Windows UIA, macOS VoiceOver, and Android TalkBack adapters are not shipped yet (see [native accessibility status](documentation/accessibility-native.md)).
 
+The Pages workflow builds the [website and its nine WebAssembly demos](https://chinmay-sawant.github.io/ownframe/). See the [website build instructions](frontend/README.md) for a local preview and the publishing steps.
+
 `scripts/browser.sh` builds a wasm canvas preview. `-web` is a loopback PNG debugger. The capability matrix is in [documentation/platforms.md](documentation/platforms.md).
 
 ## Why ownframe exists

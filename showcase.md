@@ -187,7 +187,7 @@ blinks.
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/eyes)
 
-[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/eyes/android/artifacts/eyes-arm64-release.apk)
+[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/releases/download/android-reference-2026-11-20/eyes-arm64-release.apk)
 
 ## Depth Alert
 
@@ -205,5 +205,5 @@ within 1.2 m reports STOP NOW. It is a prototype, not a mobility aid.
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/depth-alert)
 
-[Download signed arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/depth-alert/android/artifacts/depth-alert-arm64-release.apk) ·
+[Download signed arm64 APK](https://github.com/chinmay-sawant/ownframe/releases/download/android-reference-2026-11-20/depth-alert-arm64-release.apk) ·
 [Build and safety notes](examples/depth-alert/README.md)

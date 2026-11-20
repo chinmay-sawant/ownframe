@@ -4,6 +4,7 @@
 package clipboard
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -57,7 +58,13 @@ func UseMemory(on bool) {
 // Write stores text in memory-only mode, and tries the OS clipboard
 // otherwise. OS-mode text never lands in memory, so a later failed
 // Read cannot resurface it as stale text.
-func Write(text string) {
+func Write(text string) { _ = WriteContext(context.Background(), text) }
+
+// WriteContext reports when the clipboard backend cannot store text.
+func WriteContext(ctx context.Context, text string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	mu.Lock()
 	only := memory
 	if only {
@@ -65,9 +72,10 @@ func Write(text string) {
 	}
 	mu.Unlock()
 
-	if !only {
-		writeOS(text)
+	if !only && !writeOS(ctx, text) {
+		return unavailableErr()
 	}
+	return nil
 }
 
 // Read returns the memory text in memory-only mode, and the OS
@@ -75,7 +83,13 @@ func Write(text string) {
 // text; it never falls back to an older Write. The mode and the memory
 // value are read under one lock, so a concurrent UseMemory cannot mix
 // them. An OS read that races a mode flip returns the memory text.
-func Read() (string, error) {
+func Read() (string, error) { return ReadContext(context.Background()) }
+
+// ReadContext reads the clipboard with the caller's deadline.
+func ReadContext(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	mu.Lock()
 	if memory {
 		text := mem
@@ -85,7 +99,7 @@ func Read() (string, error) {
 	}
 	mu.Unlock()
 
-	text, ok := readOS()
+	text, ok := readOS(ctx)
 	if !ok {
 		return "", unavailableErr()
 	}

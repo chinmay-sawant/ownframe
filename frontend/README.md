@@ -7,8 +7,9 @@ The homepage introduces the native Go framework and embeds the playable public W
 Use Node.js 22.13 or newer.
 
 ```sh
-cd /home/chinmay/ChinmayPersonalProjects/ownframe/frontend
-npm ci
+cd frontend
+npm ci --ignore-scripts
+npm run build:demo
 npm run dev
 ```
 
@@ -61,13 +62,15 @@ The repository's `make lint` runs this same `npm run lint` after the Go linters,
 
 Reverify after any `npm install` or ESLint bump: `npm ls eslint` must resolve to one ESLint 10, `npm run lint` must pass, and no major version may move. The override stays invisible in `package-lock.json` (lockfileVersion 3 records no top-level overrides key), so re-check `package.json` itself. Remove the workaround only when `eslint-plugin-react` declares ESLint 10 support.
 
-`build:demo` rebuilds Launch board, Hello World, Split with friends, Builder basics, Workspace Inspector, Telegram, and Spotify Player. Spotify includes bundled audio and exceeds GitHub's 100 MiB file limit as a raw WASM file. Its build strips debug symbols and writes `public/demos/spotify-player/ownframe.wasm.gz`; the browser loader unpacks that asset with `DecompressionStream` when the server does not already send `Content-Encoding: gzip`. Browsers decode that HTTP encoding automatically, so the loader uses the decoded response directly in that case. The raw Spotify WASM remains ignored. Browsers without gzip stream decompression get an explanatory message. Telegram and Workspace Inspector WASM files have explicit Git ignore exceptions so their public and generated copies ship.
+`build:demo` builds Launch board, Hello World, Split with friends, Builder basics, Workspace Inspector, UI Builder, Telegram, Spotify Player, and Wispr Flow. Spotify's demo ships as `ownframe.wasm.gz` because it includes bundled audio. The loader uses HTTP gzip decoding when available and `DecompressionStream` otherwise.
 
-The build writes to the root `docs/` folder, including the public demo assets. It preserves `docs/go.mod` so the generated site stays outside the library module archive. `npm run preview` serves the generated site.
+`npm run build` generates the site and all nine demos in `frontend/dist/`. `npm run preview` serves that output. Commit changes to the sources and preview images under `frontend/`.
 
 ## Publish to GitHub Pages
 
-Build before publishing and include both `frontend/` changes and generated `docs/` files. Pages serves `docs/`, not the React source. Configure Pages to deploy from the publishing branch's `/docs` folder.
+The [GitHub Pages workflow](../.github/workflows/pages.yml) builds, checks, and deploys the site on pushes to `master`. From the **Actions** tab, run **GitHub Pages** on `master` to redeploy on demand.
+
+For the first deployment, land the workflow and build changes while `master:/docs` still contains the existing demos. Set **Source** to **GitHub Actions** in **Settings → Pages**, run the workflow, and verify the live demos. Remove the tracked payloads from `master` after that check passes.
 
 The default asset base is `/ownframe/`. For a domain hosted at its root, use `npm run build -- --base=/`.
 

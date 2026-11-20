@@ -55,6 +55,10 @@ for file in "$keystore" "$storepass" "$keypass"; do
 	fi
 done
 
+artifact_dir=${ANDROID_ARTIFACT_DIR:-"$root/examples/$dir/android/artifacts"}
+mkdir -p -m 0700 "$artifact_dir"
+artifact_dir=$(CDPATH= cd -- "$artifact_dir" && pwd)
+
 target=${ANDROID_TARGET:-android/arm64}
 build_tools=${ANDROID_BUILD_TOOLS_VERSION:-35.0.0}
 case "$target" in
@@ -77,8 +81,7 @@ ebitenmobile bind -trimpath -target "$target" \
 	-javapkg "$pkg" -o "$android/$aar/$aar.aar" "./examples/$dir/mobile"
 (cd "$android" && ./gradlew --no-daemon --max-workers=2 :app:assembleRelease)
 
-artifact="$android/artifacts/$app-$abi-release.apk"
-mkdir -p -m 0700 "$(dirname "$artifact")"
+artifact="$artifact_dir/$app-$abi-release.apk"
 "$sdk/build-tools/$build_tools/apksigner" sign \
 	--ks "$keystore" --ks-key-alias "$alias" \
 	--ks-pass "file:$storepass" --key-pass "file:$keypass" \

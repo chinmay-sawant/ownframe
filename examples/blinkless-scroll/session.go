@@ -191,8 +191,7 @@ type inputSource struct {
 	keys   func() []string
 }
 
-// attach registers the per-frame callback. The window runs it once a frame
-// after its input stages; the demo runs it through Page.Testing().Tick.
+// attach registers the per-frame callback after the window input stages.
 func (s *session) attach(src inputSource) {
 	s.last = FrameResult{}
 

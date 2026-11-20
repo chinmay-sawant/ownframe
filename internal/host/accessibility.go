@@ -14,4 +14,20 @@ type AccessibilityRequest struct {
 	Node     AccessibilityNodeID
 	Kind     AccessibilityActionKind
 	Value    string
+	TextEdit *AccessibilityTextEdit
 }
+
+// AccessibilityTextEdit describes an edit at Unicode character offsets.
+type AccessibilityTextEdit struct {
+	Kind       AccessibilityTextEditKind
+	Start, End int
+}
+
+type AccessibilityTextEditKind uint8
+
+const (
+	AccessibilityReplaceText AccessibilityTextEditKind = iota + 1
+	AccessibilityCopyText
+	AccessibilityCutText
+	AccessibilityPasteText
+)

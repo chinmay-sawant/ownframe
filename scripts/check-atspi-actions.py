@@ -117,6 +117,27 @@ def main():
             if password:
                 raise RuntimeError('password redaction assertion failed')
             report['disabled_focus_refused'] = report['password_redacted'] = True
+            entry = object_path('display-name')
+            iface = 'org.a11y.atspi.EditableText'
+            interfaces = ast.literal_eval(call(dest, entry, 'org.a11y.atspi.Accessible.GetInterfaces'))[0]
+            if iface not in interfaces:
+                raise RuntimeError('editable field did not advertise EditableText')
+            for blocked in ('disabled-field', 'secret'):
+                interfaces = ast.literal_eval(call(
+                    dest, object_path(blocked), 'org.a11y.atspi.Accessible.GetInterfaces'))[0]
+                if iface in interfaces:
+                    raise RuntimeError('protected field advertised EditableText')
+
+            def edit(method, *params, expected):
+                if call(dest, entry, iface + '.' + method, *params) != '(true,)':
+                    raise RuntimeError(f'live {method} was refused')
+                wait_for(lambda: ast.literal_eval(call(dest, entry, 'org.a11y.atspi.Text.GetText', 0, -1))[0] == expected,
+                         f'{method} value publication')
+                report['editable_' + method] = True
+
+            edit('SetTextContents', 'A界🙂', expected='A界🙂')
+            edit('InsertText', 2, 'λ!', 2, expected='A界λ🙂')
+            edit('DeleteText', 1, 3, expected='A🙂')
             report['status'] = 'passed'
         except Exception as error:
             report['status'], report['error'] = 'failed', str(error)
@@ -132,7 +153,7 @@ def main():
                 os.killpg(process.pid, signal.SIGKILL)
                 process.wait()
             args.out.write_text(json.dumps(report, indent=2) + '\n')
-    print(f'PASS: live focus, activation, disabled control, and password redaction; {args.out}')
+    print(f'PASS: live focus, activation, editable text, and protected fields; {args.out}')
 
 
 if __name__ == '__main__':

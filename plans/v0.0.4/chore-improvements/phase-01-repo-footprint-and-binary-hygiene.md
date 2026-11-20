@@ -1,7 +1,7 @@
 # v0.0.4 - Phase 01: Repository Footprint and Binary Hygiene
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (10/21 done, 2 deferred `[~]`: `FOOT-01`–`FOOT-05`, `FOOT-10`, `FOOT-14`, `FOOT-15`, `FOOT-17`, `FOOT-GATE-03`; `[~]` `FOOT-08`, `FOOT-16`)
+> **Status:** In progress (13 complete, 5 partial, 3 open)
 > **Estimated effort:** 2–4 days (excluding optional git history rewrite coordination)
 
 ---
@@ -45,17 +45,17 @@ Every site rebuild or Android artifact refresh commits hundreds of megabytes of 
 ### 1.2 Decouple built `.wasm` demos from `master` git history
 
 - [x] `FOOT-05` Audit `.github/workflows/` and GitHub Pages settings to determine how `docs/` is currently published. Evidence: 6 workflows (`ci.yml`, `release.yml`, `codeql.yml`, `dependency-review.yml`, `semgrep.yml`, `vuln.yml`), zero Pages deploy workflows; GitHub Pages serves committed `docs/` from `master`. `frontend/scripts/build-demo.mjs` builds 8 `.wasm` demos while `frontend/public/demos/wispr-flow/ownframe.wasm` (53.48 MB) is copied statically (10 tracked `.wasm`/`.wasm.gz` files = ~581.8 MB). `ci.yml` `site` job runs `scripts/check-generated-site.py --build-only` on PRs and full `docs/` hash comparison on `master`.
-- [ ] `FOOT-06` Add a GitHub Actions Pages workflow (`.github/workflows/pages.yml`) that builds `frontend/` and the starter `.wasm` demos via `frontend/scripts/build-demo.mjs` and publishes them via `actions/upload-pages-artifact` + `actions/deploy-pages` (using CI caching for Go/npm builds). Proof: successful workflow run publishing the full site + live demos.
-- [ ] `FOOT-07` Update `scripts/check-generated-site.py`, `Makefile` (`site-check`), and `.gitignore` (removing the `!docs/demos/*.wasm` force-track exceptions) so `docs/demos/*.wasm` and `docs/demos/*.wasm.gz` are no longer committed to `master`. Note: preserve or automate `wispr-flow/ownframe.wasm` via a reproducible build script before removing it from git. Proof: `git ls-files docs/ | grep -E '\.wasm(\.gz)?$'` returns empty and `make site-check` passes against freshly built output.
+- [~] `FOOT-06` Add the [Pages workflow](../../../.github/workflows/pages.yml) and build all nine demos. The local artifact check passed. GitHub still serves the legacy branch source, and an Actions deployment and live demo check remain open.
+- [~] `FOOT-07` Remove the ten WebAssembly payloads from the local index, including the former Wispr Flow source binary. The build now regenerates every demo. Verify the Actions deployment before removing the payloads from `master`.
 - [~] `FOOT-08` Review tracked media assets in `docs/` (`teams.webp`, `trade.webp`, `desktop-cat.webp`, `wispr-flow.webp`, `eyes2-60fps-*.webp`). Deferred by owner decision (2026-11-20): keep existing `.webp` demo captures intact at current quality; revisit only if site bandwidth or repo size requires re-encoding later.
-- [ ] `FOOT-09` Update `README.md`, `frontend/README.md`, and `AGENTS.md` to document the CI-built site flow and remove instructions assuming committed `docs/demos/*.wasm` binaries. Proof: `make docs-check` exits 0.
+- [x] `FOOT-09` Document the Pages workflow, local preview, and artifact policy in root and frontend READMEs, `AGENTS.md`, and the testing guide. The local `make docs-check` completed successfully.
 
 ### 1.3 Decouple Android release APKs from git history
 
 - [x] `FOOT-10` Inventory all tracked binary artifacts under `examples/*/android/artifacts/` and record every doc, script, or CI job referencing them. Evidence: **8** tracked APKs (`depth-alert`, `digital-wellbeing`, `dino`, `eyes`, `lg-remote`, `login`, `platform`, `telegram`) totaling **242,063,242 bytes (230.85 MiB)**; 0 CI workflow refs; referenced by `scripts/android-release.sh:80`, `scripts/repo-size-allowlist.txt`, `showcase.md`, `frontend/src/showcase.js`, `examples/android-host/{APK-SHA256SUMS,APPS.md}`, and per-example Android READMEs.
-- [ ] `FOOT-11` Publish reference Android APKs as GitHub Release assets (or workflow build artifacts produced by `scripts/android-release.sh`) and keep only a small text `checksums.txt` / manifest in git if release verification needs pinned hashes. Proof: download URLs and SHA-256 checksums documented in `documentation/android-build.md` / `examples/readme.md`.
-- [ ] `FOOT-12` Remove tracked `*.apk` files from `master` with `git rm` and replace the selective `*-unsigned.apk` / `*-debug.apk` ignore lines in `.gitignore` with `*.apk`. Proof: `git ls-files '*.apk'` returns empty.
-- [ ] `FOOT-13` Update `scripts/check-release-bundle.py`, `scripts/check-examples.py`, and Android scripts so none assume pre-committed APKs in the checkout. Proof: `make examples-check` and `make tools-check` exit 0.
+- [x] `FOOT-11` Publish eight signed arm64 APKs and a SHA-256 manifest in the [Android reference release](https://github.com/chinmay-sawant/ownframe/releases/tag/android-reference-2026-11-20). All eight downloads passed `sha256sum -c APK-SHA256SUMS`. The [Android guide](../../../documentation/android-build.md) links the download and checksum instructions.
+- [~] `FOOT-12` Untrack all eight APKs in the local index and ignore `*.apk`. The release is live. The `master` branch still contains the reference files.
+- [x] `FOOT-13` Document APK release downloads and verify a fresh signed build from local sources. The example and release-bundle checks use source builds and do not require checked-in APKs. Evidence is in the [validation record](../../validation/2026-11-20-artifact-and-host-checks.md).
 
 ### 1.4 Git history shrink assessment and size guardrails
 
@@ -87,7 +87,7 @@ Every site rebuild or Android artifact refresh commits hundreds of megabytes of 
 
 ## Closure Gates
 
-- [ ] `FOOT-GATE-01` `git ls-files '*.wasm' '*.wasm.gz' '*.apk'` returns empty on `master`.
-- [ ] `FOOT-GATE-02` Tracked `docs/` size <50 MB (or CI-deployed only) and tracked `examples/` excludes all APK binaries.
+- [ ] `FOOT-GATE-01` Verify `git ls-files '*.wasm' '*.wasm.gz' '*.apk'` is empty on `master`. It returns no paths in the proposed local index.
+- [ ] `FOOT-GATE-02` Verify GitHub Pages deploys the Actions artifact and `master` excludes all APKs.
 - [x] `FOOT-GATE-03` `scripts/check-repo-size.py` wired into `make lint` and passing. Evidence: `scripts/run-lint.py` stage added; `make repo-size-check` printed `28 allowlisted >5 MiB files; 0 new violations` (exit 0).
-- [ ] `FOOT-GATE-04` `make lint`, `make site-check`, `make examples-check`, `make tools-check`, and `make test` exit 0.
+- [ ] `FOOT-GATE-04` `make lint`, `make site-check`, `make examples-check`, `make tools-check`, and `make test` passed locally. Repeat on the final publishing tree. See the [validation record](../../validation/2026-11-20-artifact-and-host-checks.md).

@@ -136,10 +136,9 @@ nodes, unsupported actions, disabled controls, and invalid UTF-8 values:
 
 This API supplies semantic page data to a host. Linux serves that tree over
 D-Bus and emits focus and structure events. The live bridge dispatches
-`GrabFocus` and the focus and activation entries of `DoAction` on the window
-loop. AT-initiated text editing and link activation are not supported. There is no
-`EditableText`, `Document`, `Table`, `Selection`, or `Hyperlink` interface. 1.0
-does not ship a screen-reader product.
+`GrabFocus`, the focus and activation entries of `DoAction`, and
+`EditableText` on the window loop. The AT-SPI bridge does not provide link
+activation or the `Document`, `Table`, `Selection`, and `Hyperlink` interfaces.
 
 The snapshot filters the `hidden` attribute, `aria-hidden="true"`, and
 non-content tags. It does not read computed CSS visibility. A node hidden by a

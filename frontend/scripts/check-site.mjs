@@ -74,13 +74,18 @@ try {
     const request = pending.get(message.id);
     if (!request) return;
     pending.delete(message.id);
+    clearTimeout(request.timer);
     if (message.error) request.reject(new Error(JSON.stringify(message.error)));
     else request.resolve(message.result);
   });
   function send(method, params = {}) {
     return new Promise((resolve, reject) => {
       const id = ++nextId;
-      pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        reject(new Error(`Chrome did not respond to ${method}`));
+      }, 10_000);
+      pending.set(id, { resolve, reject, timer });
       socket.send(JSON.stringify({ id, method, params }));
     });
   }
@@ -157,24 +162,29 @@ try {
     assert.deepEqual(errors, [], 'Browser errors in the WASM demo');
     console.log('PASS: standalone WASM loading, theme, completion, and filter rendering. Saved public demo previews.');
   } else {
-  for (const demo of ['telegram', 'spotify-player']) {
+  for (const demo of ['demos/spotify-player', 'demo', 'demos/builder', 'demos/expense-tracker',
+    'demos/hello', 'demos/telegram', 'demos/ui-builder', 'demos/wispr-flow', 'demos/workspace-inspector']) {
     await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
-    await send('Page.navigate', { url: `http://127.0.0.1:4175/ownframe/demos/${demo}/index.html` });
+    const pathname = `/ownframe/${demo}/index.html`;
+    await send('Page.navigate', { url: `http://127.0.0.1:4175${pathname}` });
     let loaded = false;
     for (let attempt = 0; attempt < 600; attempt++) {
       await pause(100);
-      loaded = await evaluate('!!document.querySelector("canvas") && !document.querySelector("[role=status]")');
+      loaded = await evaluate(`location.pathname === ${JSON.stringify(pathname)} && !!document.querySelector("canvas") &&
+        (!document.querySelector("[role=status]") || document.querySelector("#loader.loaded"))`);
       if (loaded) break;
       if (await evaluate('document.querySelector("[role=status]")?.textContent.includes("could not load")')) break;
     }
-    if (!loaded) await screenshot(`linked-demo-${demo}-failure`);
+    const label = demo.split('/').at(-1);
+    if (!loaded) await screenshot(`linked-demo-${label}-failure`);
     assert.ok(loaded, `${demo} WASM did not start: ${errors.join('; ')}`);
     await pause(1000);
-    await screenshot(`linked-demo-${demo}`);
+    await screenshot(`linked-demo-${label}`);
+    console.log(`PASS: ${demo} WASM loaded`);
   }
   if (process.argv.includes('--linked-demos-only')) {
     assert.deepEqual(errors, [], 'Linked demo browser errors');
-    console.log('PASS: Telegram and Spotify Player WASM demos loaded.');
+    console.log('PASS: All nine WASM demos loaded.');
   } else {
   const metrics = [];
   const viewports = process.argv.includes('--interactions-only') ? [] : [[320, 740], [390, 844], [768, 1024], [844, 390], [1440, 1000]];

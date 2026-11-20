@@ -1,7 +1,7 @@
 # v0.0.4 - Phase 07: Dependencies, Binary Size, and Pre-1.0 Platform Readiness
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (12/24 done: `DEP-01`, `DEP-04`–`DEP-08`, `DEP-10`, `DEP-11`, `DEP-13`, `DEP-15`, `DEP-GATE-02`, `DEP-GATE-03`)
+> **Status:** In progress (15 complete, 3 partial, 6 open)
 > **Estimated effort:** Ongoing / milestone-gated (some items depend on upstream tags and OS hardware)
 
 ---
@@ -38,8 +38,8 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 ### 7.1 Stabilize Go, `blinkless`, and Ebiten dependency pins
 
 - [x] `DEP-01` Audit `go.mod` and `examples/go.mod` Go version directive (`go 1.26.11`). Evidence: verified via `go list -m` that **zero** dependencies require `> 1.26.0` (`blinkless` `1.26`, `ebiten/v2` & `golang.org/x/*` `1.26.0`, `golangci-lint v2.15.0` `1.26`). `1.26.11` was set in `66ec4898` to match CI `GOTOOLCHAIN=local` security patch hygiene; `go.mod` + `examples/go.mod` can safely lower to `go 1.26.0` for downstream consumers while keeping CI `setup-go` and `go.work` at `1.26.11`.
-- [ ] `DEP-02` Tag a clean `blinkless` release (e.g., `v0.1.2` or `v0.2.0`) in the upstream `blinkless` repo and pin `go.mod` + `examples/go.mod` to that exact semver tag instead of a pseudo-version before cutting `ownframe v0.0.3`. Proof: `grep blinkless go.mod examples/go.mod` shows a clean semver tag (no `-0.2026...` suffix).
-- [ ] `DEP-03` Track `ebiten/v2` `v2.11.0` stable release (or verify if `v2.10.x` stable suffices once `v2.11.0` features are audited); replace the `v2.11.0-alpha.0...` pseudo-version when stable lands, or document the exact upstream Ebiten commit/issue requiring alpha. Proof: `go.mod` uses a tagged Ebiten release OR explicit upstream blocker recorded with `[~]` and tracking URL.
+- [x] `DEP-02` Pin both modules to [Blinkless v0.1.2](https://github.com/chinmay-sawant/blinkless/releases/tag/v0.1.2). The public Go proxy resolved the tag to `7abfce32c375`, the previously pinned renderer revision.
+- [x] `DEP-03` Pin both modules to [Ebitengine v2.10.6](https://github.com/hajimehoshi/ebiten/releases/tag/v2.10.6). The local artifact, Windows and Android build checks use the stable version.
 - [x] `DEP-04` Run `go mod graph` to attribute every indirect dependency in `go.mod` to either `blinkless` or `ebiten/v2`. Evidence (`go mod graph` at `da4f12cc`): **all** of `codeberg.org/go-pdf/fpdf`, `github.com/tdewolff/canvas`, `github.com/tdewolff/font`, `github.com/yuin/goldmark`, `github.com/go-fonts/latin-modern`, `star-tex.org/x/tex`, `modernc.org/knuth`, `github.com/BurntSushi/freetype-go`, `graphics-go`, `xgb`, `xgbutil`, and `github.com/ByteArena/poly2tri-go` enter the module graph via `github.com/chinmay-sawant/blinkless` (and its `tdewolff/canvas` / `tdewolff/font` dependencies), not via `ownframe` direct imports.
 - [x] `DEP-05` Run `make vuln` (`go tool govulncheck ./...`) on both root and `examples/` modules and record the full result. Evidence (2026-11-20, `da4f12cc` / `deca07d9`): `make vuln` exited 0 (`No vulnerabilities found. Your code is affected by 0 vulnerabilities.`; 2 uncalled vulnerabilities in imported packages).
 
@@ -57,17 +57,17 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
   - Optional `components/chadcn/css/*.css` (76 files = **128.6 KB**) is only linked by consumers importing `components/chadcn`, and the 7 chart skins (63 files / 7,331 LOC / 259 KB) were moved out of the root module in `MOD-03`.
   - Trimming `ui/properties_generated.go` (`MOD-GATE-02`) reduced `ui.a` archive size from **12.37 MB -> 4.24 MB (-8.13 MB / -65.7%)** and `ui` symbols from **40,759 -> 11,928 (-70.7%)**.
   - Upstream `blinkless/internal/fonts/assets/*.ttf` (14 TTF files = **3.09 MB / 98.6%** of embedded runtime assets) dominates the embedded floor and is tracked under `DEP-09`.
-- [ ] `DEP-09` Investigate whether `blinkless` pulls `fpdf`, `star-tex.org/x/tex`, `modernc.org/knuth`, `go-fonts/latin-modern`, `tdewolff/canvas`, and `yuin/goldmark` into every `ownframe` binary even when only HTML+CSS layout is used; if so, file/track an upstream `blinkless` package-split issue so core HTML/CSS layout does not force PDF/TeX/Markdown dependencies onto GUI apps. Proof: upstream issue or PR link recorded + measured binary size impact once split.
+- [~] `DEP-09` A local Blinkless patch adds `blinkless_minimal`, which excludes the canvas SVG rasterizer and optional bundled faces. A matched stripped Hello build dropped from 33,416,808 to 26,952,424 bytes. The patch needs upstream review and a release. See the [validation record](../../validation/2026-11-20-artifact-and-host-checks.md).
 - [x] `DEP-10` Add a CI size-reporting step to release builds so desktop and wasm binary-size regressions are visible in CI logs. Evidence: added `Report packaged binary sizes` step in `.github/workflows/release.yml` (`supply-chain` job); YAML validated cleanly.
 
 ### 7.3 Platform and accessibility readiness gates before any `1.0` claim
 
 - [x] `DEP-11` Audit Wayland clipboard feasibility and surface missing `wl-clipboard` tools explicitly. Evidence: confirmed GNOME Mutter does not implement `zwlr_data_control_v1`/`ext_data_control_v1` and `wl_data_device` requires GLFW/Ebiten focus serials, so `wl-copy`/`wl-paste` stays the zero-dep backend; added `ErrWaylandToolsMissing`, `Status`, and `Diagnose()` across all OS build tags in `internal/clipboard/` (preserving `errors.Is(err, ErrUnavailable)`); `go test -v -race ./internal/clipboard/...` (14 tests) and cross-OS `go vet` passed.
-- [ ] `DEP-12` Complete open `NATIVE-IME` validation on Windows (preedit, cancellation, conversion, commit, English + CJK layout switching) tracked in `plans/README.md`, and record host OS, IME, and test evidence. Proof: validation record added under `plans/validation/` and `NATIVE-IME` updated in `plans/README.md`.
-- [x] `DEP-13` Define an explicit, written **v1.0 Accessibility Policy** consistent across `README.md`, `documentation/platforms.md`, `documentation/accessibility-native.md`, and `plans/README.md`. Evidence: added `## v1.0 accessibility policy` to `documentation/accessibility-native.md` stating `v0.0.x` ships the Go snapshot + live Linux AT-SPI bridge (no `EditableText`) while Windows UIA, macOS VoiceOver, and Android TalkBack require dedicated platform owners and real AT validation before any general-purpose `v1.0` screen-reader claim; `make docs-check` exits 0.
-- [ ] `DEP-14` Verify macOS desktop host (`Run`, clipboard, filepick `osascript`, IME) and Windows desktop host (`Run`, clipboard, `comdlg32` filepick, custom chrome) on real hardware before tagging any `v0.1.0` or `v1.0` release, recording exact OS versions and results. Proof: validation records committed under `plans/validation/`.
+- [ ] `DEP-12` Complete native Windows CJK preedit, cancellation, conversion, commit, and English/Japanese switching. A Windows 11 host has Japanese Microsoft IME installed. The composition sequence remains unverified.
+- [x] `DEP-13` Define an explicit, written **v1.0 Accessibility Policy** consistent across `README.md`, `documentation/platforms.md`, `documentation/accessibility-native.md`, and `plans/README.md`. Evidence: added `## v1.0 accessibility policy` to `documentation/accessibility-native.md` stating `v0.0.x` ships the Go snapshot + live Linux AT-SPI bridge, which now implements `EditableText`, while Windows UIA, macOS VoiceOver, and Android TalkBack require dedicated platform owners and real AT validation before any general-purpose `v1.0` screen-reader claim; `make docs-check` exits 0.
+- [~] `DEP-14` Native Windows 11 `Run`, custom close, and clipboard read passed. See the [validation record](../../validation/2026-11-20-artifact-and-host-checks.md) for exact results. macOS validation requires a Mac.
 - [x] `DEP-15` Audit `examples/go.mod` release checklist (`documentation/release-checklist.md`) and verify end-to-end via `make module-check` and `make release-check`. Evidence: `make module-check` (`1382 archive entries; isolated consumer compiled with no workspace or replace`), `cd scripts && GOWORK=off go test ./cmd/module-check`, and `make release-check` (`2 archives verified; no release published`) all exited 0.
-- [ ] `DEP-16` Verify `scripts/android-release.sh` reproduces a working signed/debug APK cleanly after Phase 01 removes pre-committed APKs from git. Proof: fresh APK build + device/emulator install log recorded.
+- [~] `DEP-16` A fresh `scripts/android-release.sh login` build and signature verification passed. A device or emulator install and launch are still required. See the [validation record](../../validation/2026-11-20-artifact-and-host-checks.md).
 
 ### 7.4 Final program closure gates
 
@@ -77,7 +77,7 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
   - `make lint`
   - `make docs-check plans-check examples-check tools-check`
   - `make internal-import-check module-check graphics-check site-check vuln`
-  Proof: exact command list, commit SHA, and exit-0 outcomes recorded here.
+  Local results and the proposed tree hash are in the [validation record](../../validation/2026-11-20-artifact-and-host-checks.md). The final merged commit and GitHub CI run remain open.
 - [ ] `DEP-18` Capture a final before-vs-after metrics table in [README.md](README.md) comparing `da4f12cc` against the closing commit across `.git` / `docs/` / `examples/` sizes, root file/method counts, `internal/page` & `internal/window` & `internal/replay` file counts, motion package count, `AGENTS.md` size, `examples/` internal-import count, and stripped binary size. Proof: completed metrics table in `plans/v0.0.4/chore-improvements/README.md`.
 - [ ] `DEP-19` Reconcile completed rows back into the parent maintenance ledger (`plans/README.md`) with evidence pointers, without leaving duplicate active work across files. Proof: `make plans-check` exits 0.
 - [ ] `DEP-20` Confirm `git status` is clean, no untracked `*.test` / `mem.out` / `.doc-snippets-*` leftovers remain, and the PR against `master` passes all GitHub Actions CI jobs. Proof: green CI run URL recorded.
@@ -86,8 +86,7 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 
 ## Dependencies
 
-- `DEP-02` and `DEP-09` depend on upstream changes/releases in `github.com/chinmay-sawant/blinkless`.
-- `DEP-03` depends on upstream `github.com/hajimehoshi/ebiten/v2` tagging `v2.11.0` (unless `v2.10.x` suffices).
+- `DEP-09` depends on upstream acceptance of the compact build in `github.com/chinmay-sawant/blinkless`.
 - `DEP-12` and `DEP-14` require access to real Windows and macOS hosts (mark `[~]` with host blocker if unavailable, per `AGENTS.md` "Blocked work").
 - `DEP-17`–`DEP-20` run only after Phases 01–06 have landed.
 
@@ -98,7 +97,7 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 
 ## Closure Gates
 
-- [ ] `DEP-GATE-01` `blinkless` pinned to a tagged semver release; `make vuln` exits 0.
+- [x] `DEP-GATE-01` Both modules resolve the tagged Blinkless release, and `make vuln` exits 0. The examples scan also found zero vulnerabilities reached by application code.
 - [x] `DEP-GATE-02` Minimal `hello` and `login` binary-size profile completed and documented, with CI size reporting active. Evidence: `DEP-06`–`DEP-08` and `DEP-10` complete.
 - [x] `DEP-GATE-03` Honest, consistent pre-1.0 vs 1.0 platform & accessibility policy across `README.md`, `AGENTS.md`, `documentation/platforms.md`, `documentation/features.md`, `documentation/accessibility-native.md`, and `plans/README.md`. Evidence: `DOCS-05`–`DOCS-08` and `DEP-13` verified under `make docs-check`.
 - [ ] `DEP-GATE-04` All verification commands in `DEP-17` exit 0 on the final commit.

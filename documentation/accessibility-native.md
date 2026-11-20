@@ -18,8 +18,8 @@ no TalkBack bridge.
 
 During the `v0.0.x` preview cycle, ownframe ships the Go accessibility snapshot
 (`page.Access().AccessibilityTree` and `page.Access().AccessibilityPerform`) and
-the live Linux AT-SPI bridge (`internal/atspi`, supporting read, focus, and
-activation, with no `EditableText` interface).
+the live Linux AT-SPI bridge in `internal/atspi`. The bridge supports read,
+focus, activation, and `EditableText` for enabled text controls.
 
 Windows UI Automation, macOS VoiceOver (`NSAccessibility`), and Android
 TalkBack remain unshipped. Ownframe will not make a general-purpose `v1.0`
@@ -62,10 +62,10 @@ actions on the page's owning loop and report errors from
 `page.Access().AccessibilityPerform` to the platform layer. The window still
 calls the inner screen.
 
-The Linux bridge serves the read side and event stream. `GrabFocus` and supported
-focus and activation entries of `DoAction` dispatch to the owning window loop
-and report the page's result. No `EditableText` interface is served. See the
-[live action check](atspi.md#validate) for the supported operations and limits.
+The Linux bridge serves the read side and event stream. `GrabFocus`, supported
+`DoAction` entries, and `EditableText` methods dispatch to the owning window
+loop and report the page's result. See the [live action check](atspi.md#validate)
+for the supported operations and limits.
 
 The platform APIs need different host code:
 

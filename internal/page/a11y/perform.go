@@ -44,7 +44,7 @@ func Perform(ctx context.Context, tree host.AccessibilityTree, request host.Acce
 	case host.AccessibilityActivate:
 		return activate(ctx, actor, node.ElementID)
 	case host.AccessibilitySetValue:
-		return setValue(ctx, actor, node.ElementID, request.Value)
+		return setValue(ctx, actor, node.ElementID, request)
 	default:
 		return host.ErrAccessibilityAction
 	}
@@ -74,8 +74,8 @@ func activate(ctx context.Context, actor Actor, id string) error {
 	return actor.ClickControl(ctx, box)
 }
 
-func setValue(ctx context.Context, actor Actor, id, value string) error {
-	if !utf8.ValidString(value) {
+func setValue(ctx context.Context, actor Actor, id string, request host.AccessibilityRequest) error {
+	if !utf8.ValidString(request.Value) {
 		return host.ErrAccessibilityRange
 	}
 	c, ok := actor.Control(id)
@@ -92,11 +92,8 @@ func setValue(ctx context.Context, actor Actor, id, value string) error {
 		return host.ErrAccessibilityDisabled
 	}
 	c, _ = actor.Control(id)
-	return actor.IMEReplace(
-		ctx,
-		0,
-		len(c.Value),
-		value,
-		len(value),
-	)
+	if request.TextEdit != nil {
+		return editText(ctx, actor, c.Value, request.Value, *request.TextEdit)
+	}
+	return actor.IMEReplace(ctx, 0, len(c.Value), request.Value, len(request.Value))
 }

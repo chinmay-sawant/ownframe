@@ -2,9 +2,12 @@
 
 package clipboard
 
-import "unicode/utf16"
+import (
+	"context"
+	"unicode/utf16"
+)
 
-func readOS() (string, bool) {
+func readOS(context.Context) (string, bool) {
 	opened, _, _ := openClip.Call(0)
 	if opened == 0 {
 		return "", false

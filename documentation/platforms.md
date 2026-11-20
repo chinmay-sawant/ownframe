@@ -20,7 +20,7 @@ PNG debugger. iOS has no Xcode project and is not a planned `v1.0` target.
 | **Android** | `BindMobile` + shared `android-host` Activity (arm64 APK) | Same, with reproducible CI/release APK builds |
 | **IME** | Linux & Android validated; Windows/macOS open (`plans/README.md`) | Validated preedit/commit/cancel on Windows & macOS |
 | **Clipboard** | X11, Windows, macOS (cgo); GNOME/Wayland requires `wl-clipboard` on `PATH` | Native Wayland path or explicit diagnostic capability check |
-| **Accessibility** | Go snapshot + live Linux AT-SPI bridge (no `EditableText`) | Explicit `v1.0` policy or native UIA / VoiceOver / TalkBack adapters |
+| **Accessibility** | Go snapshot + live Linux AT-SPI bridge with `EditableText` | Explicit `v1.0` policy or native UIA / VoiceOver / TalkBack adapters |
 
 Each host draws the same template and calls the same handlers. What the host
 can do is not the same. Use the matrix below.

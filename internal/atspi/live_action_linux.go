@@ -10,7 +10,7 @@ import (
 
 func isActionCall(msg *dbusMsg) bool {
 	return (msg.iface == atspiComponent && msg.member == "GrabFocus") ||
-		(msg.iface == atspiAction && msg.member == "DoAction")
+		(msg.iface == atspiAction && msg.member == "DoAction") || msg.iface == atspiEditableText
 }
 
 // dispatchAction leaves the reader free to deliver publication replies while a
@@ -19,6 +19,10 @@ func (b *liveBus) dispatchAction(msg *dbusMsg, view *serverView, parent context.
 	select {
 	case b.actionSlots <- struct{}{}:
 	default:
+		if msg.iface == atspiEditableText && msg.member == "CopyText" {
+			b.reply(msg, errResult("org.freedesktop.DBus.Error.LimitsExceeded", "too many accessibility actions"))
+			return
+		}
 		b.reply(msg, okResult("b", encodeBoolValue(false)))
 		return
 	}

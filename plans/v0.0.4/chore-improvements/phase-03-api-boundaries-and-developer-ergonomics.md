@@ -1,7 +1,7 @@
 # v0.0.4 - Phase 03: Public API Boundaries and Developer Ergonomics
 
 > **Parent:** [README.md](README.md)
-> **Status:** Complete (21/22 done, 1 intentional `[~]`: `API-01`–`API-08`, `API-10`–`API-18`, `API-GATE-01`–`API-GATE-04`; `[~]` `API-09` freezes the 5 `Testing()` demo harnesses)
+> **Status:** Complete (22/22 tasks)
 > **Estimated effort:** 4–6 days
 
 ---
@@ -47,7 +47,7 @@ Package `ownframe` currently spans **63 root `.go` files** and **149 exported me
 - [x] `API-06` Generate a complete method inventory of all 149 exported methods in root `*.go` (`go doc -all .`), categorized by door (`Page` 41, `Form` 11, `Edit` 19, `Scroll` 8, `Window` 21, `Access` 2, `Probe` 27, `Testing` 20). Evidence: flagged top `API-08` removal/consolidation candidates: duplicate `Testing.DevTools()` vs `Window.DevTools()`, unused `Probe.Elements()`, `Testing.TakeChangedProperties()`, `Page.Audio()`/`AudioPlayback()`, `Scroll.ViewportPinZ()`, and 6-method changed-property split across `Probe`/`Testing`.
 - [x] `API-07` Consolidate single-function micro-files at the module root into cohesive domain files using `scripts/merge-go.go` (48 non-test `.go` files -> **18** cohesive files: `api.go`, `clipboard.go`, `crash.go`, `elements.go`, `events.go`, `fetch.go`, `ipc.go`, `page.go`, `page_access.go`, `page_edit.go`, `page_form.go`, `page_nav.go`, `page_probe.go`, `page_scroll.go`, `page_testing.go`, `page_window.go`, `run.go`, `serve.go`). Evidence: `ls -1 *.go | grep -v _test.go | wc -l` = 18; updated `alias_allow_test.go` filenames (same 31 aliases); `go test -race .` (`TestRootAliasAllowlist`, `TestOwnframeTestNoInternal`), `make docs-check`, and `make build` exit 0.
 - [x] `API-08` Remove unused exported root methods (`Page.Audio`, `Page.AudioPlayback`, `Probe.Elements`, `Scroll.ViewportPinZ`, `Testing.TakeChangedProperties`; kept `Testing.DevTools` due to 3 active test callers in `examples/devtools` and `examples/eyes`). Evidence: exported receiver methods reduced **149 -> 144** (-5); `go test -race .`, `make docs-check`, and `make lint` exit 0.
-- [~] `API-09` Verify `Page.Testing()` is strictly unused in `examples/` and non-test library files via an automated check. Evidence (partial): added AST-based `TestNoUnauthorizedPageTestingCalls` in `api_testing_test.go` enforcing zero non-test `.Testing()` calls across `internal/`, `components/`, `ui/`, and freezing the 5 pre-existing experimental example harnesses (`examples/blackhole/main.go`, `examples/blinkless-all/nav_scripted.go`, `examples/blinkless-all/snapshot.go`, `examples/blinkless-scroll/demo.go`, `examples/blinkless-scroll/main.go`) so no new non-test example can call `.Testing()`. Next gate: refactor those 5 experimental harnesses off `.Testing()` and empty `allowExamples`.
+- [x] `API-09` Remove all five example exemptions. Headless demos drive their frame logic directly, and snapshot callers use `Probe.PNGWithContext`. `TestNoUnauthorizedPageTestingCalls` covers non-test source and keeps `pagetest` available as the dedicated helper package for external suites.
 - [x] `API-10` Ensure `go doc github.com/chinmay-sawant/ownframe` reads cleanly with package-level overview and attached `Page` doc comment. Evidence: fixed detached `Page` doc comment in `api.go` (moved unexported `windowHost` below `Page`) and removed duplicate package comment in `elements.go`.
 
 ### 3.3 Simplify the 4-path update and virtualization mental model
