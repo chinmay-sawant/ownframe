@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	ebitenmobile "github.com/hajimehoshi/ebiten/v2/mobile"
-
+	"github.com/chinmay-sawant/ownframe/internal/filepick"
 	pagepkg "github.com/chinmay-sawant/ownframe/internal/page"
 	"github.com/chinmay-sawant/ownframe/internal/window"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/audio"
+	ebitenmobile "github.com/hajimehoshi/ebiten/v2/mobile"
 )
 
 // Run opens a window and blocks until it closes.
@@ -55,4 +55,66 @@ func savePanic(page *Page, errp *error) {
 		recErr = fmt.Errorf("%v", rec)
 	}
 	*errp = reportError(page, errors.Join(ErrPanicked, recErr))
+}
+
+// NewGame returns the Ebiten game Run and BindMobile use.
+// Tests that need the window loop call this instead of reaching
+// into internal/window. It does not export host.Screen.
+func NewGame(ctx context.Context, page *Page) ebiten.Game {
+	return window.NewGame(ctx, innerPage(page))
+}
+
+// WindowOptions controls desktop window appearance and input.
+// The zero value opens the same window as Run. Risky surfaces stay off
+// unless opted in: MousePassthrough passes pointer input through painted
+// pixels, so keep it false unless the app is a click-through overlay.
+type WindowOptions = window.Options
+
+// RunWithOptions opens a page with optional desktop window settings.
+// A startup or window failure is stored in a crash report file first; the
+// returned error keeps the original without the file path. A canceled
+// context or a deadline returns that error and writes no file. A panic
+// still goes through the recover in savePanic. Use LastReportPath for the file.
+func RunWithOptions(ctx context.Context, page *Page, options WindowOptions) (err error) {
+	defer savePanic(page, &err)
+
+	if err := prepare(ctx, page); err != nil {
+		return reportRunErr(page, err)
+	}
+
+	pagepkg.InstallPicker(innerPage(page), filepick.Pick)
+	if !options.NoAudio {
+		ensureAudio()
+	}
+
+	if err := window.RunWithOptions(ctx, innerPage(page), options); err != nil {
+		return reportRunErr(page, err)
+	}
+
+	return nil
+}
+
+// reportRunErr writes a crash report for a startup or window failure.
+// Stopping the window by canceling its context, or by a deadline, is a
+// normal return. Those errors are handed back as they are.
+func reportRunErr(page *Page, err error) error {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+
+	return reportError(page, err)
+}
+
+// audioSampleRate is the sample rate of the context Run creates.
+const audioSampleRate = 48000
+
+// ensureAudio creates the Ebiten audio context once. Ebiten v2.10 does not
+// create one itself, and the audio package needs a context before it can
+// make a player. Run, BindMobile, and Serve call this, so a page that plays
+// sound through the host finds a context. In -web the sound comes out of
+// this machine, the same way the native window plays it.
+func ensureAudio() {
+	if audio.CurrentContext() == nil {
+		audio.NewContext(audioSampleRate)
+	}
 }

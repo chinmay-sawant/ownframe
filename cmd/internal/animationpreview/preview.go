@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/previewwindow"
+	"github.com/chinmay-sawant/ownframe/cmd/internal/previewwindow"
 )
 
 // Run opens the standalone animation fixture window.

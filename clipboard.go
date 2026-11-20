@@ -1,6 +1,9 @@
 package ownframe
 
-import "github.com/chinmay-sawant/ownframe/internal/clipboard"
+import (
+	"github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe/internal/secret"
+)
 
 // ErrUnavailable reports a failed OS clipboard read outside memory-only
 // mode. It carries no fallback text.
@@ -21,3 +24,7 @@ func Read() (string, error) { return clipboard.Read() }
 // Clear empties the clipboard. Tests call UseMemory(true) first so Clear
 // never touches the desktop.
 func Clear() { clipboard.Clear() }
+
+// Secret wraps a password, token, or key. Format verbs, String, GoString,
+// and slog all render [REDACTED]. Call Reveal to use it.
+type Secret = secret.Secret

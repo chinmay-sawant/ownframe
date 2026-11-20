@@ -1,4 +1,4 @@
-package animationpreview
+package transitionpreview
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/cmd/internal/previewwindow"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
-	"github.com/chinmay-sawant/ownframe/internal/previewwindow"
 )
 
 func paint(ops []*ownframe.DisplayOp) []cssmotion.Paint {
@@ -32,7 +32,7 @@ func clickStart(t *testing.T, ctx context.Context, page *ownframe.Page, id strin
 func testPage(t *testing.T, data *view) *ownframe.Page {
 	t.Helper()
 	page, err := previewwindow.New(context.Background(), previewwindow.Config{
-		FixtureDir: filepath.Join("..", "..", "testdata", "animation"), Data: data, Width: previewWidth, Height: previewHeight})
+		FixtureDir: filepath.Join("..", "..", "..", "testdata", "transition"), Data: data, Width: previewWidth, Height: previewHeight})
 	if err != nil {
 		t.Fatal(err)
 	}

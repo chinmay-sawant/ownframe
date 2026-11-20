@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chinmay-sawant/ownframe/internal/animationpreview"
+	"github.com/chinmay-sawant/ownframe/cmd/internal/animationpreview"
 )
 
 func main() {

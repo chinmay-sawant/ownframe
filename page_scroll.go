@@ -1,5 +1,10 @@
 package ownframe
 
+import (
+	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page"
+)
+
 // Scroll reads and sets offset, windowing, and the pinned layer.
 type Scroll struct{ page *Page }
 
@@ -68,3 +73,48 @@ func (s Scroll) SetViewportPinZ(z int) { innerPage(s.page).SetViewportPinZ(z) }
 
 // ViewportPinZ is the pinned layer threshold.
 func (s Scroll) ViewportPinZ() int { return innerPage(s.page).ViewportPinZ() }
+
+// SetScrollWindow installs a row-window callback.
+func (p *Page) SetScrollWindow(fn func(offsetY, viewH int) bool) {
+	innerPage(p).SetScrollWindow(fn)
+}
+
+// ScrollTo queues an absolute scroll move for the window.
+func (page *Page) ScrollTo(x, y int) {
+	p := innerPage(page)
+	if p == nil {
+		return
+	}
+	p.ScrollTo(x, y)
+}
+
+// ScrollBy queues a scroll delta for the window.
+func (page *Page) ScrollBy(dx, dy int) {
+	p := innerPage(page)
+	if p == nil {
+		return
+	}
+	p.ScrollBy(dx, dy)
+}
+
+// ScrollRequest is one queued window scroll request.
+type ScrollRequest struct {
+	X, Y     int
+	Absolute bool
+}
+
+// ScrollbarMode controls whether a page shows scrollbar thumbs.
+type ScrollbarMode = host.ScrollbarMode
+
+const (
+	// ScrollbarAuto follows the platform default: visible on desktop and web,
+	// hidden on Android and iOS.
+	ScrollbarAuto = host.ScrollbarAuto
+	// ScrollbarVisible shows scrollbar thumbs on every platform.
+	ScrollbarVisible = host.ScrollbarVisible
+	// ScrollbarHidden hides scrollbar thumbs on every platform.
+	ScrollbarHidden = host.ScrollbarHidden
+)
+
+// TouchScrollOptions tunes finger sensitivity and inertial scroll decay.
+type TouchScrollOptions = page.TouchScrollOptions
