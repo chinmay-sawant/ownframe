@@ -5,6 +5,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
 	"go/format"
 	"os"
@@ -18,13 +19,15 @@ const propertiesPerCaseLine = 5
 const generatedFileMode = 0o600
 
 func main() {
-	if err := generate(); err != nil {
+	outPath := flag.String("out", output, "output Go file path")
+	flag.Parse()
+	if err := generate(*outPath); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func generate() error {
+func generate(outPath string) error {
 	source, err := os.ReadFile(matrix)
 	if err != nil {
 		return err
@@ -111,5 +114,5 @@ func generate() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(output, formatted, generatedFileMode)
+	return os.WriteFile(outPath, formatted, generatedFileMode)
 }

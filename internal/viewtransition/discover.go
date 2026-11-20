@@ -3,19 +3,19 @@ package viewtransition
 import (
 	"strings"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 )
 
 type node struct {
 	index int
-	box   ownframe.Box
-	boxes []ownframe.Box
+	box   layout.Box
+	boxes []layout.Box
 }
 
-func validRoot(d *ownframe.Display, i int) bool {
+func validRoot(d *layout.Display, i int) bool {
 	return i == DocumentRoot || i >= 0 && i < len(d.Boxes)
 }
-func rect(b ownframe.Box) Rect { return Rect{b.X, b.Y, b.W, b.H} }
+func rect(b layout.Box) Rect { return Rect{b.X, b.Y, b.W, b.H} }
 func mode(s string) string {
 	s = strings.TrimSpace(strings.ToLower(s))
 	if s == "" {
@@ -33,7 +33,7 @@ func classNames(s string) []string {
 	return out
 }
 
-func discover(d *ownframe.Display, root int) (map[string]node, []string, error) {
+func discover(d *layout.Display, root int) (map[string]node, []string, error) {
 	items := make(map[string]node)
 	var names []string
 	for i, b := range d.Boxes {
@@ -53,7 +53,7 @@ func discover(d *ownframe.Display, root int) (map[string]node, []string, error) 
 	return items, names, nil
 }
 
-func inside(boxes []ownframe.Box, i, root int) bool {
+func inside(boxes []layout.Box, i, root int) bool {
 	if root == DocumentRoot {
 		return true
 	}
@@ -66,7 +66,7 @@ func inside(boxes []ownframe.Box, i, root int) bool {
 	return false
 }
 
-func blocked(boxes []ownframe.Box, i, root int) bool {
+func blocked(boxes []layout.Box, i, root int) bool {
 	for steps := 0; i >= 0 && i < len(boxes) && steps < len(boxes); steps++ {
 		if i != root && mode(boxes[i].ViewTransitionScope) == "all" {
 			return true

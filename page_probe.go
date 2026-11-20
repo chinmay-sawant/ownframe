@@ -117,16 +117,6 @@ func (pr Probe) Element(id string) *Element {
 	return p.Element(id)
 }
 
-// Elements returns all retained handles.
-func (pr Probe) Elements() []*Element {
-	p := innerPage(pr.page)
-	if p == nil {
-		return nil
-	}
-
-	return p.Elements()
-}
-
 // ElementRegistry exposes the retained element registry.
 func (pr Probe) ElementRegistry() *ElementRegistry {
 	p := innerPage(pr.page)

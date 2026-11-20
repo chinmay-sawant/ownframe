@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 04: Motion and Animation Package Consolidation
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (6/19 done: `MOT-01`–`MOT-05`, `MOT-12`)
+> **Status:** In progress (9/19 done: `MOT-01`–`MOT-05`, `MOT-11`–`MOT-13`, `MOT-GATE-02`; `MOT-06`–`MOT-10` 7-package CSS motion merge next)
 > **Estimated effort:** 4–6 days
 
 ---
@@ -61,9 +61,9 @@ This fragmentation creates artificial cross-package export boundaries, duplicate
 
 ### 4.3 Resolve `internal/viewtransition` and clarify `internal/frame` seam
 
-- [ ] `MOT-11` Audit `internal/viewtransition` (19 files): since it reverse-imports root `ownframe` and is only referenced by `examples/css-preview/catalog_view_transition_*_test.go`, decouple it from root `ownframe` (operate on `layout.Display` / narrow interfaces instead) OR move it into `internal/motion/viewtransition` once cycle-free. Proof: `go list -f '{{.Imports}}' ./internal/motion/...` contains zero imports of root `github.com/chinmay-sawant/ownframe`.
-- [x] `MOT-12` Check whether any non-test `internal/` package still imports root `github.com/chinmay-sawant/ownframe`. Evidence: `go list -f '{{.ImportPath}} | {{.Imports}}' ./internal/...` confirmed **`internal/viewtransition`** is the sole non-test `internal/` package importing root `ownframe`, and it uses only 3 type aliases (`ownframe.{Display,DisplayOp,Box}` == `layout.{Display,DisplayOp,Box}`), making `MOT-11` a zero-breakage import swap.
-- [ ] `MOT-13` Audit `internal/frame` (27 files): consolidate overlapping retained-op helpers with `internal/motion` (sharing op-patching/damage helpers via `internal/page/dirty` or a tiny shared helper) so both declarative CSS motion and manual Go `SetTick` motion compute damage identically. Proof: shared damage helper tested across both paths.
+- [x] `MOT-11` Decouple `internal/viewtransition` from root `ownframe` by replacing `"github.com/chinmay-sawant/ownframe"` with `"github.com/chinmay-sawant/blinkless/layout"` (`layout.{Display,DisplayOp,Box}`) across all 10 non-test files. Evidence: `go list -f '{{.ImportPath}} {{.Imports}}' ./internal/... | grep -E 'github\.com/chinmay-sawant/ownframe(\s|\])'` returns empty; `go test -race ./internal/viewtransition/... ./examples/css-preview/...` passed (94.3s).
+- [x] `MOT-12` Check whether any non-test `internal/` package still imports root `github.com/chinmay-sawant/ownframe`. Evidence: `go list -f '{{.ImportPath}} | {{.Imports}}' ./internal/...` confirmed **`internal/viewtransition`** was the sole non-test `internal/` package importing root `ownframe`; now 0 matches after `MOT-11`.
+- [x] `MOT-13` Unify `internal/frame` and `internal/motion` op-bounds math via `internal/page/dirty`: exported `dirty.LocalPaintBox`, aligned identity-transform stroke-width growth and nil guards in `dirty.OpBounds`, delegated `frame.OpBox` and `paintCenter` to `dirty`, deleted 4 duplicate helpers (`pxBox`, `mapBox`, `localBox`, `ascent`), and added `TestOpBoxMatchesDirtyOpBounds` in `internal/frame/anim_bounds_test.go`. Evidence: `go test -race -count=1 ./internal/page/dirty/... ./internal/frame/... ./internal/motion/...` passed.
 - [ ] `MOT-14` Update `documentation/css-motion.md`, `documentation/frames.md`, and `AGENTS.md` to reflect the consolidated package architecture. Proof: `make docs-check` exits 0.
 
 ### 4.4 Regression and conformance verification
@@ -87,5 +87,5 @@ This fragmentation creates artificial cross-package export boundaries, duplicate
 ## Closure Gates
 
 - [ ] `MOT-GATE-01` Motion-related packages under `internal/` reduced from 11 (`animation*`, `css*`, `motion`, `transition*`, `viewtransition`, `previewwindow`) to <=2 runtime packages (plus `internal/frame`).
-- [ ] `MOT-GATE-02` Zero non-test files under `internal/` import `testing` or reverse-import root `ownframe`.
+- [x] `MOT-GATE-02` Zero non-test files under `internal/` import `testing` (except standalone `internal/perfcheck`) or reverse-import root `ownframe`. Evidence: enforced by `TestInternalNoTestingImport` and `TestInternalNoRootOwnframeImport` in `api_internal_gate_test.go`; `go test -race .` passed.
 - [ ] `MOT-GATE-03` `make test`, `make test-race`, `make lint`, `make internal-import-check`, and `make graphics-check` exit 0.

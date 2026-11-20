@@ -170,16 +170,6 @@ func (t Testing) ClearChangedProperties() {
 	p.ClearChangedProperties()
 }
 
-// TakeChangedProperties returns a snapshot and drains local metadata.
-func (t Testing) TakeChangedProperties() []string {
-	p := innerPage(t.page)
-	if p == nil {
-		return nil
-	}
-
-	return p.TakeChangedProperties()
-}
-
 // TakeScroll returns the pending scroll request and clears it.
 func (t Testing) TakeScroll() (ScrollRequest, bool) {
 	p := innerPage(t.page)

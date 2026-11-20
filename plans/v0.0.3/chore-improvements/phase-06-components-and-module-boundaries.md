@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 06: Components, Generated UI, and Module Boundaries
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (12/18 done, 1 partial `[~]`: chart skins decoupled to `examples/builder/charts/`, `ui/` & `examples/` audited; `MOD-10` & `MOD-08` CI check remaining)
+> **Status:** In progress (13/18 done: chart skins decoupled to `examples/builder/charts/`, `ui-gen-check` wired into `make lint`; `MOD-10` remaining)
 > **Estimated effort:** 3–5 days
 
 ---
@@ -47,7 +47,7 @@ Keeping the root library module lean reduces compile times, symbol-table bloat, 
 
 - [x] `MOD-06` Inspect `scripts/gen-ui-properties/` and `ui/properties_generated.go` (10,198 LOC / 371.8 KB). Evidence: generates **688** `(*Element)` methods, **688** `*Value` interfaces, **122** keyword consts, **1,589** unexported marker methods from `documentation/compatibility-matrix.md`; only **60/688 (8.7%)** of `(*Element)` methods are used across `components/` + `examples/` (70/688 = 10.2% repo-wide — **89.8% unused**).
 - [x] `MOD-07` Measure compile-time and binary-size impact of `ui/properties_generated.go`. Evidence: minimal `ui`-importing binary links **1,433 `ui` symbols (206.8 KB)** and compiles `ui` in ~1.65s; `ui` also imports `ownframe` + `reflect` (22.85 MB minimal binary). Recommendation: keep typed helpers for ~100 core layout/visual properties and route rarely-used CSS properties through generic `Prop(name, val)`.
-- [~] `MOD-08` Ensure `go generate ./ui/...` is reproducible, deterministic, and checked by lint/CI. Evidence (partial): `go generate ./ui` exited 0 with empty `git diff`, and `go test ./ui/...` + `cd scripts && GOWORK=off go test ./gen-ui-properties/...` passed. Remaining: wire drift check (`go generate ./ui && git diff --exit-code ui/properties_generated.go`) into CI/lint.
+- [x] `MOD-08` Ensure `go generate ./ui/...` is reproducible, deterministic, and checked by lint/CI. Evidence: added `-out` flag to `scripts/gen-ui-properties/main.go`, created non-mutating `scripts/check-ui-generated.py` + `scripts/test_ui_generated.py`, added `make ui-gen-check`, and wired into `scripts/run-lint.py`; `make ui-gen-check` (371,862 bytes match) and `make tools-check` (57 tests OK) exit 0.
 
 ### 6.3 Organize and prune `examples/` (84 subdirectories)
 

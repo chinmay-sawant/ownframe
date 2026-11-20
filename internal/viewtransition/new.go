@@ -1,9 +1,9 @@
 package viewtransition
 
-import "github.com/chinmay-sawant/ownframe"
+import "github.com/chinmay-sawant/blinkless/layout"
 
 // New pairs names found in two display snapshots inside one scope.
-func New(old, next *ownframe.Display, scope Scope, styles map[string]ClassStyle) (*Transition, error) {
+func New(old, next *layout.Display, scope Scope, styles map[string]ClassStyle) (*Transition, error) {
 	if old == nil || next == nil {
 		return nil, ErrDisplay
 	}

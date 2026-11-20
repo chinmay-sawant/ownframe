@@ -1,12 +1,12 @@
 package viewtransition
 
 import (
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 )
 
 // Frame holds the new-state base and captured layers at one progress value.
 type Frame struct {
-	Base   *ownframe.Display
+	Base   *layout.Display
 	Groups []Layer
 }
 
@@ -15,7 +15,7 @@ type Layer struct {
 	Name, Parent, Mode     string
 	Classes                []string
 	Bounds                 Rect
-	Old, New               []ownframe.DisplayOp
+	Old, New               []layout.DisplayOp
 	OldOpacity, NewOpacity float64
 	newOwners              []int
 }

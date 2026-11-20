@@ -84,3 +84,40 @@ func TestInternalNoTestingImport(t *testing.T) {
 		}
 	}
 }
+
+func TestInternalNoRootOwnframeImport(t *testing.T) {
+	_, self, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("caller unknown")
+	}
+	root := filepath.Dir(self)
+	fset := token.NewFileSet()
+	base := filepath.Join(root, "internal")
+	err := filepath.WalkDir(base, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		f, err := parser.ParseFile(fset, path, nil, parser.ImportsOnly)
+		if err != nil {
+			return err
+		}
+		for _, imp := range f.Imports {
+			unquoted, err := strconv.Unquote(imp.Path.Value)
+			if err != nil {
+				return err
+			}
+			if unquoted == "github.com/chinmay-sawant/ownframe" {
+				rel, _ := filepath.Rel(root, path)
+				rel = filepath.ToSlash(rel)
+				t.Errorf("%s imports root ownframe in a non-test file", rel)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}

@@ -71,9 +71,6 @@ func (s Scroll) AllowScroll() bool {
 // SetViewportPinZ pins operations at or above z to the viewport.
 func (s Scroll) SetViewportPinZ(z int) { innerPage(s.page).SetViewportPinZ(z) }
 
-// ViewportPinZ is the pinned layer threshold.
-func (s Scroll) ViewportPinZ() int { return innerPage(s.page).ViewportPinZ() }
-
 // SetScrollWindow installs a row-window callback.
 func (p *Page) SetScrollWindow(fn func(offsetY, viewH int) bool) {
 	innerPage(p).SetScrollWindow(fn)

@@ -1,20 +1,20 @@
 package viewtransition
 
-import "github.com/chinmay-sawant/ownframe"
+import "github.com/chinmay-sawant/blinkless/layout"
 
 // Display combines the base scene with the sampled transition paint layers.
-func (f Frame) Display() *ownframe.Display {
+func (f Frame) Display() *layout.Display {
 	if f.Base == nil {
 		return nil
 	}
 	out := *f.Base
-	out.Ops = make([]ownframe.DisplayOp, 0, len(f.Base.Ops))
+	out.Ops = make([]layout.DisplayOp, 0, len(f.Base.Ops))
 	for _, op := range f.Base.Ops {
 		out.Ops = append(out.Ops, op.Clone())
 	}
 	out.Order = append([]int(nil), f.Base.Order...)
 	out.OpOwners = append([]int(nil), f.Base.OpOwners...)
-	out.Boxes = append([]ownframe.Box(nil), f.Base.Boxes...)
+	out.Boxes = append([]layout.Box(nil), f.Base.Boxes...)
 	for i := range out.Boxes {
 		out.Boxes[i].OperationIDs = append([]uint64(nil), f.Base.Boxes[i].OperationIDs...)
 	}
@@ -31,7 +31,7 @@ func (f Frame) Display() *ownframe.Display {
 	return &out
 }
 
-func appendOps(d *ownframe.Display, id *uint64, ops []ownframe.DisplayOp, owners []int) {
+func appendOps(d *layout.Display, id *uint64, ops []layout.DisplayOp, owners []int) {
 	for i, op := range ops {
 		(*id)++
 		op.ID = *id

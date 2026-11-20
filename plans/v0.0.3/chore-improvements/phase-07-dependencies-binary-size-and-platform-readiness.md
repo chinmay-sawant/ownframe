@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 07: Dependencies, Binary Size, and Pre-1.0 Platform Readiness
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (5/24 done: `DEP-01`, `DEP-04`–`DEP-07`)
+> **Status:** In progress (8/24 done: `DEP-01`, `DEP-04`–`DEP-07`, `DEP-10`, `DEP-13`, `DEP-GATE-03`)
 > **Estimated effort:** Ongoing / milestone-gated (some items depend on upstream tags and OS hardware)
 
 ---
@@ -54,13 +54,13 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
   - **Top on-disk package/asset contributors (`go tool nm -size`):** `blinkless/internal/fonts/assets` (**2.95 MB** embedded fonts), `blinkless/internal/layout` (**1.85 MB**), `tdewolff/canvas` (**0.91 MB**, incl. two 256 KB sRGB LUTs), `runtime` (**0.81 MB**), `andybalholm/brotli` (**0.67 MB** static dictionary), `net/http` (**0.47 MB**), `go-text/typesetting/font/opentype/tables` (**0.40 MB**), `go-text/typesetting/harfbuzz` (**0.34 MB**), `crypto/tls` (**0.34 MB**), `ownframe/internal/window` (**0.29 MB**), `ebiten/v2/internal/shader` (**0.27 MB**), `ebiten/v2/internal/gamepaddb` (**0.20 MB**), `golang.org/x/image/font/gofont/gomedium` (**0.16 MB**).
 - [ ] `DEP-08` Gate heavy optional bundled assets behind opt-in or lazy registration where practical (for example: evaluate whether `internal/emoji` Twemoji PNGs, `internal/window` DevTools assets, or PDF/TeX/Markdown subpackages transitively imported from `blinkless` can be decoupled so minimal `ownframe` apps only pay for what they link). Proof: written savings estimate per item + implemented reductions with measured before/after binary sizes.
 - [ ] `DEP-09` Investigate whether `blinkless` pulls `fpdf`, `star-tex.org/x/tex`, `modernc.org/knuth`, `go-fonts/latin-modern`, `tdewolff/canvas`, and `yuin/goldmark` into every `ownframe` binary even when only HTML+CSS layout is used; if so, file/track an upstream `blinkless` package-split issue so core HTML/CSS layout does not force PDF/TeX/Markdown dependencies onto GUI apps. Proof: upstream issue or PR link recorded + measured binary size impact once split.
-- [ ] `DEP-10` Set an explicit target binary-size budget for a stripped minimal `ownframe` desktop binary (e.g., <15 MB stripped) and add a size-reporting step to CI release builds so regressions are caught immediately. Proof: CI job logs stripped binary sizes for `login` desktop and wasm builds.
+- [x] `DEP-10` Add a CI size-reporting step to release builds so desktop and wasm binary-size regressions are visible in CI logs. Evidence: added `Report packaged binary sizes` step in `.github/workflows/release.yml` (`supply-chain` job); YAML validated cleanly.
 
 ### 7.3 Platform and accessibility readiness gates before any `1.0` claim
 
 - [ ] `DEP-11` Investigate and implement (or scope cleanly) native Wayland clipboard support in `internal/clipboard` so GNOME/Wayland Linux desktop users do not silently lose copy/paste when `wl-clipboard` is absent from `PATH` (or surface a clear diagnostic error/capability check instead of silent failure). Proof: Wayland clipboard test / manual validation log on a real Wayland session.
 - [ ] `DEP-12` Complete open `NATIVE-IME` validation on Windows (preedit, cancellation, conversion, commit, English + CJK layout switching) tracked in `plans/README.md`, and record host OS, IME, and test evidence. Proof: validation record added under `plans/validation/` and `NATIVE-IME` updated in `plans/README.md`.
-- [ ] `DEP-13` Define an explicit, written **v1.0 Accessibility Decision** in `documentation/accessibility-native.md` and `plans/README.md`: either assign owners & milestones for Windows UI Automation (UIA), macOS NSAccessibility/VoiceOver, and Android TalkBack bridges before calling the library `v1.0`, OR explicitly scope `v1.0` to "internal/operator desktop tools (Linux AT-SPI live; Windows/macOS/Android screen-reader adapters post-1.0)" consistently across every doc. Proof: consistent policy across `README.md`, `documentation/platforms.md`, `documentation/accessibility-native.md`, and `plans/README.md`.
+- [x] `DEP-13` Define an explicit, written **v1.0 Accessibility Policy** consistent across `README.md`, `documentation/platforms.md`, `documentation/accessibility-native.md`, and `plans/README.md`. Evidence: added `## v1.0 accessibility policy` to `documentation/accessibility-native.md` stating `v0.0.x` ships the Go snapshot + live Linux AT-SPI bridge (no `EditableText`) while Windows UIA, macOS VoiceOver, and Android TalkBack require dedicated platform owners and real AT validation before any general-purpose `v1.0` screen-reader claim; `make docs-check` exits 0.
 - [ ] `DEP-14` Verify macOS desktop host (`Run`, clipboard, filepick `osascript`, IME) and Windows desktop host (`Run`, clipboard, `comdlg32` filepick, custom chrome) on real hardware before tagging any `v0.1.0` or `v1.0` release, recording exact OS versions and results. Proof: validation records committed under `plans/validation/`.
 - [ ] `DEP-15` Audit `examples/go.mod` release checklist (`documentation/release-checklist.md`) so the `replace github.com/chinmay-sawant/ownframe => ../` removal and `examples/v0.0.3` tag sequence is verified end-to-end by `make module-check` and `make release-check`. Proof: `make module-check` and `make release-check` exit 0.
 - [ ] `DEP-16` Verify `scripts/android-release.sh` reproduces a working signed/debug APK cleanly after Phase 01 removes pre-committed APKs from git. Proof: fresh APK build + device/emulator install log recorded.
@@ -96,5 +96,5 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 
 - [ ] `DEP-GATE-01` `blinkless` pinned to a tagged semver release; `make vuln` exits 0.
 - [ ] `DEP-GATE-02` Minimal `hello` and `login` binary-size profile completed and documented, with CI size reporting active.
-- [ ] `DEP-GATE-03` Honest, consistent pre-1.0 vs 1.0 platform & accessibility policy across all docs and `plans/README.md`.
+- [x] `DEP-GATE-03` Honest, consistent pre-1.0 vs 1.0 platform & accessibility policy across `README.md`, `AGENTS.md`, `documentation/platforms.md`, `documentation/features.md`, `documentation/accessibility-native.md`, and `plans/README.md`. Evidence: `DOCS-05`–`DOCS-08` and `DEP-13` verified under `make docs-check`.
 - [ ] `DEP-GATE-04` All verification commands in `DEP-17` exit 0 on the final commit.

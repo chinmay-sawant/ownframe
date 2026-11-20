@@ -1,13 +1,13 @@
 package viewtransition
 
-import "github.com/chinmay-sawant/ownframe"
+import "github.com/chinmay-sawant/blinkless/layout"
 
-func subsetBoxes(boxes []ownframe.Box, ops []ownframe.DisplayOp) []ownframe.Box {
+func subsetBoxes(boxes []layout.Box, ops []layout.DisplayOp) []layout.Box {
 	ids := make(map[uint64]bool, len(ops))
 	for _, op := range ops {
 		ids[op.ID] = true
 	}
-	out := make([]ownframe.Box, len(boxes))
+	out := make([]layout.Box, len(boxes))
 	for i, box := range boxes {
 		out[i] = box
 		if box.OperationIDs == nil {

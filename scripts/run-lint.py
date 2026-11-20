@@ -35,6 +35,7 @@ def main():
         ('tracked file size guardrail', ['python3', 'scripts/check-repo-size.py']),
         ('example maintenance inventory', ['python3', 'scripts/check-examples.py']),
         ('example internal imports', ['bash', 'scripts/check-example-internal.sh']),
+        ('ui generated properties drift', ['python3', 'scripts/check-ui-generated.py']),
         ('website ESLint', ['npm', '--prefix', 'frontend', 'run', 'lint']),
     ]
     passed = True

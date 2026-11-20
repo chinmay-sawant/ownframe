@@ -1,8 +1,8 @@
 package viewtransition
 
-import "github.com/chinmay-sawant/ownframe"
+import "github.com/chinmay-sawant/blinkless/layout"
 
-func scaleOp(op *ownframe.DisplayOp, ppp float64, box Rect, scale float64) {
+func scaleOp(op *layout.DisplayOp, ppp float64, box Rect, scale float64) {
 	if ppp <= 0 {
 		ppp = cssDPI / pointsPerInch
 	}

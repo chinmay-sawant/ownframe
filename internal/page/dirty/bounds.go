@@ -18,23 +18,18 @@ const maxDirtyScan = 4096
 // OpBounds is one operation's box in CSS pixels. A text or bullet op
 // carries its baseline in Y, so the top comes from the face ascent. A
 // transformed op bounds where its ink lands, not its layout box.
+// A nil op returns the empty rectangle; a nil display defaults scale to 1.
 func OpBounds(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
+	if op == nil {
+		return image.Rectangle{}
+	}
+
 	if op.XformSet && !op.Transform().IsIdentity() {
 		return opBoundsXform(op, d)
 	}
 
-	scale := d.PixelPerPoint
-	if scale <= 0 {
-		scale = 1
-	}
-
-	x0, y0 := op.X, op.Y
-	x1, y1 := op.X+op.W, op.Y+op.H
-
-	if op.Kind == layout.DisplayOpText || op.Kind == layout.DisplayOpBullet {
-		y0 = op.Y - ascentOf(op)
-		y1 = op.Y + op.InkDescent
-	}
+	scale := pixelScale(d)
+	x0, y0, x1, y1 := LocalPaintBox(op)
 
 	return image.Rect(
 		int(x0*scale)-1, int(y0*scale)-1,
@@ -45,12 +40,9 @@ func OpBounds(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
 // opBoundsXform maps an op's local painted box through its baked 2D
 // transform, so a partial repaint covers where the ink actually lands.
 func opBoundsXform(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
-	scale := d.PixelPerPoint
-	if scale <= 0 {
-		scale = 1
-	}
+	scale := pixelScale(d)
 
-	x0, y0, x1, y1 := localPaintBox(op)
+	x0, y0, x1, y1 := LocalPaintBox(op)
 	m := op.Transform()
 
 	loX, loY := math.Inf(1), math.Inf(1)
@@ -68,9 +60,22 @@ func opBoundsXform(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
 	)
 }
 
-// localPaintBox is the op's painted box in points before its transform,
-// matching the geometry the replay bounds use.
-func localPaintBox(op *layout.DisplayOp) (x0, y0, x1, y1 float64) {
+// pixelScale returns d's PixelPerPoint, defaulting to 1 when d is nil or non-positive.
+func pixelScale(d *layout.Display) float64 {
+	if d != nil && d.PixelPerPoint > 0 {
+		return d.PixelPerPoint
+	}
+
+	return 1
+}
+
+// LocalPaintBox is the op's painted box in points before its transform,
+// matching the geometry the replay bounds use. A nil op reports the zero box.
+func LocalPaintBox(op *layout.DisplayOp) (x0, y0, x1, y1 float64) {
+	if op == nil {
+		return 0, 0, 0, 0
+	}
+
 	x0, y0 = op.X, op.Y
 	x1, y1 = op.X+op.W, op.Y+op.H
 

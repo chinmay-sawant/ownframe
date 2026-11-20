@@ -52,7 +52,7 @@ debug:
 	$(GO) run -tags ownframe_debug ./examples/builder/loglens -dev -perf -debug-addr 127.0.0.1:8129
 
 # Use exactly the declared runner version, including when PATH has another version.
-.PHONY: lint lint-version docs-check plans-check graphics-check examples-check tools-check repo-size-check clean-local
+.PHONY: lint lint-version docs-check plans-check graphics-check examples-check tools-check repo-size-check ui-gen-check clean-local
 lint-version:
 	bash scripts/lint_test.sh
 	bash scripts/lint.sh $(GOLANGCI_LINT_VERSION) --version
@@ -80,6 +80,9 @@ graphics-check:
 
 repo-size-check:
 	python3 scripts/check-repo-size.py
+
+ui-gen-check:
+	python3 scripts/check-ui-generated.py
 
 # Remove untracked local build, test, and profile leftovers without touching git history or temp/.
 clean-local:
