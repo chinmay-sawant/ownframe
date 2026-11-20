@@ -15,11 +15,21 @@ local v0.0.4 artifact, dependency, and demo changes. Go toolchain
   exited 0 after assembling and signing a fresh arm64 APK. Android build-tools
   35.0.0 verified APK signature schemes v1, v2, and v3. The fresh APK's
   SHA-256 was `bd1b5b221f5b5d5500a54ceb93393f612b241dd2252dd6a02f270130f4ce1265`.
-  No device was listed by ADB, so installation and launch remain open.
+  This arm64 APK installed on an Android 14 x86_64 emulator that advertises
+  arm64 translation. The emulator translator rejected an ARM instruction
+  and the process exited with SIGILL. A native ARM64 launch remains open.
+  A second signed build, using `ANDROID_TARGET=android/amd64`, passed
+  installation and a cold foreground launch on the same API 34 emulator.
+  A captured frame showed the sign-in form. The x86_64 APK SHA-256 was
+  `e77e47bda31e79cc5c80864e91bef0b548c84549b99573f0cc38cb8cf4a008d5`.
 - The Pages artifact check found nine WASM payloads. GitHub's live Pages
-  source still points to `master:/docs`. `make site-check` opened all nine
-  demos in Chrome and passed 140 layout checks. The Actions deployment
-  remains open.
+  source used `master:/docs` at the start of the migration. After
+  [PR #84](https://github.com/chinmay-sawant/ownframe/pull/84) merged and
+  the source switched to GitHub Actions, the
+  [first Actions deployment](https://github.com/chinmay-sawant/ownframe/actions/runs/44716541603)
+  succeeded at `bad50392`. Chrome opened all nine live demos while the old
+  blobs were still tracked on `master`. The local site check separately
+  passed 140 layout checks.
 - A local upstream Blinkless patch was tested from upstream `05f7df50`.
   `go test -p 2 ./internal/fonts ./internal/svg ./layout` passed with the
   default configuration. Using an alternate workspace against that checkout,
@@ -81,5 +91,4 @@ The following also exited 0 on the local changes.
 The scans reported zero vulnerabilities reached by application code and two
 uncalled findings in imported packages. The size gate lists ten retained
 media files over 5 MiB and no violations. Final verification on the merged
-tree, an Actions Pages deployment, and the independent teammate handoff
-remain open.
+tree and the independent teammate handoff remain open.

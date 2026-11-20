@@ -1,7 +1,7 @@
 # v0.0.4 - Chore Improvements Plan
 
 > **Parent:** [plans/v0.0.4/README.md](../README.md) (and [maintenance ledger](../../README.md))
-> **Status:** In progress (128 complete, 10 partial, 9 open)
+> **Status:** In progress (129 complete, 9 partial, 9 open)
 
 ---
 
@@ -45,14 +45,14 @@ contains the commands and the open checks.
 
 | Phase | Complete | Partial | Open |
 | --- | ---: | ---: | ---: |
-| [Repository footprint](phase-01-repo-footprint-and-binary-hygiene.md) | 13 | 5 | 3 |
+| [Repository footprint](phase-01-repo-footprint-and-binary-hygiene.md) | 14 | 4 | 3 |
 | [Docs and plan alignment](phase-02-docs-plans-and-truth-alignment.md) | 20 | 1 | 0 |
 | [API boundaries](phase-03-api-boundaries-and-developer-ergonomics.md) | 22 | 0 | 0 |
 | [Motion and animation](phase-04-motion-and-animation-consolidation.md) | 19 | 0 | 0 |
 | [Page, window, and replay](phase-05-page-and-window-cohesion.md) | 21 | 1 | 0 |
 | [Components and modules](phase-06-components-and-module-boundaries.md) | 18 | 0 | 0 |
 | [Dependencies and platform readiness](phase-07-dependencies-binary-size-and-platform-readiness.md) | 15 | 3 | 6 |
-| **Total** | **128** | **10** | **9** |
+| **Total** | **129** | **9** | **9** |
 
 
 ---

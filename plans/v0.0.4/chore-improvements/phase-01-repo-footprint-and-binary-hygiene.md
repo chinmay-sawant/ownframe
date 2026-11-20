@@ -1,7 +1,7 @@
 # v0.0.4 - Phase 01: Repository Footprint and Binary Hygiene
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (13 complete, 5 partial, 3 open)
+> **Status:** In progress (14 complete, 4 partial, 3 open)
 > **Estimated effort:** 2–4 days (excluding optional git history rewrite coordination)
 
 ---
@@ -45,8 +45,8 @@ Every site rebuild or Android artifact refresh commits hundreds of megabytes of 
 ### 1.2 Decouple built `.wasm` demos from `master` git history
 
 - [x] `FOOT-05` Audit `.github/workflows/` and GitHub Pages settings to determine how `docs/` is currently published. Evidence: 6 workflows (`ci.yml`, `release.yml`, `codeql.yml`, `dependency-review.yml`, `semgrep.yml`, `vuln.yml`), zero Pages deploy workflows; GitHub Pages serves committed `docs/` from `master`. `frontend/scripts/build-demo.mjs` builds 8 `.wasm` demos while `frontend/public/demos/wispr-flow/ownframe.wasm` (53.48 MB) is copied statically (10 tracked `.wasm`/`.wasm.gz` files = ~581.8 MB). `ci.yml` `site` job runs `scripts/check-generated-site.py --build-only` on PRs and full `docs/` hash comparison on `master`.
-- [~] `FOOT-06` Add the [Pages workflow](../../../.github/workflows/pages.yml) and build all nine demos. The local artifact check passed. GitHub still serves the legacy branch source, and an Actions deployment and live demo check remain open.
-- [~] `FOOT-07` Remove the ten WebAssembly payloads from the local index, including the former Wispr Flow source binary. The build now regenerates every demo. Verify the Actions deployment before removing the payloads from `master`.
+- [x] `FOOT-06` Deploy the site and all nine demos through GitHub Actions. The [first deployment](https://github.com/chinmay-sawant/ownframe/actions/runs/44716541603) succeeded and Chrome opened all nine live demos while `master` still tracked the old payloads.
+- [~] `FOOT-07` The [maintenance PR](https://github.com/chinmay-sawant/ownframe/pull/85) removes the ten WebAssembly payloads, including the former Wispr Flow source binary. The Actions cutover passed. Verify the removal on `master` after merge.
 - [~] `FOOT-08` Review tracked media assets in `docs/` (`teams.webp`, `trade.webp`, `desktop-cat.webp`, `wispr-flow.webp`, `eyes2-60fps-*.webp`). Deferred by owner decision (2026-11-20): keep existing `.webp` demo captures intact at current quality; revisit only if site bandwidth or repo size requires re-encoding later.
 - [x] `FOOT-09` Document the Pages workflow, local preview, and artifact policy in root and frontend READMEs, `AGENTS.md`, and the testing guide. The local `make docs-check` completed successfully.
 
