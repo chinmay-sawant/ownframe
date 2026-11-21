@@ -13,7 +13,7 @@ type paintItem struct {
 	group *layout.DisplayGroup
 }
 
-func paintOrdered(dst *image.NRGBA, d *layout.Display, faces faceCache) error {
+func paintOrdered(dst *image.NRGBA, d *layout.Display, faces *faceCache) error {
 	items := map[*layout.DisplayGroup][]paintItem{}
 	seen := map[*layout.DisplayGroup]bool{}
 	areas := map[*layout.DisplayGroup]image.Rectangle{}

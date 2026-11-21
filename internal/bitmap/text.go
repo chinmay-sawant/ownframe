@@ -12,7 +12,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-func paintText(dst *image.NRGBA, op *layout.DisplayOp, cache faceCache) error {
+func paintText(dst *image.NRGBA, op *layout.DisplayOp, cache *faceCache) error {
 	if op.Text == "" {
 		return nil
 	}

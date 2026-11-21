@@ -7,7 +7,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
-func paintOp(img *image.NRGBA, op *layout.DisplayOp, faces faceCache) error {
+func paintOp(img *image.NRGBA, op *layout.DisplayOp, faces *faceCache) error {
 	switch op.Kind {
 	case layout.DisplayOpFillRect, layout.DisplayOpStrokeRect, layout.DisplayOpLine:
 		paintShape(img, op)
