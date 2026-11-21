@@ -9,7 +9,6 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"html/template"
-	"io"
 	"runtime"
 	"strings"
 	"time"
@@ -143,19 +142,22 @@ func execTemplate(p *Page, track bool) (string, error) {
 
 	p.execSkipped = false
 
-	out, err := draw.ExecuteWriter(
+	hint := len(p.source)
+	if len(p.lastSyncBody) > hint {
+		hint = len(p.lastSyncBody)
+	}
+
+	body, err := draw.Execute(
 		track,
-		len(p.source),
+		hint,
 		&p.stats.lastTemplate,
-		func(w io.Writer) error {
+		func(w *strings.Builder) error {
 			return p.tpl.Execute(w, p.data)
 		},
 	)
 	if err != nil {
 		return "", err
 	}
-
-	body := string(out)
 
 	return body, nil
 }
