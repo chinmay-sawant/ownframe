@@ -484,7 +484,7 @@ func AdoptPatchedSource(p *Page, source string) error {
 	p.tplProbeTpl, p.tplProbeHas = nil, false
 	noteSourceHashed(p, source, hash)
 	noteCacheSource(p)
-	remember(p, renderState(p))
+	rememberPatched(p, renderState(p))
 	invalidateAccessibilityDocument(p)
 
 	return nil

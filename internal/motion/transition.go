@@ -367,12 +367,58 @@ func indexBoxes(boxes []layout.Box, filter map[string]struct{}) map[entryKey]box
 // A target set whose operation count or kinds changed is skipped and counted:
 // a half-interpolated element looks worse than a snap.
 func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCapture {
+	return r.CaptureTransitionsScoped(previous, next, nil)
+}
+
+// CaptureTransitionsScoped reads the style change between two published
+// displays, optionally restricted to boxes at or inside roots (when roots is
+// non-nil).
+//
+// A scoped relayout (hover patch, PatchElement, PatchElements) re-lays out
+// only the subtrees rooted at roots and clones previous.Ops verbatim for every
+// untouched box outside roots. When an untouched box carries an active
+// transition whose in-flight sample was written to previous.Ops, next.Ops
+// holds that same mid-transition clone rather than the box's final computed
+// paint. Skipping boxes outside roots keeps those live transitions running to
+// their true destination instead of cancelling them and freezing the cloned
+// mid-transition paint into next.Ops.
+//
+// A nil roots slice scans the whole display. An empty non-nil roots slice
+// means no box was re-laid out, so nothing is captured or cancelled.
+func (r *Runtime) CaptureTransitionsScoped(previous, next *Display, roots []string) []TransitionCapture {
 	if r == nil {
 		return nil
 	}
 	r.transitionCapture = transitionCaptureCounts{}
 	if previous == nil || next == nil {
 		return nil
+	}
+
+	var scopeSet map[string]struct{}
+	if roots != nil {
+		if len(roots) == 0 {
+			return nil
+		}
+		if r.capScope == nil {
+			r.capScope = make(map[string]struct{}, len(roots))
+		} else {
+			clear(r.capScope)
+		}
+		for _, id := range roots {
+			if id != "" {
+				r.capScope[id] = struct{}{}
+			}
+		}
+		if len(r.capScope) == 0 {
+			return nil
+		}
+		scopeSet = r.capScope
+		defer func() {
+			clear(r.capScope)
+			if len(r.capScope) > maxCaptureScratchMap {
+				r.capScope = nil
+			}
+		}()
 	}
 
 	if r.capIDs == nil {
@@ -385,17 +431,23 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 	for i := range next.Boxes {
 		box := &next.Boxes[i]
 		if len(box.Transitions) != 0 {
-			hasNextTransitions = true
-			if box.ID != "" {
-				transitionIDs[box.ID] = struct{}{}
-			} else {
+			if box.ID == "" {
 				r.transitionCapture.noID++
+				continue
 			}
+			if scopeSet != nil && !boxWithinScope(next.Boxes, i, scopeSet) {
+				continue
+			}
+			hasNextTransitions = true
+			transitionIDs[box.ID] = struct{}{}
 		}
 	}
 	for i := range previous.Boxes {
 		box := &previous.Boxes[i]
 		if len(box.Transitions) != 0 && box.ID != "" {
+			if scopeSet != nil && !boxWithinScope(previous.Boxes, i, scopeSet) {
+				continue
+			}
 			transitionIDs[box.ID] = struct{}{}
 		}
 	}
@@ -456,6 +508,9 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		ordinal := ordinals[box.ID]
 		ordinals[box.ID] = ordinal + 1
 		if len(box.Transitions) == 0 {
+			continue
+		}
+		if scopeSet != nil && !boxWithinScope(next.Boxes, i, scopeSet) {
 			continue
 		}
 		key := entryKey{id: box.ID, ordinal: ordinal}
@@ -592,6 +647,24 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		r.noteDisplayExits(previous, next, transitionIDs)
 	}
 	return out
+}
+
+// boxWithinScope reports whether boxes[index] or any of its ancestors carries
+// an element ID in scope.
+func boxWithinScope(boxes []layout.Box, index int, scope map[string]struct{}) bool {
+	for depth, cur := 0, index; cur >= 0 && cur < len(boxes) && depth <= len(boxes); depth++ {
+		if id := boxes[cur].ID; id != "" {
+			if _, ok := scope[id]; ok {
+				return true
+			}
+		}
+		parent := boxes[cur].ParentIndex
+		if parent == cur {
+			break
+		}
+		cur = parent
+	}
+	return false
 }
 
 // transitionTarget identifies one paint field set already captured for an

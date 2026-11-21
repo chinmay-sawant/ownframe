@@ -661,6 +661,24 @@ func remember(p *Page, state render.State) {
 	}
 }
 
+// rememberPatched records the committed key after a subtree patch
+// (PatchElements / AdoptPatchedSource). Because a subtree patch only re-lays
+// out its patched elements, it preserves the previously committed pointer,
+// focus, and theme state so a caller that changed them before patching (such
+// as setHover before paintHover) still runs its trailing Redraw to update
+// elements outside the patch.
+func rememberPatched(p *Page, state render.State) {
+	prevHasLast := p.hasLast
+	prevLast := p.last
+	remember(p, state)
+	if prevHasLast {
+		p.last.Hover = prevLast.Hover
+		p.last.Active = prevLast.Active
+		p.last.Focus = prevLast.Focus
+		p.last.Theme = prevLast.Theme
+	}
+}
+
 // noteSource records a newly synced source with a fresh hash. noteSourceHashed
 // carries the store so a caller that already hashed the bytes skips the fold.
 func noteSource(p *Page, next string) {

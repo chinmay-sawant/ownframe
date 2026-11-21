@@ -371,10 +371,11 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 	p.cache.SetStyled(styled)
 	p.statePseudos = p.cache.StatePseudos()
 	noteRelayed(p, state)
-	// The patched display is now the committed frame. Record its key so the
-	// redraw a click dispatches after its handler sees the frame as unchanged
-	// instead of laying the whole page out again.
-	remember(p, state)
+	// The patched display is now the committed frame for the patched subtrees.
+	// Record its key while preserving previously committed pointer, focus, and
+	// theme state so a click handler skips a redundant full layout without
+	// suppressing a hover handler's trailing hover redraw.
+	rememberPatched(p, state)
 
 	return nil
 }
@@ -462,6 +463,7 @@ func layoutStaged(p *Page, ctx context.Context,
 			noteHoverPatchFailure(p, "selection", reason, []string{p.last.Hover, state.Hover})
 		}
 	}
+	p.commitRoots = nil
 	p.stats.fullLayouts++
 	return draw.List(ctx, styled, state)
 }

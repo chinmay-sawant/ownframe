@@ -22,6 +22,7 @@ REQUIRED_TESTS = {
     "TestWindowDevToolsIdle",
     "TestSidebarHoverPixels",
     "TestCommandBackdropPixelsStableAcrossFrames",
+    "TestThemeToggleMidTransitionPixels",
     "TestManagedInteractionsNative",
     "TestGPUVisibleParity",
     "TestDrawPaintsVerticalThumb",
