@@ -253,8 +253,41 @@ func (r *Runtime) noteReportChange(previous *Display, old boxRef, next *Display,
 // noteDisplayExits reports an element the new display dropped while it declared
 // a display transition. The committed display no longer holds its operations,
 // so keeping its pixels is the phase 04 layer's job.
+func hasDisplayTransition(transitions []layout.Transition) bool {
+	for i := range transitions {
+		prop := transitions[i].Property
+		if prop == "display" || prop == "all" {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Runtime) noteDisplayExits(previous, next *Display, filter map[string]struct{}) {
 	if previous == nil || next == nil {
+		return
+	}
+	if len(previous.Boxes) == len(next.Boxes) &&
+		(len(previous.Boxes) == 0 || &previous.Boxes[0] == &next.Boxes[0]) {
+		return
+	}
+	hasDisplay := false
+	for i := range previous.Boxes {
+		box := &previous.Boxes[i]
+		if len(box.Transitions) == 0 {
+			continue
+		}
+		if filter != nil {
+			if _, ok := filter[box.ID]; !ok {
+				continue
+			}
+		}
+		if hasDisplayTransition(box.Transitions) {
+			hasDisplay = true
+			break
+		}
+	}
+	if !hasDisplay {
 		return
 	}
 

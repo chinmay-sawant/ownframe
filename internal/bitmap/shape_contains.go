@@ -4,27 +4,7 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
-
-func shapeContains(op *layout.DisplayOp, x, y float64) bool {
-	if op.Kind == layout.DisplayOpLine {
-		lx, ly, w, h, width := op.PaintLineGeometry()
-		return onLine(x, y, lx, ly, w, h, max(width, 1/pxPerPt))
-	}
-	rx, ry := masking.RadiiXY(op)
-	if op.Kind == layout.DisplayOpFillRect {
-		return inRound(x-op.X, y-op.Y, op.W, op.H, rx, ry)
-	}
-	width := max(op.Width, 1/pxPerPt)
-	if op.StrokeMask != 0 {
-		return onStrokeMask(op, x, y, width)
-	}
-	half := width / halfDivisor
-	outerX, outerY, innerX, innerY := strokeRadii(rx, ry, half)
-	return inRound(x-op.X+half, y-op.Y+half, op.W+width, op.H+width, outerX, outerY) &&
-		!inRound(x-op.X-half, y-op.Y-half, op.W-width, op.H-width, innerX, innerY)
-}
 
 func strokeRadii(rx, ry [4]float64, half float64) (outerX, outerY, innerX, innerY [4]float64) {
 	for i := range rx {

@@ -116,3 +116,60 @@ func findDismissBox(page *ownframe.Page) (ownframe.Box, bool) {
 	}
 	return ownframe.Box{}, false
 }
+
+func TestModalBackdropPaintsAboveTopbarMenus(t *testing.T) {
+	tests := []struct {
+		name       string
+		backdropID string
+		open       func(*app)
+	}{
+		{name: "dialog", backdropID: "create-alert-dialog-backdrop", open: func(a *app) { a.dialogOpen = true }},
+		{name: "settings", backdropID: "settings-sheet-backdrop", open: func(a *app) { a.settingsOpen = true }},
+		{name: "drawer", backdropID: "log-drawer-backdrop", open: func(a *app) { a.tab = "logs"; a.drawerOpen = true }},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			a, err := newApp()
+			if err != nil {
+				t.Fatal(err)
+			}
+			tc.open(a)
+			if err := a.refresh(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			disp := a.page.Probe().Display()
+			if disp == nil {
+				t.Fatal("missing display list")
+			}
+			orderPos := make(map[int]int, len(disp.Order))
+			for pos, idx := range disp.Order {
+				orderPos[idx] = pos
+			}
+			backdropPos := -1
+			for idx, op := range disp.Ops {
+				if op.Fixed && op.W >= 900 && op.H >= 500 && op.Alpha > 0 && op.Alpha < 1 {
+					if pos, ok := orderPos[idx]; ok && pos > backdropPos {
+						backdropPos = pos
+					}
+				}
+			}
+			if backdropPos < 0 {
+				t.Fatalf("missing fixed translucent backdrop op for %s", tc.backdropID)
+			}
+			for _, label := range []string{"Platform", "Resources", "Settings", "File", "View", "Help"} {
+				found := false
+				for idx, op := range disp.Ops {
+					if op.Fixed && op.Y < topbarHeight && op.Text == label {
+						found = true
+						if pos := orderPos[idx]; pos > backdropPos {
+							t.Fatalf("topbar menu %q painted at order %d above backdrop %d", label, pos, backdropPos)
+						}
+					}
+				}
+				if !found {
+					t.Fatalf("missing topbar menu op %q", label)
+				}
+			}
+		})
+	}
+}

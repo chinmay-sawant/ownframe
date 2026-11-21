@@ -358,7 +358,6 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 	p.commitRoots = append([]string{}, ids...)
 	captures := captureTransitions(p, p.draw.Display, current)
 	prev := adoptSpliced(p, current)
-	updateMotionIndex(p, prev, current)
 	bindMotion(p, prev, current)
 	bindTransitions(p, captures)
 	if prev != nil && prev != current {
@@ -745,6 +744,20 @@ func listHoverPatched(p *Page, ctx context.Context,
 	roots []string) (*Display, error) {
 	current := p.draw.Display
 	options := layout.Options{Images: state.Images, RetainState: true}
+
+	if p.hoverPatch == nil {
+		patched, err := render.RelayoutElements(ctx, styled, current, roots, options)
+		if err != nil {
+			p.commitRoots = nil
+			return nil, err
+		}
+		if patched == nil {
+			p.commitRoots = nil
+			return nil, errHoverPatchEmpty
+		}
+		p.commitRoots = append([]string{}, roots...)
+		return patched, nil
+	}
 
 	for _, root := range roots {
 		patch, err := p.hoverPatch(ctx, styled, current, root, options)

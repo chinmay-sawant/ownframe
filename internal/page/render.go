@@ -311,7 +311,6 @@ func drawStaged(p *Page, ctx context.Context,
 func commitDisplay(p *Page, display *Display, executed string, drawStart time.Time, state render.State) {
 	previous := p.draw.Display
 	previousFallback := p.draw.FallbackDisplay
-	updateMotionIndex(p, previous, display)
 	captures := captureTransitions(p, previous, display)
 	dirtyFromDisplay(p, previous, display)
 	noteCommit(p, drawStart)

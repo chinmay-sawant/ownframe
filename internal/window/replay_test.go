@@ -884,6 +884,87 @@ func TestPinnedChromeIdleOnBlit(t *testing.T) {
 	}
 }
 
+// TestPinnedChromePartialFrameRestoresVisibleTiles guards against translucent
+// fixed/pinned layers (such as modal backdrops) double-blending over their own
+// retained pixels on partial or idle frames: only the damaged tile repaints,
+// while the visible tiles blit cleanly before pinned chrome paints on top.
+func TestPinnedChromePartialFrameRestoresVisibleTiles(t *testing.T) {
+	t.Parallel()
+
+	d := &layout.Display{
+		Width: 400, Height: 400, PointsPerPixel: 1,
+		Ops: []layout.DisplayOp{
+			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 400, H: 400, R: 1, G: 1, B: 1, Alpha: 1},
+			{Kind: layout.DisplayOpFillRect, X: 10, Y: 10, W: 20, H: 20, R: 1, Alpha: 1},
+			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 400, H: 400, Alpha: 0.38, Fixed: true, ZIndex: 90, ZIndexSet: true},
+		},
+		Order: []int{0, 1, 2},
+	}
+	screen := &dirtyScreen{fakeScreen: &fakeScreen{width: 400, height: 400}, display: d, gen: 1}
+	s := newDirtyShell(screen)
+	dst := partialBuf(400, 400)
+	defer dst.Deallocate()
+
+	s.drawReplayPartial(dst)
+	s.frameCommit()
+
+	// Partial damage in tile (0,0) repaints only the damaged rect while still
+	// restoring the entire 400x400 viewport from cached tiles before DrawFixed.
+	screen.click(image.Rect(10, 10, 30, 30))
+	s.drawReplayPartial(dst)
+	s.frameCommit()
+
+	if s.partial.mode != repaintRect {
+		t.Fatalf("mode = %v, want repaintRect", s.partial.mode)
+	}
+	if s.partial.paintPx != 400 {
+		t.Fatalf("paintPx = %d, want 400 (only the 20x20 damaged rect)", s.partial.paintPx)
+	}
+	if s.partial.blitPx != 400*400 {
+		t.Fatalf("blitPx = %d, want %d (full visible tile restore)", s.partial.blitPx, 400*400)
+	}
+	if s.partial.pins == 0 {
+		t.Fatal("partial frame skipped pinned chrome")
+	}
+
+	// Idle frame repaints zero tiles, still restores visible tiles before
+	// DrawFixed, and remains idle-clean.
+	screen.ok = false
+	s.drawReplayPartial(dst)
+	s.frameCommit()
+
+	if s.partial.paints != 0 {
+		t.Fatalf("idle paints = %d, want 0", s.partial.paints)
+	}
+	if s.partial.blitPx != 400*400 {
+		t.Fatalf("idle blitPx = %d, want %d", s.partial.blitPx, 400*400)
+	}
+	if !s.idleCleanFrame() {
+		t.Fatal("idle frame with translucent fixed overlay must stay idle-clean")
+	}
+
+	// Short content (smaller than viewport) falls back to showTilesWhole so
+	// uncovered margins below the content are cleared before DrawFixed.
+	short := &layout.Display{
+		Width: 400, Height: 120, PointsPerPixel: 1,
+		Ops: []layout.DisplayOp{
+			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 400, H: 120, R: 1, G: 1, B: 1, Alpha: 1},
+			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 400, H: 400, Alpha: 0.38, Fixed: true, ZIndex: 90, ZIndexSet: true},
+		},
+		Order: []int{0, 1},
+	}
+	shortScreen := &dirtyScreen{fakeScreen: &fakeScreen{width: 400, height: 400}, display: short, gen: 1}
+	shortShell := newDirtyShell(shortScreen)
+	shortShell.drawReplayPartial(dst)
+	shortShell.frameCommit()
+	shortScreen.click(image.Rect(10, 10, 30, 30))
+	shortShell.drawReplayPartial(dst)
+	shortShell.frameCommit()
+	if shortShell.partial.blitPx != 400*120 {
+		t.Fatalf("short page blitPx = %d, want %d", shortShell.partial.blitPx, 400*120)
+	}
+}
+
 func TestDockClipsPinnedChrome(t *testing.T) {
 	t.Parallel()
 

@@ -1633,6 +1633,117 @@ func TestResponsiveViewportBelowDesktopMinimum(t *testing.T) {
 	}
 }
 
+// TestTranslucentFixedBackdropNoOverblend verifies on the GPU retained surface
+// (SetScreenClearedEveryFrame(false)) that repeated partial damage and idle
+// frames with a translucent fixed backdrop never progressively darken pixels
+// outside the damaged tile, and that removing the backdrop restores the full
+// un-dimmed page.
+func TestTranslucentFixedBackdropNoOverblend(t *testing.T) {
+	if os.Getenv("OWNFRAME_FRAME_GPU_TEST") != "1" {
+		t.Skip("requires a graphics session; set OWNFRAME_FRAME_GPU_TEST=1")
+	}
+
+	const size = 400
+	withBackdrop := &layout.Display{
+		Width: size, Height: size, PointsPerPixel: 1,
+		Ops: []layout.DisplayOp{
+			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: size, H: size, R: 1, G: 1, B: 1, Alpha: 1},
+			{Kind: layout.DisplayOpFillRect, X: 10, Y: 10, W: 20, H: 20, R: 1, Alpha: 1},
+			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: size, H: size, Alpha: 0.5, Fixed: true, ZIndex: 90, ZIndexSet: true},
+		},
+		Order: []int{0, 1, 2},
+	}
+	withoutBackdrop := &layout.Display{
+		Width: size, Height: size, PointsPerPixel: 1,
+		Ops: []layout.DisplayOp{
+			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: size, H: size, R: 1, G: 1, B: 1, Alpha: 1},
+			{Kind: layout.DisplayOpFillRect, X: 10, Y: 10, W: 20, H: 20, R: 1, Alpha: 1},
+		},
+		Order: []int{0, 1},
+	}
+
+	app := &dirtyScreen{fakeScreen: &fakeScreen{width: size, height: size}, display: withBackdrop, gen: 1}
+	s := newDirtyShell(app)
+	s.ctx = context.Background()
+	game := &backdropOverblendGame{shell: s, app: app, closed: withoutBackdrop}
+
+	ebiten.SetWindowSize(size, size)
+	ebiten.SetScreenClearedEveryFrame(false)
+	if err := ebiten.RunGame(game); err != nil {
+		t.Fatal(err)
+	}
+	if game.err != nil {
+		t.Fatal(game.err)
+	}
+}
+
+type backdropOverblendGame struct {
+	shell  *shell
+	app    *dirtyScreen
+	closed *layout.Display
+	frame  int
+	base   [4]byte
+	err    error
+}
+
+func (g *backdropOverblendGame) Layout(int, int) (int, int) { return 400, 400 }
+
+func (g *backdropOverblendGame) Update() error {
+	g.shell.partial.focus = ebiten.IsFocused()
+	if g.err != nil || g.frame >= 8 {
+		return ebiten.Termination
+	}
+	return nil
+}
+
+func (g *backdropOverblendGame) Draw(dst *ebiten.Image) {
+	if g.err != nil || g.frame >= 8 {
+		return
+	}
+	g.shell.Draw(dst)
+
+	bounds := dst.Bounds()
+	pixels := make([]byte, 4*bounds.Dx()*bounds.Dy())
+	dst.ReadPixels(pixels)
+	const sampleX, sampleY = 350, 350
+	i := (sampleY*bounds.Dx() + sampleX) * 4
+	got := [4]byte{pixels[i], pixels[i+1], pixels[i+2], pixels[i+3]}
+
+	switch g.frame {
+	case 0:
+		g.base = got
+		if got[0] < 120 || got[0] > 136 {
+			g.err = fmt.Errorf("frame 0 dimmed white = %v, want ~128", got)
+			return
+		}
+	case 1, 2, 3, 4, 5, 6:
+		if got != g.base {
+			g.err = fmt.Errorf("frame %d translucent backdrop drifted: got %v, want %v", g.frame, got, g.base)
+			return
+		}
+	case 7:
+		if got != ([4]byte{255, 255, 255, 255}) {
+			g.err = fmt.Errorf("frame 7 after closing backdrop = %v, want white", got)
+			return
+		}
+	}
+
+	switch g.frame {
+	case 0, 2, 4:
+		// Small partial damage in tile (0,0) far from (350,350) in tile (1,1).
+		g.app.click(image.Rect(10, 10, 30, 30))
+	case 1, 3, 5:
+		// Idle blit with no tile damage.
+		g.app.ok = false
+		g.app.rects = nil
+	case 6:
+		// Close backdrop and report its full viewport bounds as dirty.
+		g.app.display, g.shell.display = g.closed, g.closed
+		g.app.click(image.Rect(0, 0, 400, 400))
+	}
+	g.frame++
+}
+
 // TestMain fails the binary when window tests leak goroutines (GEN-26).
 func TestMain(m *testing.M) {
 	clipboard.UseMemory(true)

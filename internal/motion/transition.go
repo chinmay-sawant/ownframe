@@ -230,9 +230,15 @@ func samePaintSet(a, b []Paint, mask Mask) bool {
 // expands to every property this phase can capture. The returned map carries
 // the record exactly as declared, so "all" keeps Behavior and timing.
 func transitionRecords(box layout.Box) map[string]layout.Transition {
-	var out map[string]layout.Transition
-	for i := range box.Transitions {
-		item := box.Transitions[i]
+	return fillTransitionRecords(nil, box.Transitions)
+}
+
+func fillTransitionRecords(out map[string]layout.Transition, transitions []layout.Transition) map[string]layout.Transition {
+	if out != nil {
+		clear(out)
+	}
+	for i := range transitions {
+		item := transitions[i]
 		if item.Property == "all" {
 			for _, property := range transitionPropertyList() {
 				if out == nil {
@@ -361,6 +367,7 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		prevIndex = r.indexFor(previous)
 		nextIndex = r.indexFor(next)
 	}
+	var records map[string]layout.Transition
 	for i := range next.Boxes {
 		box := next.Boxes[i]
 		if box.ID == "" {
@@ -375,7 +382,7 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 			continue
 		}
 		key := entryKey{id: box.ID, ordinal: ordinal}
-		records := transitionRecords(box)
+		records = fillTransitionRecords(records, box.Transitions)
 		old, ok := oldBoxes[key]
 		if !ok {
 			r.transitionCapture.noOld++

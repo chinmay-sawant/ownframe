@@ -63,8 +63,10 @@ func (a *app) topMenus() *ui.Element {
 	})
 	// Keep the product links in the same column as the main content and reserve
 	// a stable slot for the menu so opening its panel cannot move the header.
+	// Stay above the topbar (40) and dismiss layer (39), but below modal
+	// backdrops (50-55) so dialogs, sheets, and drawers dim the header menus.
 	nav.Position(ui.PositionRelative).
-		ZIndex(ui.Number(60)).
+		ZIndex(ui.Number(45)).
 		Width(ui.Px(navWidth)).
 		CustomProperty("--of-navigation-menu-width", "300px")
 
@@ -127,7 +129,7 @@ func (a *app) topMenus() *ui.Element {
 			return a.refresh(ctx)
 		},
 	})
-	menu.Position(ui.PositionRelative).ZIndex(ui.Number(60)).
+	menu.Position(ui.PositionRelative).ZIndex(ui.Number(45)).
 		Width(ui.Px(applicationMenuWidth)).FlexShrink(ui.Number(0)).
 		CustomProperty("--of-navigation-menu-width", "152px")
 

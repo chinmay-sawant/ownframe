@@ -122,10 +122,15 @@ func paintAxisFillRect(img *image.NRGBA, bounds image.Rectangle, ox, oy, w, h fl
 	}
 }
 
+const (
+	subpixelLo = 0.25
+	subpixelHi = 0.75
+)
+
 func paintAxisFillPixel(img *image.NRGBA, x, y int, ox, oy, w, h float64,
 	rx, ry [4]float64, py0, py1 float64, c color.NRGBA) {
-	px0 := (float64(x)+0.25)/pxPerPt - ox
-	px1 := (float64(x)+0.75)/pxPerPt - ox
+	px0 := (float64(x)+subpixelLo)/pxPerPt - ox
+	px1 := (float64(x)+subpixelHi)/pxPerPt - ox
 	count := 0
 	if inRound(px0, py0, w, h, rx, ry) {
 		count++
@@ -217,8 +222,8 @@ func paintAxisStrokePixel(img *image.NRGBA, x, y int,
 	outerOX, outerW, outerH, innerOX, innerW, innerH float64,
 	outerX, outerY, innerX, innerY [4]float64,
 	oPy0, oPy1, iPy0, iPy1 float64, c color.NRGBA) {
-	px0 := (float64(x) + 0.25) / pxPerPt
-	px1 := (float64(x) + 0.75) / pxPerPt
+	px0 := (float64(x) + subpixelLo) / pxPerPt
+	px1 := (float64(x) + subpixelHi) / pxPerPt
 	oPx0, oPx1 := px0-outerOX, px1-outerOX
 	iPx0, iPx1 := px0-innerOX, px1-innerOX
 	count := 0
