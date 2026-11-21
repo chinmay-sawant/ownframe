@@ -203,6 +203,9 @@ func (renderer *Renderer) fillRaster(op *layout.DisplayOp, x, y, w, h float32) (
 	}
 
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
+		if renderer.fillRoundedNineSlice(img, key.fx, key.fy, w, h, r, opaqueWhite) {
+			return
+		}
 		path := acquireVectorPath()
 		populateRoundedFillPath(path, key.fx, key.fy, w, h, r)
 
@@ -245,18 +248,7 @@ func (renderer *Renderer) strokeRaster(op *layout.DisplayOp, x, y, w, h float32)
 	}
 
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
-		path := acquireVectorPath()
-		populateStrokePath(path, key)
-
-		var stroke vector.StrokeOptions
-		stroke.Width = width
-		stroke.LineJoin = vector.LineJoinRound
-
-		var options vector.DrawPathOptions
-		options.AntiAlias = true
-
-		vector.StrokePath(img, path, &stroke, &options)
-		releaseVectorPath(path)
+		renderer.strokeRectNineSlice(img, key.fx, key.fy, w, h, width, key.mask, key.r, key.ry, opaqueWhite)
 	})
 
 	return img, image.Pt(left, top), true
