@@ -58,11 +58,35 @@ type KidIndex struct {
 // An empty box list builds an empty index that reports every id
 // unknown.
 func BuildKidIndex(boxes []layout.Box) KidIndex {
-	k := KidIndex{
-		byID:  make(map[string]int, len(boxes)),
-		head:  make([]int, len(boxes)),
-		link:  make([]int, len(boxes)),
-		rects: make([]image.Rectangle, len(boxes)),
+	var k KidIndex
+	k.Rebuild(boxes)
+	return k
+}
+
+// Rebuild repopulates k from boxes, reusing k's existing map and slices when
+// they have room so hover toggles that add or drop a tooltip avoid fresh
+// map/slice allocations on every frame.
+func (k *KidIndex) Rebuild(boxes []layout.Box) {
+	n := len(boxes)
+	if k.byID == nil {
+		k.byID = make(map[string]int, n)
+	} else {
+		clear(k.byID)
+	}
+	if cap(k.head) < n {
+		k.head = make([]int, n)
+	} else {
+		k.head = k.head[:n]
+	}
+	if cap(k.link) < n {
+		k.link = make([]int, n)
+	} else {
+		k.link = k.link[:n]
+	}
+	if cap(k.rects) < n {
+		k.rects = make([]image.Rectangle, n)
+	} else {
+		k.rects = k.rects[:n]
 	}
 	for i := range boxes {
 		k.byID[boxes[i].ID] = i
@@ -72,7 +96,7 @@ func BuildKidIndex(boxes []layout.Box) KidIndex {
 	}
 	for i := range boxes {
 		pi := boxes[i].ParentIndex
-		if pi < 0 || pi >= len(boxes) || pi == i {
+		if pi < 0 || pi >= n || pi == i {
 			// A missing, out-of-range, or self parent is a root. The self
 			// case would otherwise link the box to itself and make the
 			// subtree walk cycle forever.
@@ -81,7 +105,6 @@ func BuildKidIndex(boxes []layout.Box) KidIndex {
 		k.link[i] = k.head[pi]
 		k.head[pi] = i
 	}
-	return k
 }
 
 // SameParents reports whether a and b carry the same parent links in the same
