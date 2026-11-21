@@ -617,6 +617,131 @@ func TestHoverPatchGeometryFallsBack(t *testing.T) {
 	}
 }
 
+func TestHoverSkipsRepeatedGeometryRefusal(t *testing.T) {
+	for _, property := range []string{"width:110px", "margin:20px"} {
+		t.Run(property, func(t *testing.T) {
+			source := `<style>body{margin:0}
+				.grid{display:flex;flex-wrap:wrap;width:170px}
+				.grid>div{flex:none;width:70px;height:24px;background:red}
+				#a:hover{` + property + `}</style>
+				<div class="grid"><div id="a">A</div><div id="b">B</div></div>
+				<p id="after">After the grid</p>`
+			newPage := func(retain bool) *Page {
+				p, err := New(Config{HTML: source, Width: 340, Height: 240, RetainState: retain})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := p.Redraw(t.Context()); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			}
+			retained, full := newPage(true), newPage(false)
+			beforeY := boxByID(full, "after").Y
+			cycle := func() {
+				hoverAt(t, retained, "a")
+				hoverAt(t, full, "a")
+				if boxByID(full, "after").Y <= beforeY {
+					t.Fatal("fixture did not move the content after the wrapping grid")
+				}
+				assertSameDisplay(t, retained, full)
+				for _, page := range []*Page{retained, full} {
+					if err := page.Hover(t.Context(), -1, -1); err != nil {
+						t.Fatal(err)
+					}
+				}
+				assertSameDisplay(t, retained, full)
+			}
+			cycle()
+			before := retained.Stats()
+			if before.HoverPatchErrors != 2 || before.HoverFallbacks != 2 {
+				t.Fatalf("first cycle errors=%d fallbacks=%d, want 2 of each",
+					before.HoverPatchErrors, before.HoverFallbacks)
+			}
+			cycle()
+			after := retained.Stats()
+			if after.HoverPatchErrors != before.HoverPatchErrors {
+				t.Fatalf("repeat attempted %d more patch calls", after.HoverPatchErrors-before.HoverPatchErrors)
+			}
+			if after.HoverFallbacks != before.HoverFallbacks+2 || after.FullLayouts != before.FullLayouts+2 {
+				t.Fatalf("repeat did not preserve the full layout fallback: prior %+v, after %+v", before, after)
+			}
+
+			retained.SetTick(func(context.Context) error { return nil })
+			cycle()
+			withTick := retained.Stats()
+			if withTick.HoverPatchErrors != after.HoverPatchErrors+2 {
+				t.Fatalf("registered frame callback did not restore patch attempts: prior %d, after %d",
+					after.HoverPatchErrors, withTick.HoverPatchErrors)
+			}
+			retained.SetTick(nil)
+
+			for _, page := range []*Page{retained, full} {
+				page.SetSize(380, 240)
+				if err := page.Redraw(t.Context()); err != nil {
+					t.Fatal(err)
+				}
+			}
+			cycle()
+			if got := retained.Stats().HoverPatchErrors; got != withTick.HoverPatchErrors+2 {
+				t.Fatalf("viewport change did not invalidate the refusal: prior %d, after %d",
+					withTick.HoverPatchErrors, got)
+			}
+		})
+	}
+}
+
+func TestHoverSkipsRepeatedParentGeometryRefusal(t *testing.T) {
+	source := `<style>body{margin:0}
+		#grid{display:flex;flex-wrap:wrap;gap:4px;padding:4px}
+		#grid>div{width:84px;height:22px;padding:2px 4px;background:#eee;
+			border:1px solid #bbb;font-size:11px;box-sizing:border-box}
+		#a:hover{margin-bottom:8px}</style>
+		<div id="grid"><div id="a">A</div>` + strings.Repeat("<div>B</div>", 8) +
+		`</div><p id="after">After the grid</p>` + strings.Repeat("<p>Outside</p>", 16)
+	newPage := func(retain bool) *Page {
+		p, err := New(Config{HTML: source, Width: 760, Height: 520, RetainState: retain})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := p.Redraw(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	retained, full := newPage(true), newPage(false)
+	initial := boxByID(full, "a")
+	initialAfterY := boxByID(full, "after").Y
+	cycle := func() {
+		hoverAt(t, retained, "a")
+		hoverAt(t, full, "a")
+		hovered := boxByID(full, "a")
+		if initial.X != hovered.X || initial.Y != hovered.Y ||
+			initial.W != hovered.W || initial.H != hovered.H || boxByID(full, "after").Y <= initialAfterY {
+			t.Fatal("fixture must move content after the grid while keeping the hovered box in place")
+		}
+		assertSameDisplay(t, retained, full)
+		for _, page := range []*Page{retained, full} {
+			if err := page.Hover(t.Context(), -1, -1); err != nil {
+				t.Fatal(err)
+			}
+		}
+		assertSameDisplay(t, retained, full)
+	}
+	cycle()
+	first := retained.Stats()
+	if first.HoverPatchErrors != 4 || first.HoverFallbacks != 2 {
+		t.Fatalf("first cycle errors=%d fallbacks=%d, want 4 errors and 2 fallbacks",
+			first.HoverPatchErrors, first.HoverFallbacks)
+	}
+	cycle()
+	second := retained.Stats()
+	if second.HoverPatchErrors != first.HoverPatchErrors || second.HoverFallbacks != first.HoverFallbacks+2 {
+		t.Fatalf("repeat cycle errors=%d fallbacks=%d, want 4 errors and 4 fallbacks",
+			second.HoverPatchErrors, second.HoverFallbacks)
+	}
+}
+
 func TestHoverPatchFailureStatsIncludeStageReasonAndTarget(t *testing.T) {
 	p, err := New(Config{
 		HTML:  `<style>#e{width:100px;height:20px}#e:hover{color:red}#f{width:100px;height:20px}</style><div id="e">a</div><div id="f">b</div>`,
