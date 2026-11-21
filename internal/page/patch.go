@@ -546,9 +546,22 @@ func hoverPatchRoots(p *Page, styled *css.Document, state render.State) ([]strin
 		return nil, false
 	}
 
-	if key := hoverGuardHash(p.source, p.themeSrc); key != p.hoverGuardHash {
-		p.hoverGuardHash = key
-		p.hoverRiskGlobal, p.hoverRiskScopes = draw.HoverPatchRiskyScopes(p.source, p.themeSrc)
+	guardHit := p.sourceRev != 0 &&
+		p.hoverGuardSrcRev == p.sourceRev &&
+		p.hoverGuardSrcHash == p.sourceHash &&
+		p.hoverGuardSrcLen == p.sourceLen &&
+		p.hoverGuardTheme == p.themeSrc
+	if !guardHit {
+		if key := hoverGuardHash(p.source, p.themeSrc); key != p.hoverGuardHash {
+			p.hoverGuardHash = key
+			p.hoverRiskGlobal, p.hoverRiskScopes = draw.HoverPatchRiskyScopes(p.source, p.themeSrc)
+		}
+		if p.sourceRev != 0 {
+			p.hoverGuardSrcRev = p.sourceRev
+			p.hoverGuardSrcHash = p.sourceHash
+			p.hoverGuardSrcLen = p.sourceLen
+			p.hoverGuardTheme = p.themeSrc
+		}
 	}
 
 	key := keyFor(p, state)

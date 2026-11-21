@@ -3,6 +3,7 @@ package motion
 import (
 	"image"
 	"math"
+	"math/bits"
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -137,6 +138,19 @@ func transitionPropertyList() []string {
 	return transitionProperties
 }
 
+const maxCaptureScratchMap = 4096
+
+var (
+	allTransitionPropMask   = (uint64(1) << len(transitionProperties)) - 1
+	transitionPropertyIndex = func() map[string]uint {
+		m := make(map[string]uint, len(transitionProperties))
+		for i, prop := range transitionProperties {
+			m[prop] = uint(i)
+		}
+		return m
+	}()
+)
+
 // transitionPaintTarget maps a property to the operations and paint fields a
 // paint renderer writes. It is transitionClass plus position, which moves the
 // captured operations at the halfway point but must not offer itself to the
@@ -177,18 +191,6 @@ func transitionClass(property string) (Kind, Mask, bool) {
 func transitionMask(property string) Mask {
 	_, mask, _ := transitionPaintTarget(property)
 	return mask
-}
-
-// transitionSupported reports whether a record for property can reach one of
-// the capture paths. A property outside this set is not claimed: the commit
-// snaps it and no renderer is built.
-func transitionSupported(property string) bool {
-	if _, _, ok := transitionPaintTarget(property); ok {
-		return true
-	}
-
-	return transitionGeometryProperty(property) || transitionDiscreteProperty(property) ||
-		transitionReportProperty(property)
 }
 
 // clampTransitionProgress keeps a sampled or computed progress inside the
@@ -234,9 +236,15 @@ func transitionRecords(box layout.Box) map[string]layout.Transition {
 }
 
 func fillTransitionRecords(out map[string]layout.Transition, transitions []layout.Transition) map[string]layout.Transition {
+	out, _ = fillTransitionRecordsMask(out, transitions)
+	return out
+}
+
+func fillTransitionRecordsMask(out map[string]layout.Transition, transitions []layout.Transition) (map[string]layout.Transition, uint64) {
 	if out != nil {
 		clear(out)
 	}
+	var mask uint64
 	for i := range transitions {
 		item := transitions[i]
 		if item.Property == "all" {
@@ -246,17 +254,59 @@ func fillTransitionRecords(out map[string]layout.Transition, transitions []layou
 				}
 				out[property] = item
 			}
+			mask = allTransitionPropMask
 			continue
 		}
-		if !transitionSupported(item.Property) {
+		idx, ok := transitionPropertyIndex[item.Property]
+		if !ok {
 			continue
 		}
 		if out == nil {
 			out = make(map[string]layout.Transition)
 		}
 		out[item.Property] = item
+		mask |= 1 << idx
 	}
-	return out
+	return out, mask
+}
+
+// alignedBoxes reports whether previous and next carry the same box count and
+// identical element IDs at every index, allowing direct index pairing without
+// building a lookup map.
+func alignedBoxes(previous, next []layout.Box) bool {
+	if len(previous) != len(next) {
+		return false
+	}
+	if len(previous) > 0 && &previous[0] == &next[0] {
+		return true
+	}
+	for i := range previous {
+		if previous[i].ID != next[i].ID {
+			return false
+		}
+	}
+	return true
+}
+
+// indexBoxesInto fills dst with id-bearing boxes filtered by filter, reusing
+// both dst and ordinals maps to avoid per-frame allocations.
+func indexBoxesInto(boxes []layout.Box, filter map[string]struct{}, dst map[entryKey]boxRef, ordinals map[string]int) {
+	clear(dst)
+	clear(ordinals)
+	for i := range boxes {
+		box := boxes[i]
+		if box.ID == "" {
+			continue
+		}
+		if filter != nil {
+			if _, ok := filter[box.ID]; !ok {
+				continue
+			}
+		}
+		ordinal := ordinals[box.ID]
+		ordinals[box.ID] = ordinal + 1
+		dst[entryKey{id: box.ID, ordinal: ordinal}] = boxRef{box: box, index: i}
+	}
 }
 
 // boxRef is one element box and its position in a display.
@@ -325,16 +375,18 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		return nil
 	}
 
-	var transitionIDs map[string]struct{}
+	if r.capIDs == nil {
+		r.capIDs = make(map[string]struct{})
+	} else {
+		clear(r.capIDs)
+	}
+	transitionIDs := r.capIDs
 	hasNextTransitions := false
 	for i := range next.Boxes {
 		box := &next.Boxes[i]
 		if len(box.Transitions) != 0 {
 			hasNextTransitions = true
 			if box.ID != "" {
-				if transitionIDs == nil {
-					transitionIDs = make(map[string]struct{})
-				}
 				transitionIDs[box.ID] = struct{}{}
 			} else {
 				r.transitionCapture.noID++
@@ -344,9 +396,6 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 	for i := range previous.Boxes {
 		box := &previous.Boxes[i]
 		if len(box.Transitions) != 0 && box.ID != "" {
-			if transitionIDs == nil {
-				transitionIDs = make(map[string]struct{})
-			}
 			transitionIDs[box.ID] = struct{}{}
 		}
 	}
@@ -354,9 +403,38 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		return nil
 	}
 
-	oldBoxes := indexBoxes(previous.Boxes, transitionIDs)
+	if r.capOrdinals == nil {
+		r.capOrdinals = make(map[string]int, len(transitionIDs))
+	} else {
+		clear(r.capOrdinals)
+	}
+	aligned := alignedBoxes(previous.Boxes, next.Boxes)
+	var oldBoxes map[entryKey]boxRef
+	if !aligned {
+		if r.capOldBoxes == nil {
+			r.capOldBoxes = make(map[entryKey]boxRef, len(transitionIDs))
+		}
+		oldBoxes = r.capOldBoxes
+		indexBoxesInto(previous.Boxes, transitionIDs, oldBoxes, r.capOrdinals)
+		clear(r.capOrdinals)
+	}
+	defer func() {
+		clear(r.capIDs)
+		clear(r.capOrdinals)
+		clear(r.capOldBoxes)
+		if len(r.capIDs) > maxCaptureScratchMap {
+			r.capIDs = nil
+		}
+		if len(r.capOrdinals) > maxCaptureScratchMap {
+			r.capOrdinals = nil
+		}
+		if len(r.capOldBoxes) > maxCaptureScratchMap {
+			r.capOldBoxes = nil
+		}
+	}()
+
 	var out []TransitionCapture
-	ordinals := make(map[string]int, len(oldBoxes))
+	ordinals := r.capOrdinals
 	// Both displays are resolved through one shared index each, so the
 	// per-property selections below share two ownership scans instead of
 	// repeating them for every transitioning element. The indices are built
@@ -367,7 +445,6 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		prevIndex = r.indexFor(previous)
 		nextIndex = r.indexFor(next)
 	}
-	var records map[string]layout.Transition
 	for i := range next.Boxes {
 		box := next.Boxes[i]
 		if box.ID == "" {
@@ -382,8 +459,16 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 			continue
 		}
 		key := entryKey{id: box.ID, ordinal: ordinal}
-		records = fillTransitionRecords(records, box.Transitions)
-		old, ok := oldBoxes[key]
+		var propMask uint64
+		r.capRecords, propMask = fillTransitionRecordsMask(r.capRecords, box.Transitions)
+		records := r.capRecords
+		var old boxRef
+		var ok bool
+		if aligned {
+			old, ok = boxRef{box: previous.Boxes[i], index: i}, true
+		} else {
+			old, ok = oldBoxes[key]
+		}
 		if !ok {
 			r.transitionCapture.noOld++
 			if _, declared := records["display"]; declared {
@@ -394,11 +479,9 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		animated := layoutAnimatedProperties(next, box)
 		current := boxRef{box: box, index: i}
 		var seen []transitionTarget
-		for _, property := range transitionPropertyList() {
-			record, ok := records[property]
-			if !ok {
-				continue
-			}
+		for remaining := propMask; remaining != 0; remaining &= remaining - 1 {
+			property := transitionProperties[bits.TrailingZeros64(remaining)]
+			record := records[property]
 			if transitionGeometryProperty(property) {
 				if ordinal > 0 {
 					// The engine addresses an element by id, so a repeated id
@@ -462,12 +545,14 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 				continue
 			}
 			_, mask, _ := transitionPaintTarget(property)
+			tKey := transitionKey{element: key, property: property}
+			live := r.liveTransition(tKey)
 			capture, changed, ok := captureTransition(previous, old, next, current,
-				property, record, &r.transitionCapture, prevIndex, nextIndex)
+				property, record, live != nil, &r.transitionCapture, prevIndex, nextIndex)
 			if !ok {
 				continue
 			}
-			capture.key = transitionKey{element: key, property: property}
+			capture.key = tKey
 			capture.kind = transitionPaint
 			if !changed {
 				// The new computed value is already the paint on screen. That
@@ -475,7 +560,6 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 				// somewhere else: a delayed run interrupted back to its start
 				// value, or a target that happens to equal the presented
 				// sample. Both cancel without a replacement.
-				live := r.liveTransition(capture.key)
 				if live == nil || samePaintSet(capture.to, live.to, mask) {
 					continue
 				}
@@ -504,7 +588,9 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		}
 	}
 
-	r.noteDisplayExits(previous, next, transitionIDs)
+	if !aligned {
+		r.noteDisplayExits(previous, next, transitionIDs)
+	}
 	return out
 }
 
@@ -542,7 +628,7 @@ func sameTransitionTarget(seen []transitionTarget, indices []int, mask Mask) boo
 // still useful to the caller when a live run is heading elsewhere. ok is false
 // when the operation set itself cannot carry a transition.
 func captureTransition(previous *Display, old boxRef, next *Display, current boxRef,
-	property string, record layout.Transition,
+	property string, record layout.Transition, hasLive bool,
 	counts *transitionCaptureCounts, prevIndex, nextIndex *Index) (capture TransitionCapture, changed, ok bool) {
 	kind, mask, ok := transitionPaintTarget(property)
 	if !ok {
@@ -568,10 +654,35 @@ func captureTransition(previous *Display, old boxRef, next *Display, current box
 	}
 
 	matrix := mask == MaskMatrix
+	if !hasLive && transitionPaintsEqual(previous, oldIndices, next, newIndices, mask, matrix) {
+		return TransitionCapture{}, false, false
+	}
 	from := readTransitionPaints(previous, oldIndices, mask, matrix)
 	to := readTransitionPaints(next, newIndices, mask, matrix)
 	return TransitionCapture{indices: newIndices, from: from, to: to, record: record,
 		property: property}, paintSetChanged(from, to, mask), true
+}
+
+// transitionPaintsEqual checks whether every paired operation keeps the same
+// masked paint without allocating from/to Paint slices.
+func transitionPaintsEqual(previous *Display, oldIndices []int, next *Display, newIndices []int,
+	mask Mask, matrix bool) bool {
+	for i := range oldIndices {
+		from := Read(&previous.Ops[oldIndices[i]])
+		to := Read(&next.Ops[newIndices[i]])
+		if matrix {
+			if !from.HasMatrix {
+				from.Matrix, from.HasMatrix = layout.IdentityMatrix(), true
+			}
+			if !to.HasMatrix {
+				to.Matrix, to.HasMatrix = layout.IdentityMatrix(), true
+			}
+		}
+		if paintChanged(from, to, mask) {
+			return false
+		}
+	}
+	return true
 }
 
 // liveTransition returns the running entry for one element and property, or
@@ -810,7 +921,21 @@ func (r *Runtime) BindTransitions(next *Display, captures []TransitionCapture, n
 		return
 	}
 
-	elements := indexBoxes(next.Boxes, nil)
+	filter := make(map[string]struct{}, len(captures)+len(r.transitions)+len(r.geometry)+len(r.discrete))
+	for i := range captures {
+		filter[captures[i].key.element.id] = struct{}{}
+	}
+	for i := range r.transitions {
+		filter[r.transitions[i].key.element.id] = struct{}{}
+	}
+	for i := range r.geometry {
+		filter[r.geometry[i].key.element.id] = struct{}{}
+	}
+	for i := range r.discrete {
+		filter[r.discrete[i].key.element.id] = struct{}{}
+	}
+
+	elements := indexBoxes(next.Boxes, filter)
 	records := make(map[entryKey]map[string]layout.Transition, len(elements))
 	for key, ref := range elements {
 		if len(ref.box.Transitions) != 0 {
@@ -996,7 +1121,23 @@ func (r *Runtime) AdoptTransitions(next *Display) {
 	if r == nil || next == nil {
 		return
 	}
-	r.keepTransitions(next, indexBoxes(next.Boxes, nil), nil, nil)
+	if len(r.transitions) == 0 && len(r.geometry) == 0 && len(r.discrete) == 0 {
+		r.stats.TransitionsBound = 0
+		r.stats.TransitionsActive = 0
+		r.stats.TransitionsSampled = 0
+		return
+	}
+	filter := make(map[string]struct{}, len(r.transitions)+len(r.geometry)+len(r.discrete))
+	for i := range r.transitions {
+		filter[r.transitions[i].key.element.id] = struct{}{}
+	}
+	for i := range r.geometry {
+		filter[r.geometry[i].key.element.id] = struct{}{}
+	}
+	for i := range r.discrete {
+		filter[r.discrete[i].key.element.id] = struct{}{}
+	}
+	r.keepTransitions(next, indexBoxes(next.Boxes, filter), nil, nil)
 	r.stats.TransitionsBound = len(r.transitions) + len(r.geometry) + len(r.discrete)
 	if r.stats.TransitionsBound == 0 {
 		r.stats.TransitionsActive = 0

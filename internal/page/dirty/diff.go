@@ -470,58 +470,152 @@ func regionPtrsEqual(prev, next []layout.DisplayOp) bool {
 	return true
 }
 
+const (
+	stampShiftStrokeMask   = 8
+	stampShiftLineInset    = 16
+	stampBitBold           = 1 << 24
+	stampBitFakeOblique    = 1 << 25
+	stampBitIsJPEG         = 1 << 26
+	stampBitIsBackground   = 1 << 27
+	stampBitFixed          = 1 << 28
+	stampBitPinned         = 1 << 29
+	stampBitPositioned     = 1 << 30
+	stampBitZIndexSet      = 1 << 31
+	stampBitXformSet       = 1 << 32
+	stampBitHasBoundExtra  = 1 << 33
+	stampTagTextTerminator = 0xff
+	stampTagLetterSpacing  = 1
+	stampTagRadii          = 2
+)
+
 // mixOpStamp folds every SameOp input except the Font and Grid identities.
 func mixOpStamp(h uint64, o *layout.DisplayOp) (uint64, bool) {
-	h = mixStamp(h, uint64(o.Kind))
-	h = mixStampStr(h, o.Text)
-	h = mixStampBool(h, o.Bold)
-	h = mixStampBool(h, o.FakeOblique)
-	h = mixStampBool(h, o.IsJPEG)
-	h = mixStampBool(h, o.IsBackground)
-	h = mixStampBool(h, o.Fixed)
-	h = mixStampBool(h, o.Pinned)
-	h = mixStampBool(h, o.Positioned)
-	h = mixStampBool(h, o.ZIndexSet)
-	h = mixStampBool(h, o.XformSet)
-	h = mixStampInt(h, o.ZIndex)
-	h = mixStampInt(h, o.StickyID)
-	h = mixStamp(h, uint64(o.StrokeMask))
-	h = mixStamp(h, uint64(o.LineInset))
-	h = mixStampStr(h, o.LinkURI())
-	h = mixStampStr(h, o.ImageAlt())
-	h = mixStampStr(h, o.BlendModeName())
-	h = mixStampStr(h, o.FontFeatures())
-	h = mixStampStr(h, o.TextLanguage())
-	h = mixStampStr(h, o.TextAutospace())
-	h = mixStampStr(h, o.TextTransformValue())
-	h = mixStampBool(h, o.NoFakeBoldValue())
-	h = mixStampBool(h, o.Outline())
-	h = mixStamp(h, uint64(o.GroupBoundary()))
-
-	nums := numOf(o)
+	// Pack the kind, stroke/inset masks, and nine bool flags into one word so
+	// one FNV step covers all twelve discrete header fields.
+	flags := uint64(o.Kind) |
+		(uint64(o.StrokeMask) << stampShiftStrokeMask) |
+		(uint64(o.LineInset) << stampShiftLineInset)
+	if o.Bold {
+		flags |= stampBitBold
+	}
+	if o.FakeOblique {
+		flags |= stampBitFakeOblique
+	}
+	if o.IsJPEG {
+		flags |= stampBitIsJPEG
+	}
+	if o.IsBackground {
+		flags |= stampBitIsBackground
+	}
+	if o.Fixed {
+		flags |= stampBitFixed
+	}
+	if o.Pinned {
+		flags |= stampBitPinned
+	}
+	if o.Positioned {
+		flags |= stampBitPositioned
+	}
+	if o.ZIndexSet {
+		flags |= stampBitZIndexSet
+	}
+	if o.XformSet {
+		flags |= stampBitXformSet
+	}
+	if o.HasBoundExtra() {
+		flags |= stampBitHasBoundExtra
+	}
+	h = (h ^ flags) * stampPrime
 	var ok bool
-	if h, ok = mixStampFloats(h, nums[:]); !ok {
+	if o.ZIndex != 0 || o.StickyID != 0 || o.RotateDeg != 0 {
+		h = mixStampInt(h, o.ZIndex)
+		h = mixStampInt(h, o.StickyID)
+		if h, ok = mixStampFloat(h, float64(o.RotateDeg)); !ok {
+			return h, false
+		}
+	}
+	if o.Text != "" {
+		h = mixStampStr(h, o.Text)
+		h = (h ^ stampTagTextTerminator) * stampPrime
+	}
+
+	if h, ok = mixStampFloat(h, o.X); !ok {
+		return h, false
+	}
+	if h, ok = mixStampFloat(h, o.Y); !ok {
+		return h, false
+	}
+	if h, ok = mixStampFloat(h, o.W); !ok {
+		return h, false
+	}
+	if h, ok = mixStampFloat(h, o.H); !ok {
+		return h, false
+	}
+	if h, ok = mixStampFloat(h, o.R); !ok {
+		return h, false
+	}
+	if h, ok = mixStampFloat(h, o.G); !ok {
+		return h, false
+	}
+	if h, ok = mixStampFloat(h, o.B); !ok {
+		return h, false
+	}
+	if h, ok = mixStampFloat(h, o.Alpha); !ok {
+		return h, false
+	}
+	if h, ok = mixStampFloat(h, o.Width); !ok {
+		return h, false
+	}
+	if h, ok = mixStampFloat(h, o.Size); !ok {
 		return h, false
 	}
 
-	m := o.Transform()
-	mats := [8]float64{m.A, m.B, m.C, m.D, m.E, m.F, o.Opacity(), float64(o.RotateDeg)}
-	if h, ok = mixStampFloats(h, mats[:]); !ok {
-		return h, false
+	// NaN != 0 is true, so any NaN enters these blocks and returns ok=false.
+	if o.LetterSpacing != 0 || o.InkDescent != 0 {
+		h = (h ^ stampTagLetterSpacing) * stampPrime
+		if h, ok = mixStampFloat(h, o.LetterSpacing); !ok {
+			return h, false
+		}
+		if h, ok = mixStampFloat(h, o.InkDescent); !ok {
+			return h, false
+		}
 	}
 
-	ab, aw, ah := o.ImageBytes()
-	h = mixStampInt(h, aw)
-	h = mixStampInt(h, ah)
-	h = mixStampInt(h, len(ab))
-	h = mixStampBytes(h, ab)
+	if o.Radius != 0 || o.RadiusY != 0 ||
+		o.RadiusTopLeft != 0 || o.RadiusTopRight != 0 ||
+		o.RadiusBottomRight != 0 || o.RadiusBottomLeft != 0 ||
+		o.RadiusTopLeftY != 0 || o.RadiusTopRightY != 0 ||
+		o.RadiusBottomRightY != 0 || o.RadiusBottomLeftY != 0 {
+		h = (h ^ stampTagRadii) * stampPrime
+		radii := [10]float64{
+			o.Radius, o.RadiusY,
+			o.RadiusTopLeft, o.RadiusTopRight,
+			o.RadiusBottomRight, o.RadiusBottomLeft,
+			o.RadiusTopLeftY, o.RadiusTopRightY,
+			o.RadiusBottomRightY, o.RadiusBottomLeftY,
+		}
+		if h, ok = mixStampFloats(h, radii[:]); !ok {
+			return h, false
+		}
+	}
+
+	if o.HasExtra() {
+		if h, ok = o.MixExtraStamp(h, stampPrime); !ok {
+			return h, false
+		}
+	}
 
 	return h, true
 }
 
-// mixStamp folds one value into an FNV-1a chain.
-func mixStamp(h, v uint64) uint64 {
-	return (h ^ v) * stampPrime
+func mixStampFloat(h uint64, v float64) (uint64, bool) {
+	if v != v {
+		return h, false
+	}
+	if v == 0 {
+		return h * stampPrime, true
+	}
+	return (h ^ math.Float64bits(v)) * stampPrime, true
 }
 
 // mixStampInt folds a paint int. Negative values wrap, which stays
@@ -532,26 +626,10 @@ func mixStampInt(h uint64, v int) uint64 {
 	return (h ^ uint64(v)) * stampPrime
 }
 
-// mixStampBool folds one flag.
-func mixStampBool(h uint64, v bool) uint64 {
-	if v {
-		h ^= 1
-	}
-	return h * stampPrime
-}
-
 // mixStampStr folds string bytes without allocating.
 func mixStampStr(h uint64, s string) uint64 {
 	for i := 0; i < len(s); i++ {
 		h = (h ^ uint64(s[i])) * stampPrime
-	}
-	return h
-}
-
-// mixStampBytes folds a payload without retaining it.
-func mixStampBytes(h uint64, b []byte) uint64 {
-	for i := 0; i < len(b); i++ {
-		h = (h ^ uint64(b[i])) * stampPrime
 	}
 	return h
 }

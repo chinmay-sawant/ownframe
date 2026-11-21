@@ -81,6 +81,13 @@ type Runtime struct {
 	// promotion read allocates nothing.
 	layerEntries []LayerEntry
 
+	// Scratch maps reused by CaptureTransitions across frames so steady-state
+	// commits avoid rebuilding per-element lookup maps on every hover.
+	capIDs      map[string]struct{}
+	capOrdinals map[string]int
+	capOldBoxes map[entryKey]boxRef
+	capRecords  map[string]layout.Transition
+
 	// now is the clock a newly bound effect starts at. Tests replace it.
 	now func() time.Time
 }

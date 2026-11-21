@@ -677,7 +677,7 @@ func kidRect(p *Page, id string) (image.Rectangle, bool) {
 	k := &e.kid
 	switch {
 	case !k.ready:
-		k.index = dirty.BuildKidIndex(k.boxList)
+		k.index.Rebuild(k.boxList)
 		k.ready = true
 		k.staleRects = false
 	case k.staleRects:

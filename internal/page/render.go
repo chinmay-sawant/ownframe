@@ -521,10 +521,15 @@ type renderTrack struct {
 	// true means unknown, which keeps the old redraw behavior.
 	statePseudos render.StatePseudos
 	// hoverGuardHash keys the hover risk scan input: the committed source
-	// plus the theme. A hash keeps no extra copy of either string alive.
-	hoverGuardHash  uint64
-	hoverRiskGlobal bool
-	hoverRiskScopes []string
+	// plus the theme. When sourceRev is nonzero, sourceHash/sourceLen/sourceRev
+	// plus themeSrc header equality avoid re-hashing the document on every hover.
+	hoverGuardHash    uint64
+	hoverGuardSrcHash uint64
+	hoverGuardSrcLen  int
+	hoverGuardSrcRev  uint64
+	hoverGuardTheme   string
+	hoverRiskGlobal   bool
+	hoverRiskScopes   []string
 	// hoverScopeKey is built by keyFor like last, so it pins no source
 	// copy once the source memo carries a nonzero revision.
 	hoverScopeKey      draw.Key

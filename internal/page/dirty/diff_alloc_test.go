@@ -650,3 +650,60 @@ func legacyDiffByPosition(prev, next *layout.Display) (Set, bool, int) {
 
 	return d, false, changed
 }
+
+func TestKidIndexRebuildMatchesNewAndReusesBacking(t *testing.T) {
+	boxes := []layout.Box{
+		{ID: "root", ParentIndex: -1, X: 0, Y: 0, W: 800, H: 600},
+		{ID: "a", ParentIndex: 0, X: 10, Y: 10, W: 100, H: 40},
+		{ID: "b", ParentIndex: 0, X: 10, Y: 60, W: 100, H: 40},
+		{ID: "c", ParentIndex: 1, X: 12, Y: 12, W: 80, H: 20},
+	}
+
+	want := BuildKidIndex(boxes)
+	got := BuildKidIndex(boxes)
+	got.Rebuild(boxes)
+
+	if len(got.rects) != len(want.rects) || len(got.byID) != len(want.byID) {
+		t.Fatalf("Rebuild size mismatch: got (%d,%d), want (%d,%d)",
+			len(got.rects), len(got.byID), len(want.rects), len(want.byID))
+	}
+	for i := range want.rects {
+		if got.rects[i] != want.rects[i] {
+			t.Fatalf("rect[%d] = %v, want %v", i, got.rects[i], want.rects[i])
+		}
+	}
+
+	allocs := testing.AllocsPerRun(50, func() {
+		got.Rebuild(boxes)
+	})
+	if allocs != 0 {
+		t.Fatalf("KidIndex.Rebuild allocated %.1f times in steady state, want 0", allocs)
+	}
+}
+
+func TestSameOpAndStampEmptyVsBoundExtra(t *testing.T) {
+	var a, b layout.DisplayOp
+	a.Kind = layout.DisplayOpFillRect
+	a.W, a.H = 20, 10
+	b = a
+	b.BindEmptyExtra()
+
+	if SameOp(&a, &b) {
+		t.Fatal("nil extra and bound emptyExtra must compare SameOp=false")
+	}
+
+	sa, oka := stampRegionOps([]layout.DisplayOp{a})
+	sb, okb := stampRegionOps([]layout.DisplayOp{b})
+	if !oka || !okb || sa == sb {
+		t.Fatalf("nil vs bound emptyExtra stamps should differ: ok=(%v,%v) stamps=(%d,%d)", oka, okb, sa, sb)
+	}
+
+	c := b
+	if !SameOp(&b, &c) {
+		t.Fatal("two identical bound emptyExtra ops must compare SameOp=true")
+	}
+	sc, okc := stampRegionOps([]layout.DisplayOp{c})
+	if !okc || sb != sc {
+		t.Fatalf("identical bound emptyExtra ops must hash equal: (%d vs %d)", sb, sc)
+	}
+}
