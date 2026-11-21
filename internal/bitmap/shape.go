@@ -20,13 +20,11 @@ func paintShape(img *image.NRGBA, op *layout.DisplayOp) {
 	}
 	if op.Kind == layout.DisplayOpLine {
 		lx, ly, w, h, width := op.PaintLineGeometry()
-		lineW := max(width, 1/pxPerPt)
-		if math.Hypot(w, h) == 0 {
+		line := newLineCoverage(lx, ly, w, h, max(width, 1/pxPerPt))
+		if line.length == 0 {
 			return
 		}
-		paintCoverage(img, op, bounds, func(x, y float64) bool {
-			return onLine(x, y, lx, ly, w, h, lineW)
-		})
+		paintCoverage(img, op, bounds, line.contains)
 		return
 	}
 	rx, ry := masking.RadiiXY(op)
@@ -42,8 +40,18 @@ func paintShape(img *image.NRGBA, op *layout.DisplayOp) {
 	}
 	width := max(op.Width, 1/pxPerPt)
 	if op.StrokeMask != 0 {
+		var sides [4]lineCoverage
+		lines := maskedStrokeLines(op, width, sides[:0])
+		if len(lines) == 0 {
+			return
+		}
 		paintCoverage(img, op, bounds, func(x, y float64) bool {
-			return onStrokeMask(op, x, y, width)
+			for i := range lines {
+				if lines[i].contains(x, y) {
+					return true
+				}
+			}
+			return false
 		})
 		return
 	}
@@ -301,14 +309,26 @@ func paintCoverage(img *image.NRGBA, op *layout.DisplayOp, bounds image.Rectangl
 	if c.A == 0 {
 		return
 	}
+	var matrix layout.Matrix2D
+	var determinant float64
+	if op.XformSet {
+		matrix = op.Transform()
+		determinant = matrix.A*matrix.D - matrix.B*matrix.C
+		if determinant == 0 {
+			return
+		}
+	}
 
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			count := 0
 			for _, oy := range [2]float64{.25, .75} {
 				for _, ox := range [2]float64{.25, .75} {
-					px, py, ok := untransform(op, (float64(x)+ox)/pxPerPt, (float64(y)+oy)/pxPerPt)
-					if ok && hit(px, py) {
+					px, py := (float64(x)+ox)/pxPerPt, (float64(y)+oy)/pxPerPt
+					if op.XformSet {
+						px, py = untransform(&matrix, determinant, px, py)
+					}
+					if hit(px, py) {
 						count++
 					}
 				}

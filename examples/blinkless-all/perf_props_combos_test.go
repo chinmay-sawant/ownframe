@@ -12,6 +12,8 @@ type comboEntry struct {
 	Kind                 string   `json:"kind"`
 	Name                 string   `json:"name"`
 	Props                []string `json:"props"`
+	BaseStyle            string   `json:"base_style"`
+	HoverStyle           string   `json:"hover_style"`
 	HighPrecision        bool     `json:"high_precision"`
 	ColdNS               int64    `json:"cold_ns"`
 	ColdDeltaNS          int64    `json:"cold_delta_ns"`
@@ -183,6 +185,8 @@ func measureCombo(ctx context.Context, spec comboSpec, iters int, highPrecision 
 		Kind:          spec.Kind,
 		Name:          spec.Name,
 		Props:         spec.Props,
+		BaseStyle:     spec.BaseStyle,
+		HoverStyle:    spec.HoverStyle,
 		HighPrecision: highPrecision,
 	}
 
@@ -249,7 +253,14 @@ func measureCombo(ctx context.Context, spec comboSpec, iters int, highPrecision 
 	return entry
 }
 
-func runComboMatrix(ctx context.Context, rows []propDumpRow, opts propBenchOpts, base sharedBaselines, progress func(string)) []comboEntry {
+func runComboMatrix(
+	ctx context.Context,
+	rows, selectionRows []propDumpRow,
+	reference []comboEntry,
+	opts propBenchOpts,
+	base sharedBaselines,
+	progress func(string),
+) ([]comboEntry, error) {
 	byName := make(map[string]propDumpRow, len(rows))
 	for _, r := range rows {
 		byName[r.Name] = r
@@ -297,7 +308,7 @@ func runComboMatrix(ctx context.Context, rows []propDumpRow, opts propBenchOpts,
 	// Layer B: Auto-selected Top-M offender pairwise from Tier 1.
 	if opts.TopPairs >= propBenchHalfDiv {
 		candidates := make([]propDumpRow, 0, len(rows))
-		for _, r := range rows {
+		for _, r := range selectionRows {
 			if r.Err == "" && r.Effective {
 				candidates = append(candidates, r)
 			}
@@ -319,6 +330,7 @@ func runComboMatrix(ctx context.Context, rows []propDumpRow, opts propBenchOpts,
 		for i := range top {
 			for j := i + 1; j < len(top); j++ {
 				a, b := top[i], top[j]
+				currentA, currentB := byName[a.Name], byName[b.Name]
 				decl := a.Name + ":" + a.Sample + ";" + b.Name + ":" + b.Sample + ";"
 				specs = append(specs, comboSpec{
 					Kind:       "top-offender-pair",
@@ -326,9 +338,9 @@ func runComboMatrix(ctx context.Context, rows []propDumpRow, opts propBenchOpts,
 					Props:      []string{a.Name, b.Name},
 					BaseStyle:  decl,
 					HoverStyle: decl,
-					SumScale:   max(0, a.Scale64DeltaNS) + max(0, b.Scale64DeltaNS),
-					SumHover:   max(0, a.HoverDeltaNS) + max(0, b.HoverDeltaNS),
-					SumRaster:  max(0, a.RasterDeltaNS) + max(0, b.RasterDeltaNS),
+					SumScale:   max(0, currentA.Scale64DeltaNS) + max(0, currentB.Scale64DeltaNS),
+					SumHover:   max(0, currentA.HoverDeltaNS) + max(0, currentB.HoverDeltaNS),
+					SumRaster:  max(0, currentA.RasterDeltaNS) + max(0, currentB.RasterDeltaNS),
 				})
 			}
 		}
@@ -352,7 +364,7 @@ func runComboMatrix(ctx context.Context, rows []propDumpRow, opts propBenchOpts,
 	// Layer D: Deterministic seeded multi-property fuzz stacks (math/rand/v2).
 	if opts.FuzzCount > 0 {
 		pool := make([]propDumpRow, 0, len(rows))
-		for _, r := range rows {
+		for _, r := range selectionRows {
 			if r.Err == "" && r.Effective && !strings.HasPrefix(r.Name, "-webkit-") {
 				pool = append(pool, r)
 			}
@@ -398,14 +410,35 @@ func runComboMatrix(ctx context.Context, rows []propDumpRow, opts propBenchOpts,
 		}
 	}
 
+	if opts.Reference != "" && len(reference) != len(specs) {
+		return nil, fmt.Errorf("reference has %d combinations, generated %d", len(reference), len(specs))
+	}
+
 	// Pass 1: Fast sweep across all combinations.
 	out := make([]comboEntry, len(specs))
 	for i, sp := range specs {
+		if opts.Reference != "" {
+			prior := reference[i]
+			if prior.Kind != sp.Kind || prior.Name != sp.Name || !slices.Equal(prior.Props, sp.Props) ||
+				prior.BaseStyle != sp.BaseStyle || prior.HoverStyle != sp.HoverStyle {
+				return nil, fmt.Errorf("reference fixture mismatch at %s %q", sp.Kind, sp.Name)
+			}
+		}
 		out[i] = measureCombo(ctx, sp, 1, false, base)
 		if progress != nil && ((i+1)%propBenchLogEvery == 0 || i+1 == len(specs)) {
 			progress(fmt.Sprintf("[tier2 sweep %d/%d] last=%s:%s (scale64=%.2fms hover=%.2fms)",
 				i+1, len(specs), sp.Kind, sp.Name, float64(out[i].Scale64NS)/propNSPerMS, float64(out[i].HoverNS)/propNSPerMS))
 		}
+	}
+
+	if opts.Reference != "" {
+		for i, prior := range reference {
+			if prior.HighPrecision {
+				out[i] = measureCombo(ctx, specs[i], min(propBenchComboRefineIt, opts.Iters), true, base)
+			}
+		}
+
+		return out, nil
 	}
 
 	// Pass 2: High-precision confirmation on top super-linear / heavy combos.
@@ -437,5 +470,5 @@ func runComboMatrix(ctx context.Context, rows []propDumpRow, opts propBenchOpts,
 		}
 	}
 
-	return out
+	return out, nil
 }

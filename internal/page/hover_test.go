@@ -364,6 +364,96 @@ func TestHoverPatchLeavingUnstyledPanel(t *testing.T) {
 	}
 }
 
+func TestHoverWithoutSelectorChangeKeepsSingleCaret(t *testing.T) {
+	source := `<style>#styled:hover{color:red}</style>` +
+		`<div id="styled">styled</div><div id="plain">plain</div><input id="field" value="text">`
+	p, err := New(Config{HTML: source, Width: 320, Height: 200, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	idle := p.PNG()
+	if err := p.Focus(t.Context(), "field"); err != nil {
+		t.Fatal(err)
+	}
+	p.TakeDirtyRects()
+	display := p.Display()
+	ops := len(display.Ops)
+	commit := p.Generation()
+	layer := p.LayerGeneration()
+	redraws := 0
+	p.SetAfterRedraw(func() { redraws++ })
+
+	hoverAt(t, p, "plain")
+
+	if p.Display() != display || len(display.Ops) != ops {
+		t.Fatalf("unchanged hover rebuilt display or changed its %d ops to %d", ops, len(display.Ops))
+	}
+	if p.LayerGeneration() != layer {
+		t.Fatal("unchanged hover invalidated retained layers")
+	}
+	if p.Generation() != commit+1 || redraws != 1 {
+		t.Fatalf("hover must commit and invoke the redraw hook; generation=%d hooks=%d", p.Generation(), redraws)
+	}
+	if _, ok := p.TakeDirtyRects(); !ok {
+		t.Fatal("hover did not retain pending box damage")
+	}
+
+	// A batched blur may have the same CSS focus key. That must still clear
+	// the caret even when the new hover changes no selector.
+	p.BeginRedrawBatch()
+	if err := p.Focus(t.Context(), ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Hover(t.Context(), 300, 180); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.EndRedrawBatch(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(p.PNG(), idle) {
+		t.Fatal("blur left the focused paint on screen")
+	}
+}
+
+func TestHoverReusesCascadeOnlyForKnownUnchangedScopes(t *testing.T) {
+	source := `<style>#styled:hover{background:red}</style>` +
+		`<div id="plain">plain</div><div id="styled">styled</div>`
+	p, err := New(Config{HTML: source, Width: 320, Height: 200, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	idle := p.PNG()
+	leave := func() {
+		t.Helper()
+		if err := p.Hover(t.Context(), 300, 180); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hoverAt(t, p, "plain")
+	leave()
+	known := p.cache.Styled()
+	hoverAt(t, p, "plain")
+	leave()
+	if p.cache.Styled() != known {
+		t.Fatal("a repeated hover with no changed selectors recascaded the document")
+	}
+
+	hoverAt(t, p, "styled")
+	if p.cache.Styled() == known || bytes.Equal(p.PNG(), idle) {
+		t.Fatal("hover with a changed selector reused stale styles")
+	}
+	leave()
+	if !bytes.Equal(p.PNG(), idle) {
+		t.Fatal("leaving styled hover did not restore idle paint")
+	}
+}
+
 const hoverPatchFixture = `<html><head><style>` +
 	`.row{width:200px;height:30px}` +
 	`.row:hover{background-color:#0c1015}` +

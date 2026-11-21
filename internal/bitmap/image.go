@@ -14,8 +14,13 @@ import (
 
 func clearWhite(img *image.NRGBA) {
 	pix := img.Pix
-	for i := range pix {
+	const seedSize = 32
+	filled := min(len(pix), seedSize)
+	for i := range pix[:filled] {
 		pix[i] = channelMax
+	}
+	for filled < len(pix) {
+		filled += copy(pix[filled:], pix[:filled])
 	}
 }
 

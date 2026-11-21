@@ -417,6 +417,9 @@ func recordPartial(p *Page, changed int, rects []image.Rectangle, d *Display) {
 	p.stats.dirtyOps = 0
 	p.stats.dirtyRegions = len(rects)
 	p.stats.dirtyArea = 0
+	if len(rects) == 0 {
+		return
+	}
 	for _, r := range rects {
 		p.stats.dirtyArea += r.Dx() * r.Dy()
 	}

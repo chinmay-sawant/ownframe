@@ -428,7 +428,12 @@ func layoutStaged(p *Page, ctx context.Context,
 	styled *css.Document,
 	state render.State) (*Display, error) {
 	hoverChanged := hoverPatchEligible(p, state) && p.last.Hover != state.Hover
-	if roots, ok := hoverPatchRoots(p, styled, state); ok {
+	var roots []string
+	var scoped bool
+	if hoverChanged {
+		roots, scoped = hoverPatchRoots(p, styled, state)
+	}
+	if scoped {
 		patched, err := listHoverPatched(p, ctx, styled, state, roots)
 		if err == nil {
 			p.stats.hoverPatches++
@@ -441,7 +446,8 @@ func layoutStaged(p *Page, ctx context.Context,
 		// contain no escaping selector at all. The geometric roots cannot prove
 		// which scope a :has or sibling-after-:hover rule belongs to.
 		if !hoverRiskAny(p) {
-			if geoRoots, geoOK := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover); geoOK {
+			geoRoots, geoOK := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
+			if geoOK && !slices.Equal(geoRoots, roots) {
 				patched, retryErr := listHoverPatched(p, ctx, styled, state, geoRoots)
 				if retryErr == nil {
 					p.stats.hoverPatches++
@@ -455,7 +461,7 @@ func layoutStaged(p *Page, ctx context.Context,
 
 	if hoverChanged {
 		p.stats.hoverFallbacks++
-		if _, ok := hoverPatchRoots(p, styled, state); !ok {
+		if !scoped {
 			reason := "no-patch-roots"
 			if hoverIsRisky(p, p.last.Hover, state.Hover) {
 				reason = "escaping-hover-selector"
@@ -544,10 +550,6 @@ func hoverPatchFailureSnapshot(p *Page) []host.HoverPatchFailureCount {
 const maxHoverScopes = 256
 
 func hoverPatchRoots(p *Page, styled *css.Document, state render.State) ([]string, bool) {
-	if !hoverPatchEligible(p, state) || p.last.Hover == state.Hover {
-		return nil, false
-	}
-
 	guardHit := p.sourceRev != 0 &&
 		p.hoverGuardSrcRev == p.sourceRev &&
 		p.hoverGuardSrcHash == p.sourceHash &&
@@ -588,6 +590,35 @@ type hoverScopePair struct{ previous, current string }
 type hoverScopeResult struct {
 	roots []string
 	ok    bool
+}
+
+// reuseUnchangedHoverStyle advances the style cache over a known empty scope.
+// HoverChangedScopes proved the prior and next hover match the same selectors,
+// so both states can share the document. A new pair still recascades before
+// finding its scopes, using a document with the new hover state.
+func reuseUnchangedHoverStyle(p *Page, state render.State) (*css.Document, bool) {
+	if len(p.hoverScopes) == 0 || p.last.Hover == state.Hover {
+		return nil, false
+	}
+	pair := hoverScopePair{p.last.Hover, state.Hover}
+	scope := p.hoverScopes[pair]
+	if !scope.ok || len(scope.roots) != 0 || !hoverPatchEligible(p, state) {
+		return nil, false
+	}
+	key := keyFor(p, state)
+	key.Hover = ""
+	if p.hoverScopeKey != key {
+		return nil, false
+	}
+
+	previous := state
+	previous.Hover = pair.previous
+	doc, ok := relayedDoc(p, previous)
+	if ok {
+		p.relayedHover = state.Hover
+	}
+
+	return doc, ok
 }
 
 func findHoverScopes(p *Page, styled *css.Document, state render.State) ([]string, bool) {
@@ -722,13 +753,16 @@ func sourceElementMatchesScopes(p *Page, id string, scopes []string) bool {
 // hoverPatchEligible reports whether this redraw changed only the hover:
 // the committed frame key matches the next one once the hover is ignored,
 // the committed display carries the retained layout state the patch splices
-// into, and no retained-state debt is pending.
+// into, and no retained-state debt or independent caret update is pending.
 func hoverPatchEligible(p *Page, state render.State) bool {
 	if !p.hasLast || p.draw.Display == nil || p.cache == nil {
 		return false
 	}
 
 	if !p.retainState || !p.lastRetain || p.restampRedraw {
+		return false
+	}
+	if currentCaretPaint(p) != p.lastCaret {
 		return false
 	}
 
@@ -758,6 +792,14 @@ func listHoverPatched(p *Page, ctx context.Context,
 	state render.State,
 	roots []string) (*Display, error) {
 	current := p.draw.Display
+	if len(roots) == 0 {
+		// The cascade proved that no selector changed, so there is no
+		// subtree to place. An empty commit scope keeps this distinct
+		// from a full layout when observing live transitions.
+		p.commitRoots = []string{}
+
+		return current, nil
+	}
 	options := layout.Options{Images: state.Images, RetainState: true}
 
 	if p.hoverPatch == nil {
@@ -798,9 +840,6 @@ func listHoverPatched(p *Page, ctx context.Context,
 		current = patch.Display
 	}
 
-	// The commit this display produces is scoped to these roots. An empty
-	// non-nil scope means the hover changed no selector: still scoped, so
-	// the transition capture can skip when no transitioning box is inside.
 	p.commitRoots = append([]string{}, roots...)
 
 	return current, nil

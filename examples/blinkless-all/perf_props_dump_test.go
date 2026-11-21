@@ -83,22 +83,11 @@ func captureOffenderProfile(ctx context.Context, profDir, phase string, r propDu
 	var workload func() error
 	switch phase {
 	case "hover":
-		hDoc := buildHoverDoc(head, r.Name, r.Sample, true)
-		p, err := newBenchPage(hDoc, propBenchScaleWidth, propBenchScaleHeight, true)
-		if err != nil || p.Redraw(ctx) != nil {
+		work, err := newHoverWorkload(ctx, buildHoverDoc(head, r.Name, r.Sample, true))
+		if err != nil {
 			return attr
 		}
-		hx, hy, ok := findHoverTarget(p, "h0")
-		if !ok {
-			return attr
-		}
-		workload = func() error {
-			if hErr := p.Edit().Hover(ctx, hx, hy); hErr != nil {
-				return hErr
-			}
-
-			return p.Edit().Hover(ctx, propBenchHoverOffX, propBenchHoverOffY)
-		}
+		workload = func() error { return work.cycle(ctx) }
 	case "raster":
 		doc := head + spec.expand(prop, "p", true)
 		workload = func() error {
@@ -233,6 +222,26 @@ func writeJSONL[T any](path string, items []T) error {
 	return bw.Flush()
 }
 
+func readPropJSONL[T any](path string) ([]T, error) {
+	f, err := os.Open(filepath.Clean(path))
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+
+	var rows []T
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		var row T
+		if err := json.Unmarshal(scanner.Bytes(), &row); err != nil {
+			return nil, fmt.Errorf("decode %s row %d: %w", path, len(rows)+1, err)
+		}
+		rows = append(rows, row)
+	}
+
+	return rows, scanner.Err()
+}
+
 func writeBenchscoreTxt(path string, rows []propDumpRow, combos []comboEntry) error {
 	var b strings.Builder
 	fmt.Fprintf(&b, "goos: %s\ngoarch: %s\npkg: github.com/chinmay-sawant/ownframe/examples/blinkless-all\n", runtime.GOOS, runtime.GOARCH)
@@ -241,10 +250,23 @@ func writeBenchscoreTxt(path string, rows []propDumpRow, combos []comboEntry) er
 			continue
 		}
 		id := sanitizeFilePart(r.Name)
-		fmt.Fprintf(&b, "BenchmarkPropCold_%s-1\t1\t%d ns/op\t%d B/op\t%d allocs/op\n", id, max(1, r.ColdNS), r.ColdBytes, r.ColdAllocs)
-		fmt.Fprintf(&b, "BenchmarkPropHover_%s-1\t1\t%d ns/op\t%d B/op\t%d allocs/op\n", id, max(1, r.HoverNS), r.HoverBytes, r.HoverAllocs)
-		fmt.Fprintf(&b, "BenchmarkPropScale64_%s-1\t1\t%d ns/op\t%d B/op\t%d allocs/op\n", id, max(1, r.Scale64NS), r.Scale64Bytes, r.Scale64Allocs)
-		fmt.Fprintf(&b, "BenchmarkPropRaster_%s-1\t1\t%d ns/op\t%d B/op\t%d allocs/op\n", id, max(1, r.RasterNS), r.RasterBytes, r.RasterAllocs)
+		for _, phase := range []struct {
+			name   string
+			ns     int64
+			bytes  uint64
+			allocs uint64
+		}{
+			{name: "Cold", ns: r.ColdNS, bytes: r.ColdBytes, allocs: r.ColdAllocs},
+			{name: "Hover", ns: r.HoverNS, bytes: r.HoverBytes, allocs: r.HoverAllocs},
+			{name: "Scale64", ns: r.Scale64NS, bytes: r.Scale64Bytes, allocs: r.Scale64Allocs},
+			{name: "Raster", ns: r.RasterNS, bytes: r.RasterBytes, allocs: r.RasterAllocs},
+		} {
+			if phase.ns <= 0 {
+				continue
+			}
+			fmt.Fprintf(&b, "BenchmarkProp%s_%s-1\t1\t%d ns/op\t%d B/op\t%d allocs/op\n",
+				phase.name, id, phase.ns, phase.bytes, phase.allocs)
+		}
 	}
 	for _, c := range combos {
 		if c.Err != "" {
@@ -269,11 +291,13 @@ func writeSummaryMarkdown(
 	var b strings.Builder
 	effectiveCount, noopCount, warmLeaks, hoverFallbacks, bitmapFallbacks, errCount, refinedCount := 0, 0, 0, 0, 0, 0, 0
 	layerCounts := map[string]int{}
+	phaseErrors := 0
 	for _, r := range rows {
 		if r.Err != "" {
 			errCount++
 			continue
 		}
+		phaseErrors += len(r.PhaseErrors)
 		if r.Effective {
 			effectiveCount++
 		} else {
@@ -296,13 +320,14 @@ func writeSummaryMarkdown(
 
 	b.WriteString("# CSS Property Performance Dump Summary\n\n")
 	fmt.Fprintf(&b, "- **Generated:** %s (`%s/%s`, Go `%s`, `%d` CPUs)\n", time.Now().Format(time.RFC3339), runtime.GOOS, runtime.GOARCH, runtime.Version(), runtime.NumCPU())
-	fmt.Fprintf(&b, "- **Properties audited:** **%d** (`%d` effective, `%d` no-op samples, `%d` refined at `%d` iters, `%d` errors)\n", len(rows), effectiveCount, noopCount, refinedCount, opts.Iters, errCount)
+	fmt.Fprintf(&b, "- **Measurement version:** 2 (interleaved property controls with untimed effect and PNG validation)\n")
+	fmt.Fprintf(&b, "- **Properties audited:** **%d** (`%d` observed effects, `%d` effects unverified, `%d` refined at up to `%d` iters, `%d` failed rows, `%d` phase errors)\n", len(rows), effectiveCount, noopCount, refinedCount, opts.Iters, errCount, phaseErrors)
 	fmt.Fprintf(&b, "- **Combinations audited:** **%d** (bucket pairs, top-offender pairs, UI recipes, seeded fuzz `seed=%d`)\n", len(combos), opts.Seed)
 	fmt.Fprintf(&b, "- **Wall time:** `%s` | **Control drift:** `%.1f%%`\n", elapsed.Round(time.Millisecond), driftPct)
 	if driftPct > propDriftAlertPct {
 		fmt.Fprintf(&b, "- **Warning:** Control anchor drifted by `%.1f%%` (> %.0f%%); consider re-running on an idle machine.\n", driftPct, propDriftAlertPct)
 	}
-	fmt.Fprintf(&b, "- **Flags:** warm-alloc leaks=**%d**, hover full-layout fallbacks=**%d**, bitmap fallbacks=**%d**\n\n", warmLeaks, hoverFallbacks, bitmapFallbacks)
+	fmt.Fprintf(&b, "- **Flags:** warm redraws with allocations=**%d**, hover full-layout fallbacks=**%d**, bitmap fallbacks=**%d**\n\n", warmLeaks, hoverFallbacks, bitmapFallbacks)
 
 	b.WriteString("## Bottleneck Layer Distribution\n\n")
 	b.WriteString("| Layer | Properties |\n|---|---:|\n")
@@ -376,7 +401,7 @@ func writeSummaryMarkdown(
 		b.WriteString("\n")
 	}
 
-	b.WriteString("## Warm Redraw Allocation Leaks & Bitmap Fallbacks\n\n")
+	b.WriteString("## Warm Redraw Allocations and Bitmap Fallbacks\n\n")
 	if warmLeaks == 0 && bitmapFallbacks == 0 {
 		b.WriteString("None.\n\n")
 	} else {
@@ -472,40 +497,45 @@ func selectRefinementIndices(rows []propDumpRow, limit int) []int {
 	if limit <= 0 || len(rows) == 0 {
 		return nil
 	}
-	chosen := map[int]bool{}
-	var order []int
-	add := func(idx int) {
-		if !chosen[idx] && len(order) < limit {
-			chosen[idx] = true
-			order = append(order, idx)
-		}
-	}
 
-	// Always refine warm-alloc leaks, hover fallbacks, and bitmap fallbacks first.
-	for i, r := range rows {
-		if r.Err == "" && (r.WarmAllocs > 0 || r.HoverFallbacks > 0 || r.BitmapFallback) {
-			add(i)
-		}
+	// Each phase ranks its own candidates. Choose across rankings before
+	// returning to any phase, so a long list of warm flags cannot starve raster.
+	scores := []func(propDumpRow) int64{
+		func(r propDumpRow) int64 { return r.HoverDeltaNS },
+		func(r propDumpRow) int64 { return r.Scale64DeltaNS },
+		func(r propDumpRow) int64 { return r.RasterDeltaNS },
+		func(r propDumpRow) int64 { return r.ResizeDeltaNS },
+		func(r propDumpRow) int64 { return r.ColdDeltaNS },
+		func(r propDumpRow) int64 { return r.WarmNS },
+		func(r propDumpRow) int64 { return r.TickNS },
 	}
-
-	addTopBy := func(score func(propDumpRow) int64, n int) {
-		idxs := make([]int, 0, len(rows))
-		for i, r := range rows {
-			if r.Err == "" && r.Effective {
-				idxs = append(idxs, i)
+	rankings := make([][]int, len(scores))
+	for phase, score := range scores {
+		for idx, row := range rows {
+			if row.Err == "" && row.Effective && score(row) > 0 {
+				rankings[phase] = append(rankings[phase], idx)
 			}
 		}
-		slices.SortFunc(idxs, func(a, b int) int { return cmpDescInt64(score(rows[a]), score(rows[b])) })
-		for _, idx := range idxs[:min(n, len(idxs))] {
-			add(idx)
-		}
+		slices.SortStableFunc(rankings[phase], func(a, b int) int {
+			return cmpDescInt64(score(rows[a]), score(rows[b]))
+		})
 	}
 
-	sliceN := max(1, limit/propPprofPhaseCount)
-	addTopBy(func(r propDumpRow) int64 { return r.Scale64DeltaNS }, sliceN)
-	addTopBy(func(r propDumpRow) int64 { return r.HoverDeltaNS }, sliceN)
-	addTopBy(func(r propDumpRow) int64 { return r.RasterDeltaNS }, sliceN)
-	addTopBy(func(r propDumpRow) int64 { return r.ColdDeltaNS }, sliceN)
+	chosen := make(map[int]bool, limit)
+	order := make([]int, 0, limit)
+	for rank := 0; rank < len(rows) && len(order) < limit; rank++ {
+		for _, phase := range rankings {
+			if rank >= len(phase) || chosen[phase[rank]] {
+				continue
+			}
+			idx := phase[rank]
+			chosen[idx] = true
+			order = append(order, idx)
+			if len(order) == limit {
+				return order
+			}
+		}
+	}
 
 	return order
 }
@@ -531,6 +561,11 @@ func runPropPerfDump(ctx context.Context, opts propBenchOpts, logf func(string, 
 		if opts.Limit > 0 && len(filtered) >= opts.Limit {
 			break
 		}
+	}
+
+	comboPlanRows, comboPlan, err := loadPropReference(opts.Reference, filtered)
+	if err != nil {
+		return 0, 0, err
 	}
 
 	// Prime process caches & measure shared uniform baselines once.
@@ -570,7 +605,7 @@ func runPropPerfDump(ctx context.Context, opts propBenchOpts, logf func(string, 
 				}
 			}
 		}
-		row := measurePropertyFull(ctx, r, 1, false, base)
+		row := measurePropertyFull(ctx, r, 1, false)
 		selected[i] = row
 		if row.Scale64DeltaNS > slowScale.Scale64DeltaNS {
 			slowScale = row
@@ -591,11 +626,19 @@ func runPropPerfDump(ctx context.Context, opts propBenchOpts, logf func(string, 
 	}
 
 	// Pass 2: High-precision GC-isolated refinement on Top-K outliers.
-	if opts.Iters > 1 && opts.RefineTop > 0 {
+	if opts.Iters > 1 && (opts.RefineTop > 0 || opts.Reference != "") {
 		refineIdxs := selectRefinementIndices(selected, opts.RefineTop)
+		if opts.Reference != "" {
+			refineIdxs = refineIdxs[:0]
+			for idx, row := range comboPlanRows {
+				if row.HighPrecision {
+					refineIdxs = append(refineIdxs, idx)
+				}
+			}
+		}
 		log("[tier1 refine] re-measuring top %d outliers at %d GC-isolated iters...", len(refineIdxs), opts.Iters)
 		for k, idx := range refineIdxs {
-			selected[idx] = measurePropertyFull(ctx, filtered[idx], opts.Iters, true, base)
+			selected[idx] = measurePropertyFull(ctx, filtered[idx], opts.Iters, true)
 			if (k+1)%propRefineLogEvery == 0 || k+1 == len(refineIdxs) {
 				log("[tier1 refine %d/%d] elapsed=%s last=%s", k+1, len(refineIdxs), time.Since(tStart).Round(time.Millisecond), filtered[idx].Name)
 			}
@@ -608,9 +651,15 @@ func runPropPerfDump(ctx context.Context, opts propBenchOpts, logf func(string, 
 	}
 
 	// Tier 2: Combination matrix.
-	combos := runComboMatrix(ctx, selected, opts, base, func(msg string) {
+	if opts.Reference == "" {
+		comboPlanRows = selected
+	}
+	combos, err := runComboMatrix(ctx, selected, comboPlanRows, comboPlan, opts, base, func(msg string) {
 		log("%s elapsed=%s", msg, time.Since(tStart).Round(time.Millisecond))
 	})
+	if err != nil {
+		return 0, 0, err
+	}
 	if err := writeJSONL(filepath.Join(opts.DumpDir, "props-combos.jsonl"), combos); err != nil {
 		return 0, 0, err
 	}
@@ -657,6 +706,31 @@ func runPropPerfDump(ctx context.Context, opts propBenchOpts, logf func(string, 
 	}
 
 	return len(selected), len(combos), nil
+}
+
+func loadPropReference(dir string, props []genProp) ([]propDumpRow, []comboEntry, error) {
+	if dir == "" {
+		return nil, nil, nil
+	}
+	rows, err := readPropJSONL[propDumpRow](filepath.Join(dir, "props-individual.jsonl"))
+	if err != nil {
+		return nil, nil, fmt.Errorf("read reference properties: %w", err)
+	}
+	if len(rows) != len(props) {
+		return nil, nil, fmt.Errorf("reference has %d properties, selected %d", len(rows), len(props))
+	}
+	for idx, row := range rows {
+		sample, _ := activeSample(props[idx])
+		if row.Name != props[idx].Name || row.Sample != sample {
+			return nil, nil, fmt.Errorf("reference fixture mismatch at property %q", props[idx].Name)
+		}
+	}
+	combos, err := readPropJSONL[comboEntry](filepath.Join(dir, "props-combos.jsonl"))
+	if err != nil {
+		return nil, nil, fmt.Errorf("read reference combinations: %w", err)
+	}
+
+	return rows, combos, nil
 }
 
 func absInt64(v int64) int64 {
@@ -722,6 +796,56 @@ func TestPropPerfHarnessSmoke(t *testing.T) {
 		info, statErr := os.Stat(filepath.Join(dir, name))
 		if statErr != nil || info.Size() == 0 {
 			t.Fatalf("expected non-empty %s (err=%v)", name, statErr)
+		}
+	}
+
+	rows, err := readPropJSONL[propDumpRow](filepath.Join(dir, "props-individual.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range rows {
+		if row.Err != "" || len(row.PhaseErrors) > 0 {
+			t.Fatalf("%s: row error %q, phase errors %v", row.Name, row.Err, row.PhaseErrors)
+		}
+		if row.HoverControlNS <= 0 || row.Scale64ControlNS <= 0 || row.RasterControlNS <= 0 {
+			t.Fatalf("%s: missing a paired control", row.Name)
+		}
+	}
+
+	opts.DumpDir, opts.Reference = t.TempDir(), dir
+	matchedProps, matchedCombos, err := runPropPerfDump(context.Background(), opts, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if matchedProps != nProps || matchedCombos != nCombos {
+		t.Fatalf("matched dump has %d properties and %d combinations, want %d and %d",
+			matchedProps, matchedCombos, nProps, nCombos)
+	}
+}
+
+func TestPropPerfEffectEvidence(t *testing.T) {
+	ctx := context.Background()
+	inactive := measurePropertyFull(ctx, genProp{Name: "--unreferenced-bench-value", Sample: "1"}, 1, false)
+	if inactive.Err != "" || len(inactive.PhaseErrors) > 0 {
+		t.Fatalf("inactive fixture: %q, %v", inactive.Err, inactive.PhaseErrors)
+	}
+	if inactive.Effective || len(inactive.EffectEvidence) != 0 {
+		t.Fatalf("inactive fixture reported effects: %v", inactive.EffectEvidence)
+	}
+
+	active := measurePropertyFull(ctx, genProp{Name: "color", Sample: "rgb(0, 128, 255)"}, 1, false)
+	if active.Err != "" || len(active.PhaseErrors) > 0 {
+		t.Fatalf("active fixture: %q, %v", active.Err, active.PhaseErrors)
+	}
+	if !active.Effective || !slices.Contains(active.EffectEvidence, "hover-display") {
+		t.Fatalf("active hover fixture failed to report its effect: %v", active.EffectEvidence)
+	}
+}
+
+func TestPropPerfRejectsInvalidPNG(t *testing.T) {
+	for _, data := range [][]byte{nil, []byte("invalid PNG")} {
+		if err := validateRasterPNG(data); err == nil {
+			t.Fatalf("accepted invalid PNG %q", data)
 		}
 	}
 }

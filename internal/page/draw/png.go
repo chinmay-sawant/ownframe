@@ -30,7 +30,8 @@ func (pool *pngBufPool) Put(b *png.EncoderBuffer) {
 
 //nolint:gochecknoglobals // reusable PNG encoder buffer pool avoids per-frame flate allocations
 var pooledPNGEncoder = png.Encoder{
-	BufferPool: &pngBufPool{},
+	CompressionLevel: png.BestSpeed,
+	BufferPool:       &pngBufPool{},
 }
 
 // EncodePNG writes img as PNG bytes, or nil on failure.
