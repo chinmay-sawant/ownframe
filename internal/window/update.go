@@ -44,7 +44,7 @@ var stages = [...]updateStage{
 	{"touch", func(s *shell) error { s.stepTouchScroll(time.Now()); return nil }, true},
 	{"hold", func(s *shell) error { return s.holdFrame() }, true},
 	{"drop", func(s *shell) error { return s.dropPass(ebiten.DroppedFiles()) }, true},
-	{"tick", func(s *shell) error { return s.timedErr(&s.dev.stages.tick, s.tickFrame) }, true},
+	{"tick", func(s *shell) error { return s.timedErr(&s.dev.stages.tick, s.tickFrame) }, false},
 	{"optin", void((*shell).captureFrameOptIn), false},
 	{"reload", func(s *shell) error { return s.pollReload() }, false},
 	{"sync", func(s *shell) error {
@@ -80,15 +80,13 @@ func (s *shell) Update() error {
 		return errNilApp
 	}
 
-	// The pointer span resolves hover and gestures and the tick span runs
-	// the frame callback; each redraws, so a hover change that coincides
-	// with an app refresh lays the page out twice back to back. The
-	// batched stages share one redraw batch, and the single flush before
-	// syncImage covers both. Batching defers commits, never input: hover,
-	// clicks, picks, drops, and the tick callback itself run in order, and
-	// the flush lands in the same frame, so hover still paints within one
-	// frame. A screen without the batcher role runs every stage directly,
-	// exactly as before.
+	// The pointer, touch, hold, and drop stages share one redraw batch so
+	// hover, press, click, and release in the same frame lay the page out
+	// once. The batch flushes before tick runs, so tick callbacks that mutate
+	// retained display ops in place (and CSS motion stepping) always run
+	// against the committed post-input display instead of being overwritten
+	// by a deferred hover redraw. A screen without the batcher role runs
+	// every stage directly, as before.
 	batcher, ok := s.app.(host.RedrawBatcher)
 	batched := false
 	// A stage runs app code and can panic. This does not recover: the panic
@@ -97,12 +95,23 @@ func (s *shell) Update() error {
 	defer func() {
 		if batched {
 			batched = false
+			s.hover.batched = false
 			s.endBatchQuiet(batcher)
 		}
 	}()
 	flush := func() error {
 		batched = false
-		return batcher.EndRedrawBatch(s.ctx)
+		err := batcher.EndRedrawBatch(s.ctx)
+		if err == nil && s.hover.batched {
+			gen := s.app.Generation()
+			id, _ := s.pageHover()
+			s.hover.seq = gen
+			s.hover.id = id
+			s.hover.cgen = gen
+			s.hover.cid = id
+			s.hover.batched = false
+		}
+		return err
 	}
 	for _, st := range stages {
 		if ok && st.batch && !batched {

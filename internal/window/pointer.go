@@ -326,14 +326,15 @@ func (s *shell) setCursorShape(next ebiten.CursorShapeType) {
 // generation, and hover the page cursor was last applied for on the page
 // path, so a still frame skips the cursor shape scan too.
 type hoverState struct {
-	x, y   float64
-	seq    uint64
-	id     string
-	have   bool
-	cx, cy float64
-	cgen   uint64
-	cid    string
-	cok    bool
+	x, y    float64
+	seq     uint64
+	id      string
+	have    bool
+	batched bool
+	cx, cy  float64
+	cgen    uint64
+	cid     string
+	cok     bool
 }
 
 // due reports whether the page hover needs a fresh pass. A point that moved
@@ -396,6 +397,7 @@ func (s *shell) hoverCursor(x, y int, px, py float64) error {
 		}
 
 		s.hover = s.hoverPushed(px, py)
+		s.hover.batched = true
 		pushed = true
 		pageHover = s.hover.id
 	}
