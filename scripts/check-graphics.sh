@@ -53,6 +53,7 @@ if not passed:
 
 # A missing, renamed, or skipped test is a failure, even when go test exits zero.
 run_test ./internal/window TestPartialFrameLeavesTheScreen
+run_test ./internal/window TestTranslucentFixedBackdropNoOverblend
 run_test ./internal/window TestWindowRepaintPixels
 run_test ./internal/window TestWindowSharedHeaderPixels
 run_test ./internal/window TestWindowBackdropFilterReplaysFullFrame
@@ -68,6 +69,7 @@ fi
 run_test ./internal/window TestWindowDevToolsIdle
 run_test ./components/chadcn TestManagedInteractionsNative
 run_test ./examples/builder/loglens TestSidebarHoverPixels
+run_test ./examples/builder/loglens TestCommandBackdropPixelsStableAcrossFrames
 run_test ./internal/window TestDrawPaintsVerticalThumb
 run_test ./internal/replay TestGPUVisibleParity
 run_test ./examples/builder/jmap-mail TestScrollbarThumbStaysOnePiece

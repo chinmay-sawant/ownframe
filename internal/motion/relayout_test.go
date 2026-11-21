@@ -722,3 +722,39 @@ func TestBindLayoutSkipsPaintOnlyRules(t *testing.T) {
 		t.Fatal("a transform-only rule bound a layout player")
 	}
 }
+
+// TestStepLayoutDoesNotSpinOnDelayedAnimation ensures StepLayout visits each
+// queued element at most once per frame when a live layout animation is still
+// in its delay phase and emits no overrides yet.
+func TestStepLayoutDoesNotSpinOnDelayedAnimation(t *testing.T) {
+	t.Parallel()
+
+	start := time.Unix(0, 0)
+	effect := layoutEffect(layoutFrame(0, "width", 40, "px"), layoutFrame(1, "width", 120, "px"))
+	effect.Timing.Delay = time.Second
+	effect.Timing.Fill = FillNone
+
+	player, err := NewLayout([]Effect{effect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	player.Start(start)
+
+	rt := New()
+	rt.entries = []entry{{
+		key:    entryKey{id: "card"},
+		player: player,
+		start:  start,
+		timed:  true,
+		layout: true,
+	}}
+	rt.syncLayoutQueue()
+
+	reqs := rt.StepLayout(start.Add(100 * time.Millisecond))
+	if len(reqs) != 0 {
+		t.Fatalf("got %d requests during animation delay, want 0", len(reqs))
+	}
+	if !rt.Active() {
+		t.Fatal("delayed layout animation must stay active for future frames")
+	}
+}

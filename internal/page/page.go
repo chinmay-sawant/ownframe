@@ -241,7 +241,6 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		perf:             cfg.Perf || cfg.DevTools,
 		perfOptIn:        cfg.Perf,
 		motion:           motion.New(),
-		hoverPatch:       render.RelayoutElement,
 		retainState:      cfg.RetainState,
 		lockView:         cfg.LockView,
 		allowTouchZoom:   !cfg.DisableTouchZoom,

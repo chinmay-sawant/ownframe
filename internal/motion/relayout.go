@@ -217,11 +217,13 @@ func (r *Runtime) StepLayout(now time.Time) []LayoutRequest {
 	if budget <= 0 {
 		budget = defaultLayoutBudget
 	}
-	for budget > 0 {
+	attempts := len(r.layout.queue)
+	for budget > 0 && attempts > 0 {
 		id, ok := r.layout.take()
 		if !ok {
 			break
 		}
+		attempts--
 
 		overrides := r.geometryOverrides(id, now, nil)
 		values, animationLive := r.sampleLayoutAnimation(id, now)

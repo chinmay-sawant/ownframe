@@ -181,6 +181,123 @@ func TestButtonHoverUsesScopedLayout(t *testing.T) {
 		t.Fatal("button hover parsed or cascaded the document")
 	}
 }
+
+func TestEdgeRegionHoverUsesScopedLayout(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.page.Window().SetPerf(true)
+	ctx := context.Background()
+	a.page.SetSize(windowWidth, 2400)
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	a.page.Probe().TakeDirtyRects()
+	for _, id := range []string{"region-map-1", "region-map-2", "region-map-8", "region-heat-1", "region-heat-2", "region-heat-13"} {
+		before := a.page.Probe().Stats()
+		cell := loglensLayoutBox(t, a.page, func(b ownframe.Box) bool { return b.ID == id })
+		if err := a.page.Edit().Hover(ctx, cell.X+cell.W/2, cell.Y+cell.H/2); err != nil {
+			t.Fatal(err)
+		}
+		rects, _ := a.page.Probe().TakeDirtyRects()
+		after := a.page.Probe().Stats()
+		t.Logf("%s: full=%d->%d hp=%d->%d hfb=%d->%d err=%d->%d layout=%v dirtyOps=%d chgOps=%d dirtyArea=%d rects=%v failures=%+v",
+			id, before.FullLayouts, after.FullLayouts, before.HoverPatches, after.HoverPatches,
+			before.HoverFallbacks, after.HoverFallbacks, before.HoverPatchErrors, after.HoverPatchErrors,
+			after.LayoutTime, after.DirtyOps, after.ChangedOps, after.DirtyArea, rects, after.HoverPatchFailures)
+		if after.HoverPatches != before.HoverPatches+1 || after.FullLayouts != before.FullLayouts {
+			t.Fatalf("%s hover fell back to full layout: failures=%+v", id, after.HoverPatchFailures)
+		}
+		if after.HoverPatchErrors != before.HoverPatchErrors || after.HoverFallbacks != before.HoverFallbacks {
+			t.Fatalf("%s hover retried or fell back: failures=%+v", id, after.HoverPatchFailures)
+		}
+	}
+}
+
+func BenchmarkEdgeRegionHover(b *testing.B) {
+	a, err := newApp()
+	if err != nil {
+		b.Fatal(err)
+	}
+	ctx := context.Background()
+	a.page.SetSize(windowWidth, 2400)
+	if err := a.page.Redraw(ctx); err != nil {
+		b.Fatal(err)
+	}
+	ids := []string{"region-map-1", "region-map-2", "region-map-8", "region-heat-1", "region-heat-2", "region-heat-13"}
+	pts := make([][2]float64, len(ids))
+	for i, id := range ids {
+		var found bool
+		for _, box := range a.page.Boxes() {
+			if box.ID == id {
+				pts[i] = [2]float64{box.X + box.W/2, box.Y + box.H/2}
+				found = true
+				break
+			}
+		}
+		if !found {
+			b.Fatalf("missing region box %s", id)
+		}
+	}
+	a.page.Probe().TakeDirtyRects()
+	before := a.page.Probe().Stats()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pt := pts[i%len(pts)]
+		if err := a.page.Edit().Hover(ctx, pt[0], pt[1]); err != nil {
+			b.Fatal(err)
+		}
+		a.page.Probe().TakeDirtyRects()
+	}
+	b.StopTimer()
+
+	after := a.page.Probe().Stats()
+	if after.FullLayouts != before.FullLayouts || after.HoverFallbacks != before.HoverFallbacks || after.HoverPatchErrors != before.HoverPatchErrors {
+		b.Fatalf("edge region hover regressed to full layout: before=%+v after=%+v", before, after)
+	}
+}
+
+func BenchmarkCommandPaletteHover(b *testing.B) {
+	a, err := newApp()
+	if err != nil {
+		b.Fatal(err)
+	}
+	ctx := context.Background()
+	a.commandOpen = true
+	if err := a.refresh(ctx); err != nil {
+		b.Fatal(err)
+	}
+	var pts [][2]float64
+	for _, box := range a.page.Boxes() {
+		if box.Action != "" && box.Y > 150 && box.Y < 500 && box.X > 400 && box.X < 1000 {
+			pts = append(pts, [2]float64{box.X + box.W/2, box.Y + box.H/2})
+		}
+	}
+	if len(pts) < 2 {
+		b.Fatalf("expected >=2 command palette hover targets, got %d", len(pts))
+	}
+	a.page.Probe().TakeDirtyRects()
+	before := a.page.Probe().Stats()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pt := pts[i%len(pts)]
+		if err := a.page.Edit().Hover(ctx, pt[0], pt[1]); err != nil {
+			b.Fatal(err)
+		}
+		a.page.Probe().TakeDirtyRects()
+	}
+	b.StopTimer()
+
+	after := a.page.Probe().Stats()
+	if after.FullLayouts != before.FullLayouts || after.HoverFallbacks != before.HoverFallbacks || after.HoverPatchErrors != before.HoverPatchErrors {
+		b.Fatalf("command palette hover regressed to full layout: before=%+v after=%+v", before, after)
+	}
+}
 func TestOnCallCalendarSequentialClicks(t *testing.T) {
 	a, err := newApp()
 	if err != nil {

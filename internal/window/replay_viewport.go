@@ -87,6 +87,7 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	s.viewport.scroll = scroll
 	s.viewport.key, s.viewport.valid = key, true
 	var options ebiten.DrawImageOptions
+	options.Blend = ebiten.BlendCopy
 	options.GeoM.Translate(
 		float64(s.viewport.area.Min.X-s.scrollX),
 		float64(s.viewport.area.Min.Y-s.scrollY),

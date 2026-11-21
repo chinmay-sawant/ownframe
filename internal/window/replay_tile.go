@@ -311,8 +311,17 @@ func (s *shell) blitFromTiles(dst *ebiten.Image, display *layout.Display, plans 
 		return s.showTilesWhole(dst, display)
 	}
 
-	if whole {
-		s.blitTiles(dst, display, s.visibleRect())
+	// Pinned chrome paints over the screen after this blit. Restoring the
+	// visible unfixed tiles first keeps translucent fixed layers (such as
+	// modal backdrops or shadows) from compositing over their own pixels
+	// from the previous retained frame.
+	if whole || s.hasViewportOps() {
+		vis := s.visibleRect()
+		if !vis.In(grid.content()) {
+			return s.showTilesWhole(dst, display)
+		}
+
+		s.blitTiles(dst, display, vis)
 
 		return true
 	}

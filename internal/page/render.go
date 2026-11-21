@@ -9,7 +9,6 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"html/template"
-	"io"
 	"runtime"
 	"strings"
 	"time"
@@ -143,19 +142,22 @@ func execTemplate(p *Page, track bool) (string, error) {
 
 	p.execSkipped = false
 
-	out, err := draw.ExecuteWriter(
+	hint := len(p.source)
+	if len(p.lastSyncBody) > hint {
+		hint = len(p.lastSyncBody)
+	}
+
+	body, err := draw.Execute(
 		track,
-		len(p.source),
+		hint,
 		&p.stats.lastTemplate,
-		func(w io.Writer) error {
+		func(w *strings.Builder) error {
 			return p.tpl.Execute(w, p.data)
 		},
 	)
 	if err != nil {
 		return "", err
 	}
-
-	body := string(out)
 
 	return body, nil
 }
@@ -309,7 +311,6 @@ func drawStaged(p *Page, ctx context.Context,
 func commitDisplay(p *Page, display *Display, executed string, drawStart time.Time, state render.State) {
 	previous := p.draw.Display
 	previousFallback := p.draw.FallbackDisplay
-	updateMotionIndex(p, previous, display)
 	captures := captureTransitions(p, previous, display)
 	dirtyFromDisplay(p, previous, display)
 	noteCommit(p, drawStart)

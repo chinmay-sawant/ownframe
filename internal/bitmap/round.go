@@ -4,21 +4,21 @@ func inRound(x, y, w, h float64, rx, ry [4]float64) bool {
 	if x < 0 || y < 0 || x >= w || y >= h {
 		return false
 	}
-	centers := [4][2]float64{{rx[0], ry[0]}, {w - rx[1], ry[1]},
-		{w - rx[2], h - ry[2]}, {rx[3], h - ry[3]}}
-	for i, c := range centers {
-		cornerX := x < c[0]
-		if i == rightSideFirst || i == bottomRowFirst {
-			cornerX = x > c[0]
-		}
-		cornerY := y < c[1]
-		if i >= bottomRowFirst {
-			cornerY = y > c[1]
-		}
-		if cornerX && cornerY && rx[i] > 0 && ry[i] > 0 {
-			dx, dy := (x-c[0])/rx[i], (y-c[1])/ry[i]
-			return dx*dx+dy*dy <= 1
-		}
+	if rx[0] > 0 && ry[0] > 0 && x < rx[0] && y < ry[0] {
+		dx, dy := (x-rx[0])/rx[0], (y-ry[0])/ry[0]
+		return dx*dx+dy*dy <= 1
+	}
+	if rx[1] > 0 && ry[1] > 0 && x > w-rx[1] && y < ry[1] {
+		dx, dy := (x-(w-rx[1]))/rx[1], (y-ry[1])/ry[1]
+		return dx*dx+dy*dy <= 1
+	}
+	if rx[2] > 0 && ry[2] > 0 && x > w-rx[2] && y > h-ry[2] {
+		dx, dy := (x-(w-rx[2]))/rx[2], (y-(h-ry[2]))/ry[2]
+		return dx*dx+dy*dy <= 1
+	}
+	if rx[3] > 0 && ry[3] > 0 && x < rx[3] && y > h-ry[3] {
+		dx, dy := (x-rx[3])/rx[3], (y-(h-ry[3]))/ry[3]
+		return dx*dx+dy*dy <= 1
 	}
 	return true
 }

@@ -10,6 +10,7 @@ import unittest
 SCRIPT = Path(__file__).resolve().with_name("check-graphics.sh")
 REQUIRED_TESTS = {
     "TestPartialFrameLeavesTheScreen",
+    "TestTranslucentFixedBackdropNoOverblend",
     "TestWindowRepaintPixels",
     "TestWindowBackdropFilterReplaysFullFrame",
     "TestStickyViewportPixelsAndHits",
@@ -20,6 +21,7 @@ REQUIRED_TESTS = {
     "TestWindowIdleDeadline",
     "TestWindowDevToolsIdle",
     "TestSidebarHoverPixels",
+    "TestCommandBackdropPixelsStableAcrossFrames",
     "TestManagedInteractionsNative",
     "TestGPUVisibleParity",
     "TestDrawPaintsVerticalThumb",
