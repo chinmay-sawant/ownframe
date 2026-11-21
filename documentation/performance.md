@@ -30,6 +30,8 @@ Record per release numbers in [performance-baseline.md](performance-baseline.md)
 The [Loglens profiling guide](loglens-profiling.md) covers fresh Windows processes,
 fixed interaction phases, counter deltas, and before/after profiles.
 
+The [CSS property profiling guide](property-profiling.md) covers the 688-property paired-control matrix, Tier-2 combinations, `pprof` stack attribution, and `scripts/perf-props-dump.sh`.
+
 ## 1 Idle baseline
 
 Leave the window alone for 30 to 60 seconds and confirm it does almost nothing.

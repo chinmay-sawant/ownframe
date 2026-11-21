@@ -39,6 +39,7 @@ Build screens with HTML and CSS and handle data and actions in Go. Target native
 - [Repaint, tiles, and layers](repaint.md)
 - [Optimization paths](optimizations.md)
 - [Performance profiling](performance.md)
+- [CSS property profiling and dumps](property-profiling.md)
 - [DevTools dock](devtools.md)
 - [Hot reload](hot-reload.md)
 - [Navigation and history](navigation.md)
