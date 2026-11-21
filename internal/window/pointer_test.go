@@ -573,6 +573,32 @@ func TestHoverDataRedrawResolves(t *testing.T) {
 	}
 }
 
+// TestUpdateFlushesPointerBatchBeforeTick checks that the pointer redraw batch
+// flushes before the tick stage runs so a deferred hover redraw never overwrites
+// retained-op mutations made by a tick callback on the same frame.
+func TestUpdateFlushesPointerBatchBeforeTick(t *testing.T) {
+	t.Parallel()
+
+	pointerIdx, tickIdx := -1, -1
+	for i, st := range stages {
+		switch st.name {
+		case "pointer":
+			pointerIdx = i
+		case "tick":
+			tickIdx = i
+		}
+	}
+	if pointerIdx < 0 || tickIdx < 0 || pointerIdx >= tickIdx {
+		t.Fatalf("unexpected stage order: pointer=%d tick=%d", pointerIdx, tickIdx)
+	}
+	if !stages[pointerIdx].batch {
+		t.Fatal("pointer stage should remain batched with gesture stages")
+	}
+	if stages[tickIdx].batch {
+		t.Fatal("tick stage must not share the pointer redraw batch; deferred hover redraws would wipe tick mutations")
+	}
+}
+
 // holdScreen records the long-press calls the window makes. claim is the
 // answer its LongPress returns.
 type holdScreen struct {

@@ -257,3 +257,97 @@ func TestHoverCapturesCSSTransition(t *testing.T) {
 			stats.TransitionSkipReason, stats.TransitionError)
 	}
 }
+
+// TestLibraryHoverPreservesSeekAndTimestamps verifies that hovering sidebar
+// library rows or library cards uses scoped hover patching and never resets
+// the tick-driven seek fill or elapsed/remaining timestamps back to stale
+// template values.
+func TestLibraryHoverPreservesSeekAndTimestamps(t *testing.T) {
+	ctx := context.Background()
+	app, voice := newFakeApp(t)
+	redraw(t, app)
+
+	click(t, app, "play")
+	waitAudio(t, app)
+
+	voice.dur = 3 * time.Minute
+	voice.pos = 45 * time.Second
+
+	if err := app.Page().Testing().Tick(ctx); err != nil {
+		t.Fatalf("tick: %v", err)
+	}
+
+	assertSeekAndTime := func(where string) {
+		t.Helper()
+
+		d := app.Page().Probe().Display()
+		seek, ok := findBox(app.Boxes(), "seek")
+		if !ok {
+			t.Fatalf("%s: no seek box", where)
+		}
+
+		fill := ownframe.Fill(d, seek, accent)
+		if fill == nil {
+			t.Fatalf("%s: no seek fill", where)
+		}
+
+		_, _, width, _ := ownframe.BoxUnits(d, seek)
+		wantW := width * float64(voice.pos) / float64(voice.dur)
+		if math.Abs(fill.W-wantW) > 0.5 {
+			t.Fatalf("%s: seek fill width = %.2f, want %.2f (flickered to stale template progress)", where, fill.W, wantW)
+		}
+
+		elapsed, ok := findBox(app.Boxes(), "elapsed")
+		if !ok {
+			t.Fatalf("%s: no elapsed box", where)
+		}
+
+		wantElapsed := formatSeconds(int(voice.pos.Seconds()))
+		if op := ownframe.Text(d, elapsed); op == nil || op.Text != wantElapsed {
+			t.Fatalf("%s: elapsed = %+v, want %q (flickered to stale template timestamp)", where, op, wantElapsed)
+		}
+	}
+
+	assertSeekAndTime("before hover")
+
+	hoverOnly := func(id string) {
+		t.Helper()
+
+		box, ok := findBox(app.Boxes(), id)
+		if !ok {
+			t.Fatalf("no box %s", id)
+		}
+
+		if err := app.Page().Edit().Hover(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+			t.Fatalf("hover %s: %v", id, err)
+		}
+
+		assertSeekAndTime("after hover " + id)
+	}
+
+	hoverOnly("list-0")
+	hoverOnly("list-1")
+	hoverOnly("nav-library")
+
+	stats := app.Page().Probe().Stats()
+	if stats.HoverPatches == 0 {
+		t.Fatalf("sidebar library hover used 0 scoped patches (fallbacks=%d, fullLayouts=%d)",
+			stats.HoverFallbacks, stats.FullLayouts)
+	}
+	if stats.HoverFallbacks != 0 {
+		t.Fatalf("sidebar library hover triggered %d full-layout fallbacks (failures=%+v)",
+			stats.HoverFallbacks, stats.HoverPatchFailures)
+	}
+
+	// Switch to Your Library screen, advance playback, and hover library cards.
+	click(t, app, "nav-library")
+	redraw(t, app)
+	voice.pos = 75 * time.Second
+	if err := app.Page().Testing().Tick(ctx); err != nil {
+		t.Fatalf("tick on library: %v", err)
+	}
+	assertSeekAndTime("library before hover")
+
+	hoverOnly("library-card-0")
+	hoverOnly("library-card-1")
+}
