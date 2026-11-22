@@ -73,7 +73,9 @@ func WriteContext(ctx context.Context, text string) error {
 	mu.Unlock()
 
 	if !only && !writeOS(ctx, text) {
-		return unavailableErr()
+		// The diagnosis only builds the error text after the write already
+		// failed, and its own probe is bounded by wlWait.
+		return unavailableErr() //nolint:contextcheck // reason: error-path probe with its own deadline.
 	}
 	return nil
 }
@@ -101,7 +103,7 @@ func ReadContext(ctx context.Context) (string, error) {
 
 	text, ok := readOS(ctx)
 	if !ok {
-		return "", unavailableErr()
+		return "", unavailableErr() //nolint:contextcheck // reason: error-path probe with its own deadline.
 	}
 
 	mu.Lock()

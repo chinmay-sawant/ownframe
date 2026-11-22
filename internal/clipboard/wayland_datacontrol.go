@@ -15,6 +15,7 @@ import (
 	"os"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -46,11 +47,20 @@ const (
 	wlEvCancel   = 1
 )
 
-var wlManagers = []string{"ext_data_control_manager_v1", "zwlr_data_control_manager_v1"}
-
-var wlTextMimes = []string{
-	"text/plain;charset=utf-8", "text/plain", "UTF8_STRING", "STRING", "TEXT",
+// wlManagerNames lists the data-control manager globals this client binds,
+// in preference order.
+func wlManagerNames() []string {
+	return []string{"ext_data_control_manager_v1", "zwlr_data_control_manager_v1"}
 }
+
+// wlTextMimeTypes lists the text MIME types this client offers and accepts,
+// in preference order.
+func wlTextMimeTypes() []string {
+	return []string{"text/plain;charset=utf-8", "text/plain", "UTF8_STRING", "STRING", "TEXT"}
+}
+
+// wlWriteTimeout bounds how long a paste waits for the receiving client.
+const wlWriteTimeout = 5 * time.Second
 
 var errWLUnsupported = errors.New("wayland: no data-control protocol")
 
@@ -68,17 +78,17 @@ type wlSession struct {
 	offers    map[uint32][]string
 	selection uint32
 	gotSel    bool
-	cancelled bool
+	cancelled atomic.Bool
 	callbacks map[uint32]bool
 	err       error
 }
 
-func openWLSession(display, runtimeDir string, deadline time.Time) (*wlSession, error) {
+func openWLSession(ctx context.Context, display, runtimeDir string, deadline time.Time) (*wlSession, error) {
 	path, ok := wlSocketPath(display, runtimeDir)
 	if !ok {
 		return nil, errWLUnsupported
 	}
-	conn, err := wlDial(path, time.Until(deadline))
+	conn, err := wlDial(ctx, path, time.Until(deadline))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +121,7 @@ func (s *wlSession) setup() error {
 	}
 
 	var iface string
-	for _, name := range wlManagers {
+	for _, name := range wlManagerNames() {
 		if _, ok := s.globals[name]; ok {
 			iface = name
 			break
@@ -223,18 +233,18 @@ func (s *wlSession) sourceEvent(op uint32, r *wlReader) {
 		fd := s.conn.popFD()
 		if fd != nil {
 			go func(text string) {
-				_ = fd.SetWriteDeadline(time.Now().Add(5 * time.Second))
+				_ = fd.SetWriteDeadline(time.Now().Add(wlWriteTimeout))
 				_, _ = io.WriteString(fd, text)
 				_ = fd.Close()
 			}(s.text)
 		}
 	case wlEvCancel:
-		s.cancelled = true
+		s.cancelled.Store(true)
 	}
 }
 
 func pickWLMime(mimes []string) (string, bool) {
-	for _, want := range wlTextMimes {
+	for _, want := range wlTextMimeTypes() {
 		if slices.Contains(mimes, want) {
 			return want, true
 		}
@@ -268,10 +278,10 @@ func (s *wlSession) readText() (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	defer pr.Close()
+	defer func() { _ = pr.Close() }()
 
 	args := wlArgs(nil).str(mime)
-	sendErr := s.conn.send(s.selection, wlReqOfferReceive, args, int(pw.Fd())) //nolint:gosec // reason: fd is a live pipe end.
+	sendErr := s.conn.send(s.selection, wlReqOfferReceive, args, int(pw.Fd()))
 	_ = pw.Close()
 	if sendErr != nil {
 		return "", false, sendErr
@@ -296,7 +306,7 @@ func (s *wlSession) offerText(text string) error {
 	if err := s.conn.send(s.manager, wlReqCreateSource, wlArgs(nil).u32(s.source)); err != nil {
 		return err
 	}
-	for _, m := range wlTextMimes {
+	for _, m := range wlTextMimeTypes() {
 		if err := s.conn.send(s.source, wlReqSourceOffer, wlArgs(nil).str(m)); err != nil {
 			return err
 		}
@@ -320,7 +330,7 @@ func (s *wlSession) clearSelection() error {
 // connection closes.
 func (s *wlSession) serve() {
 	_ = s.conn.c.SetDeadline(time.Time{})
-	for !s.cancelled {
+	for !s.cancelled.Load() {
 		if s.step() != nil {
 			break
 		}
@@ -328,9 +338,12 @@ func (s *wlSession) serve() {
 	s.conn.close()
 }
 
+// The offered selection must outlive the call that created it: the source
+// answers other clients' paste requests until another client replaces it, so
+// one process-wide holder is the design.
 var (
-	wlHeldMu sync.Mutex
-	wlHeld   *wlSession
+	wlHeldMu sync.Mutex //nolint:gochecknoglobals // reason: the held source outlives the call that created it.
+	wlHeld   *wlSession //nolint:gochecknoglobals // reason: the held source outlives the call that created it.
 )
 
 func wlNativeSession(ctx context.Context) (*wlSession, error) {
@@ -339,7 +352,7 @@ func wlNativeSession(ctx context.Context) (*wlSession, error) {
 		deadline = d
 	}
 
-	return openWLSession(os.Getenv("WAYLAND_DISPLAY"), os.Getenv("XDG_RUNTIME_DIR"), deadline)
+	return openWLSession(ctx, os.Getenv("WAYLAND_DISPLAY"), os.Getenv("XDG_RUNTIME_DIR"), deadline)
 }
 
 // wlNativeWrite reports false when the compositor lacks data-control or the

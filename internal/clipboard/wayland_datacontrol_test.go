@@ -44,7 +44,7 @@ const fakeOfferBase = 0xff000000
 func newFakeComp(t *testing.T, manager string) *fakeComp {
 	t.Helper()
 	dir := t.TempDir()
-	ln, err := net.Listen("unix", filepath.Join(dir, "wayland-fake"))
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "unix", filepath.Join(dir, "wayland-fake"))
 	if err != nil {
 		t.Skipf("unix sockets unavailable: %v", err)
 	}
@@ -80,7 +80,10 @@ func (f *fakeComp) accept() {
 		if err != nil {
 			return
 		}
-		uc := c.(*net.UnixConn)
+		uc, ok := c.(*net.UnixConn)
+		if !ok {
+			return
+		}
 		cl := &fakeClient{
 			comp: f, conn: &wlConn{c: uc}, ifc: map[uint32]string{1: "wl_display"},
 			sMim: map[uint32][]string{}, serverID: fakeOfferBase,
@@ -210,7 +213,7 @@ func (c *fakeClient) receive(r *wlReader) {
 		_, _ = io.WriteString(fd, *seeded)
 		_ = fd.Close()
 	case owner != nil:
-		_ = owner.conn.send(ownerID, wlEvSend, wlArgs(nil).str(mime), int(fd.Fd())) //nolint:gosec // reason: live pipe fd.
+		_ = owner.conn.send(ownerID, wlEvSend, wlArgs(nil).str(mime), int(fd.Fd()))
 		_ = fd.Close()
 	default:
 		_ = fd.Close()
@@ -243,7 +246,7 @@ func TestWLWireEncoding(t *testing.T) {
 }
 
 func TestWLNativeRoundTrip(t *testing.T) {
-	for _, mgr := range wlManagers {
+	for _, mgr := range wlManagerNames() {
 		t.Run(mgr, func(t *testing.T) {
 			newFakeComp(t, mgr)
 			ctx := context.Background()
@@ -264,7 +267,7 @@ func TestWLNativeRoundTrip(t *testing.T) {
 }
 
 func TestWLNativeLargeText(t *testing.T) {
-	newFakeComp(t, wlManagers[0])
+	newFakeComp(t, wlManagerNames()[0])
 	text := string(bytes.Repeat([]byte("abcdefgh"), 1<<17)) // 1 MiB, exceeds the pipe buffer
 	if !wlNativeWrite(context.Background(), text) {
 		t.Fatal("write not handled")
@@ -276,7 +279,7 @@ func TestWLNativeLargeText(t *testing.T) {
 }
 
 func TestWLNativeReadsForeignSelection(t *testing.T) {
-	f := newFakeComp(t, wlManagers[1])
+	f := newFakeComp(t, wlManagerNames()[1])
 	f.seed("from another app")
 	got, ok, handled := wlNativeRead(context.Background())
 	if !handled || !ok || got != "from another app" {
@@ -285,7 +288,7 @@ func TestWLNativeReadsForeignSelection(t *testing.T) {
 }
 
 func TestWLNativeClearAndEmpty(t *testing.T) {
-	newFakeComp(t, wlManagers[0])
+	newFakeComp(t, wlManagerNames()[0])
 	ctx := context.Background()
 	if _, ok, handled := wlNativeRead(ctx); !handled || ok {
 		t.Fatalf("empty selection ok=%v handled=%v", ok, handled)
@@ -300,7 +303,7 @@ func TestWLNativeClearAndEmpty(t *testing.T) {
 }
 
 func TestWLNativeReplacedSourceIsCancelled(t *testing.T) {
-	newFakeComp(t, wlManagers[0])
+	newFakeComp(t, wlManagerNames()[0])
 	ctx := context.Background()
 	wlNativeWrite(ctx, "one")
 	wlHeldMu.Lock()
@@ -313,7 +316,7 @@ func TestWLNativeReplacedSourceIsCancelled(t *testing.T) {
 		t.Fatalf("got %q ok=%v", got, ok)
 	}
 	deadline := time.Now().Add(2 * time.Second)
-	for !first.cancelled && time.Now().Before(deadline) {
+	for !first.cancelled.Load() && time.Now().Before(deadline) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	// first.conn was closed by the replacement; serve exits either way.
@@ -351,7 +354,7 @@ func TestWLNativeNoSocket(t *testing.T) {
 }
 
 func TestWLNativeThroughRouting(t *testing.T) {
-	newFakeComp(t, wlManagers[0])
+	newFakeComp(t, wlManagerNames()[0])
 	ctx := context.Background()
 	if !writeOS(ctx, "routed") {
 		t.Fatal("writeOS failed")
@@ -370,17 +373,21 @@ func TestWLNativeThroughRouting(t *testing.T) {
 
 func TestWLNativeCompositorErrorFallsBack(t *testing.T) {
 	dir := t.TempDir()
-	ln, err := net.Listen("unix", filepath.Join(dir, "wayland-bad"))
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "unix", filepath.Join(dir, "wayland-bad"))
 	if err != nil {
 		t.Skip(err)
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 	go func() {
 		c, err := ln.Accept()
 		if err != nil {
 			return
 		}
-		conn := &wlConn{c: c.(*net.UnixConn)}
+		uc, ok := c.(*net.UnixConn)
+		if !ok {
+			return
+		}
+		conn := &wlConn{c: uc}
 		_, _, _, _ = conn.recv()
 		_ = conn.send(1, wlEvError, wlArgs(nil).u32(1).u32(0).str("boom"))
 	}()
