@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"hash"
 	"hash/fnv"
 	"math"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -44,8 +46,6 @@ const (
 	propBenchHalfDiv       = 2
 	propBenchMinBaseNS     = 1000
 	propBenchRasterMinMul  = 10
-	propBenchComboMinMul   = 5
-	propBenchComboMinOut   = 10
 	propBenchScoreWeight   = 4
 	propBenchSigScale      = 100
 	propBenchByteBits      = 8
@@ -57,6 +57,11 @@ const (
 	propBenchHoverOffY     = 4.0
 	propBenchComboRefineN  = 10
 	propBenchComboRefineIt = 3
+	// propBenchNoiseNS is the smallest per-stage or per-phase delta the
+	// classifier and the scaling ratio treat as a property cost. The
+	// no-effect rows of a full sweep spread about ±0.2 ms on single-sample
+	// phases, so stage deltas below this read as noise, not as a layer.
+	propBenchNoiseNS = 20_000
 )
 
 type propBenchOpts struct {
@@ -157,6 +162,12 @@ type propDumpRow struct {
 	EffectEvidence []string `json:"effect_evidence,omitempty"`
 	HighPrecision  bool     `json:"high_precision"`
 	Layer          string   `json:"bottleneck_layer"`
+	// SupportDecl is the declaration list the variant adds before the
+	// property so an otherwise inert longhand runs (see animSupportDecl).
+	SupportDecl string `json:"support_decl,omitempty"`
+	// EngineError marks Err as a product failure (page build or Redraw
+	// refused the variant or control), not a harness failure.
+	EngineError bool `json:"engine_error,omitempty"`
 
 	// Phase 1: Cold build (New + Redraw), paired against same DOM scaffold without property.
 	ColdNS          int64  `json:"cold_ns"`
@@ -172,11 +183,21 @@ type propDumpRow struct {
 	LayoutNS        int64  `json:"layout_ns"`
 	PaintNS         int64  `json:"paint_ns"`
 	OtherNS         int64  `json:"other_ns"`
+	// Control* are the control page's stage times from the same cold pair.
+	// The layer classifier uses variant minus control per stage.
+	ControlStyleNS  int64 `json:"control_style_ns"`
+	ControlLayoutNS int64 `json:"control_layout_ns"`
+	ControlPaintNS  int64 `json:"control_paint_ns"`
+	ControlOtherNS  int64 `json:"control_other_ns"`
 
-	// Phase 2: Warm unchanged redraw after one settle tick.
-	WarmNS     int64  `json:"warm_ns"`
-	WarmBytes  uint64 `json:"warm_bytes"`
-	WarmAllocs uint64 `json:"warm_allocs"`
+	// Phase 2: Unchanged redraw after one settle tick. An identical Redraw
+	// normally skips, so this measures the skip check plus any rebuild the
+	// property forces. WarmControlNS is the same redraw on the control page.
+	WarmNS        int64  `json:"warm_ns"`
+	WarmControlNS int64  `json:"warm_control_ns"`
+	WarmDeltaNS   int64  `json:"warm_delta_ns"`
+	WarmBytes     uint64 `json:"warm_bytes"`
+	WarmAllocs    uint64 `json:"warm_allocs"`
 
 	// Phase 3: Hover toggle inside a 64-node RetainState container.
 	HoverNS             int64    `json:"hover_ns"`
@@ -203,17 +224,22 @@ type propDumpRow struct {
 	ResizeLayoutNS  int64  `json:"resize_layout_ns"`
 
 	// Phase 5: Scaled uniform 64-node container build (exposes O(N^2) scaling).
-	Scale64NS        int64   `json:"scale64_ns"`
-	Scale64ControlNS int64   `json:"scale64_control_ns"`
-	Scale64IQRNS     int64   `json:"scale64_iqr_ns"`
-	Scale64DeltaNS   int64   `json:"scale64_delta_ns"`
-	Scale64Bytes     uint64  `json:"scale64_bytes"`
-	Scale64Allocs    uint64  `json:"scale64_allocs"`
-	Scale64Ops       int     `json:"scale64_ops"`
-	ScalingRatio     float64 `json:"scaling_ratio"`
+	Scale64NS        int64  `json:"scale64_ns"`
+	Scale64ControlNS int64  `json:"scale64_control_ns"`
+	Scale64IQRNS     int64  `json:"scale64_iqr_ns"`
+	Scale64DeltaNS   int64  `json:"scale64_delta_ns"`
+	Scale64Bytes     uint64 `json:"scale64_bytes"`
+	Scale64Allocs    uint64 `json:"scale64_allocs"`
+	Scale64Ops       int    `json:"scale64_ops"`
+	// Scale1DeltaNS is the paired 1-node uniform delta with the same
+	// declaration. ScalingRatio is Scale64DeltaNS / Scale1DeltaNS, left 0
+	// when either delta is within propBenchNoiseNS.
+	Scale1DeltaNS int64   `json:"scale1_delta_ns"`
+	ScalingRatio  float64 `json:"scaling_ratio"`
 
 	// Phase 6: Tick + software raster (PNGWithContext) + display-list signals.
 	TickNS          int64  `json:"tick_ns"`
+	TickControlNS   int64  `json:"tick_control_ns"`
 	TickAllocs      uint64 `json:"tick_allocs"`
 	MotionBound     int    `json:"motion_bound"`
 	MotionActive    int    `json:"motion_active"`
@@ -223,9 +249,20 @@ type propDumpRow struct {
 	RasterDeltaNS   int64  `json:"raster_delta_ns"`
 	RasterBytes     uint64 `json:"raster_bytes"`
 	RasterAllocs    uint64 `json:"raster_allocs"`
-	Ops             int    `json:"ops"`
-	ExtraOps        int    `json:"extra_ops"`
-	BitmapFallback  bool   `json:"bitmap_fallback"`
+	// RasterDeltaValid is false when only one side is a bitmap fallback:
+	// that side painted during Redraw, before the PNG-only timer, so
+	// RasterDeltaNS compares encode against paint plus encode.
+	RasterDeltaValid bool `json:"raster_delta_valid"`
+	// RasterFull* time Redraw plus PNGWithContext on fresh pages, so paint
+	// lands inside the timer on both sides whichever path paints it.
+	RasterFullNS        int64 `json:"raster_full_ns"`
+	RasterFullControlNS int64 `json:"raster_full_control_ns"`
+	RasterFullDeltaNS   int64 `json:"raster_full_delta_ns"`
+	// ControlBitmapFallback reports the control page's paint path.
+	ControlBitmapFallback bool `json:"control_bitmap_fallback"`
+	Ops                   int  `json:"ops"`
+	ExtraOps              int  `json:"extra_ops"`
+	BitmapFallback        bool `json:"bitmap_fallback"`
 
 	PhaseErrors map[string]string `json:"phase_errors,omitempty"`
 	Err         string            `json:"error,omitempty"`
@@ -250,6 +287,49 @@ func activeSampleOverrides() map[string]string {
 		"will-change":                 "transform, opacity",
 		"clip-path":                   "inset(4px round 8px)",
 	}
+}
+
+// animRunDecl gives a uniform or hover fixture a running animation. The
+// property declaration follows it, so a longhand under test overrides its
+// own component.
+const animRunDecl = "animation-name:slide;animation-duration:1s;animation-timing-function:linear;animation-iteration-count:infinite;"
+
+// animNameSupportDecl is everything an animation needs except its name, so
+// the animation-name row is what starts it.
+const animNameSupportDecl = "animation-duration:1s;animation-timing-function:linear;animation-iteration-count:infinite;"
+
+// animSupportDecl returns the declarations an animation longhand needs to
+// run on a uniform or hover fixture. Alone, animation-duration or
+// animation-direction declares no animation, and animation-name alone runs
+// a zero-second animation, so the row measured nothing. Scroll-driven
+// longhands (timeline, range, trigger) are left alone.
+func animSupportDecl(name string) string {
+	switch strings.TrimPrefix(name, "-webkit-") {
+	case "animation-name":
+		return animNameSupportDecl
+	case "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode",
+		"animation-iteration-count", "animation-play-state", "animation-timing-function", "animation-composition":
+		return animRunDecl
+	}
+
+	return ""
+}
+
+// variantDecl is the declaration list a uniform or hover variant applies for
+// one property: its support declarations, then the property itself.
+func variantDecl(name, sample string) string {
+	return animSupportDecl(name) + name + ":" + sample + ";"
+}
+
+// coldSpecFor returns the cold-phase demo for a property. The catalog's
+// animation-name demo already runs the animation on both sides, so the
+// harness uses a base that lacks only the name.
+func coldSpecFor(r genProp) DemoSpec {
+	if strings.TrimPrefix(r.Name, "-webkit-") == "animation-name" {
+		return DemoSpec{HTML: animBox(animNameSupportDecl)}
+	}
+
+	return specFor(r)
 }
 
 func activeSample(r genProp) (string, bool) {
@@ -386,6 +466,12 @@ func displaySignature(p *ownframe.Page) uint64 {
 		binary.LittleEndian.PutUint64(buf[:], v)
 		_, _ = h.Write(buf[:])
 	}
+	// writeInt folds a signed value as a varint, so no sign conversion is
+	// needed for indices, z-indices, or sticky ids.
+	writeInt := func(v int) {
+		var buf [binary.MaxVarintLen64]byte
+		_, _ = h.Write(binary.AppendVarint(buf[:0], int64(v)))
+	}
 	writeF64 := func(v float64) {
 		writeU64(math.Float64bits(math.Round(v*propBenchSigScale) / propBenchSigScale))
 	}
@@ -399,6 +485,12 @@ func displaySignature(p *ownframe.Page) uint64 {
 	}
 	if d := p.Probe().Display(); d != nil {
 		writeU64(uint64(len(d.Ops)))
+		// Paint order carries z-index and stacking changes that leave
+		// every op's own fields alone.
+		writeU64(uint64(len(d.Order)))
+		for _, idx := range d.Order {
+			writeInt(idx)
+		}
 		for i := range d.Ops {
 			op := &d.Ops[i]
 			writeU64(uint64(op.Kind))
@@ -416,6 +508,18 @@ func displaySignature(p *ownframe.Page) uint64 {
 			writeF64(op.Width)
 			writeF64(float64(op.RotateDeg))
 			writeU64(uint64(op.StrokeMask))
+			for _, value := range [...]float64{
+				op.RadiusY, op.RadiusTopLeft, op.RadiusTopRight, op.RadiusBottomRight, op.RadiusBottomLeft,
+				op.RadiusTopLeftY, op.RadiusTopRightY, op.RadiusBottomRightY, op.RadiusBottomLeftY,
+				op.Opacity(),
+			} {
+				writeF64(value)
+			}
+			writeInt(op.ZIndex)
+			writeInt(op.StickyID)
+			writeU64(boolBits(op.ZIndexSet, op.Fixed, op.Bold, op.Positioned))
+			_, _ = h.Write([]byte(op.BlendModeName()))
+			writeGroupChain(h, op.Group())
 			if op.XformSet {
 				m := op.Transform()
 				for _, value := range [...]float64{m.A, m.B, m.C, m.D, m.E, m.F} {
@@ -434,6 +538,39 @@ func displaySignature(p *ownframe.Page) uint64 {
 	}
 
 	return h.Sum64()
+}
+
+// boolBits packs flags into one word for the signature.
+func boolBits(flags ...bool) uint64 {
+	var bits uint64
+	for i, f := range flags {
+		if f {
+			bits |= 1 << i
+		}
+	}
+
+	return bits
+}
+
+// writeGroupChain hashes the compositing metadata of an op's group chain:
+// blend mode, backdrop filter, isolation, and mask presence. Opacity,
+// filters, blending, and masks live on the group rather than the op, so an
+// op-only signature misses them. Group IDs are left out: they number groups
+// in creation order, which is not paint.
+func writeGroupChain(h hash.Hash64, g *layout.DisplayGroup) {
+	depth := uint64(0)
+	for ; g != nil; g = g.Parent {
+		depth++
+		_, _ = h.Write([]byte(g.Mode))
+		_, _ = h.Write([]byte{0})
+		_, _ = h.Write([]byte(g.BackdropFilter))
+		var flags [propBenchByteBits]byte
+		binary.LittleEndian.PutUint64(flags[:], boolBits(g.Isolate, g.Mask != nil, g.MaskBorder != nil))
+		_, _ = h.Write(flags[:])
+	}
+	var buf [propBenchByteBits]byte
+	binary.LittleEndian.PutUint64(buf[:], depth)
+	_, _ = h.Write(buf[:])
 }
 
 func countExtraOps(d *layout.Display) int {
@@ -475,10 +612,8 @@ func buildHoverDoc(head, propName, sample string, withStyle bool) string {
 	b.WriteString(`<style>`)
 	if withStyle {
 		b.WriteString(`#h0:hover{`)
-		b.WriteString(propName)
-		b.WriteString(`:`)
-		b.WriteString(sample)
-		b.WriteString(`;}`)
+		b.WriteString(variantDecl(propName, sample))
+		b.WriteString(`}`)
 	} else {
 		b.WriteString(`#h0:hover{}`)
 	}
@@ -501,30 +636,41 @@ func findHoverTarget(p *ownframe.Page, id string) (float64, float64, bool) {
 	return 0, 0, false
 }
 
+// classifyBottleneckLayer names the layer that pays most of the property's
+// added cost. Stage times are variant minus control from the same cold pair,
+// so a layer that dominates every page (layout, usually) does not win by
+// default. Explicit path changes take precedence: a bitmap fallback is the
+// software painter, and a hover full-layout fallback is the page's patch
+// scope. A row whose largest delta stays within propBenchNoiseNS is "noise".
 func classifyBottleneckLayer(row propDumpRow) string {
 	if row.BitmapFallback {
 		return "ownframe/replay+bitmap"
 	}
-	if row.HoverFallbacks > 0 || row.WarmAllocs > 0 {
+	if row.HoverFallbacks > 0 {
 		return "ownframe/page+motion"
 	}
-	if row.RasterDeltaNS > row.ColdDeltaNS*propBenchHalfDiv && row.RasterDeltaNS > propBenchMinBaseNS*propBenchRasterMinMul {
-		return "ownframe/replay+bitmap"
+	raster := int64(0)
+	if row.RasterDeltaValid {
+		raster = row.RasterDeltaNS
 	}
-	if row.StyleNS > row.LayoutNS && row.StyleNS > row.OtherNS && row.StyleNS > row.PaintNS {
-		return "blinkless/css"
+	stages := [...]struct {
+		layer string
+		delta int64
+	}{
+		{"blinkless/css", row.StyleNS - row.ControlStyleNS},
+		{"blinkless/layout", row.LayoutNS - row.ControlLayoutNS},
+		{"ownframe/replay+bitmap", row.PaintNS - row.ControlPaintNS},
+		{"ownframe/page+motion", row.OtherNS - row.ControlOtherNS},
+		{"ownframe/replay+bitmap", raster},
 	}
-	if row.LayoutNS >= row.StyleNS && row.LayoutNS > row.OtherNS && row.LayoutNS > row.PaintNS {
-		return "blinkless/layout"
-	}
-	if row.PaintNS > row.OtherNS {
-		return "ownframe/replay+bitmap"
-	}
-	if row.OtherNS > 0 {
-		return "ownframe/page+motion"
+	best, bestDelta := "noise", int64(propBenchNoiseNS)
+	for _, stage := range stages {
+		if stage.delta > bestDelta {
+			best, bestDelta = stage.layer, stage.delta
+		}
 	}
 
-	return "balanced"
+	return best
 }
 
 func measureSharedBaselines(ctx context.Context, iters int) (sharedBaselines, error) {
@@ -590,4 +736,96 @@ func safeSubUint64(a, b uint64) int64 {
 	}
 
 	return -int64(diff)
+}
+
+func TestClassifyBottleneckLayerUsesStageDeltas(t *testing.T) {
+	t.Parallel()
+	const ms = 1_000_000
+	cases := []struct {
+		name string
+		row  propDumpRow
+		want string
+	}{
+		{"layout heavy page, no added cost", propDumpRow{LayoutNS: 3 * ms, ControlLayoutNS: 3 * ms}, "noise"},
+		{"added style cost", propDumpRow{StyleNS: ms, ControlStyleNS: ms / 10, LayoutNS: 3 * ms, ControlLayoutNS: 3 * ms}, "blinkless/css"},
+		{"added layout cost", propDumpRow{LayoutNS: 4 * ms, ControlLayoutNS: 3 * ms}, "blinkless/layout"},
+		{"added paint cost", propDumpRow{PaintNS: ms, ControlPaintNS: 0}, "ownframe/replay+bitmap"},
+		{"valid raster cost", propDumpRow{RasterDeltaNS: ms, RasterDeltaValid: true}, "ownframe/replay+bitmap"},
+		{"invalid raster delta ignored", propDumpRow{RasterDeltaNS: ms}, "noise"},
+		{"bitmap fallback wins", propDumpRow{BitmapFallback: true, LayoutNS: 4 * ms}, "ownframe/replay+bitmap"},
+		{"hover fallback wins", propDumpRow{HoverFallbacks: 1, LayoutNS: 4 * ms}, "ownframe/page+motion"},
+		{"warm allocs no longer force motion", propDumpRow{WarmAllocs: 200}, "noise"},
+	}
+	for _, c := range cases {
+		if got := classifyBottleneckLayer(c.row); got != c.want {
+			t.Errorf("%s: layer = %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+// TestPropPerfAnimationLonghandsRun checks that animation-name, alone or
+// prefixed, now starts an animation the cold fixture's control lacks, and
+// that a longhand gets the support declarations on the uniform fixture.
+func TestPropPerfAnimationLonghandsRun(t *testing.T) {
+	ctx := context.Background()
+	for _, name := range []string{"animation-name", "-webkit-animation-name"} {
+		row := measurePropertyFull(ctx, genProp{Name: name, Sample: "slide"}, 1, false)
+		if row.Err != "" {
+			t.Fatalf("%s: %s", name, row.Err)
+		}
+		if !slices.Contains(row.EffectEvidence, "motion") {
+			t.Fatalf("%s: evidence = %v, want motion", name, row.EffectEvidence)
+		}
+	}
+	if decl := variantDecl("animation-duration", "2s"); !strings.HasPrefix(decl, animRunDecl) ||
+		!strings.HasSuffix(decl, "animation-duration:2s;") {
+		t.Fatalf("animation-duration decl = %q", decl)
+	}
+	if decl := variantDecl("color", "red"); decl != "color:red;" {
+		t.Fatalf("color decl = %q", decl)
+	}
+}
+
+// TestDisplaySignatureSeesGroupAndOrder checks the signature reacts to
+// effects that live on the compositing group or the paint order.
+func TestDisplaySignatureSeesGroupAndOrder(t *testing.T) {
+	ctx := context.Background()
+	page := func(style string) *ownframe.Page {
+		p, err := newBenchPage(propBenchHead()+`<div style="position:relative">`+
+			`<div id="a" class="pitem" style="position:relative;`+style+`">a</div>`+
+			`<div id="b" class="pitem" style="position:relative;margin-top:-10px">b</div></div>`,
+			propBenchWidth, propBenchHeight, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := p.Redraw(ctx); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	base := displaySignature(page(""))
+	for _, style := range []string{"z-index:2", "mix-blend-mode:multiply", "isolation:isolate"} {
+		if displaySignature(page(style)) == base {
+			t.Errorf("%s left the display signature unchanged", style)
+		}
+	}
+}
+
+// TestPropPerfEngineErrorKeepsPhases checks that a fixture the page refuses
+// is labelled an engine error and still runs the phases that build their
+// own pages.
+func TestPropPerfEngineErrorKeepsPhases(t *testing.T) {
+	row := measurePropertyFull(context.Background(), genProp{Name: "font-variant", Sample: "small-caps"}, 1, false)
+	if row.Err == "" {
+		t.Skip("font-variant now renders; the engine-error path has no fixture")
+	}
+	if !row.EngineError {
+		t.Fatalf("cold failure %q not marked as an engine error", row.Err)
+	}
+	if row.HoverNS == 0 && row.PhaseErrors["hover"] == "" {
+		t.Fatal("hover phase neither ran nor recorded an error")
+	}
+	if row.Scale64NS == 0 && row.PhaseErrors["scale64"] == "" {
+		t.Fatal("scale64 phase neither ran nor recorded an error")
+	}
 }

@@ -30,26 +30,6 @@ func (work *coldWorkload) run(ctx context.Context) error {
 	return nil
 }
 
-func measureColdSingle(ctx context.Context, doc string, w, h, iters int, gcIsolate, withAllocs bool) (
-	timingStats, allocStats, ownframe.Stats, *ownframe.Page, uint64, error,
-) {
-	work := coldWorkload{doc: doc, w: w, h: h}
-	run := func() error { return work.run(ctx) }
-	tm, err := measureTimedNS(iters, gcIsolate, run)
-	if err != nil {
-		return timingStats{}, allocStats{}, ownframe.Stats{}, nil, 0, err
-	}
-	var al allocStats
-	if withAllocs {
-		al, err = measureAllocAvg(max(1, iters/propBenchHalfDiv), run)
-		if err != nil {
-			return timingStats{}, allocStats{}, ownframe.Stats{}, nil, 0, err
-		}
-	}
-
-	return tm, al, work.p.Probe().Stats(), work.p, displaySignature(work.p), nil
-}
-
 type coldMeasurement struct {
 	timing timingStats
 	allocs allocStats
@@ -268,20 +248,26 @@ type rasterWorkload struct {
 	pages []*ownframe.Page
 	pngs  [][]byte
 	index int
+	// redraw moves Redraw inside the timed sample, so the paint lands in
+	// the timer whichever path paints it.
+	redraw bool
 }
 
-func newRasterWorkload(ctx context.Context, doc string, w, h, iters int) (rasterWorkload, error) {
+func newRasterWorkload(ctx context.Context, doc string, w, h, n int, redraw bool) (rasterWorkload, error) {
 	work := rasterWorkload{
-		pages: make([]*ownframe.Page, iters),
-		pngs:  make([][]byte, iters),
+		pages:  make([]*ownframe.Page, n),
+		pngs:   make([][]byte, n),
+		redraw: redraw,
 	}
 	for i := range work.pages {
 		p, err := newBenchPage(doc, w, h, false)
 		if err != nil {
 			return rasterWorkload{}, err
 		}
-		if err := p.Redraw(ctx); err != nil {
-			return rasterWorkload{}, err
+		if !redraw {
+			if err := p.Redraw(ctx); err != nil {
+				return rasterWorkload{}, err
+			}
 		}
 		work.pages[i] = p
 	}
@@ -290,7 +276,13 @@ func newRasterWorkload(ctx context.Context, doc string, w, h, iters int) (raster
 }
 
 func (work *rasterWorkload) run(ctx context.Context) error {
-	work.pngs[work.index] = work.pages[work.index].Probe().PNGWithContext(ctx)
+	p := work.pages[work.index]
+	if work.redraw {
+		if err := p.Redraw(ctx); err != nil {
+			return err
+		}
+	}
+	work.pngs[work.index] = p.Probe().PNGWithContext(ctx)
 	work.index++
 
 	return nil
@@ -308,22 +300,31 @@ func validateRasterPNG(data []byte) error {
 }
 
 type rasterMeasurement struct {
-	timing timingStats
-	allocs allocStats
-	png    []byte
+	timing   timingStats
+	allocs   allocStats
+	png      []byte
+	fallback bool
 }
 
 func measureRasterWorkloads(
 	ctx context.Context, w, h, iters int, gcIsolate bool, docs ...string,
 ) ([]rasterMeasurement, error) {
-	// Keep one fresh page per timed sample and one for allocations. Redraw
-	// happens before timing and each page is encoded exactly once.
+	return measureRasterMode(ctx, w, h, iters, gcIsolate, false, docs...)
+}
+
+// measureRasterMode keeps one fresh page per timed sample and one for
+// allocations, and encodes each page exactly once. With redraw false the
+// pages are drawn before timing and the timer covers PNGWithContext only;
+// with redraw true it covers Redraw plus PNGWithContext.
+func measureRasterMode(
+	ctx context.Context, w, h, iters int, gcIsolate, redraw bool, docs ...string,
+) ([]rasterMeasurement, error) {
 	iters = max(1, iters)
 	work := make([]rasterWorkload, len(docs))
 	timed := make([]func() error, len(docs))
 	for i, doc := range docs {
 		var err error
-		work[i], err = newRasterWorkload(ctx, doc, w, h, iters+1)
+		work[i], err = newRasterWorkload(ctx, doc, w, h, iters+1, redraw)
 		if err != nil {
 			return nil, fmt.Errorf("prepare workload %d: %w", i+1, err)
 		}
@@ -348,7 +349,11 @@ func measureRasterWorkloads(
 				return nil, fmt.Errorf("workload %d sample %d: %w", i+1, j+1, err)
 			}
 		}
-		results[i] = rasterMeasurement{timing: timing[i], allocs: allocs, png: work[i].pngs[0]}
+		first := work[i].pages[0].Probe()
+		results[i] = rasterMeasurement{
+			timing: timing[i], allocs: allocs, png: work[i].pngs[0],
+			fallback: first.Image() != nil && first.Display() == nil,
+		}
 	}
 
 	return results, nil
@@ -366,11 +371,19 @@ func measureSingleRaster(ctx context.Context, doc string, w, h, iters int, gcIso
 }
 
 func measurePropertyScale(ctx context.Context, row *propDumpRow, head string, iters int, gcIsolate bool) error {
+	decl := variantDecl(row.Name, row.Sample)
 	offDoc := buildUniformScaleDoc(head, "", propBenchScaleNodes)
-	onDoc := buildUniformScaleDoc(head, row.Name+":"+row.Sample+";", propBenchScaleNodes)
+	onDoc := buildUniformScaleDoc(head, decl, propBenchScaleNodes)
 	off, on, err := measureColdPair(ctx, offDoc, onDoc, propBenchScaleWidth, propBenchScaleHeight, iters, gcIsolate)
 	if err != nil {
 		return err
+	}
+	// The scaling ratio compares the same declaration on 64 and on 1 uniform
+	// box, so both deltas come from one fixture shape.
+	off1, on1, err := measureColdPair(ctx, buildUniformScaleDoc(head, "", 1), buildUniformScaleDoc(head, decl, 1),
+		propBenchScaleWidth, propBenchScaleHeight, iters, gcIsolate)
+	if err != nil {
+		return fmt.Errorf("1-node pair: %w", err)
 	}
 	row.Scale64NS = on.timing.MedianNS
 	row.Scale64ControlNS = off.timing.MedianNS
@@ -381,8 +394,10 @@ func measurePropertyScale(ctx context.Context, row *propDumpRow, head string, it
 	if d := on.page.Probe().Display(); d != nil {
 		row.Scale64Ops = len(d.Ops)
 	}
-	if row.Scale64DeltaNS > 0 {
-		row.ScalingRatio = float64(row.Scale64DeltaNS) / float64(max(propBenchMinBaseNS, row.ColdDeltaNS))
+	row.Scale1DeltaNS = on1.timing.MedianNS - off1.timing.MedianNS
+	row.ScalingRatio = 0
+	if row.Scale64DeltaNS > propBenchNoiseNS && row.Scale1DeltaNS > propBenchNoiseNS {
+		row.ScalingRatio = float64(row.Scale64DeltaNS) / float64(row.Scale1DeltaNS)
 	}
 	if displaySignature(off.page) != displaySignature(on.page) {
 		row.EffectEvidence = append(row.EffectEvidence, "scale64-display")
@@ -397,6 +412,20 @@ func measurePropertyRaster(ctx context.Context, row *propDumpRow, offDoc, onDoc 
 		return err
 	}
 	off, on := results[0], results[1]
+	// A bitmap-fallback page paints during Redraw, before the PNG-only
+	// timer, while a display-list page paints inside PNGWithContext. The
+	// PNG-only delta then compares encode against paint plus encode, so it
+	// is flagged invalid, and the full timing (Redraw plus PNG on fresh
+	// pages) carries a delta that is comparable on every row.
+	row.ControlBitmapFallback = off.fallback
+	row.RasterDeltaValid = off.fallback == on.fallback
+	full, err := measureRasterMode(ctx, propBenchWidth, propBenchHeight, iters, gcIsolate, true, offDoc, onDoc)
+	if err != nil {
+		return fmt.Errorf("full: %w", err)
+	}
+	row.RasterFullNS = full[1].timing.MedianNS
+	row.RasterFullControlNS = full[0].timing.MedianNS
+	row.RasterFullDeltaNS = row.RasterFullNS - row.RasterFullControlNS
 	row.RasterNS = on.timing.MedianNS
 	row.RasterControlNS = off.timing.MedianNS
 	row.RasterIQRNS = on.timing.IQRNS
@@ -435,6 +464,7 @@ func measurePropertyFull(ctx context.Context, r genProp, iters int, highPrecisio
 		OverrideUsed:  overrideUsed,
 		Declined:      declines(r.Name),
 		HighPrecision: highPrecision,
+		SupportDecl:   animSupportDecl(r.Name),
 	}
 
 	phaseIters := 1
@@ -443,18 +473,43 @@ func measurePropertyFull(ctx context.Context, r genProp, iters int, highPrecisio
 	}
 
 	head := propBenchHead()
-	spec := specFor(prop)
+	spec := coldSpecFor(prop)
 	offDoc := head + spec.expand(prop, "p", false)
 	onDoc := head + spec.expand(prop, "p", true)
 
 	off, on, err := measureColdPair(ctx, offDoc, onDoc, propBenchWidth, propBenchHeight, phaseIters, highPrecision)
 	if err != nil {
+		// A page build or Redraw refused the fixture: a product failure,
+		// kept visible in Err. The uniform, hover, and resize phases build
+		// their own pages, so they still run and record their own errors.
 		row.Err = fmt.Sprintf("cold: %v", err)
-
-		return row
+		row.EngineError = true
+	} else {
+		measureColdAndMotion(ctx, &row, off, on, phaseIters)
 	}
+
+	row.notePhaseError("hover", measurePropertyHover(ctx, &row, head, phaseIters, highPrecision))
+	if row.Err == "" {
+		row.notePhaseError("resize", measurePropertyResize(ctx, &row, offDoc, onDoc, phaseIters, highPrecision))
+	}
+	reducedIters := max(1, phaseIters/propBenchHalfDiv)
+	row.notePhaseError("scale64", measurePropertyScale(ctx, &row, head, reducedIters, highPrecision))
+	if row.Err == "" {
+		row.notePhaseError("raster", measurePropertyRaster(ctx, &row, offDoc, onDoc, reducedIters, highPrecision))
+	}
+
+	row.Effective = len(row.EffectEvidence) > 0
+	row.Layer = classifyBottleneckLayer(row)
+
+	return row
+}
+
+// measureColdAndMotion records the cold pair, the settle tick, and the
+// paired unchanged-redraw and tick timings.
+func measureColdAndMotion(ctx context.Context, row *propDumpRow, off, on coldMeasurement, phaseIters int) {
 	onPage := on.page
 	onStats := onPage.Probe().Stats()
+	offStats := off.page.Probe().Stats()
 	if displaySignature(off.page) != displaySignature(onPage) {
 		row.EffectEvidence = append(row.EffectEvidence, "cold-display")
 	}
@@ -471,6 +526,10 @@ func measurePropertyFull(ctx context.Context, r genProp, iters int, highPrecisio
 	row.LayoutNS = onStats.LayoutTime.Nanoseconds()
 	row.PaintNS = onStats.PaintTime.Nanoseconds()
 	row.OtherNS = onStats.OtherTime.Nanoseconds()
+	row.ControlStyleNS = offStats.StyleTime.Nanoseconds()
+	row.ControlLayoutNS = offStats.LayoutTime.Nanoseconds()
+	row.ControlPaintNS = offStats.PaintTime.Nanoseconds()
+	row.ControlOtherNS = offStats.OtherTime.Nanoseconds()
 	if d := onPage.Probe().Display(); d != nil {
 		row.Ops = len(d.Ops)
 		row.ExtraOps = countExtraOps(d)
@@ -478,7 +537,9 @@ func measurePropertyFull(ctx context.Context, r genProp, iters int, highPrecisio
 	row.BitmapFallback = onPage.Probe().Image() != nil && onPage.Probe().Display() == nil
 
 	tick := func() error { return onPage.Testing().Tick(ctx) }
+	offTick := func() error { return off.page.Testing().Tick(ctx) }
 	row.notePhaseError("tick-settle", tick())
+	row.notePhaseError("tick-settle-control", offTick())
 	motionStats := onPage.Probe().Motion()
 	offMotion := off.page.Probe().Motion()
 	row.MotionBound = motionStats.Bound + motionStats.TransitionsBound
@@ -488,8 +549,11 @@ func measurePropertyFull(ctx context.Context, r genProp, iters int, highPrecisio
 	}
 
 	redraw := func() error { return onPage.Redraw(ctx) }
-	if warmT, err := measureTimedNS(phaseIters, false, redraw); err == nil {
-		row.WarmNS = warmT.MedianNS
+	offRedraw := func() error { return off.page.Redraw(ctx) }
+	if warm, err := measureWorkloadsNS(phaseIters, false, offRedraw, redraw); err == nil {
+		row.WarmControlNS = warm[0].MedianNS
+		row.WarmNS = warm[1].MedianNS
+		row.WarmDeltaNS = row.WarmNS - row.WarmControlNS
 	} else {
 		row.notePhaseError("warm", err)
 	}
@@ -499,8 +563,9 @@ func measurePropertyFull(ctx context.Context, r genProp, iters int, highPrecisio
 	} else {
 		row.notePhaseError("warm-allocs", err)
 	}
-	if tickT, err := measureTimedNS(phaseIters, false, tick); err == nil {
-		row.TickNS = tickT.MedianNS
+	if ticks, err := measureWorkloadsNS(phaseIters, false, offTick, tick); err == nil {
+		row.TickControlNS = ticks[0].MedianNS
+		row.TickNS = ticks[1].MedianNS
 	} else {
 		row.notePhaseError("tick", err)
 	}
@@ -509,15 +574,4 @@ func measurePropertyFull(ctx context.Context, r genProp, iters int, highPrecisio
 	} else {
 		row.notePhaseError("tick-allocs", err)
 	}
-
-	row.notePhaseError("hover", measurePropertyHover(ctx, &row, head, phaseIters, highPrecision))
-	row.notePhaseError("resize", measurePropertyResize(ctx, &row, offDoc, onDoc, phaseIters, highPrecision))
-	reducedIters := max(1, phaseIters/propBenchHalfDiv)
-	row.notePhaseError("scale64", measurePropertyScale(ctx, &row, head, reducedIters, highPrecision))
-	row.notePhaseError("raster", measurePropertyRaster(ctx, &row, offDoc, onDoc, reducedIters, highPrecision))
-
-	row.Effective = len(row.EffectEvidence) > 0
-	row.Layer = classifyBottleneckLayer(row)
-
-	return row
 }

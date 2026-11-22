@@ -20,7 +20,7 @@ sh scripts/perf-props-dump.sh --filter '^(filter|backdrop-filter|box-shadow|text
 
 ## Compare two revisions
 
-Run the same harness and fixture sources on both revisions. Use the same host, Go version, CPU settings, and sampling flags. When the renderer baseline predates measurement version 2, use the current benchmark and fixture sources with the baseline renderer.
+Run the same harness and fixture sources on both revisions. Use the same host, Go version, CPU settings, and sampling flags. Every dump writes `manifest.json` with its measurement version (currently **3**) and sampling flags. `--reference` refuses a dump with another version, no manifest (version 2 and older), or different flags. When the baseline revision predates version 3, copy the current benchmark and fixture sources into the baseline checkout and generate a new baseline there.
 
 Generate the baseline in the baseline checkout. Generate the candidate in the candidate checkout. Use output paths accessible from both checkouts.
 
@@ -36,7 +36,9 @@ make bench-gate BENCH_REF=/tmp/ownframe-props-before/props-bench.txt \
   BENCH_CAND=/tmp/ownframe-props-after/props-bench.txt
 ```
 
-`--reference` reuses the baseline's property and combination refinement choices, top-offender pairs, and seeded stacks. The harness checks for matching property samples and combination declarations. Keep the sampling flags, filter, and seed identical.
+`--reference` reuses the baseline's property and combination refinement choices, top-offender pairs, and seeded stacks. The harness checks the manifest, the property samples, and the combination declarations. Keep the sampling flags, filter, and seed identical.
+
+`props-bench.txt` holds only refined rows, so pass `--reference` on the candidate run. Both runs then refine the same rows, and `benchscore` fails a row the candidate lacks.
 
 ### Running on native Windows (PowerShell) and comparing with WSL2
 
@@ -65,7 +67,7 @@ go run ./cmd/benchscore -ref temp/perf-dumps/props-wsl2/props-bench.txt -cand te
 | Flag (`scripts/perf-props-dump.sh`) | Environment variable | Default | Purpose |
 |---|---|---:|---|
 | `--out DIR` | `OWNFRAME_PROP_DUMP_DIR` | `temp/perf-dumps/props-<ts>` | Output directory. The test skips when the environment variable is unset. |
-| `--reference DIR` | `OWNFRAME_PROP_REFERENCE_DIR` | *(unset)* | Version 2 dump that supplies the combination selection and refinement choices |
+| `--reference DIR` | `OWNFRAME_PROP_REFERENCE_DIR` | *(unset)* | Version 3 dump with a matching `manifest.json` that supplies the combination selection and refinement choices |
 | `--iters N` | `OWNFRAME_PROP_ITERS` | **5** | Timed iterations used during Pass-2 outlier refinement and shared baselines |
 | `--refine-top R` | `OWNFRAME_PROP_REFINE_TOP` | **40** | Maximum number of sweep outliers to refine across phase rankings |
 | `--top-pairs M` | `OWNFRAME_PROP_TOP_PAIRS` | **10** | Auto-selected Tier-1 offenders paired all-against-all ($\binom{M}{2}$ pairs) |
@@ -79,11 +81,13 @@ go run ./cmd/benchscore -ref temp/perf-dumps/props-wsl2/props-bench.txt -cand te
 The property sweep in `examples/blinkless-all` takes one sample per workload. Refinement selects rows across phase rankings, then takes repeated samples. Scale and raster refinement use half the requested iterations, rounded down to at least one.
 
 1. **Paired controls.** Cold build, hover, resize, 64-node build, and PNG timing each use the same fixture with and without the property. The timer alternates which workload runs first. Combination measurements use shared controls.
-2. **Timing and allocations.** Each timed loop disables garbage collection. Refined pairs share an explicit garbage collection boundary before timing. The harness samples allocations separately. `summary.md` reports the maximum drift of a fixed control measured every 100 properties. Use the full sweep to find candidates and repeat the relevant cases before attributing small timing changes.
+2. **Timing and allocations.** Each timed loop disables garbage collection. Refined pairs share an explicit garbage collection boundary before timing. The harness samples allocations separately. Use the full sweep to find candidates and repeat the relevant cases before attributing small timing changes.
+   - **Drift.** `summary.md` reports two drift figures. The control drift takes the median 64-node control of each window of 100 properties during the sweep and reports the largest change from the first window. The warning above 15% uses this figure, because the 64-node control is the same page for every property. The cold control figure is informational only: each cold control is that property's own page without the declaration, so its window medians change with the property groups. The anchor drift times one fixed page at the start and every 100 properties, each time with the same warm-up and garbage collection, and reports the median and maximum change from the start.
+   - **Noise floor.** For each phase, the floor is the 95th percentile of the absolute delta over rows with no observed effect. Those rows add no work, so their spread is the measurement noise. Ranked tables mark a delta at or below the floor as `≤noise`.
 3. **Effect evidence.** The harness audits every property in `props_gen.go`, including properties the visual catalog marks as declined. It overrides some passive samples, such as `mask-image: none`. A row sets `effective` when its paired fixture shows a display signature, motion, or PNG difference. `effect_evidence` records the observations. A row with no observed effect needs a stronger fixture or another way to verify the declaration.
-4. **Measured operations.** Cold build times `NewWithOptions` and `Redraw`. Warm redraw runs after a settle tick and can include active motion. Hover times enter, tick, leave, and tick on a 64-node retained page. Resize cycles from 360 × 160 to 480 × 200 and back. The 64-node build repeats the property across uniform boxes. The scaling ratio compares the two measured deltas. A growth-rate claim needs more node counts.
-5. **Tick and PNG.** The harness times `Tick` separately. It also times one fresh `PNGWithContext` per page, including any on-demand software paint and PNG encoding. It decodes every timed PNG after the timer stops. Invalid PNG samples record a phase error.
-6. **Profiles.** The harness captures CPU and allocation profiles for selected slow scale, hover, and PNG cases. The PNG profile includes page setup and redraw. Use the phase time and call stack together when distinguishing paint from encoding. Use a separate replay benchmark to measure Ebiten rendering.
+4. **Measured operations.** Cold build times `NewWithOptions` and `Redraw`. The unchanged redraw (`warm_*` fields) repeats `Redraw` with the same input after a settle tick, with a paired control. A page with the same input skips the rebuild, including during active motion, so a nonzero allocation count here means the skip failed. Hover times enter, tick, leave, and tick on a 64-node retained page. Resize cycles from 360 × 160 to 480 × 200 and back. The 64-node build repeats the property across uniform boxes. The scaling ratio divides the 64-box delta by the delta of the same declaration on one uniform box, and it is empty when either delta is inside timer noise. A growth-rate claim needs more node counts.
+5. **Tick and PNG.** The harness times `Tick` separately, and the summary flags rows whose tick allocates. It times the PNG two ways on fresh pages. `raster_full_*` times `Redraw` plus `PNGWithContext` and is comparable on every row. `raster_*` times `PNGWithContext` alone. A bitmap-fallback page has already painted inside `Redraw`, so the PNG-only delta is marked invalid (`raster_delta_valid: false`) when the control and the variant paint on different paths. The harness decodes every timed PNG after the timer stops. Invalid PNG samples record a phase error.
+6. **Profiles.** The harness captures CPU and allocation profiles for selected slow scale, hover, and PNG cases. The runtime's allocation profile counts from process start, so the harness writes `<case>.mem-base.pprof` before the workload and `<case>.mem.pprof` after it. The summary's allocation frames come from `go tool pprof -base`. Open the pair with `go tool pprof -base <case>.mem-base.pprof <case>.mem.pprof`. The PNG profile includes page setup and redraw. Use the phase time and call stack together when distinguishing paint from encoding. Use a separate replay benchmark to measure Ebiten rendering.
 
 ## Tier-2 combination matrix
 
@@ -100,7 +104,7 @@ For paired combinations, the harness computes the **interaction multiplier**:
 multiplier = delta(A + B) / (delta(A) + delta(B))
 ```
 
-The dump flags `max_multiplier >= 1.5` as **`super_linear: true`**. Use the flag to select cases for repeated measurement. The multiplier is sensitive to small deltas in its denominator.
+Each combination times its own control, the same fixture without the declarations, in the same loop. The denominator sums the positive deltas of each single declaration, measured on the combination's own fixtures at the same sample count. A sum at or below 50 µs is inside timer noise, so the multiplier stays 0 and cannot set the flag. The dump flags `max_multiplier >= 1.5` as **`super_linear: true`**. Use the flag to select cases for repeated measurement. Entries marked `refined` were re-measured at `iters` samples, and only those reach `props-bench.txt`.
 
 ## Output artifacts
 
@@ -109,19 +113,21 @@ The dump flags `max_multiplier >= 1.5` as **`super_linear: true`**. Use the flag
 | `summary.md` | Markdown | Ranked tables, hover fallbacks, warm allocations, bitmap fallbacks, UI recipes, and profile summaries |
 | `props-individual.jsonl` | JSON Lines | One record per property with controls, timing spread, effect evidence, and phase errors |
 | `props-combos.jsonl` | JSON Lines | Combination declarations, phase timings, per-phase multipliers, and the `super_linear` flag |
-| `props-bench.txt` | Go benchmark text | Direct input to `make bench-gate` (`cmd/benchscore`) for before/after regression gating |
-| `profiles/*.pprof` | `pprof` protobuf | Interactive inspection via `go tool pprof -http=:0 <file>` |
+| `props-bench.txt` | Go benchmark text | Refined rows only, with their real iteration counts, for `make bench-gate` (`cmd/benchscore`) |
+| `manifest.json` | JSON | Measurement version and sampling flags that `--reference` checks |
+| `profiles/*.pprof` | `pprof` protobuf | CPU profiles and before/after allocation snapshots; inspect with `go tool pprof -http=:0 <file>` (add `-base` for allocations) |
 
 ## Triage and optimization loop
 
-The `bottleneck_layer` tag is a starting point for profiling. Verify the attribution with a call stack and a targeted timing.
+The `bottleneck_layer` tag is a starting point for profiling. Verify the attribution with a call stack and a targeted timing. A bitmap fallback or a hover full-layout fallback sets the layer directly. Otherwise the harness subtracts the control page's style, layout, paint, and other times from the variant's and picks the largest positive stage delta, counting a valid raster delta as paint. A row with no stage delta above 20 µs is **`noise`**.
 
 | `bottleneck_layer` | Dominant signal | Where to optimize |
 |---|---|---|
-| **`blinkless/css`** | `StyleTime` dominates cold/resize | Upstream `blinkless` CSS value parsing, cascade, or `var()` resolution |
-| **`blinkless/layout`** | `LayoutTime` dominates cold/resize/scale64 | Upstream `blinkless` flex/grid/text layout or display-list emission |
-| **`ownframe/page+motion`** | `HoverFallbacks > 0`, `WarmAllocs > 0`, or `OtherTime` dominates | `internal/page` (hover scope/patch, dirty diff, `KidIndex`) or `internal/motion` |
-| **`ownframe/replay+bitmap`** | `BitmapFallback == true` or `RasterDeltaNS` dominates | `internal/bitmap` for software paint, `internal/page/draw` for PNG, or `internal/replay` for native draw calls |
+| **`blinkless/css`** | Largest added `StyleTime` | Upstream `blinkless` CSS value parsing, cascade, or `var()` resolution |
+| **`blinkless/layout`** | Largest added `LayoutTime` | Upstream `blinkless` flex/grid/text layout or display-list emission |
+| **`ownframe/page+motion`** | `HoverFallbacks > 0`, or largest added `OtherTime` | `internal/page` (hover scope/patch, dirty diff, `KidIndex`) or `internal/motion` |
+| **`ownframe/replay+bitmap`** | `BitmapFallback == true`, largest added `PaintTime`, or a valid raster delta | `internal/bitmap` for software paint, `internal/page/draw` for PNG, or `internal/replay` for native draw calls |
+| **`noise`** | No stage adds more than 20 µs | Nothing to optimize; strengthen the fixture if the property should cost something |
 
 Recommended loop:
 

@@ -36,6 +36,22 @@ type comboEntry struct {
 	MaxMultiplier        float64  `json:"max_multiplier,omitempty"`
 	SuperLinear          bool     `json:"super_linear"`
 	Err                  string   `json:"error,omitempty"`
+
+	// Iters is the timed samples per workload behind every delta above, and
+	// Refined marks an entry the high-precision pass re-measured. Only refined
+	// entries carry enough samples for a regression gate.
+	Iters   int  `json:"iters"`
+	Refined bool `json:"refined"`
+	// The controls are measured interleaved with this combination, on the
+	// same fixture with the declarations removed; each delta is against them.
+	ColdControlNS    int64 `json:"cold_control_ns"`
+	Scale64ControlNS int64 `json:"scale64_control_ns"`
+	HoverControlNS   int64 `json:"hover_control_ns"`
+	RasterControlNS  int64 `json:"raster_control_ns"`
+	// The expected sums are the positive single-declaration deltas on the
+	// same fixtures, at the same sample count, that each multiplier divides.
+	ExpectedSumHoverNS  int64 `json:"expected_sum_hover_ns,omitempty"`
+	ExpectedSumRasterNS int64 `json:"expected_sum_raster_ns,omitempty"`
 }
 
 type propDecl struct {
@@ -175,12 +191,106 @@ type comboSpec struct {
 	Props      []string
 	BaseStyle  string
 	HoverStyle string
-	SumScale   int64
-	SumHover   int64
-	SumRaster  int64
+	// Singles lists the component declarations ("name:value;") whose summed
+	// single deltas form the interaction multiplier's denominator. Empty for
+	// a recipe, which has no additive expectation.
+	Singles []string
 }
 
-func measureCombo(ctx context.Context, spec comboSpec, iters int, highPrecision bool, base sharedBaselines) comboEntry {
+// comboMultiplierMinNS is the smallest expected sum a multiplier divides by.
+// Below it the single deltas sit inside timer noise and the ratio is
+// meaningless, so the multiplier stays 0 and cannot set super_linear.
+const comboMultiplierMinNS = 50_000
+
+// comboMultiplier returns delta/sum when sum clears comboMultiplierMinNS and
+// delta is positive, and 0 otherwise.
+func comboMultiplier(delta, sum int64) float64 {
+	if sum <= comboMultiplierMinNS || delta <= 0 {
+		return 0
+	}
+
+	return float64(delta) / float64(sum)
+}
+
+// comboSums are the expected additive deltas of one combination's singles.
+type comboSums struct {
+	scale, hover, raster int64
+}
+
+// applyComboMultipliers fills the multipliers and super_linear from sums.
+func applyComboMultipliers(entry *comboEntry, sums comboSums) {
+	entry.ExpectedSumScale64NS = sums.scale
+	entry.ExpectedSumHoverNS = sums.hover
+	entry.ExpectedSumRasterNS = sums.raster
+	entry.Scale64Multiplier = comboMultiplier(entry.Scale64DeltaNS, sums.scale)
+	entry.HoverMultiplier = comboMultiplier(entry.HoverDeltaNS, sums.hover)
+	entry.RasterMultiplier = comboMultiplier(entry.RasterDeltaNS, sums.raster)
+	entry.MaxMultiplier = max(entry.Scale64Multiplier, max(entry.HoverMultiplier, entry.RasterMultiplier))
+	entry.SuperLinear = entry.MaxMultiplier >= propBenchSuperLinear
+}
+
+type singleKey struct {
+	decl          string
+	iters         int
+	highPrecision bool
+}
+
+// comboSingleCache measures each single declaration once per sample count
+// on the combination fixtures, so a pair and its singles share the fixture,
+// the sample count, and the GC isolation.
+type comboSingleCache struct {
+	measure func(spec comboSpec, iters int, highPrecision bool) comboEntry
+	entries map[singleKey]comboEntry
+}
+
+func newComboSingleCache(measure func(comboSpec, int, bool) comboEntry) *comboSingleCache {
+	return &comboSingleCache{measure: measure, entries: map[singleKey]comboEntry{}}
+}
+
+func (c *comboSingleCache) get(decl string, iters int, highPrecision bool) comboEntry {
+	key := singleKey{decl: decl, iters: iters, highPrecision: highPrecision}
+	if e, ok := c.entries[key]; ok {
+		return e
+	}
+	e := c.measure(comboSpec{Kind: "single", Name: decl, BaseStyle: decl, HoverStyle: decl}, iters, highPrecision)
+	c.entries[key] = e
+
+	return e
+}
+
+// sums adds the positive deltas of spec's singles. A failed single counts as
+// zero, which only lowers the sum below the multiplier floor.
+func (c *comboSingleCache) sums(spec comboSpec, iters int, highPrecision bool) comboSums {
+	var s comboSums
+	for _, decl := range spec.Singles {
+		e := c.get(decl, iters, highPrecision)
+		if e.Err != "" {
+			continue
+		}
+		s.scale += max(0, e.Scale64DeltaNS)
+		s.hover += max(0, e.HoverDeltaNS)
+		s.raster += max(0, e.RasterDeltaNS)
+	}
+
+	return s
+}
+
+// measureComboWithSingles measures spec and divides its deltas by its
+// singles measured the same way.
+func measureComboWithSingles(ctx context.Context, singles *comboSingleCache, spec comboSpec, iters int, highPrecision bool) comboEntry {
+	entry := measureCombo(ctx, spec, iters, highPrecision)
+	if entry.Err == "" && len(spec.Singles) > 0 {
+		applyComboMultipliers(&entry, singles.sums(spec, iters, highPrecision))
+	}
+
+	return entry
+}
+
+// measureCombo measures one combination against controls timed in the same
+// loop: the same fixture with no declarations, so host load and heap state
+// hit both sides alike.
+func measureCombo(ctx context.Context, spec comboSpec, iters int, highPrecision bool) comboEntry {
+	iters = max(1, iters)
 	entry := comboEntry{
 		Kind:          spec.Kind,
 		Name:          spec.Name,
@@ -188,69 +298,81 @@ func measureCombo(ctx context.Context, spec comboSpec, iters int, highPrecision 
 		BaseStyle:     spec.BaseStyle,
 		HoverStyle:    spec.HoverStyle,
 		HighPrecision: highPrecision,
+		Refined:       highPrecision,
+		Iters:         iters,
 	}
 
 	head := propBenchHead()
+	off1 := buildUniformScaleDoc(head, "", 1)
 	on1 := buildUniformScaleDoc(head, spec.BaseStyle, 1)
-	on64 := buildUniformScaleDoc(head, spec.BaseStyle, propBenchScaleNodes)
-	hOn := buildComboHoverDoc(head, spec.BaseStyle, spec.HoverStyle)
 
-	// Cold 1-box vs shared baseline.
-	cOnT, _, _, _, _, err := measureColdSingle(ctx, on1, propBenchWidth, propBenchHeight, iters, highPrecision, false)
+	cOff, cOn, err := measureColdPair(ctx, off1, on1, propBenchWidth, propBenchHeight, iters, highPrecision)
 	if err != nil {
 		entry.Err = fmt.Sprintf("cold: %v", err)
 
 		return entry
 	}
-	entry.ColdNS = cOnT.MedianNS
-	entry.ColdDeltaNS = cOnT.MedianNS - base.Cold1NS
+	entry.ColdNS = cOn.timing.MedianNS
+	entry.ColdControlNS = cOff.timing.MedianNS
+	entry.ColdDeltaNS = entry.ColdNS - entry.ColdControlNS
 
-	// Scaled 64-node vs shared baseline.
-	sOnT, sOnA, _, sOnPage, _, err := measureColdSingle(ctx, on64, propBenchScaleWidth, propBenchScaleHeight, iters, highPrecision, true)
+	sOff, sOn, err := measureColdPair(ctx,
+		buildUniformScaleDoc(head, "", propBenchScaleNodes),
+		buildUniformScaleDoc(head, spec.BaseStyle, propBenchScaleNodes),
+		propBenchScaleWidth, propBenchScaleHeight, iters, highPrecision)
 	if err != nil {
 		entry.Err = fmt.Sprintf("scale64: %v", err)
 
 		return entry
 	}
-	entry.Scale64NS = sOnT.MedianNS
-	entry.Scale64DeltaNS = sOnT.MedianNS - base.Scale64NS
-	entry.Scale64Bytes = sOnA.Bytes
-	entry.Scale64Allocs = sOnA.Allocs
-	if sOnPage != nil {
-		if d := sOnPage.Probe().Display(); d != nil {
+	entry.Scale64NS = sOn.timing.MedianNS
+	entry.Scale64ControlNS = sOff.timing.MedianNS
+	entry.Scale64DeltaNS = entry.Scale64NS - entry.Scale64ControlNS
+	entry.Scale64Bytes = sOn.allocs.Bytes
+	entry.Scale64Allocs = sOn.allocs.Allocs
+	if sOn.page != nil {
+		if d := sOn.page.Probe().Display(); d != nil {
 			entry.Ops = len(d.Ops)
 		}
-		entry.BitmapFallback = sOnPage.Probe().Image() != nil && sOnPage.Probe().Display() == nil
+		entry.BitmapFallback = sOn.page.Probe().Image() != nil && sOn.page.Probe().Display() == nil
 	}
 
-	// Hover vs shared baseline.
-	if hT, _, hStats, _, _, _, hErr := measureSingleHover(ctx, hOn, iters, highPrecision); hErr == nil {
-		entry.HoverNS = hT.MedianNS
-		entry.HoverDeltaNS = hT.MedianNS - base.Hover64NS
-		entry.HoverPatches = hStats.HoverPatches
-		entry.HoverFallbacks = hStats.HoverFallbacks
-	}
+	measureComboHover(ctx, &entry, head, spec, iters, highPrecision)
 
-	// Uncached software raster vs shared baseline.
-	if rT, _, rErr := measureSingleRaster(ctx, on1, propBenchWidth, propBenchHeight, iters, highPrecision); rErr == nil {
-		entry.RasterNS = rT.MedianNS
-		entry.RasterDeltaNS = rT.MedianNS - base.Raster1NS
+	// Uncached software raster, control and variant in one rotation.
+	if r, rErr := measureRasterWorkloads(ctx, propBenchWidth, propBenchHeight, iters, highPrecision, off1, on1); rErr == nil {
+		entry.RasterNS = r[1].timing.MedianNS
+		entry.RasterControlNS = r[0].timing.MedianNS
+		entry.RasterDeltaNS = entry.RasterNS - entry.RasterControlNS
 	}
-
-	if spec.SumScale > propBenchMinBaseNS*propBenchComboMinMul && entry.Scale64DeltaNS > propBenchMinBaseNS*propBenchComboMinOut {
-		entry.ExpectedSumScale64NS = spec.SumScale
-		entry.Scale64Multiplier = float64(entry.Scale64DeltaNS) / float64(spec.SumScale)
-	}
-	if spec.SumHover > propBenchMinBaseNS*propBenchComboMinMul && entry.HoverDeltaNS > propBenchMinBaseNS*propBenchComboMinOut {
-		entry.HoverMultiplier = float64(entry.HoverDeltaNS) / float64(spec.SumHover)
-	}
-	if spec.SumRaster > propBenchMinBaseNS*propBenchComboMinMul && entry.RasterDeltaNS > propBenchMinBaseNS*propBenchComboMinOut {
-		entry.RasterMultiplier = float64(entry.RasterDeltaNS) / float64(spec.SumRaster)
-	}
-	entry.MaxMultiplier = max(entry.Scale64Multiplier, max(entry.HoverMultiplier, entry.RasterMultiplier))
-	entry.SuperLinear = entry.MaxMultiplier >= propBenchSuperLinear
 
 	return entry
+}
+
+// measureComboHover times hover cycles on the 64-node fixture with and
+// without the declarations. A failure leaves the hover fields zero, as the
+// shared-baseline version did.
+func measureComboHover(ctx context.Context, entry *comboEntry, head string, spec comboSpec, iters int, highPrecision bool) {
+	off, err := newHoverWorkload(ctx, buildComboHoverDoc(head, "", ""))
+	if err != nil {
+		return
+	}
+	on, err := newHoverWorkload(ctx, buildComboHoverDoc(head, spec.BaseStyle, spec.HoverStyle))
+	if err != nil {
+		return
+	}
+	timing, err := measureWorkloadsNS(iters, highPrecision,
+		func() error { return off.cycle(ctx) },
+		func() error { return on.cycle(ctx) })
+	if err != nil {
+		return
+	}
+	stats := on.p.Probe().Stats()
+	entry.HoverNS = timing[1].MedianNS
+	entry.HoverControlNS = timing[0].MedianNS
+	entry.HoverDeltaNS = entry.HoverNS - entry.HoverControlNS
+	entry.HoverPatches = stats.HoverPatches
+	entry.HoverFallbacks = stats.HoverFallbacks
 }
 
 func runComboMatrix(
@@ -258,13 +380,14 @@ func runComboMatrix(
 	rows, selectionRows []propDumpRow,
 	reference []comboEntry,
 	opts propBenchOpts,
-	base sharedBaselines,
+	_ sharedBaselines,
 	progress func(string),
 ) ([]comboEntry, error) {
-	byName := make(map[string]propDumpRow, len(rows))
-	for _, r := range rows {
-		byName[r.Name] = r
-	}
+	// Every combination now times its own interleaved control, so the
+	// process-start shared baselines are no longer a denominator.
+	singles := newComboSingleCache(func(spec comboSpec, iters int, highPrecision bool) comboEntry {
+		return measureCombo(ctx, spec, iters, highPrecision)
+	})
 
 	var specs []comboSpec
 
@@ -273,34 +396,20 @@ func runComboMatrix(
 	if opts.MaxBuckets > 0 && opts.MaxBuckets < len(reps) {
 		reps = reps[:opts.MaxBuckets]
 	}
-	singleCache := make(map[string]comboEntry, len(reps))
-	for _, rep := range reps {
-		decl := rep.Prop.Name + ":" + rep.Prop.Sample + ";"
-		singleCache[rep.Bucket] = measureCombo(ctx, comboSpec{
-			Kind:       "bucket-single",
-			Name:       rep.Bucket,
-			Props:      []string{rep.Prop.Name},
-			BaseStyle:  decl,
-			HoverStyle: decl,
-		}, 1, false, base)
-	}
 	for i := range reps {
 		for j := i + 1; j < len(reps); j++ {
 			a, b := reps[i], reps[j]
 			if a.Prop.Name == b.Prop.Name {
 				continue
 			}
-			sa, sb := singleCache[a.Bucket], singleCache[b.Bucket]
-			decl := a.Prop.Name + ":" + a.Prop.Sample + ";" + b.Prop.Name + ":" + b.Prop.Sample + ";"
+			da, db := a.Prop.Name+":"+a.Prop.Sample+";", b.Prop.Name+":"+b.Prop.Sample+";"
 			specs = append(specs, comboSpec{
 				Kind:       "bucket-pair",
 				Name:       a.Bucket + "+" + b.Bucket,
 				Props:      []string{a.Prop.Name, b.Prop.Name},
-				BaseStyle:  decl,
-				HoverStyle: decl,
-				SumScale:   max(0, sa.Scale64DeltaNS) + max(0, sb.Scale64DeltaNS),
-				SumHover:   max(0, sa.HoverDeltaNS) + max(0, sb.HoverDeltaNS),
-				SumRaster:  max(0, sa.RasterDeltaNS) + max(0, sb.RasterDeltaNS),
+				BaseStyle:  da + db,
+				HoverStyle: da + db,
+				Singles:    []string{da, db},
 			})
 		}
 	}
@@ -330,17 +439,14 @@ func runComboMatrix(
 		for i := range top {
 			for j := i + 1; j < len(top); j++ {
 				a, b := top[i], top[j]
-				currentA, currentB := byName[a.Name], byName[b.Name]
-				decl := a.Name + ":" + a.Sample + ";" + b.Name + ":" + b.Sample + ";"
+				da, db := a.Name+":"+a.Sample+";", b.Name+":"+b.Sample+";"
 				specs = append(specs, comboSpec{
 					Kind:       "top-offender-pair",
 					Name:       a.Name + "+" + b.Name,
 					Props:      []string{a.Name, b.Name},
-					BaseStyle:  decl,
-					HoverStyle: decl,
-					SumScale:   max(0, currentA.Scale64DeltaNS) + max(0, currentB.Scale64DeltaNS),
-					SumHover:   max(0, currentA.HoverDeltaNS) + max(0, currentB.HoverDeltaNS),
-					SumRaster:  max(0, currentA.RasterDeltaNS) + max(0, currentB.RasterDeltaNS),
+					BaseStyle:  da + db,
+					HoverStyle: da + db,
+					Singles:    []string{da, db},
 				})
 			}
 		}
@@ -384,16 +490,12 @@ func runComboMatrix(
 				}
 				var sb strings.Builder
 				names := make([]string, 0, len(picked))
-				var sumScale, sumHover, sumRaster int64
+				decls := make([]string, 0, len(picked))
 				for _, p := range picked {
-					sb.WriteString(p.Name)
-					sb.WriteString(":")
-					sb.WriteString(p.Sample)
-					sb.WriteString(";")
+					d := p.Name + ":" + p.Sample + ";"
+					sb.WriteString(d)
 					names = append(names, p.Name)
-					sumScale += max(0, byName[p.Name].Scale64DeltaNS)
-					sumHover += max(0, byName[p.Name].HoverDeltaNS)
-					sumRaster += max(0, byName[p.Name].RasterDeltaNS)
+					decls = append(decls, d)
 				}
 				decl := sb.String()
 				specs = append(specs, comboSpec{
@@ -402,9 +504,7 @@ func runComboMatrix(
 					Props:      names,
 					BaseStyle:  decl,
 					HoverStyle: decl,
-					SumScale:   sumScale,
-					SumHover:   sumHover,
-					SumRaster:  sumRaster,
+					Singles:    decls,
 				})
 			}
 		}
@@ -424,7 +524,7 @@ func runComboMatrix(
 				return nil, fmt.Errorf("reference fixture mismatch at %s %q", sp.Kind, sp.Name)
 			}
 		}
-		out[i] = measureCombo(ctx, sp, 1, false, base)
+		out[i] = measureComboWithSingles(ctx, singles, sp, 1, false)
 		if progress != nil && ((i+1)%propBenchLogEvery == 0 || i+1 == len(specs)) {
 			progress(fmt.Sprintf("[tier2 sweep %d/%d] last=%s:%s (scale64=%.2fms hover=%.2fms)",
 				i+1, len(specs), sp.Kind, sp.Name, float64(out[i].Scale64NS)/propNSPerMS, float64(out[i].HoverNS)/propNSPerMS))
@@ -434,7 +534,7 @@ func runComboMatrix(
 	if opts.Reference != "" {
 		for i, prior := range reference {
 			if prior.HighPrecision {
-				out[i] = measureCombo(ctx, specs[i], min(propBenchComboRefineIt, opts.Iters), true, base)
+				out[i] = measureComboWithSingles(ctx, singles, specs[i], min(propBenchComboRefineIt, opts.Iters), true)
 			}
 		}
 
@@ -466,7 +566,7 @@ func runComboMatrix(
 		refineN := min(propBenchComboRefineN, len(ranked))
 		for i := range refineN {
 			idx := ranked[i].idx
-			out[idx] = measureCombo(ctx, specs[idx], min(propBenchComboRefineIt, opts.Iters), true, base)
+			out[idx] = measureComboWithSingles(ctx, singles, specs[idx], min(propBenchComboRefineIt, opts.Iters), true)
 		}
 	}
 
