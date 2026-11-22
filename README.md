@@ -10,7 +10,7 @@ Formerly known as **go-gpui**.
 
 Write screens in HTML and CSS, and application logic in Go. ownframe renders with [blinkless](https://github.com/chinmay-sawant/blinkless) and opens a window with Ebiten. It ships no Chromium, WebKit, WebView, or JavaScript runtime.
 
-Target native hosts (currently in the `v0.0.x` preview cycle; no `v1.0` tag yet) are desktop (Linux, Windows, macOS) and Android, for an operator you control. Native means one compiled Go process and an Ebiten window or Activity. On Linux, the experimental AT-SPI bridge makes the window visible to Accerciser and Orca. NVDA, VoiceOver, and TalkBack cannot inspect the window because Windows UIA, macOS VoiceOver, and Android TalkBack adapters are not shipped yet (see [native accessibility status](documentation/accessibility-native.md)).
+Target native hosts (currently in the `v0.0.x` preview cycle; no `v1.0` tag yet) are desktop (Linux, Windows, macOS) and Android, for an operator you control. Native means one compiled Go process and an Ebiten window or Activity. On Linux, the experimental AT-SPI bridge makes the window visible to Accerciser and Orca. On Windows (`amd64` and `arm64`), the preview UI Automation provider answers NVDA and Narrator. On Android, `AccessibilityBridge` exposes a virtual node tree to TalkBack. VoiceOver cannot inspect the window because the macOS VoiceOver (`NSAccessibility`) adapter is not shipped yet (see [native accessibility status](documentation/accessibility-native.md)).
 
 The Pages workflow builds the [website and its nine WebAssembly demos](https://chinmay-sawant.github.io/ownframe/). See the [website build instructions](frontend/README.md) for a local preview and the publishing steps.
 
@@ -118,7 +118,7 @@ Start with the [documentation index](documentation/README.md) or [feature list a
 - [Clipboard](documentation/clipboard.md)
 - [Comparisons with other UI libraries](documentation/compare-syntax.md)
 
-The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. Currently (`v0.0.x`), ownframe ships a Go accessibility snapshot and a live Linux AT-SPI bridge so Orca and Accerciser can read the tree; AT-SPI focus and activation reach the page through the window loop, while native text editing through AT-SPI is unsupported. Windows UI Automation, macOS VoiceOver, Android TalkBack remain unshipped and are tracked as pre-1.0 gaps in [accessibility-native.md](documentation/accessibility-native.md) and [platforms.md](documentation/platforms.md). The [feature list](documentation/features.md) records the supported behavior and remaining limits.
+The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. Currently (`v0.0.x`), ownframe ships a Go accessibility snapshot, a live Linux AT-SPI bridge (`EditableText`, focus, and activation) for Orca and Accerciser, a preview Windows UI Automation provider (`amd64` and `arm64`) validated with NVDA and Narrator, and an Android TalkBack bridge (`androidaccess` and `AccessibilityBridge`). macOS VoiceOver (`NSAccessibility`) remains unshipped and is tracked as a pre-1.0 gap in [accessibility-native.md](documentation/accessibility-native.md) and [platforms.md](documentation/platforms.md). The [feature list](documentation/features.md) records the supported behavior and remaining limits.
 
 ## Development
 
