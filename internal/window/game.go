@@ -135,6 +135,7 @@ type shell struct {
 	readFullscreen   func() bool
 	applyFullscreen  func(bool)
 	moving           bool
+	monitorFit       windowFit
 	lastRelayout     time.Time
 	cursorX, cursorY int
 	hover            hoverState

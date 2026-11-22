@@ -47,6 +47,17 @@ handler returns an error, and it recovers a panic into a crash report
 ([crash.md](crash.md)). Idle park is desktop only
 (`internal/window/idle_supported.go`).
 
+On Windows a window is fitted to its monitor. A window opened on a 150 percent
+panel is larger in pixels than the same window opened at 100 percent, and it
+keeps that size when it lands on a smaller monitor, so the bottom (or the whole
+title bar) could hang off the screen. Once at startup, and once after the window
+settles on a different monitor, it is shrunk and moved just enough to lie inside
+that monitor's work area (`internal/window/window_fit.go`). It is never
+enlarged, and a window that already fits is left alone. The fit waits while the
+window is maximized, minimized, full screen, or being dragged. The move is
+queued on the window's own thread (`SWP_ASYNCWINDOWPOS`); a synchronous move
+from inside the update loop crashes the window.
+
 ## Android native
 
 `BindMobile` registers the page with Ebitengine's mobile view. Call it from
