@@ -45,10 +45,11 @@ padded, so shadows and outlines repaint too.
 
 ## The window repaints the rects
 
-The live window path is `drawReplayPartial` in `internal/window`. A
-replayable page that can report dirty rects takes one of two retained buffers.
+The window selects its paint mode in
+[`internal/window/paint_surface.go`](../internal/window/paint_surface.go).
+For partial replay, it chooses between two retained buffers.
 A page no more than three viewports tall keeps a 256 by 256 tile grid sized to
-the content (`internal/window/replay_tile_paint.go` calls
+the content (`internal/window/replay_tile.go` calls
 `replay.DrawVisibleUnfixedZ`). Each dirty rect is filled with the page
 background and replayed into every tile it touches, and only the damaged
 regions are copied on a partial frame. The window retains the previous screen
@@ -101,9 +102,9 @@ box does not meet the rect, and paints into a sub-image of the destination.
 replay.DrawRect(dst, display, rect, dx, dy)
 ```
 
-The window does not call `DrawRect`. `drawReplayPartial` in
-`internal/window/replay_partial.go` drives the tile grid; each damaged tile
-calls `replay.DrawVisibleUnfixedZ`. `DrawRect` is the test and helper path.
+`drawTileSurface` in `internal/window/replay_partial.go` drives the tile grid.
+The window paints each damaged tile with `replay.DrawVisibleUnfixedZ`. Tests
+and helpers use `DrawRect`.
 
 Text needs care. An op carries its baseline in `Y`, so a rect test uses the
 line box from the font ascent above the baseline to `InkDescent` below it,
@@ -117,7 +118,7 @@ when it scrolls.
 Pinned chrome stays on the tile path. `Page.Scroll().SetViewportPinZ` and
 `Page.SetScrollWindow` keep bars at the viewport ([screen.md](screen.md)).
 Tiles hold only unfixed operations (`replay.DrawVisibleUnfixedZ`). After the
-dirty-tile blit, `drawReplayPartial` paints fixed and pin-z operations in
+dirty-tile blit, the window paints fixed and pin-z operations in
 screen space (`replay.DrawFixed`, `replay.DrawPinnedZ`), clipped to the
 strip the devtools dock leaves visible. Telegram uses that overlay. A
 scroll copies message tiles and then paints the header and composer, so

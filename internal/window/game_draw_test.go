@@ -1119,9 +1119,9 @@ func (g *backdropReplayGame) Draw(dst *ebiten.Image) {
 		g.err = fmt.Errorf("filtered frame %d allocated a tile grid", g.step)
 		return
 	}
-	if g.shell.partial.mode != repaintBlit || g.shell.partial.whole || !g.shell.partial.live {
-		g.err = fmt.Errorf("filtered frame %d state = mode %v whole %t live %t", g.step,
-			g.shell.partial.mode, g.shell.partial.whole, g.shell.partial.live)
+	if g.shell.partial.mode != repaintBlit || g.shell.partial.whole || g.shell.surface != surfaceBackdrop {
+		g.err = fmt.Errorf("filtered frame %d state = mode %v whole %t surface %v", g.step,
+			g.shell.partial.mode, g.shell.partial.whole, g.shell.surface)
 		return
 	}
 

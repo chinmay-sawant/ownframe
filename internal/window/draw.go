@@ -55,60 +55,11 @@ func (s *shell) Draw(screen *ebiten.Image) {
 	}
 }
 
-// drawContent paints the page and reports whether the whole screen is
-// painted, which every branch does: the tiled replay blits its own tiles, so
-// the caller owes no buffer copy. Each full branch lays the page background
-// down first, because the screen keeps the previous frame.
-func (s *shell) drawContent(screen *ebiten.Image) bool {
-	if s.viewLocked() {
-		s.partial.live = false
-		screen.Fill(s.pageBackground())
-		s.drawFitted(screen)
-
-		return true
-	}
-
-	if s.bitmapView.img != nil {
-		s.partial.live = false
-		s.dropDisplayBuffers()
-		screen.Fill(s.pageBackground())
-		screen.DrawImage(s.bitmapView.img, nil)
-
-		return true
-	}
-
-	zoom := s.zoom()
-
-	if s.display != nil {
-		if s.viewportSticky {
-			s.drawStickyContent(screen)
-			return true
-		}
-		if s.stretched() || zoom != 1 {
-			s.partial.live = false
-			screen.Fill(s.pageBackground())
-			s.drawReplayScaled(screen)
-
-			return true
-		}
-
-		return s.drawReplayPartial(screen)
-	}
-
-	s.partial.live = false
-	screen.Fill(s.pageBackground())
-	s.drawBitmapPage(screen, zoom)
-
-	return true
-}
-
 // drawBitmapPage draws the cached bitmap over the already filled screen: its
 // own pixels for a page larger than the window, scaled to the window
 // otherwise. A size that has not been laid out yet is scaled until the new
 // picture arrives.
 func (s *shell) drawBitmapPage(screen *ebiten.Image, zoom float64) {
-	// The bitmap frame never reads the display-list buffers.
-	s.dropDisplayBuffers()
 	img := s.img
 	if img == nil {
 		return
@@ -160,12 +111,16 @@ func fillBackground(dst *ebiten.Image, bg color.Color) {
 // background fill for a display list, or the corner pixel of the bitmap.
 // White when neither is known.
 func (s *shell) pageBackground() color.Color {
+	return s.displayBackground(s.display)
+}
+
+func (s *shell) displayBackground(display *layout.Display) color.Color {
 	if s.transparent {
 		return color.Transparent
 	}
 
-	if s.display != nil {
-		if c, ok := displayBackground(s.display); ok {
+	if display != nil {
+		if c, ok := displayBackground(display); ok {
 			return c
 		}
 	}

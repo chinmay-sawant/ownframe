@@ -224,7 +224,8 @@ func TestScaledPathKeepsLargePage(t *testing.T) {
 	s := newDirtyShell(screen)
 	dst := partialBuf(64, 64)
 
-	s.drawReplayScaled(dst)
+	s.pageZoom = 1.25
+	s.drawContent(dst)
 
 	if s.scaleBuf == nil {
 		t.Fatal("a large page fell back to a direct replay")
@@ -250,7 +251,7 @@ func TestFittedPathKeepsLargePage(t *testing.T) {
 	}
 	dst := partialBuf(64, 64)
 
-	s.drawFitted(dst)
+	s.drawContent(dst)
 
 	if s.scaleBuf == nil {
 		t.Fatal("a large page fell back to a direct replay")
@@ -1289,5 +1290,73 @@ func TestWindowingWarmupStaysViewportSized(t *testing.T) {
 	s.drawReplayPartial(sdst)
 	if got := s.viewport.warmup.area.Dy(); got != prewarmMaxPixels/800 {
 		t.Fatalf("ordinary sweep height = %d, want the old bounded neighbourhood", got)
+	}
+}
+
+func TestPaintSurfaceTransitions(t *testing.T) {
+	t.Parallel()
+
+	screen := &dirtyScreen{
+		fakeScreen: &fakeScreen{width: 100, height: 100},
+		display:    partialDisplay(100, 100),
+		gen:        1,
+	}
+	s := newDirtyShell(screen)
+	dst := partialBuf(100, 100)
+	t.Cleanup(dst.Deallocate)
+	t.Cleanup(func() { s.usePaintSurface(surfaceUnset) })
+	draw := func(mode paintSurface, clean bool) {
+		t.Helper()
+		s.drawContent(dst)
+		s.frameCommit()
+		if s.surface != mode || s.idleCleanFrame() != clean {
+			t.Fatalf("surface = %v, clean = %t; want %v, %t", s.surface, s.idleCleanFrame(), mode, clean)
+		}
+	}
+
+	draw(surfaceTiles, false)
+	draw(surfaceTiles, true)
+	s.pageZoom = 1.25
+	draw(surfaceScaled, false)
+	if s.partial.tiles != nil || s.scaleBuf == nil {
+		t.Fatal("zoom should release tiles and use a scaling texture")
+	}
+	s.zoomReset()
+	draw(surfaceTiles, false)
+	if s.partial.paints == 0 || s.scaleBuf != nil {
+		t.Fatal("return to tiles should rebuild the grid and release the scaling texture")
+	}
+
+	// A screen without damage reporting replays directly. Its old tiles
+	// cannot supply the first frame once damage reporting resumes.
+	s.app = screen.fakeScreen
+	draw(surfaceDirect, false)
+	s.app = screen
+	draw(surfaceTiles, false)
+	if s.partial.paints == 0 {
+		t.Fatal("return from direct replay should rebuild the grid")
+	}
+
+	screen.display.Ops[1].SetBlendGroup(&layout.DisplayGroup{BackdropFilter: "blur(8px)"})
+	draw(surfaceBackdrop, false)
+	backdrop := s.scaleBuf
+	draw(surfaceBackdrop, true)
+	if s.scaleBuf != backdrop {
+		t.Fatal("unchanged backdrop should keep its painted texture")
+	}
+
+	// A zoom draw has the same texture dimensions as the backdrop in this
+	// fixture. The next backdrop frame must paint, even with the same display,
+	// generation, scroll and no dirty rectangles.
+	s.pageZoom = 1.25
+	draw(surfaceScaled, false)
+	s.zoomReset()
+	draw(surfaceBackdrop, false)
+	draw(surfaceBackdrop, true)
+
+	s.display = nil
+	draw(surfaceBitmap, false)
+	if s.scaleBuf != nil || s.partial.backdropDisplay != nil {
+		t.Fatal("a frame without an image or display must release the old backdrop")
 	}
 }

@@ -7,109 +7,51 @@ import (
 	"image"
 )
 
-// drawReplayPartial draws a display-list page through the tile grid when the
-// page can report dirty rects, and replays the whole list when it cannot. A
-// dirty rect repaints only its tiles and the frame blits only the damaged
-// ones, trimmed to the page the devtools dock leaves visible.
-func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
+// drawBackdrop resolves the entire scene into a texture for backdrop shaders.
+func (s *shell) drawBackdrop(dst *ebiten.Image, taker dirtyTaker, sameSurface bool) {
 	display := s.display
-	if display == nil {
-		return true
+	generation := s.app.Generation()
+	scroll := image.Pt(s.scrollX, s.scrollY)
+	bounds := dst.Bounds()
+	dirty := false
+	if taker != nil {
+		rects, available := taker.TakeDirtyRects()
+		dirty = available && len(rects) > 0
 	}
-	s.partial.paints, s.partial.paintPx, s.partial.pins = 0, 0, 0
-	s.partial.blits, s.partial.blitPx = 0, 0
-	if s.renderer.HasBackdropFilter(display) {
-		generation := s.app.Generation()
-		scroll := image.Pt(s.scrollX, s.scrollY)
-		bounds := dst.Bounds()
-		taker, canTake := s.damageTaker()
-		dirty := false
-		if canTake {
-			rects, available := taker.TakeDirtyRects()
-			if available && len(rects) > 0 {
-				dirty = true
-			}
-		}
-		sameBuf := s.scaleBuf != nil &&
-			s.scaleBuf.Bounds().Dx() == bounds.Dx() &&
-			s.scaleBuf.Bounds().Dy() == bounds.Dy()
-		backdropClean := canTake && !s.fullReplay() && !dirty && sameBuf &&
-			s.partial.live && s.partial.mode == repaintBlit && !s.partial.whole &&
-			s.partial.gen == generation && s.partial.scroll == scroll &&
-			s.partial.backdropDisplay == display && !s.frameOptIn
-		// Filtered output depends on pixels outside the element's own dirty
-		// rect. Replay the whole display until the damage path tracks those
-		// backdrop dependencies, reusing the cached texture when clean.
-		s.dropTiles()
-		s.disposeViewport()
-		s.demoteLayers()
-		// Backdrop shaders read the scene painted so far. Build it in a
-		// texture, then present once, rather than sampling the window buffer.
-		frame := s.ensureScaleBuf(bounds.Dx(), bounds.Dy())
-		if !backdropClean {
-			s.paintFullReplay(frame, display)
-		}
-		op := &ebiten.DrawImageOptions{Blend: ebiten.BlendCopy}
-		op.GeoM.Translate(float64(bounds.Min.X), float64(bounds.Min.Y))
-		dst.DrawImage(frame, op)
-		s.partial.gen = generation
-		s.partial.scroll = scroll
-		s.partial.mode = repaintBlit
-		s.partial.whole = false
-		s.partial.live = true
-		s.partial.backdropClean = backdropClean
-		s.partial.backdropDisplay = display
-
-		return true
+	sameBuf := s.scaleBuf != nil && s.scaleBuf.Bounds().Size() == bounds.Size()
+	clean := sameSurface && taker != nil && !s.fullReplay() && !dirty && sameBuf &&
+		s.partial.gen == generation && s.partial.scroll == scroll &&
+		s.partial.backdropDisplay == display && !s.frameOptIn
+	frame := s.ensureScaleBuf(bounds.Dx(), bounds.Dy())
+	if !clean {
+		s.paintFullReplay(frame, display)
 	}
-	s.partial.backdropDisplay = nil
-	s.dropRetainedTiles()
+	op := &ebiten.DrawImageOptions{Blend: ebiten.BlendCopy}
+	op.GeoM.Translate(float64(bounds.Min.X), float64(bounds.Min.Y))
+	dst.DrawImage(frame, op)
+	s.partial.gen = generation
+	s.partial.scroll = scroll
+	s.partial.mode = repaintBlit
+	s.partial.whole = false
+	s.partial.backdropClean = clean
+	s.partial.backdropDisplay = display
+}
 
+// drawTileSurface repaints damaged tiles and presents the affected area.
+func (s *shell) drawTileSurface(dst *ebiten.Image, frame surfaceFrame, stale bool) {
+	display := s.display
+	contentW, contentH := frame.content.X, frame.content.Y
 	scroll := image.Pt(s.scrollX, s.scrollY)
 	whole := scroll != s.partial.scroll
 	s.partial.scroll = scroll
-	stale := s.frameStale(dst) || !s.partial.live
-	s.partial.live = true
-	taker, canTake := s.damageTaker()
-	contentW, contentH := s.contentSize()
-	if !canTake || s.fullReplay() || !s.bufferOrderSafe() {
-		s.disposeViewport()
-		s.dropScaleBuf()
-		s.demoteLayers()
-		s.paintFullReplay(dst, display)
 
-		return true
-	}
-
-	if oversized(contentW, contentH) || s.gridTooBig(contentW, contentH) || s.windowing() {
-		// The viewport path drops the tile grid. A later stable blit may
-		// idle, including with a quiet tick. A scroll, a generation change,
-		// a dirty region, a focus or size stale frame, or a tick that
-		// reported damage keeps the frame clock. A windowing page always
-		// takes this path, so its working set stays viewport-sized no
-		// matter how tall its spacers make the content.
-		focus, size, held := s.partial.focus, s.partial.screen, s.partial.scroll
-		s.drawViewport(dst, display, taker)
-		s.partial.focus, s.partial.screen, s.partial.scroll = focus, size, held
-		if stale {
-			s.viewport.blitOnly = false
-		}
-
-		return true
-	}
-	hadViewport := s.viewport.buf != nil || s.viewport.valid
-	s.disposeViewport()
-	s.dropScaleBuf()
-	if hadViewport {
-		s.demoteLayers()
-	}
 	// Prepare this frame's retained layers before planning, so their old ∪
 	// new damage joins the page's dirty rects and the tile pass can skip their
 	// owned operations.
 	layerDamage := s.renderer.BeginLayers(display, s.layerGeneration(), s.layerSpecs(display))
 
 	clipX := s.dockClipX(contentW)
-	rects, ok := taker.TakeDirtyRects()
+	rects, ok := frame.damage.TakeDirtyRects()
 	if len(layerDamage) > 0 {
 		content := image.Rect(0, 0, contentW, contentH)
 		combined := make([]image.Rectangle, 0, len(rects)+len(layerDamage))
@@ -139,8 +81,6 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	chrome := chromeRectsBuf(s.partial.chrome[:0], s.frameRestore(), scroll)
 	s.partial.plans, s.partial.chrome, s.partial.whole = plans, chrome, whole
 	s.blitFrame(dst, display, plans, chrome, whole, stale)
-
-	return true
 }
 
 // layerSpecs asks the screen for this frame's promoted elements. A screen
@@ -214,9 +154,7 @@ type ticking interface {
 // tiled frame performs them itself. whole copies the content at scroll, the
 // offset the last frame was blitted at. focus and screen are the last replay
 // frame's window focus and screen size, so a focus regain or a resize
-// repaints in full. live reports that the screen shows the page through the
-// retained tiles at one to one, so a scaled, fitted, or bitmap frame forces
-// the next replay frame to repaint everything. paints counts the tiles the
+// repaints in full. paints counts the tiles the
 // frame repainted and paintPx their area; blits and blitPx count the tile
 // blits; pins counts post-blit chrome draws. clipX is the dock clip.
 type partialState struct {
@@ -236,7 +174,6 @@ type partialState struct {
 	blitPx          int
 	pins            int
 	focus           bool
-	live            bool
 	whole           bool
 	scroll          image.Point
 	screen          image.Point

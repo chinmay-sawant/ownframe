@@ -451,3 +451,9 @@ func newPinShell() (*pinScreen, *shell) {
 
 	return screen, s
 }
+
+// drawReplayPartial exercises the one-to-one replay modes independently of
+// the resize, zoom, and bitmap precedence in drawContent.
+func (s *shell) drawReplayPartial(dst *ebiten.Image) {
+	s.paintFrame(dst, s.replaySurface())
+}

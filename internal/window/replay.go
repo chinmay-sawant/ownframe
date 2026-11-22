@@ -7,17 +7,6 @@ import (
 	"image"
 )
 
-// dropDisplayBuffers releases every retained display-list buffer: the tile
-// grid, the viewport cache, and the shared scaled buffer. Frames that paint
-// without them (scaled, fitted, bitmap, direct) call it instead of pinning
-// a stale copy beside the buffer they actually read.
-func (s *shell) dropDisplayBuffers() {
-	s.dropTiles()
-	s.disposeViewport()
-	s.dropScaleBuf()
-	s.demoteLayers()
-}
-
 // applyRepaint brings the tile grid up to date for this frame. A rebuild
 // ensures the grid matches the content and repaints all of it; a rect plan
 // repaints only the tiles the rect covers. A blit plan changes no pixels.
@@ -351,8 +340,8 @@ func (s *shell) dropScaleBuf() {
 // drawReplayScaled draws the display list through an offscreen buffer and
 // scales it to the window, matching the bitmap path on a resized or clamped
 // window.
-func (s *shell) drawReplayScaled(dst *ebiten.Image) {
-	w, h := s.display.Width, s.display.Height
+func (s *shell) drawReplayScaled(dst *ebiten.Image, display *layout.Display) {
+	w, h := display.Width, display.Height
 	viewW, viewH := s.viewSize()
 	if w <= 0 || h <= 0 || viewW <= 0 || viewH <= 0 {
 		return
@@ -360,18 +349,15 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 
 	if oversized(w, h) {
 		// No image can hold the page, so the draw drops the scale.
-		s.dropDisplayBuffers()
-		s.directReplay(dst, s.display)
+		s.directReplay(dst, display)
 
 		return
 	}
 
-	// The scaled frame reads neither the tile grid nor the viewport cache.
-	s.dropDisplayBuffers()
 	buf := s.ensureScaleBuf(w, h)
 
-	fillBackground(buf, s.pageBackground())
-	s.renderer.DrawVisible(buf, s.display, 0, 0)
+	fillBackground(buf, s.displayBackground(display))
+	s.renderer.DrawVisible(buf, display, 0, 0)
 
 	var op ebiten.DrawImageOptions
 	op.Filter = ebiten.FilterLinear
