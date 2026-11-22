@@ -84,7 +84,7 @@ func main() {
 }
 ```
 
-On GNOME/Wayland, copy and paste need wl-clipboard (`wl-copy`/`wl-paste`) on PATH; without them paste does not work. X11, Windows, and macOS with cgo use the OS clipboard. Tests call `UseMemory`. See [clipboard.md](documentation/clipboard.md).
+On Wayland, copy and paste use a built-in client for `ext-data-control` / `wlr-data-control` where the compositor offers them (for example wlroots-based compositors). Compositors that do not advertise them, such as GNOME Mutter and the Weston in WSLg, still need wl-clipboard: there copy and paste still need wl-clipboard (`wl-copy`/`wl-paste`) on PATH. X11, Windows, and macOS with cgo use the OS clipboard. Tests call `UseMemory`. See [clipboard.md](documentation/clipboard.md).
 
 ## Run the demos
 
@@ -118,7 +118,7 @@ Start with the [documentation index](documentation/README.md) or [feature list a
 - [Clipboard](documentation/clipboard.md)
 - [Comparisons with other UI libraries](documentation/compare-syntax.md)
 
-The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. Currently (`v0.0.x`), ownframe ships a Go accessibility snapshot and a live Linux AT-SPI bridge so Orca and Accerciser can read the tree; AT-SPI focus and activation reach the page through the window loop, while native text editing through AT-SPI is unsupported. Windows UI Automation, macOS VoiceOver, Android TalkBack, and native Wayland clipboard (without `wl-clipboard`) remain unshipped and are tracked as pre-1.0 gaps in [accessibility-native.md](documentation/accessibility-native.md) and [platforms.md](documentation/platforms.md). The [feature list](documentation/features.md) records the supported behavior and remaining limits.
+The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. Currently (`v0.0.x`), ownframe ships a Go accessibility snapshot and a live Linux AT-SPI bridge so Orca and Accerciser can read the tree; AT-SPI focus and activation reach the page through the window loop, while native text editing through AT-SPI is unsupported. Windows UI Automation, macOS VoiceOver, Android TalkBack remain unshipped and are tracked as pre-1.0 gaps in [accessibility-native.md](documentation/accessibility-native.md) and [platforms.md](documentation/platforms.md). The [feature list](documentation/features.md) records the supported behavior and remaining limits.
 
 ## Development
 

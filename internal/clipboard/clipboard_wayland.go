@@ -1,11 +1,10 @@
 //go:build linux && !android
 
-// Wayland clipboard uses wl-copy and wl-paste rather than a pure-Go Wayland
-// wire client: core wl_data_device requires a focused surface and input serial
-// owned by the windowing layer, while zwlr_data_control_v1 / ext_data_control_v1
-// is not supported by GNOME Mutter. Delegating to wl-clipboard handles
-// compositor quirks with zero extra Go module dependencies, and Diagnose /
-// ErrWaylandToolsMissing surface missing helpers explicitly.
+// This file is the wl-clipboard fallback. The pure-Go data-control client
+// (wayland_datacontrol.go) runs first; compositors without ext/wlr data-control
+// (GNOME Mutter, Weston/WSLg) land here. Core wl_data_device needs a focused
+// surface and input serial owned by the windowing layer, so it is not used.
+// Diagnose / ErrWaylandToolsMissing surface missing helpers explicitly.
 package clipboard
 
 import (

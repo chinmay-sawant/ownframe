@@ -1,4 +1,4 @@
-//go:build !linux || android || ios || js
+//go:build (!linux || ios || js) && !android && !(windows && (amd64 || arm64))
 
 package window
 

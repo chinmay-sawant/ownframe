@@ -172,7 +172,7 @@ func adoptSVGPaint(p *Page, patch *layout.ElementPatch) bool {
 	bindMotion(p, previous, d)
 	bindTransitions(p, nil)
 	if previous != nil && previous != d {
-		previous.Release()
+		releaseDisplay(p, previous)
 	}
 	markRect(p, patch.Old)
 	if patch.New != patch.Old {

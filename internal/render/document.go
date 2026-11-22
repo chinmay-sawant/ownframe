@@ -42,6 +42,19 @@ func DisplayListDocumentOptions(
 	return display, nil
 }
 
+// ReleaseDisplay returns a superseded display list to the engine pool under
+// engineMu, synchronizing the caller's prior reads of display.Boxes and
+// display.Ops with the next DisplayListOptions call that reuses the pooled
+// backing arrays.
+func ReleaseDisplay(d *Display) {
+	if d == nil {
+		return
+	}
+	engineMu.Lock()
+	d.Release()
+	engineMu.Unlock()
+}
+
 // PaintDocument lays out an already styled document. It is the layout half
 // of PaintState, without the parse and the cascade. The image is canvas-sized
 // and blank. bitmap.Paint fills the pixels for Page.PNG and fallback pages,

@@ -19,6 +19,10 @@ func (s *shell) resize() error {
 	s.moving = false
 	s.placeTitlebarWindow()
 
+	if !s.fullscreenNow() {
+		s.monitorFit.step(s.windowDrag.active, nativeFitProbe, nativeFitApply)
+	}
+
 	completeManualMaximize(s.pendingW, s.pendingH)
 	adoptExternalMaximize()
 	retryManualRestore(s.windowDrag.active)

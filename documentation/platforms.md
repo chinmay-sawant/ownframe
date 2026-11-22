@@ -6,8 +6,9 @@ native window for an operator you control: one compiled Go process and an Ebiten
 window or Activity, no Chromium, no WebView. On Linux, Orca and Accerciser can
 read the page tree over AT-SPI; AT-SPI focus, activation, and `EditableText` for
 enabled non-password text controls reach the page through the window loop.
-NVDA, VoiceOver, and TalkBack cannot inspect it because Windows UIA, macOS
-VoiceOver, and Android TalkBack adapters are not shipped. Native does not mean
+VoiceOver and TalkBack cannot inspect it because the macOS VoiceOver and
+Android TalkBack adapters are not shipped. Windows has a preview UIA provider
+that is not yet validated with NVDA or Narrator. Native does not mean
 OS widgets or a complete screen-reader adapter.
 
 `scripts/browser.sh` is a wasm canvas preview. `-web` / `Serve` is a loopback
@@ -20,9 +21,9 @@ a release host. iOS has no Xcode project and is not a planned `v1.0` target.
 |---|---|---|
 | **Desktop windowing** | Linux, Windows, macOS via Ebiten `Run` | Same, with real-host Windows & macOS validation records |
 | **Android** | `BindMobile` + shared `android-host` Activity (arm64 APK) | Same, with reproducible CI/release APK builds |
-| **IME** | Linux & Android validated; Windows/macOS open (`plans/README.md`) | Validated preedit/commit/cancel on Windows & macOS |
-| **Clipboard** | X11, Windows, macOS (cgo); GNOME/Wayland requires `wl-clipboard` on `PATH` | Native Wayland path or explicit diagnostic capability check |
-| **Accessibility** | Go snapshot + live Linux AT-SPI bridge with `EditableText` | Explicit `v1.0` policy or native UIA / VoiceOver / TalkBack adapters |
+| **IME** | Linux & Android validated; Windows wired through Ebiten IMM32 and covered by headless tests, but no live Japanese IME session yet; macOS open (`plans/README.md`) | Validated preedit/commit/cancel on Windows & macOS |
+| **Clipboard** | X11, Windows, macOS (cgo); Wayland uses built-in data-control where offered; GNOME and Weston/WSLg still require `wl-clipboard` on `PATH` | Wayland without `wl-clipboard` on compositors lacking data-control (needs a focused-surface `wl_data_device` path from the window layer) |
+| **Accessibility** | Go snapshot + live Linux AT-SPI bridge with `EditableText` | Explicit `v1.0` policy or native VoiceOver / TalkBack adapters and recorded NVDA validation of the Windows UIA provider |
 
 Each host draws the same template and calls the same handlers. What the host
 can do is not the same. Use the matrix below.
@@ -45,6 +46,17 @@ drawn yet, and enters the Ebiten loop. It returns when the window closes or a
 handler returns an error, and it recovers a panic into a crash report
 ([crash.md](crash.md)). Idle park is desktop only
 (`internal/window/idle_supported.go`).
+
+On Windows a window is fitted to its monitor. A window opened on a 150 percent
+panel is larger in pixels than the same window opened at 100 percent, and it
+keeps that size when it lands on a smaller monitor, so the bottom (or the whole
+title bar) could hang off the screen. Once at startup, and once after the window
+settles on a different monitor, it is shrunk and moved just enough to lie inside
+that monitor's work area (`internal/window/window_fit.go`). It is never
+enlarged, and a window that already fits is left alone. The fit waits while the
+window is maximized, minimized, full screen, or being dragged. The move is
+queued on the window's own thread (`SWP_ASYNCWINDOWPOS`); a synchronous move
+from inside the update loop crashes the window.
 
 ## Android native
 
@@ -144,7 +156,7 @@ and App Store review. None of that is in this repo.
 | | Desktop `Run` | Android `BindMobile` | Wasm preview | `Serve` web preview/debugger |
 |---|---|---|---|---|
 | Input | pointer, keys, wheel ([pointer.md](pointer.md), [keys.md](keys.md)) | tap, Back, long press; see [android-app-creation.md](android-app-creation.md) | canvas pointer and keys | `POST /click`, `/change`, `/key`, `/hover`, `/wheel`, plus `/type` and `/backspace` in PNG shell ([web.md](web.md)) |
-| Clipboard | X11, Windows, macOS+cgo; Wayland prefers `wl-copy`/`wl-paste`; if missing, X11 CLIPBOARD when DISPLAY is set; otherwise no-op/`ErrUnavailable` ([clipboard.md](clipboard.md)) | process memory (`internal/clipboard/clipboard_other.go`) | memory copy | none |
+| Clipboard | X11, Windows, macOS+cgo; Wayland prefers built-in data-control, then `wl-copy`/`wl-paste`; if missing, X11 CLIPBOARD when DISPLAY is set; otherwise no-op/`ErrUnavailable` ([clipboard.md](clipboard.md)) | process memory (`internal/clipboard/clipboard_other.go`) | memory copy | none |
 | Files | desktop dialog (`internal/filepick`) | typed name; no file dialog. Telegram camera/gallery is app Java | typed name | typed name |
 | IME | Composer path with preedit; native IM unverified ([interaction.md](interaction.md)) | `exp/textinput` | canvas text | browser input via `/change` (`/type` in PNG shell) |
 | A11y | Go snapshot plus an experimental live Linux AT-SPI bridge (read, focus, activation, and `EditableText` on enabled non-password text controls); Orca and Accerciser can inspect the window. No UIA or NSAccessibility adapters ([accessibility.md](accessibility.md), [atspi.md](atspi.md)) | Go snapshot + TalkBack virtual node provider via `androidaccess` and `AccessibilityBridge` ([accessibility-native.md](accessibility-native.md)) | Go snapshot | snapshot on the page object; no AT |

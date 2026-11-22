@@ -385,7 +385,7 @@ func adoptLayout(p *Page, patch *layout.ElementPatch) bool {
 	p.layoutAdopting = false
 	adoptTransitions(p, d)
 	if previous != nil && previous != d {
-		previous.Release()
+		releaseDisplay(p, previous)
 	}
 
 	return true
@@ -548,7 +548,7 @@ func adoptRestamp(p *Page, patch *layout.ElementPatch) bool {
 	}
 	bindTransitions(p, nil)
 	if previous != nil && previous != d {
-		previous.Release()
+		releaseDisplay(p, previous)
 	}
 	p.stats.repaints++
 

@@ -320,7 +320,7 @@ func commitDisplay(p *Page, display *Display, executed string, drawStart time.Ti
 	p.generation++
 	bindMotion(p, previous, display)
 	bindTransitions(p, captures)
-	releaseReplacedDisplays(display, previous, previousFallback)
+	releaseReplacedDisplays(p, display, previous, previousFallback)
 	remember(p, state)
 	commitAccessibility(p, executed)
 	applyPending(p)
@@ -364,7 +364,7 @@ func paintFallback(p *Page, display *Display, drawStart time.Time, track bool, s
 	p.layerGen++
 	bindMotion(p, previous, nil)
 	bindTransitions(p, nil)
-	releaseReplacedDisplays(display, previous, previousFallback)
+	releaseReplacedDisplays(p, display, previous, previousFallback)
 	remember(p, state)
 	markFull(p)
 	p.lastPatch = DisplayPatch{
@@ -751,13 +751,59 @@ func invalidateSourceState(p *Page, dropCache bool) {
 	}
 }
 
+// detachSharedDisplaySlices nils out any slice on old that shares its backing
+// array with active so releasing old never returns live storage to the engine
+// pool while active still owns it.
+func detachSharedDisplaySlices(old, active *Display) {
+	if old == nil || active == nil || old == active {
+		return
+	}
+	if len(old.Boxes) > 0 && len(active.Boxes) > 0 && &old.Boxes[0] == &active.Boxes[0] {
+		old.Boxes = nil
+	}
+	if len(old.Ops) > 0 && len(active.Ops) > 0 && &old.Ops[0] == &active.Ops[0] {
+		old.Ops = nil
+	}
+	if len(old.Order) > 0 && len(active.Order) > 0 && &old.Order[0] == &active.Order[0] {
+		old.Order = nil
+	}
+	if len(old.OpOwners) > 0 && len(active.OpOwners) > 0 && &old.OpOwners[0] == &active.OpOwners[0] {
+		old.OpOwners = nil
+	}
+	if len(old.Keyframes) > 0 && len(active.Keyframes) > 0 && &old.Keyframes[0] == &active.Keyframes[0] {
+		old.Keyframes = nil
+	}
+}
+
+// releaseDisplay releases a superseded display list and clears p.painted if it
+// pointed to the released display, so a pooled display is never diffed or
+// released a second time.
+func releaseDisplay(p *Page, d *Display) {
+	if d == nil {
+		return
+	}
+	if p != nil {
+		if d == p.draw.Display || d == p.draw.FallbackDisplay {
+			return
+		}
+		detachSharedDisplaySlices(d, p.draw.Display)
+		detachSharedDisplaySlices(d, p.draw.FallbackDisplay)
+		if p.painted == d {
+			p.painted = nil
+		} else {
+			detachSharedDisplaySlices(d, p.painted)
+		}
+	}
+	render.ReleaseDisplay(d)
+}
+
 // releaseReplacedDisplays releases any display lists superseded by display.
-func releaseReplacedDisplays(display, previous, previousFallback *Display) {
+func releaseReplacedDisplays(p *Page, display, previous, previousFallback *Display) {
 	if previous != nil && previous != display {
-		previous.Release()
+		releaseDisplay(p, previous)
 	}
 	if previousFallback != nil && previousFallback != display && previousFallback != previous {
-		previousFallback.Release()
+		releaseDisplay(p, previousFallback)
 	}
 }
 
