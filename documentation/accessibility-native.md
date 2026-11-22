@@ -1,18 +1,26 @@
 # Native accessibility status and validation
 
-Currently (`v0.0.x`; no `v1.0` tag yet), ownframe does not ship a cross-platform
-screen-reader adapter. On Linux, the window registers a live AT-SPI application,
-so Accerciser and Orca can inspect it. NVDA, VoiceOver, and TalkBack cannot
-inspect an ownframe window because Windows UIA, macOS VoiceOver, and Android
-TalkBack adapters are not shipped.
+Currently (`v0.0.x`; no `v1.0` tag yet), ownframe ships the Go accessibility
+snapshot, an experimental Linux AT-SPI bridge (`internal/atspi`), and an Android
+TalkBack bridge (`androidaccess`, `internal/a11ybridge`,
+`internal/window/a11y_android.go`, and `dev.ownframe.android.AccessibilityBridge`
+in `examples/android-host`). On Linux, the window registers a live AT-SPI
+application, so Accerciser and Orca can inspect it. On Android, an Activity that
+attaches `AccessibilityBridge` to its `EbitenView` exposes a virtual node tree to
+TalkBack. NVDA and VoiceOver cannot inspect an ownframe window on master because
+Windows UIA and macOS VoiceOver adapters are not shipped here.
 
-What ships today is the Go accessibility snapshot plus an experimental Linux
-AT-SPI bridge. Ownframe exposes page semantics through `host.Accessible`. Linux
-maps that snapshot to AT-SPI objects (`internal/atspi`), registers with the
-accessibility bus, and serves the tree.
+What ships today is the Go accessibility snapshot plus the Linux AT-SPI and
+Android TalkBack bridges. Ownframe exposes page semantics through
+`host.Accessible`. Linux maps that snapshot to AT-SPI objects (`internal/atspi`),
+registers with the accessibility bus, and serves the tree. Android publishes the
+encoded snapshot from the window loop (`internal/window/a11y_android.go`)
+through `internal/a11ybridge` and `androidaccess`, and the Java
+`AccessibilityBridge` serves `AccessibilityNodeProvider` virtual views and
+queues focus, activation, and text actions back to the page loop.
 
-There is no UI Automation provider, no NSAccessibility / VoiceOver bridge, and
-no TalkBack bridge.
+There is no UI Automation provider and no NSAccessibility / VoiceOver bridge on
+this branch.
 
 ## v1.0 accessibility policy
 
@@ -73,10 +81,12 @@ The platform APIs need different host code:
 
 - Linux has an AT-SPI accessible application and object tree over the
   desktop accessibility bus.
+- Android publishes the snapshot through `androidaccess` (`internal/a11ybridge`)
+  and serves a virtual tree from `dev.ownframe.android.AccessibilityBridge`
+  (`examples/android-host`).
 - Windows needs UI Automation providers attached to the native window tree.
 - macOS needs NSAccessibility elements associated with the native window or
   view.
-- Android TalkBack is not a 1.0 host feature.
 
 ## Validate the page API
 
