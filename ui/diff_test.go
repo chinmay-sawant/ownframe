@@ -554,3 +554,83 @@ func TestViewHandleDispatchAfterPatch(t *testing.T) {
 		t.Fatalf("action = %q, want select", got)
 	}
 }
+
+func TestDiffTreeBudgetOrderIndependent(t *testing.T) {
+	t.Parallel()
+	build := func(attrFirst bool, attrClass, textVal string, textCount int) *Element {
+		root := Div().ID("root")
+		attrNode := Div().ID("attr-0").Class(attrClass)
+		if attrFirst {
+			root.Children(attrNode)
+		}
+		for i := 0; i < textCount; i++ {
+			root.Children(Span().ID(fmt.Sprintf("txt-%d", i)).Text(textVal))
+		}
+		if !attrFirst {
+			root.Children(attrNode)
+		}
+		return root
+	}
+
+	// 1 attr edit + 64 text edits and 64 text edits + 1 attr edit must both stay incremental.
+	dAttrFirst := diffTree(build(true, "a", "old", maxPatches), build(true, "b", "new", maxPatches))
+	dTextFirst := diffTree(build(false, "a", "old", maxPatches), build(false, "b", "new", maxPatches))
+	if !dAttrFirst.ok || !dTextFirst.ok {
+		t.Fatalf("order-dependent budget: attrFirst=%v textFirst=%v, want both true", dAttrFirst.ok, dTextFirst.ok)
+	}
+	if len(dAttrFirst.patches) != maxPatches+1 || len(dTextFirst.patches) != maxPatches+1 {
+		t.Fatalf("patches = %d / %d, want %d", len(dAttrFirst.patches), len(dTextFirst.patches), maxPatches+1)
+	}
+
+	// Exceeding maxTextPatches still falls back.
+	dTooManyText := diffTree(build(true, "a", "old", maxTextPatches+1), build(true, "a", "new", maxTextPatches+1))
+	if dTooManyText.ok {
+		t.Fatalf("expected fallback above maxTextPatches (%d)", maxTextPatches)
+	}
+}
+
+func TestViewUpdateZeroPatchInTickDoesNotDirtyOrRedraw(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	tree := func() *Element {
+		return Div().ID("root").Children(
+			Span().ID("label").Text("steady"),
+		)
+	}
+	// Pre-first-draw zero-patch Update must still commit frame 1.
+	unrendered, err := Mount(ownframe.Config{Width: testWidth, Height: testHeight}, tree())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := unrendered.Update(ctx, tree()); err != nil {
+		t.Fatal(err)
+	}
+	if unrendered.Page.Probe().Generation() == 0 {
+		t.Fatal("zero-patch Update before first draw did not commit frame")
+	}
+
+	// Once rendered, a zero-patch Update inside SetTick must neither re-render
+	// nor mark tick mutation / dirty damage.
+	view := mountView(t, ownframe.Config{}, tree())
+	_, _ = view.Page.Probe().TakeDirty()
+	beforeGen := view.Page.Probe().Generation()
+	beforeStats := view.Page.Probe().Stats()
+
+	view.Page.SetTick(func(tctx context.Context) error {
+		return view.Update(tctx, tree())
+	})
+	if err := view.Page.Testing().Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, dirty := view.Page.Probe().TakeDirty(); dirty {
+		t.Fatal("zero-patch View.Update inside SetTick marked page dirty")
+	}
+	if got := view.Page.Probe().Generation(); got != beforeGen {
+		t.Fatalf("generation = %d, want %d", got, beforeGen)
+	}
+	afterStats := view.Page.Probe().Stats()
+	if afterStats.Redraws != beforeStats.Redraws || afterStats.Repaints != beforeStats.Repaints {
+		t.Fatalf("stats changed: redraws %d->%d repaints %d->%d",
+			beforeStats.Redraws, afterStats.Redraws, beforeStats.Repaints, afterStats.Repaints)
+	}
+}

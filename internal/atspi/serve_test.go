@@ -3,16 +3,17 @@ package atspi
 import (
 	"context"
 	"encoding/binary"
+	"sync/atomic"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-func testServerView(t *testing.T) (*serverView, *int32) {
+func testServerView(t *testing.T) (*serverView, *atomic.Int32) {
 	t.Helper()
 	app := Map(sampleTree())
 	normalizeRootName(&app)
-	id := int32(0)
+	var id atomic.Int32
 	view := newServerView(app, DefaultName, dbusRef{Name: ":1.1", Path: accessibleRootPath}, 100, 200, 800, 600, &id)
 	return view, &id
 }
@@ -103,8 +104,8 @@ func TestServeProperties(t *testing.T) {
 	if res := callViewFrom(view, ":1.1", accessibleRootPath, dbusProperties, "Set", set.bytes()); res.errName != "" {
 		t.Fatalf("set id: %s", res.errText)
 	}
-	if *appID != 7 {
-		t.Fatalf("app id %d", *appID)
+	if appID.Load() != 7 {
+		t.Fatalf("app id %d", appID.Load())
 	}
 	var getId dbusEncoder
 	getId.stringVal(atspiApplication)
@@ -149,7 +150,7 @@ func TestServeComponent(t *testing.T) {
 	tree.Nodes[1].Bounds = host.AccessibilityBounds{X: 10, Y: 20, W: 50, H: 30}
 	tree.Nodes[1].HasBounds = true
 	app := Map(tree)
-	id := int32(0)
+	var id atomic.Int32
 	view := newServerView(app, DefaultName, dbusRef{}, 100, 200, 800, 600, &id)
 	namePath := objectPathFor(t, view, "id:name")
 
@@ -230,7 +231,7 @@ func TestServeTextOffsetsAlign(t *testing.T) {
 	tree := sampleTree()
 	tree.Nodes[1].Value = "one two three"
 	app := Map(tree)
-	id := int32(0)
+	var id atomic.Int32
 	view := newServerView(app, DefaultName, dbusRef{}, 0, 0, 800, 600, &id)
 	namePath := objectPathFor(t, view, "id:name")
 
@@ -306,7 +307,7 @@ func TestServeRejectsUnknownPropertySet(t *testing.T) {
 
 func TestServeRootIndexAndParent(t *testing.T) {
 	app := Map(sampleTree())
-	id := int32(0)
+	var id atomic.Int32
 	view := newServerView(app, DefaultName, dbusRef{}, 0, 0, 800, 600, &id)
 	if got := decodeInt32Result(t, callView(view, accessibleRootPath, atspiAccessible, "GetIndexInParent", nil)); got != -1 {
 		t.Fatalf("root index = %d", got)
@@ -353,6 +354,41 @@ func TestTextRangeClamps(t *testing.T) {
 	for _, c := range cases {
 		if got := textRange(value, c.start, c.end); got != c.want {
 			t.Fatalf("textRange(%q, %d, %d) = %q, want %q", value, c.start, c.end, got, c.want)
+		}
+	}
+}
+
+func TestInsertTextTruncatesOnUTF8RuneBoundary(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		text   string
+		length int32
+		want   string
+	}{
+		{"héllo 世界", 2, "hé"},
+		{"héllo 世界", 7, "héllo 世"},
+		{"héllo 世界", 0, ""},
+		{"héllo 世界", -1, "héllo 世界"},
+		{"héllo 世界", 99, "héllo 世界"},
+		{"😀🎉🚀", 2, "😀🎉"},
+	}
+	for _, tc := range cases {
+		var body dbusEncoder
+		body.int32Val(0)
+		body.stringVal(tc.text)
+		body.int32Val(tc.length)
+		edit, got, fail := decodeTextEdit(&dbusMsg{
+			member: "InsertText",
+			body:   body.bytes(),
+		})
+		if fail.errName != "" {
+			t.Fatalf("InsertText(%q, %d) failed: %s: %s", tc.text, tc.length, fail.errName, fail.errText)
+		}
+		if edit == nil || edit.Kind != host.AccessibilityReplaceText {
+			t.Fatalf("InsertText(%q, %d) edit = %+v", tc.text, tc.length, edit)
+		}
+		if got != tc.want {
+			t.Fatalf("InsertText(%q, %d) = %q, want %q", tc.text, tc.length, got, tc.want)
 		}
 	}
 }

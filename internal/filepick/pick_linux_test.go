@@ -6,8 +6,10 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func writeTool(t *testing.T, dir, name, body string) {
@@ -77,5 +79,23 @@ func TestPickNoTool(t *testing.T) {
 
 	if got, err := pickLinux(context.Background(), "Open"); !errors.Is(err, ErrNoDialog) {
 		t.Fatalf("pick = %q %v", got, err)
+	}
+}
+
+func TestPickContextCancelReturnsContextErr(t *testing.T) {
+	sleepPath, err := exec.LookPath("sleep")
+	if err != nil {
+		t.Skip("sleep not found")
+	}
+	dir := t.TempDir()
+	writeTool(t, dir, "zenity", "#!/bin/sh\nexec "+sleepPath+" 5\n")
+	t.Setenv("PATH", dir)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	got, err := pickLinux(ctx, "Open")
+	if got != "" || !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("pick = %q %v, want context.DeadlineExceeded", got, err)
 	}
 }

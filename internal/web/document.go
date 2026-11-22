@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // browserDocument turns the executed paint source into the HTML document
 // the browser shows. controls carry the real values and select options.
 // theme is inserted as a stylesheet. boot, when non-empty, is the live
 // script and is inserted once.
-func browserDocument(html, theme string, controls []page.WebControl, boot string) string {
+func browserDocument(html, theme string, controls []host.WebControl, boot string) string {
 	doc := restoreControls(html, controls)
 
 	return insertPreviewHead(doc, theme, boot)
@@ -38,7 +38,7 @@ type htmlTag struct {
 	other     bool
 }
 
-func restoreControls(src string, controls []page.WebControl) string {
+func restoreControls(src string, controls []host.WebControl) string {
 	byID := indexControls(controls)
 	if len(byID) == 0 {
 		return src
@@ -96,12 +96,12 @@ func restoreControls(src string, controls []page.WebControl) string {
 	return b.String()
 }
 
-func indexControls(controls []page.WebControl) map[string]*page.WebControl {
+func indexControls(controls []host.WebControl) map[string]*host.WebControl {
 	if len(controls) == 0 {
 		return nil
 	}
 
-	byID := make(map[string]*page.WebControl, len(controls))
+	byID := make(map[string]*host.WebControl, len(controls))
 	for i := range controls {
 		id := controls[i].ID
 		if id == "" {
@@ -114,7 +114,7 @@ func indexControls(controls []page.WebControl) map[string]*page.WebControl {
 }
 
 // matchControl pairs a field element with the live control of the same id.
-func matchControl(tag htmlTag, kind string, byID map[string]*page.WebControl) (*page.WebControl, bool) {
+func matchControl(tag htmlTag, kind string, byID map[string]*host.WebControl) (*host.WebControl, bool) {
 	if kind == "" {
 		return nil, false
 	}
@@ -212,7 +212,7 @@ func matchingEnd(src string, open htmlTag) int {
 	return -1
 }
 
-func writeControl(b *strings.Builder, kind string, attrs []attr, ctrl *page.WebControl) {
+func writeControl(b *strings.Builder, kind string, attrs []attr, ctrl *host.WebControl) {
 	switch kind {
 	case "textarea":
 		writeOpen(b, "textarea", attrs, ctrl, false)
@@ -229,7 +229,7 @@ func writeControl(b *strings.Builder, kind string, attrs []attr, ctrl *page.WebC
 	}
 }
 
-func writeOpen(b *strings.Builder, tag string, attrs []attr, ctrl *page.WebControl, asInput bool) {
+func writeOpen(b *strings.Builder, tag string, attrs []attr, ctrl *host.WebControl, asInput bool) {
 	b.WriteByte('<')
 	b.WriteString(tag)
 
@@ -286,7 +286,7 @@ func supportsSelection(tag, kind string) bool {
 	}
 }
 
-func writeOption(b *strings.Builder, opt page.SelectOption) {
+func writeOption(b *strings.Builder, opt host.SelectOption) {
 	b.WriteString(`<option value="`)
 	b.WriteString(html.EscapeString(opt.Value))
 	b.WriteByte('"')

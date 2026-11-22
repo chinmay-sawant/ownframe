@@ -13,13 +13,13 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/chinmay-sawant/ownframe/internal/fetch"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // ErrNoHandler means Request found no Handle for that channel.
 var ErrNoHandler = errors.New("ownframe: no ipc handler")
 
-var errNilContext = fetch.ErrNilContext
+var errNilContext = host.ErrNilContext
 
 // maxListeners caps Listen per channel.
 const maxListeners = 256

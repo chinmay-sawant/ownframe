@@ -443,6 +443,9 @@ func recordPartialBounds(p *Page, changed int, rects []image.Rectangle, memo *di
 	p.stats.dirtyOps = 0
 	p.stats.dirtyRegions = len(rects)
 	p.stats.dirtyArea = 0
+	if len(rects) == 0 {
+		return
+	}
 	for _, r := range rects {
 		p.stats.dirtyArea += r.Dx() * r.Dy()
 	}
@@ -978,8 +981,9 @@ func setDisplayBoxes(p *Page, display *Display) {
 // A sticky stacking context can paint above a later in-flow sibling. Preserve
 // document order in Boxes, but route pointer input in the engine's paint order.
 func setStickyBoxes(p *Page, display *Display) {
-	setPlacedBoxes(p, display)
-	items := hit.List(nil, display.Boxes, fixedBoxes(display))
+	fixed := fixedBoxes(display)
+	setBoxes(p, display.Boxes)
+	items := hit.List(nil, display.Boxes, fixed)
 	ranks := make([]int, len(items))
 	for rank, operation := range display.Order {
 		if operation < 0 || operation >= len(display.OpOwners) || display.Ops[operation].Outline() {

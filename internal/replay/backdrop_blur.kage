@@ -88,33 +88,38 @@ func Fragment(dstPos vec4, src0Pos vec2, color vec4) vec4 {
 	}
 	lens := lensData(localPos)
 	samplePos := src0Pos + lens.xy
-	// The wide seven-tap kernel left visible copies of text and panel edges at
-	// large radii. This denser Gaussian blends them into a continuous backdrop.
-	filtered := sampleAt(samplePos, 0) * 0.09990836
-	filtered += sampleAt(samplePos, -0.083333336) * 0.0968345
-	filtered += sampleAt(samplePos, 0.083333336) * 0.0968345
-	filtered += sampleAt(samplePos, -0.16666667) * 0.08816882
-	filtered += sampleAt(samplePos, 0.16666667) * 0.08816882
-	filtered += sampleAt(samplePos, -0.25) * 0.07541479
-	filtered += sampleAt(samplePos, 0.25) * 0.07541479
-	filtered += sampleAt(samplePos, -0.33333334) * 0.06059748
-	filtered += sampleAt(samplePos, 0.33333334) * 0.06059748
-	filtered += sampleAt(samplePos, -0.41666666) * 0.04574138
-	filtered += sampleAt(samplePos, 0.41666666) * 0.04574138
-	filtered += sampleAt(samplePos, -0.5) * 0.03243549
-	filtered += sampleAt(samplePos, 0.5) * 0.03243549
-	filtered += sampleAt(samplePos, -0.5833333) * 0.0216067
-	filtered += sampleAt(samplePos, 0.5833333) * 0.0216067
-	filtered += sampleAt(samplePos, -0.6666667) * 0.01352113
-	filtered += sampleAt(samplePos, 0.6666667) * 0.01352113
-	filtered += sampleAt(samplePos, -0.75) * 0.00794866
-	filtered += sampleAt(samplePos, 0.75) * 0.00794866
-	filtered += sampleAt(samplePos, -0.8333333) * 0.004389667
-	filtered += sampleAt(samplePos, 0.8333333) * 0.004389667
-	filtered += sampleAt(samplePos, -0.9166667) * 0.002277329
-	filtered += sampleAt(samplePos, 0.9166667) * 0.002277329
-	filtered += sampleAt(samplePos, -1) * 0.001109882
-	filtered += sampleAt(samplePos, 1) * 0.001109882
+	var filtered vec4
+	if Radius <= 0 {
+		filtered = imageSrc0At(samplePos)
+	} else {
+		// The wide seven-tap kernel left visible copies of text and panel edges at
+		// large radii. This denser Gaussian blends them into a continuous backdrop.
+		filtered = sampleAt(samplePos, 0) * 0.09990836
+		filtered += sampleAt(samplePos, -0.083333336) * 0.0968345
+		filtered += sampleAt(samplePos, 0.083333336) * 0.0968345
+		filtered += sampleAt(samplePos, -0.16666667) * 0.08816882
+		filtered += sampleAt(samplePos, 0.16666667) * 0.08816882
+		filtered += sampleAt(samplePos, -0.25) * 0.07541479
+		filtered += sampleAt(samplePos, 0.25) * 0.07541479
+		filtered += sampleAt(samplePos, -0.33333334) * 0.06059748
+		filtered += sampleAt(samplePos, 0.33333334) * 0.06059748
+		filtered += sampleAt(samplePos, -0.41666666) * 0.04574138
+		filtered += sampleAt(samplePos, 0.41666666) * 0.04574138
+		filtered += sampleAt(samplePos, -0.5) * 0.03243549
+		filtered += sampleAt(samplePos, 0.5) * 0.03243549
+		filtered += sampleAt(samplePos, -0.5833333) * 0.0216067
+		filtered += sampleAt(samplePos, 0.5833333) * 0.0216067
+		filtered += sampleAt(samplePos, -0.6666667) * 0.01352113
+		filtered += sampleAt(samplePos, 0.6666667) * 0.01352113
+		filtered += sampleAt(samplePos, -0.75) * 0.00794866
+		filtered += sampleAt(samplePos, 0.75) * 0.00794866
+		filtered += sampleAt(samplePos, -0.8333333) * 0.004389667
+		filtered += sampleAt(samplePos, 0.8333333) * 0.004389667
+		filtered += sampleAt(samplePos, -0.9166667) * 0.002277329
+		filtered += sampleAt(samplePos, 0.9166667) * 0.002277329
+		filtered += sampleAt(samplePos, -1) * 0.001109882
+		filtered += sampleAt(samplePos, 1) * 0.001109882
+	}
 	if filtered.a > 0 {
 		unpremultiplied := filtered.rgb / filtered.a
 		luma := dot(unpremultiplied, vec3(0.2126, 0.7152, 0.0722))

@@ -7,7 +7,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/css"
 
-	"github.com/chinmay-sawant/ownframe/internal/fetch"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
 
@@ -123,7 +123,7 @@ func Run(ctx context.Context, s RedrawSurface, skipSame bool) error {
 
 func useContext(ctx context.Context) error {
 	if ctx == nil {
-		return fetch.ErrNilContext
+		return host.ErrNilContext
 	}
 
 	return ctx.Err()

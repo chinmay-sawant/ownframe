@@ -31,6 +31,10 @@ type audioSource interface {
 
 // audio serves GET /audio. The browser plays whatever clip the page published.
 func (s *server) audio(w http.ResponseWriter, r *http.Request) {
+	if !sameOrigin(r) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 	src, ok := s.app.(audioSource)
 	if !ok {
 		http.NotFound(w, r)

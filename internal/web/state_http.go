@@ -36,6 +36,10 @@ type frameState struct {
 // dirty ticks that changed retained operations without a page redraw, so it
 // keeps the reported generation moving past the page's own count.
 func (s *server) state(w http.ResponseWriter, r *http.Request) {
+	if !sameOrigin(r) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

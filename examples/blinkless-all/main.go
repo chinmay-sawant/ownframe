@@ -2,7 +2,7 @@
 // property blinkless implements. Six hand-built tabs hold the 61 once-missing
 // ones: navigation and UI, draft borders and shapes, motion path,
 // fragmentation and generated content, reading order, and the SVG leftovers.
-// Generated tabs (ids "all-...", at most 40 rows each) hold the rest, each
+// Generated tabs (ids "all-...", at most 20 rows each) hold the rest, each
 // with a description, a how-to-validate line and a control-versus-sample
 // readout. The top of the window states the catalog counts. Clicking a tab loads a page that holds only that tab.
 //
@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -79,7 +80,7 @@ func run(width, height int, tab, pngOut, web, snapshot string, perf bool) error 
 			return fmt.Errorf("-snapshot is for the window; with -web the page itself is served")
 		}
 
-		attachWebLive(page)
+		attachWebLive(app, page)
 
 		if perf {
 			return ownframe.ServeWithOptions(ctx, page, web, ownframe.ServeOptions{
@@ -142,8 +143,13 @@ func runDemoCommand(tab string, width, height int, dir string) error {
 	return nil
 }
 
-// NewPage builds the window page with tab open and routes every tab button.
+// NewPage builds the window page with tab open and handles tab button clicks
+// lazily so unvisited tabs are not laid out at startup.
 func (a *App) NewPage(ctx context.Context, tab string, width, height int) (*ownframe.Page, error) {
+	if _, ok := a.findTab(tab); !ok {
+		return nil, fmt.Errorf("unknown tab %q", tab)
+	}
+
 	page, err := ownframe.New(ownframe.Config{Title: "blinkless all", HTML: a.Page(tab), Width: width, Height: height, RetainState: true})
 	if err != nil {
 		return nil, err
@@ -155,19 +161,31 @@ func (a *App) NewPage(ctx context.Context, tab string, width, height int) (*ownf
 		page.SetImage("mask", mask)
 	}
 
-	page.AddHandlers(ownframe.Handlers{Wheel: sideWheel(page)})
-
-	for _, t := range a.tabs {
-		if err = page.Route(actionPrefix+t.ID, a.Page(t.ID)); err != nil {
-			return nil, err
-		}
-	}
+	page.AddHandlers(ownframe.Handlers{
+		Wheel: sideWheel(page),
+		Click: a.tabClick(page),
+	})
 
 	if err = page.Redraw(ctx); err != nil {
 		return nil, err
 	}
 
 	return page, nil
+}
+
+func (a *App) tabClick(page *ownframe.Page) func(context.Context, ownframe.Box) error {
+	return func(ctx context.Context, b ownframe.Box) error {
+		id, ok := strings.CutPrefix(b.Action, actionPrefix)
+		if !ok {
+			return nil
+		}
+
+		if _, found := a.findTab(id); !found {
+			return nil
+		}
+
+		return page.Load(ctx, a.Page(id))
+	}
 }
 
 // Default window size, in CSS pixels.

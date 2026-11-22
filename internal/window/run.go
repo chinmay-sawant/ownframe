@@ -370,3 +370,19 @@ func loopWait(maxFPS int, lastLoop, now time.Time) time.Duration {
 	}
 	return 0
 }
+
+// nextLoopBase advances the pacing anchor by one interval when the loop is
+// keeping pace, absorbing small OS sleep overshoot instead of accumulating
+// frame-rate drift. After a stall (or the first frame), it re-anchors to now
+// so the loop never bursts catch-up frames.
+func nextLoopBase(maxFPS int, lastLoop, now time.Time) time.Time {
+	interval := LoopInterval(maxFPS)
+	if interval <= 0 || lastLoop.IsZero() {
+		return now
+	}
+	target := lastLoop.Add(interval)
+	if now.Before(target) || now.Sub(target) >= interval {
+		return now
+	}
+	return target
+}

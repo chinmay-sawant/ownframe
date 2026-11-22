@@ -474,6 +474,7 @@ func regionPtrsEqual(prev, next []layout.DisplayOp) bool {
 }
 
 const (
+	stampByteMask          = 0xff
 	stampShiftStrokeMask   = 8
 	stampShiftLineInset    = 16
 	stampBitBold           = 1 << 24
@@ -489,15 +490,16 @@ const (
 	stampTagTextTerminator = 0xff
 	stampTagLetterSpacing  = 1
 	stampTagRadii          = 2
+	stampTagLayerProps     = 3
 )
 
 // mixOpStamp folds every SameOp input except the Font and Grid identities.
 func mixOpStamp(h uint64, o *layout.DisplayOp) (uint64, bool) {
 	// Pack the kind, stroke/inset masks, and nine bool flags into one word so
 	// one FNV step covers all twelve discrete header fields.
-	flags := uint64(o.Kind) |
-		(uint64(o.StrokeMask) << stampShiftStrokeMask) |
-		(uint64(o.LineInset) << stampShiftLineInset)
+	flags := (uint64(o.Kind) & stampByteMask) |
+		((uint64(o.StrokeMask) & stampByteMask) << stampShiftStrokeMask) |
+		((uint64(o.LineInset) & stampByteMask) << stampShiftLineInset)
 	if o.Bold {
 		flags |= stampBitBold
 	}
@@ -531,6 +533,7 @@ func mixOpStamp(h uint64, o *layout.DisplayOp) (uint64, bool) {
 	h = (h ^ flags) * stampPrime
 	var ok bool
 	if o.ZIndex != 0 || o.StickyID != 0 || o.RotateDeg != 0 {
+		h = (h ^ stampTagLayerProps) * stampPrime
 		h = mixStampInt(h, o.ZIndex)
 		h = mixStampInt(h, o.StickyID)
 		if h, ok = mixStampFloat(h, float64(o.RotateDeg)); !ok {

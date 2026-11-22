@@ -824,3 +824,45 @@ func TestRendererEvictDisplay(t *testing.T) {
 	}
 	r.plans.mu.Unlock()
 }
+
+// TestTilePlanRefreshesWhenOpMovesAcrossTileBoundary verifies that in-place
+// motion or frame.Anim mutations moving an op across a 256 px tile boundary
+// update the plan's tile buckets without rebuilding the whole chunk plan.
+func TestTilePlanRefreshesWhenOpMovesAcrossTileBoundary(t *testing.T) {
+	d := &layout.Display{
+		Width: 600, Height: 300, PointsPerPixel: 1,
+		Boxes: []layout.Box{{X: 0, Y: 0, W: 600, H: 300}},
+		Ops: []layout.DisplayOp{
+			{Kind: layout.DisplayOpFillRect, X: 20, Y: 20, W: 40, H: 40, R: 1, Alpha: 1},
+		},
+		Order: []int{0},
+	}
+
+	var r Renderer
+	defer r.Close()
+
+	p1 := r.tilePlanFor(d)
+	if p1 == nil || p1.tiles == nil {
+		t.Fatal("missing initial tile plan")
+	}
+	tile1Rect := image.Rect(256, 0, 512, 256)
+	seen := make([]int, len(p1.items))
+	if cands := p1.tiles.planTilesForRect(tile1Rect, seen, 1, nil); len(cands) != 0 {
+		t.Fatalf("before move, tile 1 had %v, want empty", cands)
+	}
+
+	// Move op across the 256 px tile boundary in place (same displayFingerprint).
+	d.Ops[0].X = 300
+	buildsBefore := chunkPlanBuildCount()
+	p2 := r.tilePlanFor(d)
+	if p2 != p1 {
+		t.Fatal("in-place move replaced plan pointer instead of refreshing tiles")
+	}
+	if chunkPlanBuildCount() != buildsBefore {
+		t.Fatal("in-place move rebuilt the whole chunk plan")
+	}
+	seen = make([]int, len(p2.items))
+	if cands := p2.tiles.planTilesForRect(tile1Rect, seen, 1, nil); len(cands) != 1 || cands[0] != 0 {
+		t.Fatalf("after move, tile 1 candidates = %v, want [0]", cands)
+	}
+}

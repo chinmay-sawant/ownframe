@@ -3,6 +3,7 @@ package atspi
 import (
 	"encoding/binary"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -22,15 +23,15 @@ func TestServeApplicationIDWriteRequiresRegistry(t *testing.T) {
 			t.Fatalf("sender %q: error = %q %q", sender, res.errName, res.errText)
 		}
 	}
-	if *appID != 0 {
-		t.Fatalf("foreign write changed id to %d", *appID)
+	if appID.Load() != 0 {
+		t.Fatalf("foreign write changed id to %d", appID.Load())
 	}
 
 	if res := setID(":1.1", 11); res.errName != "" {
 		t.Fatalf("registry write: %s: %s", res.errName, res.errText)
 	}
-	if *appID != 11 {
-		t.Fatalf("registry write left id at %d", *appID)
+	if appID.Load() != 11 {
+		t.Fatalf("registry write left id at %d", appID.Load())
 	}
 }
 
@@ -43,7 +44,7 @@ func TestServePasswordTextRedacted(t *testing.T) {
 			app.Objects[i].Value = "secret"
 		}
 	}
-	id := int32(0)
+	var id atomic.Int32
 	view := newServerView(app, DefaultName, dbusRef{}, 0, 0, 800, 600, &id)
 	pwPath := objectPathFor(t, view, "id:pw")
 	namePath := objectPathFor(t, view, "id:name")

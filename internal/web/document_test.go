@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 func TestBrowserDocumentInput(t *testing.T) {
@@ -15,7 +15,7 @@ func TestBrowserDocumentInput(t *testing.T) {
 	const src = "<body>" +
 		`<span id="email" class="field" placeholder="Email" data-bind="Email" data-ownframe-field="input"></span>` +
 		"</body>"
-	got := browserDocument(src, "", []page.WebControl{{
+	got := browserDocument(src, "", []host.WebControl{{
 		ID:    "email",
 		Tag:   "input",
 		Type:  "text",
@@ -43,7 +43,7 @@ func TestBrowserDocumentInput(t *testing.T) {
 func TestBrowserDocumentCarriesFocusedSelection(t *testing.T) {
 	t.Parallel()
 
-	got := browserDocument(`<span id="left" data-ownframe-field="input"></span>`, "", []page.WebControl{{
+	got := browserDocument(`<span id="left" data-ownframe-field="input"></span>`, "", []host.WebControl{{
 		ID:             "left",
 		Tag:            "input",
 		Type:           "text",
@@ -67,7 +67,7 @@ func TestBrowserDocumentCarriesRadioSelection(t *testing.T) {
 	t.Parallel()
 
 	got := browserDocument(`<input id="free" type="radio" name="plan" value="free">`+
-		`<input id="pro" type="radio" name="plan" value="pro">`, "", []page.WebControl{
+		`<input id="pro" type="radio" name="plan" value="pro">`, "", []host.WebControl{
 		{ID: "free", Tag: "input", Type: "radio", Name: "plan", Value: "free"},
 		{ID: "pro", Tag: "input", Type: "radio", Name: "plan", Value: "pro", Checked: true},
 	}, "")
@@ -95,7 +95,7 @@ func TestBrowserDocumentPassword(t *testing.T) {
 	const value = "secret"
 	bullets := strings.Repeat("•", len(value))
 	src := `<body><span id="pw" data-ownframe-field="input">` + bullets + `</span></body>`
-	got := browserDocument(src, "", []page.WebControl{{
+	got := browserDocument(src, "", []host.WebControl{{
 		ID:    "pw",
 		Tag:   "input",
 		Type:  "password",
@@ -122,7 +122,7 @@ func TestBrowserDocumentTextarea(t *testing.T) {
 
 	const value = "a<b&c"
 	const src = `<body><span id="note" data-ownframe-field="textarea">draft</span></body>`
-	got := browserDocument(src, "", []page.WebControl{{
+	got := browserDocument(src, "", []host.WebControl{{
 		ID:    "note",
 		Tag:   "textarea",
 		Value: value,
@@ -141,10 +141,10 @@ func TestBrowserDocumentSelect(t *testing.T) {
 	t.Parallel()
 
 	const src = `<body><select id="city" data-ownframe-field="select">Rome</select></body>`
-	got := browserDocument(src, "", []page.WebControl{{
+	got := browserDocument(src, "", []host.WebControl{{
 		ID:  "city",
 		Tag: "select",
-		Options: []page.SelectOption{
+		Options: []host.SelectOption{
 			{Value: "rm", Label: "Rome", Selected: true},
 			{Value: "mi", Label: "Milan"},
 		},
@@ -178,7 +178,7 @@ func TestBrowserDocumentDropsNestedSelection(t *testing.T) {
 	const value = "ab"
 	const src = `<body><span id="e" data-ownframe-field="input">` +
 		`<span data-ownframe-selection="1">ab</span></span></body>`
-	got := browserDocument(src, "", []page.WebControl{{
+	got := browserDocument(src, "", []host.WebControl{{
 		ID:    "e",
 		Tag:   "input",
 		Type:  "text",

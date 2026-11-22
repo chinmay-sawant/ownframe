@@ -14,6 +14,10 @@ type imageSource interface {
 // image serves a picture the page registered with SetImage.
 // A stylesheet url("logo") and an img src="logo" both request /logo.
 func (s *server) image(w http.ResponseWriter, r *http.Request) {
+	if !sameOrigin(r) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 	name, ok := imageName(r.URL.Path)
 	if !ok {
 		http.NotFound(w, r)
@@ -34,9 +38,14 @@ func (s *server) image(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", imageContentType(data))
+	ct := imageContentType(data)
+	w.Header().Set("Content-Type", ct)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	if ct == "image/svg+xml" {
+		w.Header().Set("Content-Security-Policy", "sandbox")
+	}
 	w.Header().Set("Cache-Control", "no-store")
-	if _, err := w.Write(data); err != nil { //nolint:gosec // reason: data is first-party SetImage bytes keyed by validated imageName, Content-Type is sniffed from bytes.
+	if _, err := w.Write(data); err != nil { //nolint:gosec // reason: data is first-party SetImage bytes keyed by validated imageName, Content-Type is allowlisted.
 		return
 	}
 }
@@ -56,10 +65,9 @@ func imageName(path string) (string, bool) {
 	return name, true
 }
 
-// imageContentType labels whatever SetImage stored. The standard sniffer
-// covers the common bitmap types. SVG and the ISO image brands are named
-// here because that sniffer calls them text or octet-stream. Anything else
-// is still served with the sniffed type, so a new format is not dropped.
+// imageContentType labels whatever SetImage stored using an explicit image
+// MIME allowlist. Unrecognized payloads fall back to application/octet-stream
+// so non-image bytes are never served as text/html.
 func imageContentType(data []byte) string {
 	if svgBytes(data) {
 		return "image/svg+xml"
@@ -68,12 +76,13 @@ func imageContentType(data []byte) string {
 		return ct
 	}
 
-	sniffed := http.DetectContentType(data)
-	if strings.HasPrefix(sniffed, "image/") {
+	switch sniffed := http.DetectContentType(data); sniffed {
+	case "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp",
+		"image/x-icon", "image/vnd.microsoft.icon":
 		return sniffed
+	default:
+		return "application/octet-stream"
 	}
-
-	return sniffed
 }
 
 func svgBytes(data []byte) bool {
@@ -97,8 +106,6 @@ func boxedImage(data []byte) (string, bool) {
 	switch string(data[at+len(mark) : at+len(mark)+brandLen]) {
 	case "avif", "avis":
 		return "image/avif", true
-	case "heic", "heix", "heif", "mif1":
-		return "image/heic", true
 	default:
 		return "", false
 	}

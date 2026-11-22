@@ -15,6 +15,7 @@ func (s *shell) dropDisplayBuffers() {
 	s.dropTiles()
 	s.disposeViewport()
 	s.dropScaleBuf()
+	s.demoteLayers()
 }
 
 // applyRepaint brings the tile grid up to date for this frame. A rebuild
@@ -359,6 +360,7 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 
 	if oversized(w, h) {
 		// No image can hold the page, so the draw drops the scale.
+		s.dropDisplayBuffers()
 		s.directReplay(dst, s.display)
 
 		return
@@ -368,8 +370,7 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 	s.dropDisplayBuffers()
 	buf := s.ensureScaleBuf(w, h)
 
-	buf.Clear()
-	buf.Fill(s.pageBackground())
+	fillBackground(buf, s.pageBackground())
 	s.renderer.DrawVisible(buf, s.display, 0, 0)
 
 	var op ebiten.DrawImageOptions

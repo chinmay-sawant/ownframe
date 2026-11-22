@@ -26,7 +26,6 @@ body{margin:0;padding:16px 262px 16px 16px;background:#f6f4ee;color:#1f2937;font
 .top .nums{gap:6px;margin:6px 0 0 0}
 .top .num{padding:3px 8px;font-size:12px}
 .top .num b{font-size:13px}
-.sel{margin:0 0 6px 0;padding:5px 12px}
 .sel{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px 0;padding:6px 12px;background:#1f2937;color:#fff;border-radius:8px}
 .sel-title{font-size:16px;font-weight:bold}
 .sel-cur{font-size:14px}
@@ -91,13 +90,19 @@ func (a *App) header() string {
 		tally[a.rowStatus(n)]++
 	}
 
+	const percentScale = 100
+	pct := 0.0
+	if total > 0 {
+		pct = percentScale * float64(impl) / float64(total)
+	}
+
 	var b strings.Builder
 
 	b.WriteString(`<div class="head">`)
 	fmt.Fprintf(&b, `<p>The catalog lists %d CSS properties. %d are implemented (%.1f%%). `+
 		`This window covers %d of them on %d tabs: the 61 once-missing properties on six hand-built tabs, and the rest on generated tabs. `+
 		`%d implemented, %d partial, %d unsupported.</p>`,
-		total, impl, 100*float64(impl)/float64(total), len(names), len(a.tabs),
+		total, impl, pct, len(names), len(a.tabs),
 		tally[StatusImplemented], tally[StatusPartial], tally[StatusUnsupported])
 	b.WriteString(`<p>A family is a group of properties that one example covers. ` +
 		`Two example boxes can stand for eight properties, so the tab count is the number of ` +
@@ -137,6 +142,10 @@ func (a *App) tabBar(open string) string {
 
 // section wraps the open tab's body with its title and one row per example.
 func (a *App) section(t Tab) string {
+	if t.Prepare != nil {
+		t.Prepare()
+	}
+
 	var b strings.Builder
 
 	fmt.Fprintf(&b, `<div class="sec" id="sec-%s"><h2>%s</h2><p class="sub">%d properties, %d examples</p>`,
@@ -158,7 +167,7 @@ func (a *App) section(t Tab) string {
 			`<div class="note">%s%s</div>`+
 			`<div class="note wide"><b>Description:</b> %s</div><div class="note wide"><b>Validate:</b> %s</div></div>`,
 			html.EscapeString(p.Name), html.EscapeString(p.Name), strings.ReplaceAll(st, " ", "-"), html.EscapeString(st),
-			html.EscapeString(p.Note), covers, html.EscapeString(p.Description), html.EscapeString(p.Validate))
+			html.EscapeString(p.Note), covers, html.EscapeString(p.Description), html.EscapeString(p.validateText()))
 
 		if p.Demo != nil {
 			b.WriteString(`<div class="demo" id="demo-` + html.EscapeString(p.Name) + `">` + p.Demo() + `</div>`)
@@ -171,14 +180,26 @@ func (a *App) section(t Tab) string {
 	return b.String()
 }
 
-// Page returns the whole document with tab id open.
-func (a *App) Page(id string) string {
-	var open Tab
-
+func (a *App) findTab(id string) (Tab, bool) {
 	for _, t := range a.tabs {
 		if t.ID == id {
-			open = t
+			return t, true
 		}
+	}
+
+	return Tab{}, false
+}
+
+// Page returns the whole document with tab id open, falling back to the first
+// tab when id is unknown.
+func (a *App) Page(id string) string {
+	open, ok := a.findTab(id)
+	if !ok && len(a.tabs) > 0 {
+		open = a.tabs[0]
+	}
+
+	if open.Prepare != nil {
+		open.Prepare()
 	}
 
 	return `<!DOCTYPE html><html><head><style>` + pageStyle + `</style></head><body>` +

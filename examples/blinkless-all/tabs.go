@@ -13,11 +13,22 @@ type Prop struct {
 	Description string
 	// Validate says how to check the example by eye and by readout.
 	Validate string
+	// ValidateFn computes Validate lazily when set, so generated rows only lay
+	// out their demos when their tab is rendered.
+	ValidateFn func() string
 	// Demo returns the HTML that shows this example working. The page draws it
 	// directly under the example's row, so the status, the note and the
 	// showcase read as one block. It holds what the example's boxes look like
 	// and the host's readout for those boxes, and nothing about other rows.
 	Demo func() string
+}
+
+func (p Prop) validateText() string {
+	if p.ValidateFn != nil {
+		return p.ValidateFn()
+	}
+
+	return p.Validate
 }
 
 // Names returns Name followed by Covers.
@@ -35,6 +46,9 @@ type Tab struct {
 	// Head returns HTML shared by the rows of this tab, such as one <style>
 	// element. It is drawn once, above the first row. It may be nil.
 	Head func() string
+	// Prepare runs lazily before the tab's rows are rendered so generated tabs
+	// compute their readouts on demand instead of at startup. It may be nil.
+	Prepare func()
 }
 
 // Count is the number of properties the tab covers.
@@ -95,7 +109,7 @@ func fillFields(tabs []Tab) {
 				}
 			}
 
-			if p.Validate == "" {
+			if p.Validate == "" && p.ValidateFn == nil {
 				p.Validate = "Read the picture and the readout under the row. They must agree with the note, and the status badge must read implemented."
 			}
 		}

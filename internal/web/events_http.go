@@ -89,6 +89,11 @@ func (s *server) subscribe(size int) chan []byte {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.closed {
+		ch := make(chan []byte)
+		close(ch)
+		return ch
+	}
 	if s.subs == nil {
 		s.subs = map[chan []byte]struct{}{}
 	}
@@ -104,8 +109,24 @@ func (s *server) unsubscribe(ch chan []byte) {
 	if s.subs == nil {
 		return
 	}
+	if _, ok := s.subs[ch]; !ok {
+		return
+	}
 	delete(s.subs, ch)
 	close(ch)
+}
+
+// closeSubs closes and clears all active /events subscriber channels so
+// streaming handlers exit promptly during shutdown.
+func (s *server) closeSubs() {
+	s.mu.Lock()
+	s.closed = true
+	subs := s.subs
+	s.subs = nil
+	s.mu.Unlock()
+	for ch := range subs {
+		close(ch)
+	}
 }
 
 // broadcastLocked fans one encoded event out. The caller holds s.mu.

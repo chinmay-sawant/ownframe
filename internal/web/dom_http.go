@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // maxDOMIDLength bounds element ids and action names the browser may name
@@ -42,7 +42,7 @@ type domOption struct {
 // domSelectSource is a screen that lists live select options. The executed
 // source carries only the current label, so dropdowns need this to open.
 type domSelectSource interface {
-	SelectControls() map[string][]page.SelectOption
+	SelectControls() map[string][]host.SelectOption
 }
 
 // formChecker stores a checked state without drawing.
@@ -53,7 +53,7 @@ type formChecker interface {
 // webControls lists live controls for the browser document. A screen that
 // does not implement it leaves the control list nil.
 type webControls interface {
-	WebControls() []page.WebControl
+	WebControls() []host.WebControl
 }
 
 // webTextApplier stores one posted text or select value and redraws.
@@ -87,6 +87,10 @@ type domState struct {
 // frame bumps change the PNG frame but leave the executed source alone, so
 // they must not trigger a /dom refetch.
 func (s *server) dom(w http.ResponseWriter, r *http.Request) {
+	if !sameOrigin(r) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -101,7 +105,7 @@ func (s *server) dom(w http.ResponseWriter, r *http.Request) {
 	if src, ok := s.app.(domSource); ok {
 		if html := src.ExecutedSource(); html != "" {
 			theme := src.ThemeSource()
-			var controls []page.WebControl
+			var controls []host.WebControl
 			if listed, ok := s.app.(webControls); ok {
 				controls = listed.WebControls()
 			}

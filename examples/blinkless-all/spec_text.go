@@ -124,6 +124,8 @@ func textHTML(name string) string {
 		return tbox("", textBody+` `+textBody)
 	case "font-variant-emoji":
 		return tbox("", "Emoji ❤ ☺ ★ text")
+	case "text-autospace":
+		return tbox("", "日本語abc 123 漢字xyz")
 	default:
 		return tbox("", `<b>Bold</b> and <i>italic</i> `+textBody+` <code>fi ffl 1234</code>`)
 	}
@@ -277,6 +279,7 @@ var textVisible = map[string]bool{
 	"text-align":                  true,
 	"text-align-all":              true,
 	"text-align-last":             true,
+	"text-autospace":              true,
 	"text-box":                    true,
 	"text-box-trim":               true,
 	"text-decoration":             true,
@@ -314,9 +317,9 @@ var textLookOf = map[string]string{
 	"text-overflow":               "The one-line text is wider than the 160px box and runs past its right edge in both pictures: the painter draws no ellipsis or custom string, so the demo matches the control. The picture matches the control; judge this row by the picture.",
 	"text-wrap":                   "The control wraps the text inside the 160px box; with `nowrap` the demo keeps one line, which is wider than the box and runs past its right edge.",
 	"text-wrap-mode":              "The control wraps the text inside the 160px box; with `nowrap` the demo keeps one line, which is wider than the box and runs past its right edge.",
-	"text-autospace":              "The text has no mixed CJK and Latin runs, so the spacing is as in the control. The picture matches the control; judge this row by the picture.",
+	"text-autospace":              "The painter replays text-autospace natively, opening extra spacing at ideograph and Latin boundaries.",
 	"font-variant-numeric":        "The bundled face has no alternate numeral forms, so the digits draw as in the control. The picture matches the control; judge this row by the picture.",
-	"font-variant-ligatures":      "The engine exports the declaration, but the painter draws the same glyphs as in the control. The picture matches the control; judge this row by the picture.",
+	"font-variant-ligatures":      "The painter forwards the OpenType feature to the face, but the bundled face has no ligatures, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
 	"font-variant-east-asian":     "The text has no East Asian glyphs, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
 	"font-variant-alternates":     "The bundled face has no alternate glyph sets, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
 	"font-synthesis-weight":       "The bundled face already carries the weight, so nothing is synthesised and the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",

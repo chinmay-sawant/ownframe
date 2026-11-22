@@ -321,3 +321,34 @@ func TestCanvasUnitsUsePointsPerPixel(t *testing.T) {
 		t.Fatalf("bounds %v are not in canvas pixels, want width %d", box, display.Width)
 	}
 }
+
+func TestRendererCloseAndIdleReleaseBackdropState(t *testing.T) {
+	t.Parallel()
+
+	var r Renderer
+	s0, s1, s2, ok := r.backdrop.acquireScratch(32, 24)
+	if !ok || s0 == nil || s1 == nil || s2 == nil {
+		t.Fatal("acquireScratch failed")
+	}
+	// Smaller request reuses the same pooled scratch images.
+	r0, _, _, ok := r.backdrop.acquireScratch(16, 12)
+	if !ok || r0 == nil || r.backdrop.size != image.Pt(32, 24) {
+		t.Fatalf("smaller acquireScratch resized pool: size=%v", r.backdrop.size)
+	}
+
+	r.SetIdle()
+	if r.backdrop.scratch[0] != nil || r.backdrop.size != (image.Point{}) {
+		t.Fatal("SetIdle did not release backdrop scratch pool")
+	}
+
+	// Simulate initialized shader state and verify Close resets everything.
+	r.backdrop.acquireScratch(16, 16)
+	r.backdrop.mu.Lock()
+	r.backdrop.inited = true
+	r.backdrop.mu.Unlock()
+
+	r.Close()
+	if r.backdrop.inited || r.backdrop.shader != nil || r.backdrop.scratch[0] != nil || r.backdrop.size != (image.Point{}) {
+		t.Fatal("Close did not reset backdrop shader and scratch state")
+	}
+}

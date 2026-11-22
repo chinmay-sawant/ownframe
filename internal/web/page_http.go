@@ -8,14 +8,14 @@ import (
 	"net/http"
 
 	"github.com/chinmay-sawant/ownframe/internal/bitmap"
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // webControlSource is a screen that lists live form controls for the
 // application document. internal/page implements it. A screen without the
 // method contributes no controls.
 type webControlSource interface {
-	WebControls() []page.WebControl
+	WebControls() []host.WebControl
 }
 
 func (s *server) page(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +60,7 @@ func (s *server) page(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) liveControls() []page.WebControl {
+func (s *server) liveControls() []host.WebControl {
 	src, ok := s.app.(webControlSource)
 	if !ok {
 		return nil

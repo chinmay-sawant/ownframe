@@ -209,3 +209,52 @@ func TestClickingATabLoadsThatTab(t *testing.T) {
 		})
 	}
 }
+
+func TestUnknownTabHandling(t *testing.T) {
+	app := newTestApp(t)
+	ctx := context.Background()
+
+	if _, err := app.NewPage(ctx, "no-such-tab", 1000, 800); err == nil {
+		t.Fatal("NewPage with unknown tab succeeded, want error")
+	}
+
+	doc := app.Page("no-such-tab")
+	if !strings.Contains(doc, fmt.Sprintf(`id="sec-%s"`, app.FirstTab())) {
+		t.Errorf("Page with unknown tab did not fall back to first tab %q", app.FirstTab())
+	}
+}
+
+func TestHeaderEmptyCatalogNoNaN(t *testing.T) {
+	t.Parallel()
+
+	app := &App{cat: &Catalog{status: map[string]string{}}}
+	head := app.header()
+	if strings.Contains(head, "NaN") {
+		t.Fatalf("empty catalog header contains NaN: %s", head)
+	}
+	if !strings.Contains(head, "(0.0%)") {
+		t.Fatalf("empty catalog header missing (0.0%%): %s", head)
+	}
+}
+
+func TestGenTabsComputeLazily(t *testing.T) {
+	computed := 0
+	rows := []genProp{{Name: "color", Accepted: "<color>", Sample: "#c0392b", Group: "fx"}}
+	set := newGenSet(rows)
+	tab := Tab{
+		ID:      "all-test",
+		Title:   "Test",
+		Prepare: func() { set.once.Do(func() { computed++; set.compute() }) },
+	}
+
+	if computed != 0 || set.res != nil {
+		t.Fatalf("genSet computed eagerly before tab render: computed=%d res=%v", computed, set.res)
+	}
+
+	tab.Prepare()
+	tab.Prepare()
+
+	if computed != 1 || len(set.res) != 1 {
+		t.Fatalf("genSet did not compute once lazily: computed=%d res=%v", computed, set.res)
+	}
+}

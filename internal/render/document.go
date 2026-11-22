@@ -7,7 +7,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/fetch"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // DisplayListDocument turns an already styled document into vector
@@ -30,7 +30,7 @@ func DisplayListDocumentOptions(
 	options layout.Options,
 ) (*Display, error) {
 	if ctx == nil {
-		return nil, fetch.ErrNilContext
+		return nil, host.ErrNilContext
 	}
 	engineMu.Lock()
 	defer engineMu.Unlock()
@@ -52,7 +52,7 @@ func PaintDocument(
 	images func(src string) ([]byte, error),
 ) (image.Image, []layout.Box, error) {
 	if ctx == nil {
-		return nil, nil, fetch.ErrNilContext
+		return nil, nil, host.ErrNilContext
 	}
 	display, err := DisplayListDocument(ctx, styled, images)
 	if err != nil {

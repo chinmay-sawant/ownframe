@@ -4,7 +4,7 @@ One window for every implemented CSS property in the catalog. Six hand-built
 tabs hold the 61 properties that blinkless had not yet implemented. Generated
 tabs hold the remaining implemented properties, grouped by area (layout and
 box, borders and corners, text, animation and timelines, background and mask,
-effects and transforms, SVG paint, `-webkit-` aliases, other), at most 40 rows
+effects and transforms, SVG paint, `-webkit-` aliases, other), at most 20 rows
 per tab. The total matches the implemented count in
 `documentation/compatibility-matrix.md`.
 

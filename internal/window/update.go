@@ -330,6 +330,7 @@ func (s *shell) drawFitted(dst *ebiten.Image) {
 func (s *shell) blitFitted(dst *ebiten.Image, w, h int, scale, ox, oy float64, paint func(*ebiten.Image)) {
 	if oversized(w, h) {
 		// No image can hold the page, so the fit drops the scale.
+		s.dropDisplayBuffers()
 		if s.display != nil {
 			s.directReplay(dst, s.display)
 		}
@@ -341,8 +342,7 @@ func (s *shell) blitFitted(dst *ebiten.Image, w, h int, scale, ox, oy float64, p
 	s.dropDisplayBuffers()
 	buf := s.ensureScaleBuf(w, h)
 
-	buf.Clear()
-	buf.Fill(s.pageBackground())
+	fillBackground(buf, s.pageBackground())
 	paint(buf)
 
 	var op ebiten.DrawImageOptions

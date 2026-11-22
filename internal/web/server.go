@@ -47,7 +47,8 @@ type server struct {
 	// subs holds the live GET /events streams. Writes happen only in the
 	// subscriber's own handler goroutine; publish only enqueues under s.mu
 	// with non-blocking sends, so a slow browser never stalls the tick.
-	subs map[chan []byte]struct{}
+	subs   map[chan []byte]struct{}
+	closed bool
 	// lastSent is the last broadcast snapshot, without patches. Patches are
 	// compared separately: equal scalars plus no new patches means silent.
 	lastSent frameState

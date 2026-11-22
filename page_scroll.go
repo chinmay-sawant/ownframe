@@ -69,29 +69,39 @@ func (s Scroll) AllowScroll() bool {
 }
 
 // SetViewportPinZ pins operations at or above z to the viewport.
-func (s Scroll) SetViewportPinZ(z int) { innerPage(s.page).SetViewportPinZ(z) }
+func (s Scroll) SetViewportPinZ(z int) {
+	inner := innerPage(s.page)
+	if inner == nil {
+		return
+	}
+	inner.SetViewportPinZ(z)
+}
 
 // SetScrollWindow installs a row-window callback.
 func (p *Page) SetScrollWindow(fn func(offsetY, viewH int) bool) {
-	innerPage(p).SetScrollWindow(fn)
+	inner := innerPage(p)
+	if inner == nil {
+		return
+	}
+	inner.SetScrollWindow(fn)
 }
 
 // ScrollTo queues an absolute scroll move for the window.
-func (page *Page) ScrollTo(x, y int) {
-	p := innerPage(page)
-	if p == nil {
+func (p *Page) ScrollTo(x, y int) {
+	inner := innerPage(p)
+	if inner == nil {
 		return
 	}
-	p.ScrollTo(x, y)
+	inner.ScrollTo(x, y)
 }
 
 // ScrollBy queues a scroll delta for the window.
-func (page *Page) ScrollBy(dx, dy int) {
-	p := innerPage(page)
-	if p == nil {
+func (p *Page) ScrollBy(dx, dy int) {
+	inner := innerPage(p)
+	if inner == nil {
 		return
 	}
-	p.ScrollBy(dx, dy)
+	inner.ScrollBy(dx, dy)
 }
 
 // ScrollRequest is one queued window scroll request.

@@ -123,44 +123,66 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 	clear(p.hoverScopes)
 
 	p.tickMutated.Store(true)
+	var state render.State
 	err := patch.ApplyElement(ctx, patch.ElementIn{
-		Refused:  ErrPatchRefused,
-		ID:       id,
-		Edits:    edits,
-		Cache:    p.cache,
-		Display:  p.draw.Display,
-		Retain:   p.retainState,
-		Width:    p.width,
-		Height:   p.height,
-		State:    func() render.State { return renderState(p) },
-		Adopt:    func(d *Display) { spliceElement(p, d, id, edits) },
+		Refused: ErrPatchRefused,
+		ID:      id,
+		Edits:   edits,
+		Cache:   p.cache,
+		Display: p.draw.Display,
+		Retain:  p.retainState,
+		Width:   p.width,
+		Height:  p.height,
+		State: func() render.State {
+			state = renderState(p)
+			return state
+		},
+		Adopt: func(d *Display) {
+			commitPatchedDisplay(p, d, []string{id}, func() {
+				refreshAccessibility(p, id, edits)
+			})
+		},
 		Rollback: func() { rollbackPatch(p) },
 	})
 	if err != nil {
 		return err
 	}
 
-	p.statePseudos = p.cache.StatePseudos()
-	noteRelayed(p, renderState(p))
+	finishPatchedCommit(p, state)
 
 	return nil
 }
 
-// spliceElement adopts the patched page. The engine hands over the whole
-// display, because a patch that changes the operation count moves every later
-// operation index. The page rebuilds its box index, marks the changed
-// operations dirty, drops the picture, and refreshes the a11y tree.
-func spliceElement(p *Page, d *Display, id string, edits []ElementEdit) {
-	p.commitRoots = []string{id}
+// commitPatchedDisplay adopts a patched display from PatchElement or
+// PatchElements. The engine hands over the whole display because a patch that
+// changes the operation count moves every later operation index. The page
+// captures transitions against the previous display, rebuilds its box index,
+// marks changed operations dirty, rebinds motion and transitions, releases the
+// replaced display, and refreshes accessibility for the patched subtrees.
+func commitPatchedDisplay(p *Page, d *Display, roots []string, refreshA11y func()) {
+	p.commitRoots = append([]string{}, roots...)
 	captures := captureTransitions(p, p.draw.Display, d)
 	prev := adoptSpliced(p, d)
-	updateMotionIndex(p, prev, d)
 	bindMotion(p, prev, d)
 	bindTransitions(p, captures)
 	if prev != nil && prev != d {
 		prev.Release()
 	}
-	refreshAccessibility(p, id, edits)
+	if refreshA11y != nil {
+		refreshA11y()
+	}
+}
+
+// finishPatchedCommit updates the cached pseudo-state, relay memo, and
+// committed frame key after a subtree patch commits.
+func finishPatchedCommit(p *Page, state render.State) {
+	p.statePseudos = p.cache.StatePseudos()
+	noteRelayed(p, state)
+	// The patched display is now the committed frame for the patched subtrees.
+	// Record its key while preserving previously committed pointer, focus, and
+	// theme state so a click handler skips a redundant full layout without
+	// suppressing a hover handler's trailing hover redraw.
+	rememberPatched(p, state)
 }
 
 // adoptSpliced installs a display the engine spliced and returns the list the
@@ -349,33 +371,21 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 	}
 
 	current, err := render.RelayoutElements(
-		ctx, styled, p.draw.Display, ids, layout.Options{Images: state.Images},
+		ctx, styled, p.draw.Display, ids, layout.Options{Images: state.Images, RetainState: true},
 	)
 	if err != nil {
 		return failBatch(p, err)
 	}
 
-	p.commitRoots = append([]string{}, ids...)
-	captures := captureTransitions(p, p.draw.Display, current)
-	prev := adoptSpliced(p, current)
-	bindMotion(p, prev, current)
-	bindTransitions(p, captures)
-	if prev != nil && prev != current {
-		prev.Release()
-	}
-	for i := range patches {
-		if touched[i] {
-			refreshAccessibility(p, patches[i].ID, patches[i].Edits)
+	commitPatchedDisplay(p, current, ids, func() {
+		for i := range patches {
+			if touched[i] {
+				refreshAccessibility(p, patches[i].ID, patches[i].Edits)
+			}
 		}
-	}
+	})
 	p.cache.SetStyled(styled)
-	p.statePseudos = p.cache.StatePseudos()
-	noteRelayed(p, state)
-	// The patched display is now the committed frame for the patched subtrees.
-	// Record its key while preserving previously committed pointer, focus, and
-	// theme state so a click handler skips a redundant full layout without
-	// suppressing a hover handler's trailing hover redraw.
-	rememberPatched(p, state)
+	finishPatchedCommit(p, state)
 
 	return nil
 }

@@ -7,7 +7,14 @@ import (
 )
 
 // HTML returns the template source at the current history index.
-func (p *Page) HTML() string { return innerPage(p).HTML() }
+func (p *Page) HTML() string {
+	inner := innerPage(p)
+	if inner == nil {
+		return ""
+	}
+
+	return inner.HTML()
+}
 
 // LoadOptions controls whether Load navigates or updates the current document.
 type LoadOptions struct {
@@ -27,28 +34,47 @@ func (p *Page) Load(ctx context.Context, html string, options ...LoadOptions) er
 	if len(options) > 1 {
 		return fmt.Errorf("ownframe: Load accepts at most one options value")
 	}
+	inner := innerPage(p)
+	if inner == nil {
+		return ErrNilPage
+	}
 	if len(options) == 1 && options[0].AdoptTree {
-		return page.AdoptPatchedSource(innerPage(p), html)
+		return page.AdoptPatchedSource(inner, html)
 	}
 	if len(options) == 1 && options[0].ReplaceCurrent {
-		return page.ReplaceHTML(ctx, innerPage(p), html)
+		return page.ReplaceHTML(ctx, inner, html)
 	}
-	return innerPage(p).Load(ctx, html)
+	return inner.Load(ctx, html)
 }
 
 // Back draws the previous template source.
 func (p *Page) Back(ctx context.Context) error {
-	return innerPage(p).Back(ctx)
+	inner := innerPage(p)
+	if inner == nil {
+		return ErrNilPage
+	}
+
+	return inner.Back(ctx)
 }
 
 // Forward draws the next template source.
 func (p *Page) Forward(ctx context.Context) error {
-	return innerPage(p).Forward(ctx)
+	inner := innerPage(p)
+	if inner == nil {
+		return ErrNilPage
+	}
+
+	return inner.Forward(ctx)
 }
 
 // Route maps a data-action value to HTML for Click to load.
 func (p *Page) Route(action, html string) error {
-	return innerPage(p).Route(action, html)
+	inner := innerPage(p)
+	if inner == nil {
+		return ErrNilPage
+	}
+
+	return inner.Route(action, html)
 }
 
 var (

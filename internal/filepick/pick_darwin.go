@@ -26,6 +26,9 @@ func Pick(ctx context.Context, title string) (string, error) {
 	}
 	out, err := exec.CommandContext(ctx, "osascript", "-e", script, title).Output()
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return "", ctxErr
+		}
 		debugf("osascript failed: %v", err)
 
 		return "", ErrCanceled
@@ -45,7 +48,7 @@ func debugf(format string, args ...any) {
 	if !debugtag.Enabled {
 		return
 	}
-	if os.Getenv("OWNFRAME_FILEPICK_DEBUG") == "" && os.Getenv("GPUI_FILEPICK_DEBUG") == "" {
+	if os.Getenv("OWNFRAME_FILEPICK_DEBUG") == "" {
 		return
 	}
 

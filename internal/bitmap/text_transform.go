@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	degreesQuarterTurn = 90
-	degreesFullTurn    = 360
-	nrgbaAlphaOffset   = 3
+	degreesQuarterTurn      = 90
+	degreesThreeQuarterTurn = 270
+	degreesFullTurn         = 360
+	nrgbaAlphaOffset        = 3
 )
 
 // drawString draws s with letter spacing and the text-autospace gap. The gap
@@ -149,8 +150,27 @@ func paintTextOp(dst *image.NRGBA, op *layout.DisplayOp, faces *faceCache) error
 	if !op.XformSet {
 		m.A, m.B, m.C, m.D, m.E, m.F = 1, 0, 0, 1, 0, 0
 	}
-	angle := float64(op.RotateDeg) * math.Pi / degreesInHalfCircle
-	c, s := math.Cos(angle), math.Sin(angle)
+	rotMod := math.Mod(float64(op.RotateDeg), degreesFullTurn)
+	if rotMod < 0 {
+		rotMod += degreesFullTurn
+	}
+	isQuarterTurn := math.Mod(rotMod, degreesQuarterTurn) == 0
+	var c, s float64
+	if isQuarterTurn {
+		switch rotMod {
+		case 0:
+			c, s = 1, 0
+		case degreesQuarterTurn:
+			c, s = 0, 1
+		case degreesInHalfCircle:
+			c, s = -1, 0
+		case degreesThreeQuarterTurn:
+			c, s = 0, -1
+		}
+	} else {
+		angle := float64(op.RotateDeg) * math.Pi / degreesInHalfCircle
+		c, s = math.Cos(angle), math.Sin(angle)
+	}
 	shear := 0.0
 	if op.FakeOblique {
 		shear = fakeObliqueShear
@@ -161,11 +181,7 @@ func paintTextOp(dst *image.NRGBA, op *layout.DisplayOp, faces *faceCache) error
 	matrix := f64.Aff3{m.A*a + m.C*bv, m.A*cv + m.C*d, m.A*tx + m.C*ty + m.E*pxPerPt,
 		m.B*a + m.D*bv, m.B*cv + m.D*d, m.B*tx + m.D*ty + m.F*pxPerPt}
 
-	rotMod := math.Mod(float64(op.RotateDeg), degreesFullTurn)
-	if rotMod < 0 {
-		rotMod += degreesFullTurn
-	}
-	if !op.XformSet && !op.FakeOblique && math.Mod(rotMod, degreesQuarterTurn) == 0 {
+	if !op.XformSet && !op.FakeOblique && isQuarterTurn {
 		paintQuarterTurnText(dst, tmp, tight, matrix)
 		return nil
 	}

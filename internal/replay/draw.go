@@ -60,6 +60,8 @@ func (renderer *Renderer) tilePlanFor(d *layout.Display) *chunkPlan {
 		if e.d == d && e.gen == gen {
 			if e.plan == nil || e.plan.gen != gen {
 				e.plan = buildChunks(d, root)
+			} else if e.plan.geomGen != displayGeomGen(d) {
+				refreshPlanTiles(d, e.plan)
 			}
 
 			return e.plan

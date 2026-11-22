@@ -125,7 +125,7 @@ func ApplyElement(ctx context.Context, in ElementIn) error {
 		return failElement(in, err)
 	}
 
-	ep, err := render.RelayoutElement(ctx, styled, in.Display, in.ID, layout.Options{Images: state.Images})
+	ep, err := render.RelayoutElement(ctx, styled, in.Display, in.ID, layout.Options{Images: state.Images, RetainState: true})
 	if err != nil {
 		return failElement(in, err)
 	}

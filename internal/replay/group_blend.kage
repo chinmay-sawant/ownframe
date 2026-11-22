@@ -42,12 +42,18 @@ func blend(b, s float) float {
 		return max(b, s)
 	}
 	if Mode == 6.0 {
+		if b <= 0.0 {
+			return 0
+		}
 		if s >= 1.0 {
 			return 1
 		}
 		return min(1, b/(1-s))
 	}
 	if Mode == 7.0 {
+		if b >= 1.0 {
+			return 1
+		}
 		if s <= 0.0 {
 			return 0
 		}
@@ -69,7 +75,7 @@ func blend(b, s float) float {
 }
 
 func Fragment(dstPos vec4, src0Pos vec2, color vec4) vec4 {
-	s := imageSrc0At(src0Pos)
+	s := imageSrc0At(src0Pos) * color.a
 	if s.a == 0.0 {
 		return imageSrc1AtFromSrc0Pos(src0Pos)
 	}

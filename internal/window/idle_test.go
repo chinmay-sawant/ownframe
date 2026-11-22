@@ -437,3 +437,35 @@ func TestPaceCaptureReadsWanterOnce(t *testing.T) {
 		t.Fatal("a consumed deadline must not repeat")
 	}
 }
+
+func TestNextLoopBaseAbsorbsOvershootAndResyncsOnStall(t *testing.T) {
+	t.Parallel()
+
+	t0 := time.Unix(1000, 0)
+	interval := LoopInterval(60)
+
+	// First frame anchors to now.
+	base := nextLoopBase(60, time.Time{}, t0)
+	if !base.Equal(t0) {
+		t.Fatalf("first base = %v, want %v", base, t0)
+	}
+
+	// Simulate 100 frames where time.Sleep oversleeps by 2ms each frame:
+	// the pacing anchor must advance by exactly 100*interval with zero drift.
+	overshoot := 2 * time.Millisecond
+	for range 100 {
+		woke := base.Add(interval).Add(overshoot)
+		base = nextLoopBase(60, base, woke)
+	}
+	want := t0.Add(100 * interval)
+	if !base.Equal(want) {
+		t.Fatalf("drifted base = %v, want exact %v (drift=%v)", base, want, base.Sub(want))
+	}
+
+	// A stall >= 1 interval past target re-anchors to now so no catch-up burst occurs.
+	stalled := base.Add(3 * interval)
+	resynced := nextLoopBase(60, base, stalled)
+	if !resynced.Equal(stalled) {
+		t.Fatalf("stalled base = %v, want resynced %v", resynced, stalled)
+	}
+}

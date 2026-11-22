@@ -21,11 +21,10 @@ var painterDeclines = map[string]bool{
 	"-webkit-mask-box-image-outset": true, "-webkit-mask-box-image-repeat": true,
 	"-webkit-mask-box-image-slice": true, "-webkit-mask-box-image-width": true,
 	"border-bottom-color": true, "border-left-color": true, "border-right-color": true, "border-top-color": true,
-	"rule-overlap": true,
-	"rule-break":   true, "position-try": true, "position-try-fallbacks": true, "position-try-order": true, "position-visibility": true,
+	"rule-break": true, "position-try": true, "position-try-fallbacks": true, "position-try-order": true, "position-visibility": true,
 	"cx": true, "cy": true, "r": true, "x": true, "y": true,
 	"color-interpolation": true, "color-interpolation-filters": true, "stop-color": true, "stop-opacity": true,
-	"font-variant-emoji": true, "tab-size": true, "text-emphasis-style": true, "text-overflow": true,
+	"font-variant-emoji": true, "text-emphasis-style": true, "text-overflow": true,
 }
 
 // opOnly lists the properties that change the engine's operation list while
@@ -36,8 +35,8 @@ var painterDeclines = map[string]bool{
 var opOnly = map[string]bool{
 	"font-language-override": true, "font-feature-settings": true, "font-synthesis": true,
 	"font-synthesis-weight": true, "font-variant-alternates": true, "font-variant-east-asian": true,
-	"font-variant-ligatures": true, "font-variant-numeric": true, "tab-size": true, "text-autospace": true,
-	"background-blend-mode": true, "image-rendering": true, "object-fit": true, "object-view-box": true,
+	"font-variant-ligatures": true, "font-variant-numeric": true, "tab-size": true,
+	"background-blend-mode": true, "image-rendering": true,
 	"isolation": true, "font-width": true, "rule-overlap": true,
 }
 

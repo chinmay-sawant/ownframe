@@ -9,7 +9,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/layout"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // tickPatch is one id-anchored in-place update. Text replaces the element's
@@ -562,7 +562,7 @@ func executedSourceOf(app any) string {
 
 // controlIDs returns the ids of live form controls, which tick patches must
 // never rewrite.
-func controlIDs(controls []page.WebControl) map[string]bool {
+func controlIDs(controls []host.WebControl) map[string]bool {
 	if len(controls) == 0 {
 		return nil
 	}

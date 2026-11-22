@@ -1,6 +1,7 @@
 package page
 
 import (
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/source"
 	"html/template"
 	"io/fs"
@@ -169,12 +170,7 @@ func (p *Page) ThemeSource() string {
 }
 
 // SelectOption is one choice of a select control for the web preview.
-type SelectOption struct {
-	Value    string
-	Label    string
-	Selected bool
-	Disabled bool
-}
+type SelectOption = host.SelectOption
 
 // PlaceCaret collapses the caret of the focused field to a rune offset.
 // The web preview sends the browser caret with every edit so the server

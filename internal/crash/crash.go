@@ -3,6 +3,7 @@
 package crash
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,11 +26,14 @@ const crashDirPerm = 0o700
 func Write(title, reason string) (string, error) {
 	folder := location()
 
+	_, statErr := os.Stat(folder)
 	if err := os.MkdirAll(folder, crashDirPerm); err != nil {
 		return "", err
 	}
-	if err := os.Chmod(folder, crashDirPerm); err != nil {
-		return "", err
+	if errors.Is(statErr, os.ErrNotExist) {
+		if err := os.Chmod(folder, crashDirPerm); err != nil {
+			return "", err
+		}
 	}
 
 	body := fmt.Sprintf(
@@ -58,7 +62,7 @@ func location() string {
 	}
 	config, err := os.UserConfigDir()
 	if err != nil {
-		return filepath.Join(os.TempDir(), "ownframe-crashes")
+		return filepath.Join(os.TempDir(), fmt.Sprintf("ownframe-crashes-%d", os.Getuid()))
 	}
 
 	return filepath.Join(config, "ownframe", "crashes")

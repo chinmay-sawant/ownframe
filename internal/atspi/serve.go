@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"unicode"
 	"unicode/utf8"
 )
@@ -77,10 +78,10 @@ type serverView struct {
 	originY    int
 	width      int
 	height     int
-	appID      *int32
+	appID      *atomic.Int32
 }
 
-func newServerView(app Application, busName string, parent dbusRef, originX, originY, width, height int, appID *int32) *serverView {
+func newServerView(app Application, busName string, parent dbusRef, originX, originY, width, height int, appID *atomic.Int32) *serverView {
 	objects := make(map[string]Object, len(app.Objects))
 	for _, obj := range app.Objects {
 		objects[obj.Path] = obj
@@ -384,7 +385,9 @@ func (v *serverView) handleProperties(msg *dbusMsg) callResult {
 			if err != nil {
 				return errResult("org.freedesktop.DBus.Error.InvalidArgs", err.Error())
 			}
-			*v.appID = id
+			if v.appID != nil {
+				v.appID.Store(id)
+			}
 			return emptyResult()
 		}
 		return errResult("org.freedesktop.DBus.Error.PropertyReadOnly", "property "+iface+"."+name+" is read-only")
@@ -429,7 +432,13 @@ func (v *serverView) properties(obj Object, iface string) map[string]propertyVal
 		props["ToolkitVersion"] = propertyValue{"s", func(e *dbusEncoder) { e.stringVal("") }}
 		props["AtspiVersion"] = propertyValue{"s", func(e *dbusEncoder) { e.stringVal("2.1") }}
 		props["InterfaceVersion"] = propertyValue{"u", func(e *dbusEncoder) { e.uint32Val(1) }}
-		props["Id"] = propertyValue{"i", func(e *dbusEncoder) { e.int32Val(*v.appID) }}
+		props["Id"] = propertyValue{"i", func(e *dbusEncoder) {
+			var id int32
+			if v.appID != nil {
+				id = v.appID.Load()
+			}
+			e.int32Val(id)
+		}}
 	case atspiComponent:
 		props["version"] = propertyValue{"u", func(e *dbusEncoder) { e.uint32Val(1) }}
 	case atspiEditableText:
