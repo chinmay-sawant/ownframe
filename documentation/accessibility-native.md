@@ -29,18 +29,21 @@ There is no NSAccessibility / VoiceOver bridge.
 ## v1.0 accessibility policy
 
 During the `v0.0.x` preview cycle, ownframe ships the Go accessibility snapshot
-(`page.Access().AccessibilityTree` and `page.Access().AccessibilityPerform`) and
-the live Linux AT-SPI bridge in `internal/atspi`. The bridge supports read,
-focus, activation, and `EditableText` (`SetTextContents`, `InsertText`,
-`CopyText`, `CutText`, `DeleteText`, `PasteText`) for enabled non-password text
-controls.
+(`page.Access().AccessibilityTree` and `page.Access().AccessibilityPerform`),
+the live Linux AT-SPI bridge in `internal/atspi` (read, focus, activation, and
+`EditableText` for enabled non-password text controls), the preview Windows UI
+Automation provider in `internal/uia` (`amd64` and `arm64`, validated with NVDA
+and Narrator), and the Android TalkBack bridge (`androidaccess`,
+`internal/a11ybridge`, `internal/window/a11y_android.go`, and
+`dev.ownframe.android.AccessibilityBridge`).
 
-macOS VoiceOver (`NSAccessibility`) and Android TalkBack remain unshipped, and
-the Windows UIA provider is a preview. Ownframe will not make a general-purpose
-`v1.0` screen-reader claim across desktop or mobile platforms unless those
-adapters have dedicated platform owners and recorded validation against real assistive
-technologies (NVDA, VoiceOver, and TalkBack) matching the capability scope
-tracked in [platforms.md](platforms.md) and [plans/README.md](../plans/README.md).
+macOS VoiceOver (`NSAccessibility`) remains unshipped, and the Windows UIA,
+Linux AT-SPI, and Android TalkBack bridges remain in preview. Ownframe will not
+make a general-purpose `v1.0` screen-reader claim across desktop or mobile
+platforms unless every target adapter has a dedicated platform owner and
+recorded validation against real assistive technologies (Orca, NVDA/Narrator,
+VoiceOver, and TalkBack) matching the capability scope tracked in
+[platforms.md](platforms.md) and [plans/README.md](../plans/README.md).
 
 ## Current integration boundary
 
