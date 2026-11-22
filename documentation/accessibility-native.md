@@ -4,8 +4,8 @@ Currently (`v0.0.x`; no `v1.0` tag yet), ownframe does not ship a cross-platform
 screen-reader adapter. On Linux, the window registers a live AT-SPI application,
 so Accerciser and Orca can inspect it. On Windows (amd64 and arm64), the window
 answers UI Automation (see [Windows UI Automation](#windows-ui-automation)); that
-provider is a preview. NVDA announces its controls (see the recorded validation
-below); Narrator and JAWS have not been tried. VoiceOver
+provider is a preview. NVDA and Narrator announce its controls (see the recorded
+validation below); JAWS has not been tried. VoiceOver
 and TalkBack cannot inspect an ownframe window because the macOS VoiceOver and
 Android TalkBack adapters are not shipped.
 
@@ -199,6 +199,13 @@ from PowerShell):
   checked box and of the selected radio button (229 and 195 pixels at 150
   percent, 116 and 94 at 100 percent). A rectangle of the same size shifted 150
   pixels to the right contains none, so the check can fail.
+- Narrator on Windows 11 read the controls of `examples/accessibility` as focus
+  moved with Tab, confirmed by ear.
+- JAWS has not been tried. It reads the same UI Automation and MSAA views as
+  NVDA and Narrator, so no JAWS-specific code exists, but its behavior has not
+  been verified, and it needs a Freedom Scientific license (the demo mode runs
+  40 minutes per Windows session). Treat JAWS as untested until someone with a
+  license runs it.
 - Not run: Accessibility Insights and arm64 execution. The arm64 thunk is built
   and vetted on every change (`GOOS=windows GOARCH=arm64 go vet`), and the
   `windows-arm64` CI job runs the suite on a native arm64 runner. The Go suite
