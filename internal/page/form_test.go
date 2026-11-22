@@ -531,7 +531,7 @@ func TestDisabledFocusedButtonDoesNotSubmit(t *testing.T) {
 	if err := p.Focus(ctx, "action"); err != nil {
 		t.Fatal(err)
 	}
-	if err := ReplaceHTML(ctx, p, `<button id="action" type="button" disabled>Action</button>`); err != nil {
+	if err := ReplaceHTML(ctx, p, `<button id="action" type="button" disabled>Action</button>`, false); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.Submit(ctx); err != nil {

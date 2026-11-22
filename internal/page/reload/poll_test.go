@@ -231,9 +231,9 @@ func (f *fakeFS) hooks(limit int64) (Hooks, *installCount) {
 		Oversize: func(string, int64) error {
 			return errBig
 		},
-		Template: func(tpl *template.Template, src string) error {
-			if tpl == nil {
-				return errors.New("nil template")
+		HTML: func(src string) error {
+			if _, err := template.New("page").Parse(src); err != nil {
+				return err
 			}
 			got.templates++
 			got.src = src

@@ -16,20 +16,21 @@ func (p *Page) HTML() string {
 	return inner.HTML()
 }
 
-// LoadOptions controls whether Load navigates or updates the current document.
+// LoadOptions controls how Load interprets HTML and updates history.
 type LoadOptions struct {
 	// ReplaceCurrent keeps the current history index and forward entries.
 	// Controls with unchanged IDs and types keep user values and focus.
 	ReplaceCurrent bool
-	// AdoptTree records html as the current source after a caller has already
-	// patched the cached tree to match it. It never parses or draws. The
-	// builder uses it after an incremental update. The source must be a
-	// builder document.
+	// StaticHTML renders the source without executing Go template actions.
+	StaticHTML bool
+	// AdoptTree records html after a caller has patched the cached tree
+	// to match it. It replaces the current entry without parsing or drawing
+	// and requires StaticHTML.
 	AdoptTree bool
 }
 
-// Load parses html and draws it. By default it adds a navigation entry.
-// Supply one LoadOptions value to replace the current document instead.
+// Load parses html as a Go template, adds a navigation entry, and draws it.
+// LoadOptions can opt into literal HTML or replace the current entry.
 func (p *Page) Load(ctx context.Context, html string, options ...LoadOptions) error {
 	if len(options) > 1 {
 		return fmt.Errorf("ownframe: Load accepts at most one options value")
@@ -38,13 +39,21 @@ func (p *Page) Load(ctx context.Context, html string, options ...LoadOptions) er
 	if inner == nil {
 		return ErrNilPage
 	}
-	if len(options) == 1 && options[0].AdoptTree {
+	var opts LoadOptions
+	if len(options) == 1 {
+		opts = options[0]
+	}
+	switch {
+	case opts.AdoptTree:
+		if !opts.StaticHTML {
+			return fmt.Errorf("ownframe: Load with AdoptTree requires StaticHTML")
+		}
 		return page.AdoptPatchedSource(inner, html)
+	case opts.ReplaceCurrent:
+		return page.ReplaceHTML(ctx, inner, html, opts.StaticHTML)
+	default:
+		return page.LoadHTML(ctx, inner, html, opts.StaticHTML)
 	}
-	if len(options) == 1 && options[0].ReplaceCurrent {
-		return page.ReplaceHTML(ctx, inner, html)
-	}
-	return inner.Load(ctx, html)
 }
 
 // Back draws the previous template source.

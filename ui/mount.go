@@ -50,6 +50,7 @@ func mountPage(cfg ownframe.Config, root *Element) (*View, error) {
 		return nil, err
 	}
 	cfg.HTML = html
+	cfg.StaticHTML = true
 	p, err := ownframe.New(cfg)
 	if err != nil {
 		putRenderer(r)
@@ -138,7 +139,7 @@ func (v *View) Update(ctx context.Context, root *Element) error {
 //
 // A refused batch rolls its tree edits back. If the batch or the adopt fails,
 // the same snapshot goes through the ordinary ReplaceCurrent load, which
-// reparses the whole document, so the page still ends on the new tree.
+// rebuilds the whole document, so the page still ends on the new tree.
 func (v *View) patch(ctx context.Context, root *Element, patches []ownframe.ElementPatch) error {
 	// The previous source is close in size, so grow from it instead of
 	// walking the tree to estimate: one fewer full walk per update.
@@ -150,12 +151,12 @@ func (v *View) patch(ctx context.Context, root *Element, patches []ownframe.Elem
 		// Load refuses the snapshot before it touches the page. Check first
 		// so a patch cannot land on a source the page will not adopt.
 		putRenderer(r)
-		return v.Page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true})
+		return v.Page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true, StaticHTML: true})
 	}
 	fresh := r.actions
 	previous := v.actions
 	if err := v.Page.PatchElements(ctx, patches); err == nil {
-		if err := v.Page.Load(ctx, html, ownframe.LoadOptions{AdoptTree: true}); err == nil {
+		if err := v.Page.Load(ctx, html, ownframe.LoadOptions{AdoptTree: true, StaticHTML: true}); err == nil {
 			v.actions = fresh
 			r.actions = previous
 			putRenderer(r)
@@ -164,7 +165,7 @@ func (v *View) patch(ctx context.Context, root *Element, patches []ownframe.Elem
 		}
 	}
 	v.actions = fresh
-	if err := v.Page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true}); err != nil {
+	if err := v.Page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true, StaticHTML: true}); err != nil {
 		v.actions = previous
 		putRenderer(r)
 		return err
@@ -188,7 +189,7 @@ func (v *View) renderFull(ctx context.Context, root *Element) error {
 	fresh := r.actions
 	previous := v.actions
 	v.actions = fresh
-	if err := v.Page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true}); err != nil {
+	if err := v.Page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true, StaticHTML: true}); err != nil {
 		v.actions = previous
 		putRenderer(r)
 		return err

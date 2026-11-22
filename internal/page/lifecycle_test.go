@@ -402,12 +402,10 @@ func TestCommitSourceCopiesStayConsistent(t *testing.T) {
 func TestAdoptPatchedSourceKeepsHTMLInStep(t *testing.T) {
 	t.Parallel()
 
-	oldSource := builderDocHead + "Adopt" + builderDocMid +
-		`<div id="x">old</div>` + builderDocTail
-	newSource := builderDocHead + "Adopt" + builderDocMid +
-		`<div id="x">new</div>` + builderDocTail
+	const oldSource = `<div id="x">old</div>`
+	const newSource = `<div id="x">new</div>`
 
-	p, err := New(Config{HTML: oldSource, Width: 320, Height: 200, RetainState: true})
+	p, err := New(Config{HTML: oldSource, StaticHTML: true, Width: 320, Height: 200, RetainState: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -437,14 +435,14 @@ func TestAdoptPatchedSourceKeepsHTMLInStep(t *testing.T) {
 	if got := p.lastSyncBody; got != newSource {
 		t.Fatalf("lastSyncBody = %q, want the adopted source", got)
 	}
-	if got := p.nav.Current(); got != newSource {
+	if got := p.nav.Current().HTML; got != newSource {
 		t.Fatalf("nav current = %q, want the adopted source", got)
 	}
-	if got := p.nav.CurrentHash(); got != nav.Hash(newSource) || got != wantHash {
+	if got := p.nav.Current().Hash; got != nav.Hash(newSource) || got != wantHash {
 		t.Fatalf("nav hash = %d, want %d", got, wantHash)
 	}
-	if got := p.nav.CurrentDelim(); got != strings.Contains(newSource, "{{") {
-		t.Fatalf("nav delim = %v, want %v", got, strings.Contains(newSource, "{{"))
+	if entry := p.nav.Current(); !entry.Static || entry.Execute {
+		t.Fatalf("adopt stored the wrong mode: %+v", entry)
 	}
 	if got := p.sourceHash; got != wantHash {
 		t.Fatalf("source hash = %d, want %d", got, wantHash)
@@ -488,21 +486,6 @@ func TestAdoptPatchedSourceKeepsHTMLInStep(t *testing.T) {
 	}
 	if p.last != key {
 		t.Fatal("re-adopt changed the render key for identical bytes")
-	}
-}
-
-func TestAdoptPatchedSourceRefusesHandWrittenHTML(t *testing.T) {
-	t.Parallel()
-
-	p, err := New(Config{HTML: `<p>plain</p>`, Width: 320, Height: 200})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := AdoptPatchedSource(p, `<p>other</p>`); !errors.Is(err, ErrAdoptSource) {
-		t.Fatalf("err = %v, want %v", err, ErrAdoptSource)
-	}
-	if got := p.HTML(); got != `<p>plain</p>` {
-		t.Fatalf("HTML() = %q, want the original source", got)
 	}
 }
 
@@ -1128,7 +1111,7 @@ func TestReplacedDisplayIsCollectible(t *testing.T) {
 		t.Fatal(err)
 	}
 	probe := func() weak.Pointer[Display] { return weak.Make(p.draw.Display) }()
-	if err := ReplaceHTML(t.Context(), p, `<div id="b">two</div>`); err != nil {
+	if err := ReplaceHTML(t.Context(), p, `<div id="b">two</div>`, false); err != nil {
 		t.Fatal(err)
 	}
 	p.TakeDirtyRects()

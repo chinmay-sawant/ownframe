@@ -2,10 +2,10 @@ package page
 
 import (
 	"context"
-	"html/template"
 	"os"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page/nav"
 	"github.com/chinmay-sawant/ownframe/internal/page/reload"
 )
 
@@ -56,7 +56,7 @@ func (p *Page) PollReload(ctx context.Context) (bool, error) {
 		Files:    srcFiles,
 		Limit:    maxSourceSize,
 		Oversize: sourceTooLarge,
-		Template: func(tpl *template.Template, src string) error { return installWatched(p, tpl, src) },
+		HTML:     func(src string) error { return installWatched(p, src) },
 		Theme:    p.SetTheme,
 	})
 	if !applied {
@@ -72,9 +72,19 @@ func (p *Page) PollReload(ctx context.Context) (bool, error) {
 	return true, first
 }
 
-func installWatched(p *Page, tpl *template.Template, src string) error {
+func installWatched(p *Page, src string) error {
+	if p.watchStaticHTML {
+		if err := validateHTML(src); err != nil {
+			return err
+		}
+	}
+	entry := nav.Source(src, p.watchStaticHTML)
+	tpl, err := parseTemplate(entry)
+	if err != nil {
+		return err
+	}
 	p.tpl = tpl
-	p.nav.Retarget(src)
+	p.nav.Retarget(entry)
 	invalidateSourceState(p, false)
 	return nil
 }

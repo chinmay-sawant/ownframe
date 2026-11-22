@@ -1,6 +1,6 @@
 # Navigation
 
-`New` records the template source as history entry 0. `Load` parses a new template, drops every entry after the current one, appends the new source, and redraws. `Back` and `Forward` reparse an earlier or later entry and redraw. `HTML` returns the source at the current index.
+`New` records the source as history entry 0. `Load` parses a new template, drops every entry after the current one, appends the new source, and redraws. `Back` and `Forward` restore an earlier or later entry and redraw. `HTML` returns the source at the current index.
 
 ```go
 if err := page.Load(ctx, `<h1 id="next">Next</h1>`); err != nil {
@@ -25,6 +25,18 @@ page.Route("inbox", `<h1 id="in">Inbox</h1>`)
 `SetData` still applies to whichever template is current. `Load` does not change the data. `Load`, `Back`, and `Forward` reset form state, because the current document changed ([forms.md](forms.md)). The theme is untouched, and the window keeps the scroll offset, pulled back inside a page that got shorter.
 
 The [history example](../examples/history) drives `Load`, `Back`, `Forward`, `HTML`, and `Route` from toolbar boxes.
+
+## Load literal HTML
+
+Set `ownframe.Config.StaticHTML` for literal HTML in `HTML` or `File`. A
+watched file retains that mode when it reloads. Set
+`ownframe.LoadOptions.StaticHTML` on each `Load` that should treat Go template
+actions as literal text. This option works with `ReplaceCurrent`. History
+restores each entry's mode, even if two entries have identical source text.
+
+`ui.NewPage` and `ui.Mount` select static HTML for builder documents. When
+passing the string from `ui.Document` to `New` or `Load` yourself, set the
+static option explicitly to skip Go template processing.
 
 ## Receive app deep links
 
