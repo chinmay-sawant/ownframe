@@ -205,7 +205,7 @@ Detail is in [fetch.md](fetch.md).
 
 ## Clipboard
 
-`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. On Wayland, `Write` and `Read` run `wl-copy` and `wl-paste` when those binaries are on PATH. If they are missing, Linux uses the X11 `CLIPBOARD` selection when `DISPLAY` is set. Without the helpers and without `DISPLAY`, a write is a no-op and a read returns `ErrUnavailable`. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Without cgo, on wasm, and on Android there is no OS clipboard, so a write is a no-op and a read returns `ErrUnavailable` unless the app calls `UseMemory(true)`. Tests call `UseMemory(true)` and do not touch the desktop clipboard. `Serve` has no clipboard route.
+`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. On Wayland, `Write`, `Read`, and `Clear` first use a built-in data-control client (`ext`/`wlr`), then run `wl-copy` and `wl-paste` when those binaries are on PATH. If they are missing, Linux uses the X11 `CLIPBOARD` selection when `DISPLAY` is set. Without the helpers and without `DISPLAY`, a write is a no-op and a read returns `ErrUnavailable`. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Without cgo, on wasm, and on Android there is no OS clipboard, so a write is a no-op and a read returns `ErrUnavailable` unless the app calls `UseMemory(true)`. Tests call `UseMemory(true)` and do not touch the desktop clipboard. `Serve` has no clipboard route.
 
 Detail is in [clipboard.md](clipboard.md).
 
@@ -303,7 +303,8 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
   or their distribution channels own update checks and installation
   ([packaging.md](packaging.md#auto-update)).
 - Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run`, `BindMobile`, and `Serve` create a 48 kHz Ebiten audio context. In `-web` the sound comes out of this machine, not the browser tab ([window.md](window.md)).
-- UI Automation, VoiceOver, and TalkBack. Linux serves the Go tree over a live
+- VoiceOver and TalkBack. Windows has a preview UI Automation provider
+  ([accessibility-native.md](accessibility-native.md#windows-ui-automation)). Linux serves the Go tree over a live
   AT-SPI bridge, so Accerciser and Orca can inspect the window
   ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native
   spellcheck and OS-global shortcuts are also out. The deep-link test helper

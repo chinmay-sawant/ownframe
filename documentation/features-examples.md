@@ -32,7 +32,7 @@ feature index with links to the detailed docs.
 
 - In-process IPC `Send`/`Listen`/`Handle`/`Request` with `ErrNoHandler` (`internal/ipc/`)
 - `Fetch` GET + `XHR` arbitrary method; http/https only, no cookies (`fetch.go`, `internal/fetch/`)
-- OS clipboard on X11, Windows, and macOS with cgo. `UseMemory` is the test mode. On Linux with no Wayland helpers and no `DISPLAY`, a write is a no-op and a read returns `ErrUnavailable`. See [clipboard.md](clipboard.md) (`internal/clipboard/`).
+- OS clipboard on X11, Windows, and macOS with cgo. `UseMemory` is the test mode. On Linux with no data-control compositor, no Wayland helpers and no `DISPLAY`, a write is a no-op and a read returns `ErrUnavailable`. See [clipboard.md](clipboard.md) (`internal/clipboard/`).
 - Panic recovery writing local timestamped crash reports (`internal/crash/`)
 
 ## Examples and tests

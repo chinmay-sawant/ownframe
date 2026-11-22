@@ -2,8 +2,8 @@
 
 This is experimental. On a Linux desktop, `NewLiveBus` connects to the
 accessibility bus and registers the window with the AT-SPI registry. Accerciser
-and Orca can inspect the tree. Windows UI Automation, macOS VoiceOver /
-NSAccessibility, and Android TalkBack are not shipped, and iOS is not a 1.0
+and Orca can inspect the tree. Windows has a separate UI Automation provider ([accessibility-native.md](accessibility-native.md#windows-ui-automation)). macOS VoiceOver /
+NSAccessibility and Android TalkBack are not shipped, and iOS is not a 1.0
 target.
 
 ## What the bridge does

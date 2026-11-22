@@ -15,7 +15,13 @@ const (
 	hostX11     clipHost = "x11"
 )
 
+const backendWaylandNative = "wayland-data-control"
+
 func writeOS(ctx context.Context, text string) bool {
+	if os.Getenv("WAYLAND_DISPLAY") != "" && wlNativeWrite(ctx, text) {
+		return true
+	}
+
 	switch linuxHost() {
 	case hostWayland:
 		return wlWrite(ctx, text)
@@ -27,6 +33,12 @@ func writeOS(ctx context.Context, text string) bool {
 }
 
 func readOS(ctx context.Context) (string, bool) {
+	if os.Getenv("WAYLAND_DISPLAY") != "" {
+		if text, ok, handled := wlNativeRead(ctx); handled {
+			return text, ok
+		}
+	}
+
 	switch linuxHost() {
 	case hostWayland:
 		return wlRead(ctx)
@@ -38,6 +50,10 @@ func readOS(ctx context.Context) (string, bool) {
 }
 
 func clearOS() {
+	if os.Getenv("WAYLAND_DISPLAY") != "" && wlNativeClear() {
+		return
+	}
+
 	switch linuxHost() {
 	case hostWayland:
 		wlClear()
@@ -70,6 +86,10 @@ func haveWL(look func(string) (string, bool)) bool {
 }
 
 func diagnoseOS() Status {
+	if os.Getenv("WAYLAND_DISPLAY") != "" && wlNativeAvailable() {
+		return Status{Backend: backendWaylandNative, Available: true}
+	}
+
 	return diagnoseLinux(os.Getenv("WAYLAND_DISPLAY"), os.Getenv("DISPLAY"), lookWL)
 }
 

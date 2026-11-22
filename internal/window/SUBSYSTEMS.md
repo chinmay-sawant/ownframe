@@ -12,6 +12,6 @@ Updated 2026-10-22. `replay_frame.go` `fullReplay`: ticking Pages stay on the bu
 | pointer | `pointer.go` (`shell.pointer`, fans out to `pointer_mouse.go`, `pointer_touch.go`, `pointer_drag.go`) | `shell` pointer fields (`mouseDown`, `cursorX/Y`, `hover` in `game_state.go`); drag shape `pointerDrag` |
 | paint | `paint_surface.go` (`drawContent`, `usePaintSurface`) | `shell.surface` records the paint mode. `shell.partial` and `shell.viewport` hold retained replay buffers. |
 | reload | `reload.go` (`pollReload`), staged as `reload` in `update.go` | `shell.lastPoll` / `shell.lastNote` in `game_state.go` |
-| a11y | `a11y_atspi.go` (Linux) / `a11y_atspi_other.go` | `a11yHost` in those files, held as `shell.a11y`; sync from `syncImage` |
+| a11y | `a11y_atspi.go` (Linux) / `a11y_uia_windows.go` (Windows amd64, arm64) / `a11y_atspi_other.go` | `a11yHost` in those files, held as `shell.a11y`; sync from `syncImage` |
 
 Notes: `update.go` stages wire pointer, touch, and reload into each frame. `replay_tile.go` defines the retained-content handle behind `partialState.buf`.

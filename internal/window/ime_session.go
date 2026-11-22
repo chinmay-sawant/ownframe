@@ -72,6 +72,13 @@ func (s *shell) imeResize() {
 		return
 	}
 
+	// Desktop input methods report the clause cursor at the end of a fresh
+	// preedit, so the glyph anchor moves with every typed key. Restarting
+	// then would commit the half-typed composition.
+	if s.ime.composing {
+		return
+	}
+
 	box, _, _, _, ok := target.IMEContext()
 	if !ok || imeNear(s.imeCaretScreenRect(box), s.ime.caret) {
 		return

@@ -61,7 +61,7 @@ go test ./examples/accessibility/...
 
 The demo is an API inspector. Linux also registers the same snapshot as a live
 AT-SPI application, so the demo can be inspected with Accerciser or Orca.
-Windows UI Automation, macOS VoiceOver, and Android TalkBack are not shipped.
+Windows has a preview UI Automation provider; macOS VoiceOver and Android TalkBack are not shipped.
 See the [native accessibility status](accessibility-native.md) and
 [AT-SPI live bridge](atspi.md).
 

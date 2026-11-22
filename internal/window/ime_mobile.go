@@ -22,6 +22,7 @@ type imeState struct {
 	start      int
 	end        int
 	handled    bool
+	composing  bool // desktop only; mobile types its preedit into the field
 	err        error
 }
 

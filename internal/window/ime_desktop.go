@@ -16,6 +16,7 @@ type imeState struct {
 	caret      image.Rectangle
 	start, end int
 	handled    bool
+	composing  bool
 	err        error
 }
 
@@ -64,17 +65,25 @@ func (s *shell) imeCaretScreenRect(box layout.Box) image.Rectangle {
 func (s *shell) imeEndByUser() {}
 
 func (s *shell) imeComposition(c *textinput.Composition) {
+	start, end := c.SelectionRangeInBytes()
+	s.imePreedit(c.Text(), start, end)
+}
+
+// imePreedit forwards the platform's composition to the screen. It tracks
+// whether a composition is live so imeResize does not confirm it midway.
+func (s *shell) imePreedit(text string, start, end int) {
 	target, ok := s.app.(host.IMEPreeditor)
-	if !ok || (c.Text() != "" && !s.imeTargetCurrent(s.ime.field)) {
+	if !ok || (text != "" && !s.imeTargetCurrent(s.ime.field)) {
 		return
 	}
-	start, end := c.SelectionRangeInBytes()
-	if err := target.SetIMEComposition(s.ctx, c.Text(), start, end); err != nil {
+	s.ime.composing = text != ""
+	if err := target.SetIMEComposition(s.ctx, text, start, end); err != nil {
 		s.ime.err = err
 	}
 }
 
 func (s *shell) imeDrop() {
+	s.ime.composing = false
 	target, ok := s.app.(host.IMEPreeditor)
 	if !ok {
 		return
