@@ -32,6 +32,8 @@ github.com/brianvoe/gofakeit/v7 v7.18.0 h1:vn3tb6OKRUazCkzhotd8xEwz/mhkLFbDoR8OU
 github.com/brianvoe/gofakeit/v7 v7.18.0/go.mod h1:QXuPeBw164PJCzCUZVmgpgHJ3Llj49jSLVkKPMtxtxA=
 github.com/chinmay-sawant/blinkless v0.1.4 h1:ATuKWstlsyKYy7QINeHUAVHFq6vc7sQde8GioTu2T/I=
 github.com/chinmay-sawant/blinkless v0.1.4/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
+github.com/chinmay-sawant/blinkless v0.1.5 h1:OHtDR8g3zWyn3D5OeEk6fDOIYo+DcNmjfsW37cC2kB8=
+github.com/chinmay-sawant/blinkless v0.1.5/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6 h1:Tnc3YtzxhgsvNdNrER9wWkGJbyjOwyUuzjUY5rZK72k=
