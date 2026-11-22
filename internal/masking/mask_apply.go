@@ -42,22 +42,37 @@ func Image(bounds image.Rectangle, desc *layout.MaskDescriptor) (*image.NRGBA, e
 	return img, nil
 }
 
+const (
+	maskBytesPerPixel = 4
+	maskAlphaOffset   = 3
+	maskRoundHalf     = 127
+)
+
 func Apply(group *image.NRGBA, bounds image.Rectangle, desc *layout.MaskDescriptor) error {
 	mask, err := Image(bounds, desc)
 	if err != nil {
 		return err
 	}
-	for y := 0; y < group.Rect.Dy(); y++ {
-		for x := 0; x < group.Rect.Dx(); x++ {
-			gx, gy := x+group.Rect.Min.X, y+group.Rect.Min.Y
-			pixel := group.NRGBAAt(gx, gy)
-			if !image.Pt(gx, gy).In(bounds) {
-				pixel.A = 0
-			} else {
-				maskAlpha := mask.NRGBAAt(gx-bounds.Min.X, gy-bounds.Min.Y).A
-				pixel.A = channel(float64(pixel.A) / channelMax * float64(maskAlpha) / channelMax)
+	gRect := group.Rect
+	for gy := gRect.Min.Y; gy < gRect.Max.Y; gy++ {
+		gOff := group.PixOffset(gRect.Min.X, gy)
+		inY := gy >= bounds.Min.Y && gy < bounds.Max.Y
+		var mRowOff int
+		if inY {
+			mRowOff = mask.PixOffset(0, gy-bounds.Min.Y)
+		}
+		for gx := gRect.Min.X; gx < gRect.Max.X; gx++ {
+			a := group.Pix[gOff+maskAlphaOffset]
+			if a != 0 {
+				if !inY || gx < bounds.Min.X || gx >= bounds.Max.X {
+					group.Pix[gOff+maskAlphaOffset] = 0
+				} else {
+					ma := mask.Pix[mRowOff+(gx-bounds.Min.X)*maskBytesPerPixel+maskAlphaOffset]
+					scaled := (uint16(a)*uint16(ma) + maskRoundHalf) / channelMax
+					group.Pix[gOff+maskAlphaOffset] = uint8(scaled & channelMax)
+				}
 			}
-			group.SetNRGBA(gx, gy, pixel)
+			gOff += maskBytesPerPixel
 		}
 	}
 	return nil

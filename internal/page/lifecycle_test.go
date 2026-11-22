@@ -100,6 +100,10 @@ func TestCommitAnimatedMotionStillBinds(t *testing.T) {
 		t.Fatalf("bound players = %d, want 1", got)
 	}
 
+	// An identical redraw keeps the animated frame (see
+	// TestIdenticalRedrawKeepsAnimatedFrame); a real input change commits
+	// again and must rebind.
+	p.SetSize(220, 100)
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -1004,15 +1008,12 @@ func TestSelectFrontThreeStates(t *testing.T) {
 	}
 }
 
-// kidCacheFlags snapshots the lazy kid index state. The box cache is shared by
-// every page in the process, so the read takes its mutex even in a test.
+// kidCacheFlags snapshots the lazy kid index state under the cache mutex.
 func kidCacheFlags(t *testing.T, p *Page) (ready, staleRects bool) {
 	t.Helper()
-	boxCaches.Lock()
-	defer boxCaches.Unlock()
-
-	e, ok := boxCaches.byPage[p]
-	if !ok {
+	e := lockedBoxes(p, false)
+	defer p.boxCache.mu.Unlock()
+	if e == nil {
 		t.Fatal("page has no box cache")
 	}
 
@@ -1138,6 +1139,63 @@ func TestReplacedDisplayIsCollectible(t *testing.T) {
 		t.Fatal("replacing a page retained its old display")
 	}
 	runtime.KeepAlive(p)
+}
+
+// TestDiscardedPageIsCollectible pins the page-owned box cache: a page that
+// committed boxes, answered a subtree query, and bound motion must be
+// collectible once the caller drops it. A process-wide cache keyed by page
+// pointer kept every discarded page reachable.
+func TestDiscardedPageIsCollectible(t *testing.T) {
+	const pages = 8
+	probes := make([]weak.Pointer[Page], 0, pages)
+	for range pages {
+		p, err := New(Config{
+			HTML:        `<style>#a{transition:opacity 1s}</style><div id="a"><span>x</span></div>`,
+			Width:       200,
+			Height:      100,
+			RetainState: true,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := p.Redraw(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := kidRect(p, "a"); !ok {
+			t.Fatal("kidRect missed a committed box")
+		}
+		probes = append(probes, weak.Make(p))
+	}
+	for range 3 {
+		runtime.GC()
+	}
+	for i, probe := range probes {
+		if probe.Value() != nil {
+			t.Fatalf("page %d stayed reachable after it was discarded", i)
+		}
+	}
+}
+
+// TestBoxCachesArePerPage checks that two live pages keep independent kid
+// indexes: a commit on one never answers a subtree query on the other.
+func TestBoxCachesArePerPage(t *testing.T) {
+	a, b := &Page{}, &Page{}
+	setBoxes(a, []Box{{ID: "root", ParentIndex: -1, W: 10, H: 10}})
+	setBoxes(b, []Box{{ID: "other", ParentIndex: -1, W: 30, H: 30}})
+
+	if r, ok := kidRect(a, "root"); !ok || r != image.Rect(0, 0, 10, 10) {
+		t.Fatalf("a root = %v, %v", r, ok)
+	}
+	if _, ok := kidRect(a, "other"); ok {
+		t.Fatal("page a answered a box committed on page b")
+	}
+	forgetBoxes(a)
+	if _, ok := kidRect(a, "root"); ok {
+		t.Fatal("forgetBoxes kept page a's entry")
+	}
+	if r, ok := kidRect(b, "other"); !ok || r != image.Rect(0, 0, 30, 30) {
+		t.Fatalf("forgetting page a dropped page b: %v, %v", r, ok)
+	}
 }
 
 func TestDisplayReleaseOnCommit(t *testing.T) {

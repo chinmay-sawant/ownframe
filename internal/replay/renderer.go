@@ -13,6 +13,7 @@ import (
 // Different renderers do not evict each other's images or display plans.
 type Renderer struct {
 	rasters  rasterCache
+	corners  cornerCache
 	fonts    textCache
 	images   imageCache
 	textRuns textRasterCache
@@ -39,6 +40,8 @@ func (renderer *Renderer) Close() {
 	renderer.rasters.order = nil
 	renderer.rasters.pixels = 0
 	renderer.rasters.mu.Unlock()
+
+	renderer.corners.close()
 
 	renderer.textRuns.flush()
 
@@ -100,6 +103,7 @@ const (
 // idempotent: a renderer that already idles releases nothing further.
 func (renderer *Renderer) SetIdle() {
 	renderer.rasters.releaseIdle()
+	renderer.corners.releaseIdle()
 	renderer.textRuns.releaseIdle()
 	renderer.images.releaseIdle()
 	renderer.chunks.releaseIdle()
@@ -118,6 +122,7 @@ func (renderer *Renderer) SetIdle() {
 // a cache that already holds entries. Call on the owning Ebiten loop.
 func (renderer *Renderer) Wake() {
 	renderer.rasters.warmIdle(idleWarmRasters)
+	renderer.corners.warmIdle(idleWarmRasters)
 	renderer.textRuns.warmIdle(idleWarmTextRuns)
 	renderer.images.warmIdle(idleWarmImages)
 	renderer.chunks.warmIdle(idleWarmChunks)

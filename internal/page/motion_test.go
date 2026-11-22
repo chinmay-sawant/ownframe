@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"fmt"
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"image"
@@ -1802,12 +1803,14 @@ func TestRedrawRebindsCSSAnimationWithPhase(t *testing.T) {
 		t.Fatalf("the animation did not advance before the redraw: X = %v", before)
 	}
 
+	// A real input change rebuilds the display and rebinds the players.
 	gen := p.Generation()
+	p.SetSize(220, 100)
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
 	if p.Generation() == gen {
-		t.Fatal("Redraw did not bump the generation")
+		t.Fatal("a resized Redraw did not bump the generation")
 	}
 
 	if err := p.Tick(ctx); err != nil {
@@ -1818,6 +1821,59 @@ func TestRedrawRebindsCSSAnimationWithPhase(t *testing.T) {
 	}
 	if got := p.Motion().Rebinds; got == 0 {
 		t.Fatal("the redraw did not rebind the players")
+	}
+}
+
+// TestIdenticalRedrawKeepsAnimatedFrame pins frame reuse during an active
+// animation: Tick already sampled the pose into the committed operations, so
+// a Redraw with the same input keeps that display, its pose, and the players'
+// phase instead of laying the page out again.
+func TestIdenticalRedrawKeepsAnimatedFrame(t *testing.T) {
+	t.Parallel()
+
+	p := newMotionPage(t, motionRunning)
+	index := motionTargetIndex(t, p)
+	ctx := context.Background()
+
+	if err := p.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(5 * time.Millisecond)
+	if err := p.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if p.Motion().Active == 0 {
+		t.Fatal("the fixture animation is not active")
+	}
+	before := motionTargetX(p, index)
+	if before <= 0 {
+		t.Fatalf("the animation did not advance before the redraw: X = %v", before)
+	}
+	gen, layouts, rebinds := p.Generation(), p.stats.fullLayouts, p.Motion().Rebinds
+	display := p.Display()
+
+	for range 3 {
+		if err := p.Redraw(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if p.Generation() != gen || p.stats.fullLayouts != layouts || p.Display() != display {
+		t.Fatalf("identical Redraw rebuilt the frame: generation %d->%d, layouts %d->%d",
+			gen, p.Generation(), layouts, p.stats.fullLayouts)
+	}
+	if got := p.Motion().Rebinds; got != rebinds {
+		t.Fatalf("identical Redraw rebound the players: rebinds %d->%d", rebinds, got)
+	}
+	if got := motionTargetX(p, index); got != before {
+		t.Fatalf("identical Redraw moved the pose: X = %v, want %v", got, before)
+	}
+
+	time.Sleep(5 * time.Millisecond)
+	if err := p.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if after := motionTargetX(p, index); after <= before {
+		t.Fatalf("the animation stopped after identical redraws: X = %v, want past %v", after, before)
 	}
 }
 
@@ -1952,5 +2008,39 @@ func TestPageMotionIndexCaching(t *testing.T) {
 	})
 	if allocsEmpty != 0 {
 		t.Fatalf("allocsEmpty = %v, want 0", allocsEmpty)
+	}
+}
+
+// TestTickAnimatedBoxesDoNotAllocatePerBox pins the steady-state tick cost of
+// a CSS transform animation across many boxes. A tick used to blend and
+// allocate a function list per animated box that only the 3D restamp pass
+// reads, so 64 boxes cost 256 allocations.
+func TestTickAnimatedBoxesDoNotAllocatePerBox(t *testing.T) {
+	var cells strings.Builder
+	for i := range 64 {
+		fmt.Fprintf(&cells, `<div id="s%d" class="cell">cell %d</div>`, i, i)
+	}
+	p, err := New(Config{
+		HTML: `<style>@keyframes slide{from{opacity:0.4;transform:translateX(0px)}to{opacity:1;transform:translateX(12px)}}` +
+			`.cell{width:84px;height:22px;animation:slide 1s linear infinite}</style>` + cells.String(),
+		Width: 760, Height: 520,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	for range 3 {
+		if err := p.Tick(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := p.Motion().Active; got != 64 {
+		t.Fatalf("active players = %d, want 64", got)
+	}
+	if allocs := testing.AllocsPerRun(100, func() { _ = p.Tick(ctx) }); allocs > 8 {
+		t.Fatalf("a tick over 64 animated boxes allocated %v times, want a handful", allocs)
 	}
 }

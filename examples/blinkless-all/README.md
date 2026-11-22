@@ -13,10 +13,11 @@ from the matrix) and a **Validate** line (what to compare by eye and by
 readout). A generated row shows a control box beside a box that sets the
 property to a sample value, and a readout of both boxes' size and paint-operation
 count. `props_gen.go` is generated from the matrix table; `props.go` builds the
-tabs. A few properties (the `font-variant*` family, `font-feature-settings`,
-`text-autospace`, `writing-mode`) make the window painter fall back to a bitmap,
-so their visible box leaves the declaration out and the readout comes from the
-layout alone.
+tabs. A few properties (the mask position and size longhands) make the window
+painter fall back to a bitmap, so their visible box leaves the declaration out
+and the readout comes from the layout alone. The `font-variant*` family,
+`font-feature-settings` and `text-autospace` replay natively. `writing-mode: vertical-rl` and `vertical-lr` replay natively as
+quarter-turned glyphs; only other glyph rotations still fall back.
 
 The top of the window states the catalog counts: how many properties the
 catalog lists, how many are implemented, and how many of these 61 are

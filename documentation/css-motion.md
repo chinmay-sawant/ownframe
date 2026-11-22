@@ -22,6 +22,13 @@ so a redraw, patch, hover, reload, or resize samples the same phase instead of
 restarting (`internal/motion/bind.go`, `Bind`). The paint captured as the base
 is the fresh layout's declared paint.
 
+A `Redraw` whose frame key is unchanged does not commit while players run. The
+tick samples each player into the committed operations in place, so the display
+already shows the current pose; the call keeps that display, its generation, and
+the players. A real input change (source, data, size, hover, theme) commits and
+rebinds with the phase kept. A retained-state redraw the bind owes still runs
+(`TestIdenticalRedrawKeepsAnimatedFrame`, `TestRedrawRebindsCSSAnimationWithPhase`).
+
 A page needs a named `@keyframes` rule, an `animation-name` or `animation`
 declaration on the element (the `-webkit-animation` aliases normalize to the
 same records), and the display-list paint path. A page that fell back to a

@@ -1313,3 +1313,150 @@ func TestTransitionsOffMidFlightFreezesThePresentedPaint(t *testing.T) {
 		t.Fatalf("frozen paint = %v, want the presented %v", got, presented)
 	}
 }
+
+// TestScopedHoverPatchKeepsOtherLiveTransitions proves that a hover patch
+// arriving while another element is mid-transition (for example right after a
+// theme switch) keeps that untouched element's transition alive to its true
+// destination instead of cancelling it and freezing the cloned mid-transition
+// color.
+func TestScopedHoverPatchKeepsOtherLiveTransitions(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	html := `<style>
+body { margin: 0; }
+.btn { width: 80px; height: 32px; transition: background-color 200ms linear; }
+#a { background-color: var(--bg); }
+#b { background-color: var(--bg); }
+#b:hover { background-color: rgb(60, 60, 60); }
+</style><div id="a" class="btn">A</div><div id="b" class="btn">B</div>`
+	lightTheme := `:root { --bg: rgb(255, 255, 255); }`
+	darkTheme := `:root { --bg: rgb(20, 20, 20); }`
+
+	p, err := New(Config{HTML: html, Theme: lightTheme, Width: 200, Height: 100, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Switch from Light to Dark: both #a and #b start 200ms transitions.
+	if err := p.SetTheme(darkTheme); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Motion().TransitionsBound; got < 2 {
+		t.Fatalf("bound transitions after theme switch = %d, want >= 2", got)
+	}
+
+	// Sample mid-transition (~30ms in) so #a's op in p.draw.Display is mutated
+	// to an intermediate light-grey color.
+	p.motion.Step(p.draw.Display, time.Now().Add(30*time.Millisecond))
+	opColorFor := func(id string) float64 {
+		box := boxByID(p, id)
+		for _, idx := range motion.OperationIndices(p.Display(), box) {
+			op := &p.Display().Ops[idx]
+			if op.Kind == DisplayOpFillRect {
+				return op.R
+			}
+		}
+		t.Fatalf("no fill op for %q", id)
+		return -1
+	}
+	midA := opColorFor("a")
+	if midA <= 0.2 || midA >= 0.99 {
+		t.Fatalf("#a mid-transition red = %v, want intermediate value", midA)
+	}
+
+	// Hover #b while #a is still transitioning. This takes listHoverPatched
+	// scoped to #b and clones #a's mid-transition op verbatim.
+	boxB := boxByID(p, "b")
+	if err := p.Hover(ctx, boxB.X+boxB.W/2, boxB.Y+boxB.H/2); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Stats().HoverPatches; got == 0 {
+		t.Fatal("expected hover on #b to use hover patch")
+	}
+
+	// Advance past the 200ms duration: #a must reach its true dark destination
+	// (20/255 ≈ 0.078), not stay frozen at midA.
+	p.motion.Step(p.draw.Display, time.Now().Add(400*time.Millisecond))
+	wantDark := 20.0 / 255.0
+	if got := opColorFor("a"); !transitionWireNear(got, wantDark) {
+		t.Fatalf("#a final red = %.4f (stuck near mid %.4f), want dark %.4f", got, midA, wantDark)
+	}
+}
+
+// TestPatchElementsInHoverHandlerDoesNotSkipUnhoverRedraw proves that when a
+// Hover handler calls PatchElements on an unrelated subtree (such as a tooltip)
+// and returns handled=false, the page still runs its trailing hover redraw so
+// the previously hovered element clears its :hover paint.
+func TestPatchElementsInHoverHandlerDoesNotSkipUnhoverRedraw(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	html := `<style>
+body { margin: 0; }
+#a, #b { width: 80px; height: 32px; background-color: rgb(20, 20, 20); }
+#a:hover, #b:hover { background-color: rgb(200, 40, 40); }
+#tip { width: 80px; height: 20px; }
+</style><div id="a">A</div><div id="b">B</div><div id="tip">off</div>`
+
+	p, err := New(Config{HTML: html, Width: 200, Height: 120, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.Handle(Handlers{
+		Hover: func(ctx context.Context, prev, next Box) (bool, error) {
+			if next.ID != "b" {
+				return false, nil
+			}
+			label := "on"
+			err := p.PatchElements(ctx, []ElementPatch{{
+				ID:    "tip",
+				Edits: []ElementEdit{{Text: &label}},
+			}})
+			return false, err
+		},
+	})
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	fillRed := func(id string) float64 {
+		box := boxByID(p, id)
+		for _, idx := range motion.OperationIndices(p.Display(), box) {
+			op := &p.Display().Ops[idx]
+			if op.Kind == DisplayOpFillRect {
+				return op.R
+			}
+		}
+		t.Fatalf("no fill op for %q", id)
+		return -1
+	}
+
+	// Hover #a -> #a turns red.
+	boxA := boxByID(p, "a")
+	if err := p.Hover(ctx, boxA.X+boxA.W/2, boxA.Y+boxA.H/2); err != nil {
+		t.Fatal(err)
+	}
+	if got := fillRed("a"); got < 0.7 {
+		t.Fatalf("#a hovered red = %.3f, want ~0.78", got)
+	}
+
+	// Move pointer to #b -> Hover handler patches #tip and returns handled=false.
+	// #a must un-hover back to dark and #b must turn red.
+	boxB := boxByID(p, "b")
+	if err := p.Hover(ctx, boxB.X+boxB.W/2, boxB.Y+boxB.H/2); err != nil {
+		t.Fatal(err)
+	}
+	if got := fillRed("a"); got > 0.2 {
+		t.Fatalf("#a stayed stuck hovered after moving to #b: red = %.3f, want ~0.078", got)
+	}
+	if got := fillRed("b"); got < 0.7 {
+		t.Fatalf("#b did not paint hovered after PatchElements: red = %.3f, want ~0.78", got)
+	}
+}

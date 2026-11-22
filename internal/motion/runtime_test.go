@@ -692,6 +692,32 @@ func TestRunningRebindOnSampledDisplayKeepsPhase(t *testing.T) {
 	}
 }
 
+// A hover patch and a layout animation can each publish a display before
+// the paint step samples again. Both preserve the last painted transform.
+func TestRunningPaintSurvivesTwoRebindsBeforeSample(t *testing.T) {
+	r := New()
+	r.now = testClock
+	display := animatedDisplay("running", true)
+	if err := r.Bind(display); err != nil {
+		t.Fatal(err)
+	}
+
+	start := testClock()
+	r.Step(display, start.Add(20*time.Millisecond))
+	for range 2 {
+		next := sampledDisplay(display)
+		if err := r.BindAfter(display, next); err != nil {
+			t.Fatal(err)
+		}
+		display = next
+	}
+
+	r.Step(display, start.Add(30*time.Millisecond))
+	if got := movedBy(&display.Ops[0]); got != 6 {
+		t.Fatalf("translate = %g after two rebinds, want 6", got)
+	}
+}
+
 // restampDisplay is a page with two paused animations: a 3D rotateY card that
 // asks for the engine's re-projection pass every tick, and a 2D chip with a
 // negative delay whose pose must not drift when that pass rebinds it.

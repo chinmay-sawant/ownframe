@@ -5,13 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 	"github.com/chinmay-sawant/ownframe/internal/render"
-	"reflect"
-	"strings"
-	"testing"
 )
 
 func TestHoverHandlerFallbackAndError(t *testing.T) {
@@ -364,6 +366,96 @@ func TestHoverPatchLeavingUnstyledPanel(t *testing.T) {
 	}
 }
 
+func TestHoverWithoutSelectorChangeKeepsSingleCaret(t *testing.T) {
+	source := `<style>#styled:hover{color:red}</style>` +
+		`<div id="styled">styled</div><div id="plain">plain</div><input id="field" value="text">`
+	p, err := New(Config{HTML: source, Width: 320, Height: 200, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	idle := p.PNG()
+	if err := p.Focus(t.Context(), "field"); err != nil {
+		t.Fatal(err)
+	}
+	p.TakeDirtyRects()
+	display := p.Display()
+	ops := len(display.Ops)
+	commit := p.Generation()
+	layer := p.LayerGeneration()
+	redraws := 0
+	p.SetAfterRedraw(func() { redraws++ })
+
+	hoverAt(t, p, "plain")
+
+	if p.Display() != display || len(display.Ops) != ops {
+		t.Fatalf("unchanged hover rebuilt display or changed its %d ops to %d", ops, len(display.Ops))
+	}
+	if p.LayerGeneration() != layer {
+		t.Fatal("unchanged hover invalidated retained layers")
+	}
+	if p.Generation() != commit+1 || redraws != 1 {
+		t.Fatalf("hover must commit and invoke the redraw hook; generation=%d hooks=%d", p.Generation(), redraws)
+	}
+	if _, ok := p.TakeDirtyRects(); !ok {
+		t.Fatal("hover did not retain pending box damage")
+	}
+
+	// A batched blur may have the same CSS focus key. That must still clear
+	// the caret even when the new hover changes no selector.
+	p.BeginRedrawBatch()
+	if err := p.Focus(t.Context(), ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Hover(t.Context(), 300, 180); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.EndRedrawBatch(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(p.PNG(), idle) {
+		t.Fatal("blur left the focused paint on screen")
+	}
+}
+
+func TestHoverReusesCascadeOnlyForKnownUnchangedScopes(t *testing.T) {
+	source := `<style>#styled:hover{background:red}</style>` +
+		`<div id="plain">plain</div><div id="styled">styled</div>`
+	p, err := New(Config{HTML: source, Width: 320, Height: 200, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	idle := p.PNG()
+	leave := func() {
+		t.Helper()
+		if err := p.Hover(t.Context(), 300, 180); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hoverAt(t, p, "plain")
+	leave()
+	known := p.cache.Styled()
+	hoverAt(t, p, "plain")
+	leave()
+	if p.cache.Styled() != known {
+		t.Fatal("a repeated hover with no changed selectors recascaded the document")
+	}
+
+	hoverAt(t, p, "styled")
+	if p.cache.Styled() == known || bytes.Equal(p.PNG(), idle) {
+		t.Fatal("hover with a changed selector reused stale styles")
+	}
+	leave()
+	if !bytes.Equal(p.PNG(), idle) {
+		t.Fatal("leaving styled hover did not restore idle paint")
+	}
+}
+
 const hoverPatchFixture = `<html><head><style>` +
 	`.row{width:200px;height:30px}` +
 	`.row:hover{background-color:#0c1015}` +
@@ -524,6 +616,131 @@ func TestHoverPatchGeometryFallsBack(t *testing.T) {
 	stats := patched.Stats()
 	if stats.Layouts != 3 {
 		t.Fatalf("layouts = %d, want 3", stats.Layouts)
+	}
+}
+
+func TestHoverSkipsRepeatedGeometryRefusal(t *testing.T) {
+	for _, property := range []string{"width:110px", "margin:20px"} {
+		t.Run(property, func(t *testing.T) {
+			source := `<style>body{margin:0}
+				.grid{display:flex;flex-wrap:wrap;width:170px}
+				.grid>div{flex:none;width:70px;height:24px;background:red}
+				#a:hover{` + property + `}</style>
+				<div class="grid"><div id="a">A</div><div id="b">B</div></div>
+				<p id="after">After the grid</p>`
+			newPage := func(retain bool) *Page {
+				p, err := New(Config{HTML: source, Width: 340, Height: 240, RetainState: retain})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := p.Redraw(t.Context()); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			}
+			retained, full := newPage(true), newPage(false)
+			beforeY := boxByID(full, "after").Y
+			cycle := func() {
+				hoverAt(t, retained, "a")
+				hoverAt(t, full, "a")
+				if boxByID(full, "after").Y <= beforeY {
+					t.Fatal("fixture did not move the content after the wrapping grid")
+				}
+				assertSameDisplay(t, retained, full)
+				for _, page := range []*Page{retained, full} {
+					if err := page.Hover(t.Context(), -1, -1); err != nil {
+						t.Fatal(err)
+					}
+				}
+				assertSameDisplay(t, retained, full)
+			}
+			cycle()
+			before := retained.Stats()
+			if before.HoverPatchErrors != 2 || before.HoverFallbacks != 2 {
+				t.Fatalf("first cycle errors=%d fallbacks=%d, want 2 of each",
+					before.HoverPatchErrors, before.HoverFallbacks)
+			}
+			cycle()
+			after := retained.Stats()
+			if after.HoverPatchErrors != before.HoverPatchErrors {
+				t.Fatalf("repeat attempted %d more patch calls", after.HoverPatchErrors-before.HoverPatchErrors)
+			}
+			if after.HoverFallbacks != before.HoverFallbacks+2 || after.FullLayouts != before.FullLayouts+2 {
+				t.Fatalf("repeat did not preserve the full layout fallback: prior %+v, after %+v", before, after)
+			}
+
+			retained.SetTick(func(context.Context) error { return nil })
+			cycle()
+			withTick := retained.Stats()
+			if withTick.HoverPatchErrors != after.HoverPatchErrors+2 {
+				t.Fatalf("registered frame callback did not restore patch attempts: prior %d, after %d",
+					after.HoverPatchErrors, withTick.HoverPatchErrors)
+			}
+			retained.SetTick(nil)
+
+			for _, page := range []*Page{retained, full} {
+				page.SetSize(380, 240)
+				if err := page.Redraw(t.Context()); err != nil {
+					t.Fatal(err)
+				}
+			}
+			cycle()
+			if got := retained.Stats().HoverPatchErrors; got != withTick.HoverPatchErrors+2 {
+				t.Fatalf("viewport change did not invalidate the refusal: prior %d, after %d",
+					withTick.HoverPatchErrors, got)
+			}
+		})
+	}
+}
+
+func TestHoverSkipsRepeatedParentGeometryRefusal(t *testing.T) {
+	source := `<style>body{margin:0}
+		#grid{display:flex;flex-wrap:wrap;gap:4px;padding:4px}
+		#grid>div{width:84px;height:22px;padding:2px 4px;background:#eee;
+			border:1px solid #bbb;font-size:11px;box-sizing:border-box}
+		#a:hover{margin-bottom:8px}</style>
+		<div id="grid"><div id="a">A</div>` + strings.Repeat("<div>B</div>", 8) +
+		`</div><p id="after">After the grid</p>` + strings.Repeat("<p>Outside</p>", 16)
+	newPage := func(retain bool) *Page {
+		p, err := New(Config{HTML: source, Width: 760, Height: 520, RetainState: retain})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := p.Redraw(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	retained, full := newPage(true), newPage(false)
+	initial := boxByID(full, "a")
+	initialAfterY := boxByID(full, "after").Y
+	cycle := func() {
+		hoverAt(t, retained, "a")
+		hoverAt(t, full, "a")
+		hovered := boxByID(full, "a")
+		if initial.X != hovered.X || initial.Y != hovered.Y ||
+			initial.W != hovered.W || initial.H != hovered.H || boxByID(full, "after").Y <= initialAfterY {
+			t.Fatal("fixture must move content after the grid while keeping the hovered box in place")
+		}
+		assertSameDisplay(t, retained, full)
+		for _, page := range []*Page{retained, full} {
+			if err := page.Hover(t.Context(), -1, -1); err != nil {
+				t.Fatal(err)
+			}
+		}
+		assertSameDisplay(t, retained, full)
+	}
+	cycle()
+	first := retained.Stats()
+	if first.HoverPatchErrors != 4 || first.HoverFallbacks != 2 {
+		t.Fatalf("first cycle errors=%d fallbacks=%d, want 4 errors and 2 fallbacks",
+			first.HoverPatchErrors, first.HoverFallbacks)
+	}
+	cycle()
+	second := retained.Stats()
+	if second.HoverPatchErrors != first.HoverPatchErrors || second.HoverFallbacks != first.HoverFallbacks+2 {
+		t.Fatalf("repeat cycle errors=%d fallbacks=%d, want 4 errors and 4 fallbacks",
+			second.HoverPatchErrors, second.HoverFallbacks)
 	}
 }
 
@@ -1014,5 +1231,128 @@ func TestHoverPatchScopedHasInsideScopeFallsBack(t *testing.T) {
 	}
 	if hoverIsRisky(p, "", "btn-1") {
 		t.Fatalf("btn-1 outside .of-dropdown should NOT be hoverIsRisky")
+	}
+}
+
+// TestHoverEngineRefusedPatchesMatchFullLayout covers hover rules the engine
+// refuses to splice: a rule that resizes the hovered box (width) and a leave
+// from a subtree that now holds a float. Each refusal must land on the full
+// layout, so every enter and leave draws what a page that never patches draws.
+func TestHoverEngineRefusedPatchesMatchFullLayout(t *testing.T) {
+	for _, rule := range []string{"width:60px", "float:right"} {
+		t.Run(rule, func(t *testing.T) { assertHoverCyclesMatchFull(t, rule) })
+	}
+}
+
+// TestHoverRootMarginMatchesFullLayout pins the hovered root's own margin: a
+// patch for `#a:hover{margin-top:8px}` must equal a full layout, which moves
+// the item down and grows the container. The engine refuses the root-only
+// splice when a margin changes, so the page falls back to a full layout.
+func TestHoverRootMarginMatchesFullLayout(t *testing.T) {
+	requireLocalBlinklessHoverFixes(t)
+	for _, rule := range []string{"margin-top:8px", "margin-bottom:8px", "margin-right:8px", "margin-block:8px"} {
+		t.Run(rule, func(t *testing.T) { assertHoverCyclesMatchFull(t, rule) })
+	}
+}
+
+// assertHoverCyclesMatchFull hovers #a and leaves it twice, on a page that
+// patches and on one whose patch always fails, and requires equal displays.
+func assertHoverCyclesMatchFull(t *testing.T, rule string) {
+	t.Helper()
+
+	source := `<style>.g{display:flex;flex-wrap:wrap;gap:4px;padding:4px}` +
+		`.i{width:84px;height:22px;box-sizing:border-box;background:#eee}` +
+		`#a:hover{` + rule + `}</style><div class="g">` +
+		`<div id="a" class="i">a</div><div id="b" class="i">b</div><div id="c" class="i">c</div></div>`
+	newPage := func() *Page {
+		p, err := New(Config{HTML: source, Width: 320, Height: 200, RetainState: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := p.Redraw(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+
+		return p
+	}
+	full := newPage()
+	full.hoverPatch = func(context.Context, *css.Document, *layout.Display, string, layout.Options) (*layout.ElementPatch, error) {
+		return nil, errHoverPatchEmpty
+	}
+	patched := newPage()
+
+	for step := range 4 {
+		for _, p := range []*Page{patched, full} {
+			if step%2 == 0 {
+				hoverAt(t, p, "a")
+			} else if err := p.Hover(context.Background(), 1, 1); err != nil {
+				t.Fatal(err)
+			}
+		}
+		assertSameDisplay(t, patched, full)
+	}
+}
+
+// TestHoverGroupedCardKeepsOpCount hovers a backdrop-filter card in and out
+// repeatedly. The patch replaces the card's group markers, so the display
+// keeps one steady operation count instead of growing a marker pair per hover.
+func TestHoverGroupedCardKeepsOpCount(t *testing.T) {
+	requireLocalBlinklessHoverFixes(t)
+	ctx := t.Context()
+	p, err := New(Config{
+		HTML: `<style>.g{display:flex;gap:4px;padding:4px}` +
+			`.i{width:84px;height:22px;box-sizing:border-box;background:#eee;color:#222}` +
+			`#a{backdrop-filter:blur(4px)}#a:hover{color:#c00}</style><div class="g">` +
+			`<div id="a" class="i">a</div><div id="b" class="i">b</div></div>`,
+		Width: 320, Height: 100, RetainState: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	var card Box
+	for _, b := range p.Boxes() {
+		if b.ID == "a" {
+			card = b
+			break
+		}
+	}
+	if card.ID == "" {
+		t.Fatal("missing card a")
+	}
+	steady := -1
+	before := p.Stats().HoverPatches
+	for i := range 20 {
+		x, y := card.X+card.W/2, card.Y+card.H/2
+		wantHover := "a"
+		if i%2 == 1 {
+			x, y = 300, 90
+			wantHover = ""
+		}
+		if err := p.Hover(ctx, x, y); err != nil {
+			t.Fatal(err)
+		}
+		if p.HoverID() != wantHover {
+			t.Fatalf("hover %d: target = %q, want %q", i, p.HoverID(), wantHover)
+		}
+		n := len(p.Display().Ops)
+		if steady < 0 {
+			steady = n
+		} else if n != steady {
+			t.Fatalf("hover %d: %d ops, want the steady %d", i, n, steady)
+		}
+	}
+	if got := p.Stats().HoverPatches - before; got != 20 {
+		t.Fatalf("hover patches = %d, want 20", got)
+	}
+}
+
+func requireLocalBlinklessHoverFixes(t *testing.T) {
+	t.Helper()
+	// Remove this guard once both module pins include the Blinkless hover fixes.
+	if os.Getenv("OWNFRAME_TEST_LOCAL_BLINKLESS") != "1" {
+		t.Skip("requires the Blinkless hover fixes; use the local replacement and set OWNFRAME_TEST_LOCAL_BLINKLESS=1")
 	}
 }

@@ -204,7 +204,7 @@ bash scripts/reproducible-check.sh
 ## Follow-ups (out of scope)
 
 - Drop the local blinkless replaces, tidy both modules, commit sums, and align the examples pin to `dc1d518`.
-- Fix the `boxCaches` map: `map[*Page]*pageBoxes` holds a strong key, so the `SetFinalizer` cannot run and a discarded page pins its box list, kid index, and last display.
+- ~~Fix the `boxCaches` map~~ Done in v0.0.4: the box cache is a page-owned field and the finalizer is gone, so a discarded page is collectible (`TestDiscardedPageIsCollectible`).
 - Complete `Display.Release` coverage: `adoptSpliced` does not release the display it replaces, and `CommitList`/`CommitBitmap` drop the unused field; extend `page_release_test.go`.
 - Replace the `isBuilderDocument` string check with a verifiable marker so crafted HTML cannot skip `checkDOMLimits` or leave `{{` unparsed.
 - Clear `commitRoots` when transitions are off, and check op ids/owners/order before reusing the motion index on an op-count match.

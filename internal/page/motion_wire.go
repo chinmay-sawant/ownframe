@@ -166,7 +166,7 @@ func captureTransitions(p *Page, previous, next *Display) []motion.TransitionCap
 	roots := p.commitRoots
 	p.commitRoots = nil
 	if next == nil || !motionCommitIdle(p) {
-		return p.motion.CaptureTransitions(previous, next)
+		return p.motion.CaptureTransitionsScoped(previous, next, roots)
 	}
 	if !displayDeclaresTransitions(p, next) {
 		// No box declares a transition and the runtime holds no live run a
@@ -182,7 +182,7 @@ func captureTransitions(p *Page, previous, next *Display) []motion.TransitionCap
 		// walk; the bind still runs to publish its (unchanged) counters.
 		return []motion.TransitionCapture{}
 	}
-	return p.motion.CaptureTransitions(previous, next)
+	return p.motion.CaptureTransitionsScoped(previous, next, roots)
 }
 
 // scopeDeclaresTransitions reports whether the patched scope can affect a

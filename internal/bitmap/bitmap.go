@@ -24,7 +24,7 @@ func Paint(d *layout.Display) (image.Image, error) {
 	}
 	img := image.NewNRGBA(image.Rect(0, 0, d.Width, d.Height))
 	clearWhite(img)
-	faces := faceCache{}
+	faces := newFaceCache()
 	defer faces.close()
 	if err := paintOrdered(img, d, faces); err != nil {
 		return nil, err

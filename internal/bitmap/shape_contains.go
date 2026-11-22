@@ -14,22 +14,42 @@ func strokeRadii(rx, ry [4]float64, half float64) (outerX, outerY, innerX, inner
 	return outerX, outerY, innerX, innerY
 }
 
-func onStrokeMask(op *layout.DisplayOp, x, y, width float64) bool {
-	for i, l := range [4][4]float64{{op.X, op.Y, op.W, 0}, {op.X + op.W, op.Y, 0, op.H},
-		{op.X, op.Y + op.H, op.W, 0}, {op.X, op.Y, 0, op.H}} {
-		if op.StrokeMask&(1<<i) != 0 && onLine(x, y, l[0], l[1], l[2], l[3], width) {
-			return true
-		}
-	}
-	return false
+type lineCoverage struct {
+	x, y, dx, dy float64
+	length, half float64
 }
 
-func onLine(x, y, lx, ly, w, h, width float64) bool {
-	length := math.Hypot(w, h)
-	if length == 0 {
-		return false
+func newLineCoverage(x, y, dx, dy, width float64) lineCoverage {
+	return lineCoverage{
+		x: x, y: y, dx: dx, dy: dy,
+		length: math.Hypot(dx, dy),
+		half:   width / halfDivisor,
 	}
-	along := ((x-lx)*w + (y-ly)*h) / length
-	across := ((x-lx)*h - (y-ly)*w) / length
-	return along >= -width/halfDivisor && along <= length+width/halfDivisor && math.Abs(across) <= width/halfDivisor
+}
+
+func (line *lineCoverage) contains(x, y float64) bool {
+	x, y = x-line.x, y-line.y
+	along := (x*line.dx + y*line.dy) / line.length
+	across := (x*line.dy - y*line.dx) / line.length
+
+	return along >= -line.half && along <= line.length+line.half && math.Abs(across) <= line.half
+}
+
+func maskedStrokeLines(op *layout.DisplayOp, width float64, lines []lineCoverage) []lineCoverage {
+	sides := [4][4]float64{
+		{op.X, op.Y, op.W, 0},
+		{op.X + op.W, op.Y, 0, op.H},
+		{op.X, op.Y + op.H, op.W, 0},
+		{op.X, op.Y, 0, op.H},
+	}
+	for i, side := range sides {
+		if op.StrokeMask&(1<<i) != 0 {
+			line := newLineCoverage(side[0], side[1], side[2], side[3], width)
+			if line.length != 0 {
+				lines = append(lines, line)
+			}
+		}
+	}
+
+	return lines
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/bitmap"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"image"
@@ -163,7 +164,7 @@ func TestTextInkBoxMatchesTheShapedRun(t *testing.T) {
 		t.Fatal("no face")
 	}
 
-	plain, ok := textInkBox(face, "Hamburgefonstiv", 0)
+	plain, ok := textInkBox(face, "Hamburgefonstiv", 0, 0)
 	if !ok {
 		t.Fatal("a plain run has no ink box")
 	}
@@ -177,12 +178,12 @@ func TestTextInkBoxMatchesTheShapedRun(t *testing.T) {
 		t.Fatalf("ink box %v does not straddle the baseline at %.2f", plain, ascent)
 	}
 
-	spaced, ok := textInkBox(face, "Hamburgefonstiv", 6)
+	spaced, ok := textInkBox(face, "Hamburgefonstiv", 6, 0)
 	if !ok || spaced.Dx() <= plain.Dx()+60 {
 		t.Fatalf("letter spacing did not widen the box: %v against %v", spaced, plain)
 	}
 
-	if _, ok := textInkBox(face, "", 0); ok {
+	if _, ok := textInkBox(face, "", 0, 0); ok {
 		t.Fatal("an empty run has an ink box")
 	}
 }
@@ -334,5 +335,82 @@ func TestGlyphAt_ASCIIZeroAllocs(t *testing.T) {
 	})
 	if allocs > 0 {
 		t.Fatalf("expected 0 allocs for glyphAt, got %f", allocs)
+	}
+}
+
+// TestQuarterTurnTextBoundsCoverSoftwareInk holds replay's bounds for a
+// vertical-writing run to the ink the software painter draws, and checks the
+// run now replays instead of forcing the bitmap fallback.
+func TestQuarterTurnTextBoundsCoverSoftwareInk(t *testing.T) {
+	t.Parallel()
+	source := `<body style="margin:0;background:#fff"><div style="position:absolute;left:60px;top:20px;` +
+		`width:60px;height:150px;color:#000;font-size:18px;writing-mode:vertical-rl">Vertical text</div></body>`
+	d, err := render.DisplayList(context.Background(), source, 240, 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !render.Replayable(d) {
+		t.Fatal("vertical writing should replay on the display list")
+	}
+	var run *layout.DisplayOp
+	for i := range d.Ops {
+		if d.Ops[i].Kind == layout.DisplayOpText && d.Ops[i].RotateDeg != 0 {
+			run = &d.Ops[i]
+		}
+	}
+	if run == nil {
+		t.Fatal("the fixture emitted no rotated text run")
+	}
+	box, ok := opBounds(run, d.PointsPerPixel)
+	if !ok {
+		t.Fatal("a quarter-turned run must be boundable")
+	}
+	img, err := bitmap.Paint(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ink image.Rectangle
+	for y := 0; y < 200; y++ {
+		for x := 0; x < 240; x++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			if r < 0xfa00 || g < 0xfa00 || b < 0xfa00 {
+				ink = ink.Union(image.Rect(x, y, x+1, y+1))
+			}
+		}
+	}
+	if ink.Empty() || !ink.In(box) {
+		t.Fatalf("software ink %v falls outside the replay bounds %v", ink, box)
+	}
+}
+
+// TestQuarterTurnTextRejectsUnsupportedRotation keeps the software painter
+// for a rotation the display list cannot replay exactly.
+func TestQuarterTurnTextRejectsUnsupportedRotation(t *testing.T) {
+	t.Parallel()
+	ops, err := textParityOps()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		name   string
+		mutate func(*layout.DisplayOp)
+		want   bool
+	}{
+		{"quarter", func(op *layout.DisplayOp) { op.RotateDeg = 90 }, true},
+		{"negative quarter", func(op *layout.DisplayOp) { op.RotateDeg = -90 }, true},
+		{"half", func(op *layout.DisplayOp) { op.RotateDeg = 180 }, true},
+		{"oblique angle", func(op *layout.DisplayOp) { op.RotateDeg = 30 }, false},
+		{"fake oblique", func(op *layout.DisplayOp) { op.RotateDeg = 90; op.FakeOblique = true }, false},
+		{"baked transform", func(op *layout.DisplayOp) {
+			op.RotateDeg = 90
+			op.SetXform(layout.Matrix2D{A: 1, D: 1, E: 3})
+			op.XformSet = true
+		}, false},
+	} {
+		op := ops[0]
+		c.mutate(&op)
+		if _, got := textProjection(&op); got != c.want {
+			t.Fatalf("%s: textProjection ok = %t, want %t", c.name, got, c.want)
+		}
 	}
 }

@@ -45,6 +45,55 @@ type pathContour struct {
 	closed bool
 }
 
+// pathSeg is one precomputed flattened segment with its bounding box and
+// reciprocal squared length so stroke distance and winding tests skip
+// non-overlapping edges without calling math.Hypot.
+type pathSeg struct {
+	x0, y0, x1, y1 float64
+	dx, dy         float64
+	invLen2        float64
+	minX, maxX     float64
+	minY, maxY     float64
+}
+
+func buildPathSegs(contours []pathContour, stroke bool) []pathSeg {
+	total := 0
+	for i := range contours {
+		total += len(contours[i].points)
+	}
+	segs := make([]pathSeg, 0, total)
+	for i := range contours {
+		points := contours[i].points
+		if stroke && len(points) < pathStrokePoints {
+			continue
+		}
+		for j := range points {
+			next := j + 1
+			if next == len(points) {
+				if stroke && !contours[i].closed {
+					break
+				}
+				next = 0
+			}
+			from, to := points[j], points[next]
+			dx, dy := to.x-from.x, to.y-from.y
+			len2 := dx*dx + dy*dy
+			invLen2 := 0.0
+			if len2 > 0 {
+				invLen2 = 1.0 / len2
+			}
+			segs = append(segs, pathSeg{
+				x0: from.x, y0: from.y, x1: to.x, y1: to.y,
+				dx: dx, dy: dy, invLen2: invLen2,
+				minX: min(from.x, to.x), maxX: max(from.x, to.x),
+				minY: min(from.y, to.y), maxY: max(from.y, to.y),
+			})
+		}
+	}
+
+	return segs
+}
+
 // paintPath fills or strokes one corner-shape path. An op with no command
 // list, or no command point, paints nothing.
 func paintPath(img *image.NRGBA, op *layout.DisplayOp) {
@@ -63,16 +112,165 @@ func paintPath(img *image.NRGBA, op *layout.DisplayOp) {
 		half = pathStrokeHalf(op)
 	}
 
-	bounds := pathPaintBounds(op, contours, half)
+	bounds := pathPaintBounds(op, contours, half).Intersect(img.Bounds())
+	if bounds.Empty() {
+		return
+	}
+	segs := buildPathSegs(contours, corner.Stroke)
+	if len(segs) == 0 {
+		return
+	}
+
+	if !op.XformSet {
+		paintAxisPath(img, op, bounds, segs, corner.Stroke, half)
+		return
+	}
+
+	half2 := half * half
 	hit := func(x, y float64) bool {
 		if corner.Stroke {
-			return pathStroked(contours, x, y, half)
+			return pathSegsStroked(segs, x, y, half, half2)
 		}
 
-		return pathFilled(contours, x, y)
+		return pathSegsFilled(segs, x, y)
 	}
 
 	paintCoverage(img, op, bounds, hit)
+}
+
+// paintAxisPath accelerates axis-aligned paths by pre-filtering segments per
+// pixel row before evaluating the 4 subpixel samples, keeping exact parity
+// with paintCoverage while avoiding O(pixels * all_segments) scans.
+func paintAxisPath(img *image.NRGBA, op *layout.DisplayOp, bounds image.Rectangle,
+	segs []pathSeg, stroke bool, half float64,
+) {
+	c := opColor(op)
+	if c.A == 0 {
+		return
+	}
+	const (
+		subLo = 0.25
+		subHi = 0.75
+	)
+	half2 := half * half
+	active := make([]pathSeg, 0, len(segs))
+
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		py0 := (float64(y) + subLo) / pxPerPt
+		py1 := (float64(y) + subHi) / pxPerPt
+		rowMinY, rowMaxY := py0-half, py1+half
+
+		active = active[:0]
+		rowMinX, rowMaxX := math.Inf(1), math.Inf(-1)
+		for i := range segs {
+			s := &segs[i]
+			if s.maxY < rowMinY || s.minY > rowMaxY {
+				continue
+			}
+			active = append(active, *s)
+			rowMinX = min(rowMinX, s.minX)
+			rowMaxX = max(rowMaxX, s.maxX)
+		}
+		if len(active) == 0 {
+			continue
+		}
+
+		xStart := bounds.Min.X
+		xEnd := bounds.Max.X
+		if stroke {
+			xStart = max(xStart, int(math.Floor((rowMinX-half)*pxPerPt)))
+			xEnd = min(xEnd, int(math.Ceil((rowMaxX+half)*pxPerPt)))
+		} else {
+			xStart = max(xStart, int(math.Floor(rowMinX*pxPerPt)))
+			xEnd = min(xEnd, int(math.Ceil(rowMaxX*pxPerPt)))
+		}
+
+		for x := xStart; x < xEnd; x++ {
+			px0 := (float64(x) + subLo) / pxPerPt
+			px1 := (float64(x) + subHi) / pxPerPt
+			count := 0
+			if stroke {
+				if pathSegsStroked(active, px0, py0, half, half2) {
+					count++
+				}
+				if pathSegsStroked(active, px1, py0, half, half2) {
+					count++
+				}
+				if pathSegsStroked(active, px0, py1, half, half2) {
+					count++
+				}
+				if pathSegsStroked(active, px1, py1, half, half2) {
+					count++
+				}
+			} else {
+				if pathSegsFilled(active, px0, py0) {
+					count++
+				}
+				if pathSegsFilled(active, px1, py0) {
+					count++
+				}
+				if pathSegsFilled(active, px0, py1) {
+					count++
+				}
+				if pathSegsFilled(active, px1, py1) {
+					count++
+				}
+			}
+			if count == 0 {
+				continue
+			}
+			src := c
+			if count < shapeSamples {
+				src.A = uint8(float64(src.A) * float64(count) / shapeSamples)
+			}
+			overPixel(img, x, y, src)
+		}
+	}
+}
+
+func pathSegsFilled(segs []pathSeg, x, y float64) bool {
+	winding := 0
+	for i := range segs {
+		s := &segs[i]
+		if s.y0 <= y {
+			if s.y1 > y && (s.dx*(y-s.y0)-(x-s.x0)*s.dy) > 0 {
+				winding++
+			}
+		} else if s.y1 <= y && (s.dx*(y-s.y0)-(x-s.x0)*s.dy) < 0 {
+			winding--
+		}
+	}
+
+	return winding != 0
+}
+
+func pathSegsStroked(segs []pathSeg, x, y, half, half2 float64) bool {
+	for i := range segs {
+		s := &segs[i]
+		if x < s.minX-half || x > s.maxX+half || y < s.minY-half || y > s.maxY+half {
+			continue
+		}
+		if s.invLen2 == 0 {
+			rx, ry := x-s.x0, y-s.y0
+			if rx*rx+ry*ry <= half2 {
+				return true
+			}
+			continue
+		}
+		t := ((x-s.x0)*s.dx + (y-s.y0)*s.dy) * s.invLen2
+		if t < 0 {
+			t = 0
+		} else if t > 1 {
+			t = 1
+		}
+		rx := x - (s.x0 + t*s.dx)
+		ry := y - (s.y0 + t*s.dy)
+		if rx*rx+ry*ry <= half2 {
+			return true
+		}
+	}
+
+	return false
 }
 
 // flattenCornerPath converts the engine's command list to contours in the
@@ -188,78 +386,6 @@ func pathCmdPoints(verb layout.PathVerb) int {
 	}
 
 	return 0
-}
-
-// pathFilled reports whether a point is inside the shaped outline, using the
-// nonzero winding rule the canvas fill applies. Contours are implicitly closed
-// for a fill, as canvas closes every subpath it fills.
-func pathFilled(contours []pathContour, x, y float64) bool {
-	winding := 0
-
-	for i := range contours {
-		points := contours[i].points
-		for j := range points {
-			from, to := points[j], points[(j+1)%len(points)]
-
-			switch {
-			case from.y <= y && to.y > y && pathSide(from, to, x, y) > 0:
-				winding++
-			case from.y > y && to.y <= y && pathSide(from, to, x, y) < 0:
-				winding--
-			}
-		}
-	}
-
-	return winding != 0
-}
-
-// pathStroked reports whether a point is within half the stroke width of the
-// flattened outline. Distance to the nearest segment gives round joins and
-// caps for free, matching the replay painter's round line join. An unclosed
-// contour has no closing edge.
-func pathStroked(contours []pathContour, x, y, half float64) bool {
-	for i := range contours {
-		points := contours[i].points
-		if len(points) < pathStrokePoints {
-			continue
-		}
-
-		for j := range points {
-			next := j + 1
-			if next == len(points) {
-				if !contours[i].closed {
-					break
-				}
-
-				next = 0
-			}
-
-			if pathSegmentDistance(x, y, points[j], points[next]) <= half {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// pathSide is the signed area of the triangle the point makes with one edge,
-// the winding test's left-of-edge predicate.
-func pathSide(from, to pathPoint, x, y float64) float64 {
-	return (to.x-from.x)*(y-from.y) - (x-from.x)*(to.y-from.y)
-}
-
-// pathSegmentDistance is the distance from a point to one straight edge.
-func pathSegmentDistance(x, y float64, from, to pathPoint) float64 {
-	dx, dy := to.x-from.x, to.y-from.y
-	if dx == 0 && dy == 0 {
-		return math.Hypot(x-from.x, y-from.y)
-	}
-
-	t := ((x-from.x)*dx + (y-from.y)*dy) / (dx*dx + dy*dy)
-	t = min(max(t, 0), 1)
-
-	return math.Hypot(x-(from.x+t*dx), y-(from.y+t*dy))
 }
 
 // quadPoint evaluates one quadratic Bezier point by de Casteljau, so the

@@ -51,6 +51,9 @@ type entry struct {
 	// sampled is set by the first Step after a bind, so Active can ask for
 	// one frame before the player has reported its own state.
 	sampled bool
+	// keptPose means the new display still carries the previous player's
+	// sample. Another bind before Step must carry its original base again.
+	keptPose bool
 	// sampledAt is the clock of the latest Step. A rebind that pauses an
 	// animation freezes at this time, so the pose on screen is the pose the
 	// paused player shows rather than one advanced by the redraw.
@@ -426,7 +429,7 @@ func (r *Runtime) snapshotCarry(previous *Display) map[entryKey][]carry {
 		if clock, ok := e.player.Clock(); ok {
 			c.ok, c.clock, c.sampledAt = true, clock, e.sampledAt
 			c.sampled = e.sampled
-			if e.sampled || clock.Paused {
+			if e.sampled || e.keptPose || clock.Paused {
 				c.paints = pausedPaints(source, e)
 				c.bases = e.player.BasePaints(c.bases)
 			}
@@ -477,6 +480,9 @@ func pausedPaints(source *Display, e *entry) []Paint {
 func restoreCarry(e *entry, c carry, next *Display, now time.Time) {
 	paused := e.player.Paused()
 	restoreBases(e, c, next)
+	if e.keptPose {
+		e.sampledAt = c.sampledAt
+	}
 	clock := c.clock
 	switch {
 	case clock.Paused && paused:
@@ -538,6 +544,7 @@ func restoreBases(e *entry, c carry, next *Display) {
 		if !samePose(Read(&next.Ops[index]), c.paints[k], e.paintMask) {
 			continue
 		}
+		e.keptPose = true
 		base := c.bases[k]
 		base.Mask, base.NeedsRestamp = e.paintMask, false
 		if bases[k] != base {

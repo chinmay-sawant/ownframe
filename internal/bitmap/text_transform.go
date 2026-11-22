@@ -3,37 +3,127 @@ package bitmap
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/f64"
 )
 
-func (c faceCache) close() {
-	for _, face := range c {
-		if face != nil {
-			_ = face.Close()
+const (
+	degreesQuarterTurn = 90
+	degreesFullTurn    = 360
+	nrgbaAlphaOffset   = 3
+)
+
+// drawString draws s with letter spacing and the text-autospace gap. The gap
+// is the extra advance layout put at each ideograph and Latin boundary, in
+// pixels. x/image's face does no OpenType shaping, so this painter draws a run
+// without its font features (small caps, tabular numerals, ligature control):
+// the glyphs keep their default forms and advances. That is the degraded
+// picture a fallback page shows instead of failing; the display-list replay
+// applies the features.
+func drawString(d *font.Drawer, s string, spacing, gap float64) {
+	if spacing == 0 && gap == 0 {
+		d.DrawString(s)
+		return
+	}
+	var prev rune
+	for _, r := range s {
+		d.Dot.X += fixedSpacing(masking.AutospaceGapBetween(prev, r, gap))
+		d.DrawString(string(r))
+		d.Dot.X += fixedSpacing(spacing)
+		prev = r
+	}
+}
+
+// tightAlphaBounds returns the smallest sub-rectangle of img that contains a
+// non-zero alpha pixel, trimming the generous ascent/overhang padding before
+// rotating or resampling glyph pixels.
+func tightAlphaBounds(img *image.NRGBA) image.Rectangle {
+	r := img.Rect
+	minX, minY := r.Max.X, r.Max.Y
+	maxX, maxY := r.Min.X, r.Min.Y
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		off := img.PixOffset(r.Min.X, y) + nrgbaAlphaOffset
+		rowHit := false
+		for x := r.Min.X; x < r.Max.X; x++ {
+			if img.Pix[off] != 0 {
+				if x < minX {
+					minX = x
+				}
+				if x+1 > maxX {
+					maxX = x + 1
+				}
+				rowHit = true
+			}
+			off += nrgbaBytesPerPixel
+		}
+		if rowHit {
+			if y < minY {
+				minY = y
+			}
+			if y+1 > maxY {
+				maxY = y + 1
+			}
+		}
+	}
+	if minX >= maxX || minY >= maxY {
+		return image.Rectangle{}
+	}
+
+	return image.Rect(minX, minY, maxX, maxY)
+}
+
+// paintQuarterTurnText composites an exact 90/180/270-degree rotated glyph
+// buffer directly into dst, skipping transparent pixels instead of scanning
+// through xdraw.BiLinear.Transform's generic RGBA64Image loop.
+func paintQuarterTurnText(dst, src *image.NRGBA, srcBounds image.Rectangle, matrix f64.Aff3) {
+	dstBounds := dst.Bounds()
+	m0, m1, m2 := matrix[0], matrix[1], matrix[2]
+	m3, m4, m5 := matrix[3], matrix[4], matrix[5]
+
+	for sy := srcBounds.Min.Y; sy < srcBounds.Max.Y; sy++ {
+		off := src.PixOffset(srcBounds.Min.X, sy)
+		fy := float64(sy) + blendMidpoint
+		for sx := srcBounds.Min.X; sx < srcBounds.Max.X; sx++ {
+			sa := src.Pix[off+3]
+			if sa != 0 {
+				fx := float64(sx) + blendMidpoint
+				dx := int(math.Floor(m0*fx + m1*fy + m2))
+				dy := int(math.Floor(m3*fx + m4*fy + m5))
+				if dx >= dstBounds.Min.X && dx < dstBounds.Max.X &&
+					dy >= dstBounds.Min.Y && dy < dstBounds.Max.Y {
+					overPixel(dst, dx, dy, color.NRGBA{
+						R: src.Pix[off],
+						G: src.Pix[off+1],
+						B: src.Pix[off+2],
+						A: sa,
+					})
+				}
+			}
+			off += nrgbaBytesPerPixel
 		}
 	}
 }
 
-func drawString(d *font.Drawer, s string, spacing float64) {
-	if spacing == 0 {
-		d.DrawString(s)
-		return
-	}
-	for _, r := range s {
-		d.DrawString(string(r))
-		d.Dot.X += fixedSpacing(spacing)
-	}
-}
-
-func paintTextOp(dst *image.NRGBA, op *layout.DisplayOp, faces faceCache) error {
+func paintTextOp(dst *image.NRGBA, op *layout.DisplayOp, faces *faceCache) error {
 	if !op.XformSet && op.RotateDeg == 0 && !op.FakeOblique {
 		return paintText(dst, op, faces)
+	}
+	if op.XformSet && op.RotateDeg == 0 && !op.FakeOblique {
+		m := op.Transform()
+		if m.A == 1 && m.B == 0 && m.C == 0 && m.D == 1 {
+			shifted := *op
+			shifted.X += m.E
+			shifted.Y += m.F
+			shifted.XformSet = false
+			return paintText(dst, &shifted, faces)
+		}
 	}
 	// Bound the untransformed glyph canvas, including ascent and italic overhang.
 	pad := op.Size * pxPerPt * textPadScale
@@ -51,6 +141,10 @@ func paintTextOp(dst *image.NRGBA, op *layout.DisplayOp, faces faceCache) error 
 	if err := paintText(tmp, op, faces); err != nil {
 		return err
 	}
+	tight := tightAlphaBounds(tmp)
+	if tight.Empty() {
+		return nil
+	}
 	m := op.Transform()
 	if !op.XformSet {
 		m.A, m.B, m.C, m.D, m.E, m.F = 1, 0, 0, 1, 0, 0
@@ -66,6 +160,16 @@ func paintTextOp(dst *image.NRGBA, op *layout.DisplayOp, faces faceCache) error 
 	tx, ty := x-a*x-cv*y, y-bv*x-d*y
 	matrix := f64.Aff3{m.A*a + m.C*bv, m.A*cv + m.C*d, m.A*tx + m.C*ty + m.E*pxPerPt,
 		m.B*a + m.D*bv, m.B*cv + m.D*d, m.B*tx + m.D*ty + m.F*pxPerPt}
-	xdraw.BiLinear.Transform(dst, matrix, tmp, tmp.Bounds(), draw.Over, nil)
+
+	rotMod := math.Mod(float64(op.RotateDeg), degreesFullTurn)
+	if rotMod < 0 {
+		rotMod += degreesFullTurn
+	}
+	if !op.XformSet && !op.FakeOblique && math.Mod(rotMod, degreesQuarterTurn) == 0 {
+		paintQuarterTurnText(dst, tmp, tight, matrix)
+		return nil
+	}
+
+	xdraw.BiLinear.Transform(dst, matrix, tmp, tight, draw.Over, nil)
 	return nil
 }

@@ -192,6 +192,9 @@ func (renderer *Renderer) cachedRoundedFill(dst *ebiten.Image, op *layout.Displa
 		fy: y - float32(top),
 	}
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
+		if renderer.fillRoundedNineSlice(img, key.fx, key.fy, w, h, r, opaqueWhite) {
+			return
+		}
 		path := acquireVectorPath()
 		populateRoundedFillPath(path, key.fx, key.fy, w, h, r)
 
@@ -239,18 +242,7 @@ func (renderer *Renderer) cachedStroke(dst *ebiten.Image, op *layout.DisplayOp, 
 		fy: y - float32(top),
 	}
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
-		path := acquireVectorPath()
-		populateStrokePath(path, key)
-
-		var stroke vector.StrokeOptions
-		stroke.Width = width
-		stroke.LineJoin = vector.LineJoinRound
-
-		var options vector.DrawPathOptions
-		options.AntiAlias = true
-
-		vector.StrokePath(img, path, &stroke, &options)
-		releaseVectorPath(path)
+		renderer.strokeRectNineSlice(img, key.fx, key.fy, w, h, width, key.mask, key.r, key.ry, opaqueWhite)
 	})
 	renderer.blitRaster(dst, img, left, top, rgba(op))
 

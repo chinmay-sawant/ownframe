@@ -7,6 +7,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
+	"github.com/chinmay-sawant/ownframe/internal/page/form"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"html/template"
 	"runtime"
@@ -188,6 +189,9 @@ func styleStaged(p *Page, ctx context.Context,
 		if doc, ok := relayedDoc(p, state); ok {
 			return doc, nil
 		}
+		if doc, ok := reuseUnchangedHoverStyle(p, state); ok {
+			return doc, nil
+		}
 		ds := draw.Clock(track)
 
 		doc, err := p.cache.Relayout(ctx, p.width, p.height, state)
@@ -292,7 +296,9 @@ func drawStaged(p *Page, ctx context.Context,
 		return err
 	}
 
-	paintCaret(p, display)
+	if display != p.draw.Display {
+		paintCaret(p, display)
+	}
 	if draw.Choose(display) == draw.PathList {
 		commitDisplay(p, display, executed, drawStart, state)
 
@@ -315,9 +321,11 @@ func commitDisplay(p *Page, display *Display, executed string, drawStart time.Ti
 	dirtyFromDisplay(p, previous, display)
 	noteCommit(p, drawStart)
 	p.draw.CommitList(display)
-	setDisplayBoxes(p, display)
+	if previous != display {
+		setDisplayBoxes(p, display)
+		p.layerGen++
+	}
 	p.generation++
-	p.layerGen++
 	bindMotion(p, previous, display)
 	bindTransitions(p, captures)
 	if previous != nil && previous != display {
@@ -508,15 +516,11 @@ type renderTrack struct {
 	// draw.KeyForHashed), so last pins hash, length, and revision only.
 	last    draw.Key
 	hasLast bool
-	// lastRetain, lastBlink, lastCaret, and lastAnchor are inputs the layout
-	// key does not carry. Retained state changes the placement the engine
-	// produces. A blink phase change repaints the caret, and so does a move
-	// of the caret offset or the anchor. Those offsets stay off the layout
-	// key: a collapsed caret does not change the source the key covers.
+	// The layout key omits retained-state and caret paint inputs. A
+	// collapsed caret, including a move within IME preedit, can change
+	// paint without changing the source or the CSS state the key covers.
 	lastRetain bool
-	lastBlink  bool
-	lastCaret  int
-	lastAnchor int
+	lastCaret  caretPaintState
 	// statePseudos records the interactive pseudo-classes the sheets use. All
 	// true means unknown, which keeps the old redraw behavior.
 	statePseudos render.StatePseudos
@@ -564,11 +568,9 @@ type renderTrack struct {
 	cacheHash uint64
 	cacheLen  int
 	// relayed records the pointer/focus state, viewport, theme, and image
-	// revision the style cache was last relayed for, by an element patch or
-	// a committed relayout. A Redraw asking for the same state reuses the
-	// cached styled document instead of cascading again. A hover handler
-	// patch followed by the hover's own Redraw is the hot path: one cascade
-	// serves both commits instead of one per commit.
+	// revision the style cache represents. A matched state reuses the
+	// cached styled document, including a hover move whose scope the
+	// cascade previously proved empty.
 	relayedOK          bool
 	relayedW, relayedH int
 	relayedHover       string
@@ -612,29 +614,17 @@ func keyFor(p *Page, state render.State) draw.Key {
 
 func unchanged(p *Page, state render.State) bool {
 	// A retained-state debt, or a retained flag the last commit did not lay
-	// out with, needs a fresh placement. So does a running animation or an
-	// in-flight transition, whose pose lives in the operations a publish
-	// would replace. A blink phase change repaints the caret, and a caret
-	// or anchor move does too, without a new layout key. Everything else
-	// the display shows is in the key.
+	// out with, needs a fresh placement. A blink phase change repaints the
+	// caret, and a caret or anchor move does too, without a new layout key.
+	// Everything else the display shows is in the key. Running motion is
+	// not a reason to rebuild: Tick samples each player into the committed
+	// operations in place, so the display already carries the current pose,
+	// and a rebuild from the same key would only lay out the same page and
+	// rebind the same players.
 	if p.restampRedraw || p.retainState != p.lastRetain {
 		return false
 	}
-	if p.motion != nil && p.motion.Active() {
-		return false
-	}
-	blink := false
-	caret := 0
-	anchor := 0
-	if fs := formState(p); fs != nil {
-		blink = fs.BlinkOn
-		caret = fs.Caret
-		anchor = fs.Anchor
-	}
-	if blink != p.lastBlink {
-		return false
-	}
-	if caret != p.lastCaret || anchor != p.lastAnchor {
+	if currentCaretPaint(p) != p.lastCaret {
 		return false
 	}
 	return draw.Unchanged(p.hasLast, p.last, keyFor(p, state))
@@ -651,13 +641,59 @@ func remember(p *Page, state render.State) {
 	}
 	p.hasLast = true
 	p.lastRetain = p.retainState
-	p.lastBlink = false
-	p.lastCaret = 0
-	p.lastAnchor = 0
-	if fs := formState(p); fs != nil {
-		p.lastBlink = fs.BlinkOn
-		p.lastCaret = fs.Caret
-		p.lastAnchor = fs.Anchor
+	p.lastCaret = currentCaretPaint(p)
+}
+
+type caretPaintState struct {
+	focus       string
+	caret       int
+	anchor      int
+	blink       bool
+	all         bool
+	preeditID   string
+	preedit     string
+	preeditFrom int
+	preeditTo   int
+}
+
+func currentCaretPaint(p *Page) caretPaintState {
+	fs := formState(p)
+	if fs == nil || fs.FocusID == "" {
+		return caretPaintState{}
+	}
+	control, ok := focusedEditable(p)
+	if !ok || form.IsFileInput(control) {
+		return caretPaintState{}
+	}
+
+	return caretPaintState{
+		focus:       fs.FocusID,
+		caret:       fs.Caret,
+		anchor:      fs.Anchor,
+		blink:       fs.BlinkOn,
+		all:         fs.All,
+		preeditID:   fs.PreeditID,
+		preedit:     fs.Preedit,
+		preeditFrom: fs.PreeditStart,
+		preeditTo:   fs.PreeditEnd,
+	}
+}
+
+// rememberPatched records the committed key after a subtree patch
+// (PatchElements / AdoptPatchedSource). Because a subtree patch only re-lays
+// out its patched elements, it preserves the previously committed pointer,
+// focus, and theme state so a caller that changed them before patching (such
+// as setHover before paintHover) still runs its trailing Redraw to update
+// elements outside the patch.
+func rememberPatched(p *Page, state render.State) {
+	prevHasLast := p.hasLast
+	prevLast := p.last
+	remember(p, state)
+	if prevHasLast {
+		p.last.Hover = prevLast.Hover
+		p.last.Active = prevLast.Active
+		p.last.Focus = prevLast.Focus
+		p.last.Theme = prevLast.Theme
 	}
 }
 

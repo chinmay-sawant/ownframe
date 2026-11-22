@@ -118,12 +118,13 @@ func runTick(p *Page, ctx context.Context, fn func(context.Context) error) error
 func restampTick(p *Page, ctx context.Context, gen uint64) error {
 	restampMotion(p, ctx)
 	if p.restampRedraw {
-		p.restampRedraw = false
+		// The debt stays set through the redraw: the bind that queued it
+		// already turned retainState on, so the frame key alone would call
+		// this redraw unchanged and skip the retained layout it owes.
 		if err := p.Redraw(ctx); err != nil {
-			p.restampRedraw = true
-
 			return err
 		}
+		p.restampRedraw = false
 	}
 	flagTickDirty(p, gen)
 

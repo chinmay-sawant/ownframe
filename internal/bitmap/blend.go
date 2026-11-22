@@ -7,18 +7,41 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
+const nrgbaBytesPerPixel = 4
+
 func blendSupported(mode string) bool {
 	return masking.BlendSupported(mode)
 }
 
 func composite(dst, src *image.NRGBA, mode string) {
-	for y := dst.Bounds().Min.Y; y < dst.Bounds().Max.Y; y++ {
-		for x := dst.Bounds().Min.X; x < dst.Bounds().Max.X; x++ {
-			s, b := src.NRGBAAt(x, y), dst.NRGBAAt(x, y)
-			if s.A == 0 {
-				continue
+	bounds := dst.Bounds().Intersect(src.Bounds())
+	if bounds.Empty() {
+		return
+	}
+	normal := masking.BlendNormal(mode)
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		sOff := src.PixOffset(bounds.Min.X, y)
+		dOff := dst.PixOffset(bounds.Min.X, y)
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			sa := src.Pix[sOff+3]
+			if sa != 0 {
+				if normal && sa == channelMax {
+					dst.Pix[dOff] = src.Pix[sOff]
+					dst.Pix[dOff+1] = src.Pix[sOff+1]
+					dst.Pix[dOff+2] = src.Pix[sOff+2]
+					dst.Pix[dOff+3] = sa
+				} else {
+					s := color.NRGBA{R: src.Pix[sOff], G: src.Pix[sOff+1], B: src.Pix[sOff+2], A: sa}
+					b := color.NRGBA{R: dst.Pix[dOff], G: dst.Pix[dOff+1], B: dst.Pix[dOff+2], A: dst.Pix[dOff+3]}
+					out := blendPixel(b, s, mode)
+					dst.Pix[dOff] = out.R
+					dst.Pix[dOff+1] = out.G
+					dst.Pix[dOff+2] = out.B
+					dst.Pix[dOff+3] = out.A
+				}
 			}
-			dst.SetNRGBA(x, y, blendPixel(b, s, mode))
+			sOff += nrgbaBytesPerPixel
+			dOff += nrgbaBytesPerPixel
 		}
 	}
 }
@@ -39,5 +62,5 @@ func blendPixel(b, s color.NRGBA, mode string) color.NRGBA {
 }
 
 func rgbColor(c color.NRGBA) [3]float64 {
-	return [3]float64{float64(c.R) / 255, float64(c.G) / 255, float64(c.B) / 255}
+	return [3]float64{float64(c.R) / channelMax, float64(c.G) / channelMax, float64(c.B) / channelMax}
 }

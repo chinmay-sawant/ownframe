@@ -42,3 +42,49 @@ func TestFallbackPaintsGeometryAndCompositing(t *testing.T) {
 		})
 	}
 }
+
+func TestBitmapWritingModeAndMaskedGroupPaintPixels(t *testing.T) {
+	const (
+		canvasWidth   = 160
+		canvasHeight  = 220
+		darkThreshold = 80
+		tintDelta     = 10
+	)
+	source := `<body style="margin:0;background:#ffffff">` +
+		`<div style="margin-top:80px;width:120px;height:120px;writing-mode:vertical-rl;color:#000000;font-size:18px;` +
+		`background:#dbeafe;border:2px solid #1d4ed8">Vertical</div>` +
+		`<div style="width:120px;height:60px;background:#1d4ed8;mask-image:linear-gradient(black, transparent)"></div>` +
+		`</body>`
+	d, err := render.DisplayList(context.Background(), source, canvasWidth, canvasHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	img, err := bitmap.Paint(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	darkPixels := 0
+	tintedPixels := 0
+	b := img.Bounds()
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			c, ok := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
+			if !ok {
+				t.Fatal("pixel model changed")
+			}
+			if c.R < darkThreshold && c.G < darkThreshold && c.B < darkThreshold {
+				darkPixels++
+			}
+			if c.B > c.R+tintDelta {
+				tintedPixels++
+			}
+		}
+	}
+	if darkPixels == 0 {
+		t.Fatal("vertical-rl text painted 0 dark glyph pixels")
+	}
+	if tintedPixels == 0 {
+		t.Fatal("masked vertical-rl box painted 0 tinted background/border pixels")
+	}
+}

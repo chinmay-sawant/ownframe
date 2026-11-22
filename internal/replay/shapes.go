@@ -6,6 +6,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"image"
+	"image/color"
 	"math"
 	"sync"
 )
@@ -32,7 +33,7 @@ func (renderer *Renderer) fillRect(dst *ebiten.Image, op *layout.DisplayOp, dx, 
 		return
 	}
 
-	fillRounded(dst, op, radii, dx, dy)
+	renderer.fillRounded(dst, op, radii, dx, dy)
 }
 
 // snapped converts an op's rectangle to whole canvas pixels, matching the
@@ -66,25 +67,144 @@ func releaseVectorPath(path *vector.Path) {
 	vectorPathPool.Put(path)
 }
 
-// fillRounded draws a fill with circular corners as one vector path. The
-// engine's painter keeps the real corners when the canvas clips the box, so
-// the path is built from the op rectangle itself.
+// fillRounded draws a fill with circular corners using the default renderer.
 func fillRounded(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, dy float64) {
+	defaultRenderer.fillRounded(dst, op, radii, dx, dy)
+}
+
+// fillRounded draws a fill with circular corners. It decomposes the fill into
+// integer-seamed axis-aligned rectangles plus up to four corner patches culled
+// to dst.Bounds() so cards, pills, and buttons never push full FillPath meshes
+// into Ebiten's command queue.
+func (renderer *Renderer) fillRounded(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, dy float64) {
 	x := float32(op.X*pxPerPt + dx)
 	y := float32(op.Y*pxPerPt + dy)
 	w := float32(op.W * pxPerPt)
 	h := float32(op.H * pxPerPt)
 	r := radius4(radii)
+	clr := rgba(op)
+	if clr.A == 0 || w <= 0 || h <= 0 {
+		return
+	}
+	if renderer.fillRoundedNineSlice(dst, x, y, w, h, r, clr) {
+		return
+	}
 
 	path := acquireVectorPath()
 	populateRoundedFillPath(path, x, y, w, h, r)
 
 	var options vector.DrawPathOptions
 	options.AntiAlias = true
-	clr := rgba(op)
 	cr, cg, cb, ca := clr.RGBA()
 	options.ColorScale.Scale(float32(cr)/colorChannelMax, float32(cg)/colorChannelMax, float32(cb)/colorChannelMax, float32(ca)/colorChannelMax)
 
+	vector.FillPath(dst, path, nil, &options)
+	releaseVectorPath(path)
+}
+
+// fillRoundedNineSlice splits a rounded fill along integer interior seams so
+// interior tiles draw FillRect quads and corners use cached analytical masks.
+// Handles pills and circles where opposing radii meet at the midpoint.
+func (renderer *Renderer) fillRoundedNineSlice(dst *ebiten.Image, x, y, w, h float32, r [4]float32, clr color.RGBA) bool {
+	leftR := max(r[0], r[3])
+	rightR := max(r[1], r[2])
+	topR := max(r[0], r[1])
+	botR := max(r[2], r[3])
+
+	x0 := float32(math.Floor(float64(x)))
+	y0 := float32(math.Floor(float64(y)))
+	fx := x - x0
+	fy := y - y0
+
+	xL := x0 + float32(math.Ceil(float64(fx+leftR)))
+	xR := x0 + float32(math.Floor(float64(fx+w-rightR)))
+	yT := y0 + float32(math.Ceil(float64(fy+topR)))
+	yB := y0 + float32(math.Floor(float64(fy+h-botR)))
+
+	if xR < xL {
+		mid := x0 + float32(math.Round(float64(fx+w/halfDiv)))
+		if mid-x < leftR-cornerPixelCenter || x+w-mid < rightR-cornerPixelCenter {
+			return false
+		}
+		xL, xR = mid, mid
+	}
+	if yB < yT {
+		mid := y0 + float32(math.Round(float64(fy+h/halfDiv)))
+		if mid-y < topR-cornerPixelCenter || y+h-mid < botR-cornerPixelCenter {
+			return false
+		}
+		yT, yB = mid, mid
+	}
+
+	// Interior and side strips meet along exact integer pixel coordinates
+	// (xL, xR, yT, yB), so there is no overlap and no anti-aliasing seam.
+	fillEdgeClipped(dst, xL, y, xR-xL, yT-y, clr)
+	fillEdgeClipped(dst, x, yT, w, yB-yT, clr)
+	fillEdgeClipped(dst, xL, yB, xR-xL, y+h-yB, clr)
+
+	bounds := dst.Bounds()
+	// Top-left corner box [x, xL] x [y, yT].
+	renderer.fillCornerPatch(dst, bounds, x, y, xL-x, yT-y, r[0], cornerTL, clr)
+	// Top-right corner box [xR, x+w] x [y, yT].
+	renderer.fillCornerPatch(dst, bounds, xR, y, x+w-xR, yT-y, r[1], cornerTR, clr)
+	// Bottom-right corner box [xR, x+w] x [yB, y+h].
+	renderer.fillCornerPatch(dst, bounds, xR, yB, x+w-xR, y+h-yB, r[2], cornerBR, clr)
+	// Bottom-left corner box [x, xL] x [yB, y+h].
+	renderer.fillCornerPatch(dst, bounds, x, yB, xL-x, y+h-yB, r[3], cornerBL, clr)
+	return true
+}
+
+type roundedCorner uint8
+
+const (
+	cornerTL roundedCorner = iota
+	cornerTR
+	cornerBR
+	cornerBL
+)
+
+// fillCornerPatch paints one corner patch [px, px+pw] x [py, py+ph] with a
+// single rounded outer corner of radius rad, skipped when outside dstBounds.
+func (renderer *Renderer) fillCornerPatch(
+	dst *ebiten.Image,
+	dstBounds image.Rectangle,
+	px, py, pw, ph, rad float32,
+	corner roundedCorner,
+	clr color.RGBA,
+) {
+	if pw <= 0 || ph <= 0 {
+		return
+	}
+	box := image.Rect(
+		int(math.Floor(float64(px)))-1,
+		int(math.Floor(float64(py)))-1,
+		int(math.Ceil(float64(px+pw)))+1,
+		int(math.Ceil(float64(py+ph)))+1,
+	)
+	if !box.Overlaps(dstBounds) {
+		return
+	}
+	if rad <= 0 {
+		fillEdgeClipped(dst, px, py, pw, ph, clr)
+		return
+	}
+	if renderer.fillCornerAnalytical(dst, px, py, pw, ph, rad, corner, clr) {
+		return
+	}
+	var cr [4]float32
+	cr[corner] = rad
+	path := acquireVectorPath()
+	populateRoundedFillPath(path, px, py, pw, ph, cr)
+
+	var options vector.DrawPathOptions
+	options.AntiAlias = true
+	r16, g16, b16, a16 := clr.RGBA()
+	options.ColorScale.Scale(
+		float32(r16)/colorChannelMax,
+		float32(g16)/colorChannelMax,
+		float32(b16)/colorChannelMax,
+		float32(a16)/colorChannelMax,
+	)
 	vector.FillPath(dst, path, nil, &options)
 	releaseVectorPath(path)
 }

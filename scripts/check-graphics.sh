@@ -70,6 +70,7 @@ run_test ./internal/window TestWindowDevToolsIdle
 run_test ./components/chadcn TestManagedInteractionsNative
 run_test ./examples/builder/loglens TestSidebarHoverPixels
 run_test ./examples/builder/loglens TestCommandBackdropPixelsStableAcrossFrames
+run_test ./examples/builder/loglens TestThemeToggleMidTransitionPixels
 run_test ./internal/window TestDrawPaintsVerticalThumb
 run_test ./internal/replay TestGPUVisibleParity
 run_test ./examples/builder/jmap-mail TestScrollbarThumbStaysOnePiece

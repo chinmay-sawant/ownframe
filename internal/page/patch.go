@@ -371,10 +371,11 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 	p.cache.SetStyled(styled)
 	p.statePseudos = p.cache.StatePseudos()
 	noteRelayed(p, state)
-	// The patched display is now the committed frame. Record its key so the
-	// redraw a click dispatches after its handler sees the frame as unchanged
-	// instead of laying the whole page out again.
-	remember(p, state)
+	// The patched display is now the committed frame for the patched subtrees.
+	// Record its key while preserving previously committed pointer, focus, and
+	// theme state so a click handler skips a redundant full layout without
+	// suppressing a hover handler's trailing hover redraw.
+	rememberPatched(p, state)
 
 	return nil
 }
@@ -416,6 +417,8 @@ func (e *hoverPatchAttemptError) Unwrap() error { return e.err }
 // falls back to the full layout, so the page draws what it drew before.
 var errHoverPatchEmpty = errors.New("page: hover patch returned no display")
 
+var errHoverSharedPaint = errors.New("page: hover patch scope shares paint with a sibling")
+
 const maxHoverFailureKeys = 256
 
 // layoutStaged lays out the styled document for one redraw. A change that
@@ -427,25 +430,34 @@ func layoutStaged(p *Page, ctx context.Context,
 	styled *css.Document,
 	state render.State) (*Display, error) {
 	hoverChanged := hoverPatchEligible(p, state) && p.last.Hover != state.Hover
-	if roots, ok := hoverPatchRoots(p, styled, state); ok {
-		patched, err := listHoverPatched(p, ctx, styled, state, roots)
+	var scope hoverScopeResult
+	if hoverChanged {
+		scope = hoverPatchRoots(p, styled, state)
+	}
+	var checkReflow bool
+	var refusedGeoRoots []string
+	if scope.ok && (!scope.reflow || !stableHoverGeometry(p)) {
+		patched, err := listHoverPatched(p, ctx, styled, state, scope.roots)
 		if err == nil {
 			p.stats.hoverPatches++
 			return patched, nil
 		}
 		p.stats.hoverPatchErrors++
-		noteHoverPatchFailure(p, "selector", classifyHoverPatchError(err), hoverFailureTarget(err, roots))
+		noteHoverPatchFailure(p, "selector", classifyHoverPatchError(err), hoverFailureTarget(err, scope.roots))
+		checkReflow = stableHoverGeometry(p)
 		// If the cascade roots failed (e.g. an element transitioned to display:none
 		// and placed no box), fall back to geometric roots only when the sheets
 		// contain no escaping selector at all. The geometric roots cannot prove
 		// which scope a :has or sibling-after-:hover rule belongs to.
 		if !hoverRiskAny(p) {
-			if geoRoots, geoOK := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover); geoOK {
+			geoRoots, geoOK := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
+			if geoOK && !slices.Equal(geoRoots, scope.roots) {
 				patched, retryErr := listHoverPatched(p, ctx, styled, state, geoRoots)
 				if retryErr == nil {
 					p.stats.hoverPatches++
 					return patched, nil
 				}
+				refusedGeoRoots = geoRoots
 				p.stats.hoverPatchErrors++
 				noteHoverPatchFailure(p, "geometry", classifyHoverPatchError(retryErr), hoverFailureTarget(retryErr, geoRoots))
 			}
@@ -454,7 +466,7 @@ func layoutStaged(p *Page, ctx context.Context,
 
 	if hoverChanged {
 		p.stats.hoverFallbacks++
-		if _, ok := hoverPatchRoots(p, styled, state); !ok {
+		if !scope.ok {
 			reason := "no-patch-roots"
 			if hoverIsRisky(p, p.last.Hover, state.Hover) {
 				reason = "escaping-hover-selector"
@@ -462,14 +474,76 @@ func layoutStaged(p *Page, ctx context.Context,
 			noteHoverPatchFailure(p, "selection", reason, []string{p.last.Hover, state.Hover})
 		}
 	}
+	p.commitRoots = nil
 	p.stats.fullLayouts++
-	return draw.List(ctx, styled, state)
+	display, err := draw.List(ctx, styled, state)
+	previous := p.draw.Display
+	if err == nil && checkReflow && hoverRootReflowed(previous, display, scope.roots) &&
+		(len(refusedGeoRoots) == 0 || hoverRootReflowed(previous, display, refusedGeoRoots)) {
+		scope.reflow = true
+		p.hoverScopes[hoverScopePair{p.last.Hover, state.Hover}] = scope
+	}
+	return display, err
+}
+
+// stableHoverGeometry excludes paint or geometry mutations driven by ticks.
+func stableHoverGeometry(p *Page) bool {
+	noFrameCallback := !p.tickActive && !p.hasFn.Load()
+
+	return noFrameCallback && motionCommitIdle(p)
+}
+
+// hoverRootReflowed checks a refused root against the successful full layout.
+// The root or its immediate parent must have moved or changed size before
+// this hover pair can skip retrying the patch under the same layout key.
+func hoverRootReflowed(previous, next *Display, roots []string) bool {
+	if previous == nil || next == nil {
+		return false
+	}
+	for _, root := range roots {
+		var old, newBox *Box
+		for i := range previous.Boxes {
+			if previous.Boxes[i].ID == root {
+				old = &previous.Boxes[i]
+				break
+			}
+		}
+		for i := range next.Boxes {
+			if next.Boxes[i].ID == root {
+				newBox = &next.Boxes[i]
+				break
+			}
+		}
+		if old == nil || newBox == nil {
+			continue
+		}
+		if hoverBoxMoved(old, newBox) {
+			return true
+		}
+		oldIndex, newIndex := old.ParentIndex, newBox.ParentIndex
+		if oldIndex < 0 || oldIndex >= len(previous.Boxes) || newIndex < 0 || newIndex >= len(next.Boxes) {
+			continue
+		}
+		oldParent, newParent := &previous.Boxes[oldIndex], &next.Boxes[newIndex]
+		sameParent := oldParent.ID == newParent.ID && oldParent.Tag == newParent.Tag
+		identifiedParent := oldParent.ID != "" || oldIndex == newIndex
+		if sameParent && identifiedParent && hoverBoxMoved(oldParent, newParent) {
+			return true
+		}
+	}
+	return false
+}
+
+func hoverBoxMoved(old, next *Box) bool {
+	return old.X != next.X || old.Y != next.Y || old.W != next.W || old.H != next.H
 }
 
 func classifyHoverPatchError(err error) string {
 	switch {
 	case errors.Is(err, errHoverPatchEmpty):
 		return "empty-display"
+	case errors.Is(err, errHoverSharedPaint):
+		return "shared-sibling-paint"
 	case errors.Is(err, layout.ErrNoElement):
 		return "target-missing"
 	case errors.Is(err, layout.ErrNoRetainedState):
@@ -541,11 +615,7 @@ func hoverPatchFailureSnapshot(p *Page) []host.HoverPatchFailureCount {
 // maxHoverScopes caps the hover scope cache before it is cleared.
 const maxHoverScopes = 256
 
-func hoverPatchRoots(p *Page, styled *css.Document, state render.State) ([]string, bool) {
-	if !hoverPatchEligible(p, state) || p.last.Hover == state.Hover {
-		return nil, false
-	}
-
+func hoverPatchRoots(p *Page, styled *css.Document, state render.State) hoverScopeResult {
 	guardHit := p.sourceRev != 0 &&
 		p.hoverGuardSrcRev == p.sourceRev &&
 		p.hoverGuardSrcHash == p.sourceHash &&
@@ -572,20 +642,51 @@ func hoverPatchRoots(p *Page, styled *css.Document, state render.State) ([]strin
 	}
 	pair := hoverScopePair{p.last.Hover, state.Hover}
 	if cached, found := p.hoverScopes[pair]; found {
-		return cached.roots, cached.ok
+		return cached
 	}
 	roots, ok := findHoverScopes(p, styled, state)
 	if len(p.hoverScopes) >= maxHoverScopes {
 		clear(p.hoverScopes)
 	}
-	p.hoverScopes[pair] = hoverScopeResult{roots: roots, ok: ok}
-	return roots, ok
+	result := hoverScopeResult{roots: roots, ok: ok}
+	p.hoverScopes[pair] = result
+	return result
 }
 
 type hoverScopePair struct{ previous, current string }
 type hoverScopeResult struct {
-	roots []string
-	ok    bool
+	roots  []string
+	ok     bool
+	reflow bool
+}
+
+// reuseUnchangedHoverStyle advances the style cache over a known empty scope.
+// HoverChangedScopes proved the prior and next hover match the same selectors,
+// so both states can share the document. A new pair still recascades before
+// finding its scopes, using a document with the new hover state.
+func reuseUnchangedHoverStyle(p *Page, state render.State) (*css.Document, bool) {
+	if len(p.hoverScopes) == 0 || p.last.Hover == state.Hover {
+		return nil, false
+	}
+	pair := hoverScopePair{p.last.Hover, state.Hover}
+	scope := p.hoverScopes[pair]
+	if !scope.ok || len(scope.roots) != 0 || !hoverPatchEligible(p, state) {
+		return nil, false
+	}
+	key := keyFor(p, state)
+	key.Hover = ""
+	if p.hoverScopeKey != key {
+		return nil, false
+	}
+
+	previous := state
+	previous.Hover = pair.previous
+	doc, ok := relayedDoc(p, previous)
+	if ok {
+		p.relayedHover = state.Hover
+	}
+
+	return doc, ok
 }
 
 func findHoverScopes(p *Page, styled *css.Document, state render.State) ([]string, bool) {
@@ -720,13 +821,16 @@ func sourceElementMatchesScopes(p *Page, id string, scopes []string) bool {
 // hoverPatchEligible reports whether this redraw changed only the hover:
 // the committed frame key matches the next one once the hover is ignored,
 // the committed display carries the retained layout state the patch splices
-// into, and no retained-state debt is pending.
+// into, and no retained-state debt or independent caret update is pending.
 func hoverPatchEligible(p *Page, state render.State) bool {
 	if !p.hasLast || p.draw.Display == nil || p.cache == nil {
 		return false
 	}
 
 	if !p.retainState || !p.lastRetain || p.restampRedraw {
+		return false
+	}
+	if currentCaretPaint(p) != p.lastCaret {
 		return false
 	}
 
@@ -756,7 +860,19 @@ func listHoverPatched(p *Page, ctx context.Context,
 	state render.State,
 	roots []string) (*Display, error) {
 	current := p.draw.Display
+	if len(roots) == 0 {
+		// The cascade proved that no selector changed, so there is no
+		// subtree to place. An empty commit scope keeps this distinct
+		// from a full layout when observing live transitions.
+		p.commitRoots = []string{}
+
+		return current, nil
+	}
 	options := layout.Options{Images: state.Images, RetainState: true}
+
+	if root := sharedHoverPaintRoot(current.Boxes, roots); root != "" {
+		return nil, &hoverPatchAttemptError{target: root, err: errHoverSharedPaint}
+	}
 
 	if p.hoverPatch == nil {
 		patched, err := render.RelayoutElements(ctx, styled, current, roots, options)
@@ -796,10 +912,46 @@ func listHoverPatched(p *Page, ctx context.Context,
 		current = patch.Display
 	}
 
-	// The commit this display produces is scoped to these roots. An empty
-	// non-nil scope means the hover changed no selector: still scoped, so
-	// the transition capture can skip when no transitioning box is inside.
 	p.commitRoots = append([]string{}, roots...)
 
 	return current, nil
+}
+
+// A subtree splice can replace every operation named by its root. When
+// siblings share an operation ID, replacing one can erase the other's paint.
+func sharedHoverPaintRoot(boxes []Box, roots []string) string {
+	for _, id := range roots {
+		index := hoverPaintBoxIndex(boxes, id)
+		if index < 0 || len(boxes[index].OperationIDs) == 0 {
+			continue
+		}
+		root := &boxes[index]
+		owned := make(map[uint64]struct{}, len(root.OperationIDs))
+		for _, operation := range root.OperationIDs {
+			owned[operation] = struct{}{}
+		}
+		for i := range boxes {
+			sibling := &boxes[i]
+			if i == index || sibling.ParentIndex != root.ParentIndex {
+				continue
+			}
+			for _, operation := range sibling.OperationIDs {
+				if _, ok := owned[operation]; ok {
+					return id
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+func hoverPaintBoxIndex(boxes []Box, id string) int {
+	for i := range boxes {
+		if boxes[i].ID == id {
+			return i
+		}
+	}
+
+	return -1
 }

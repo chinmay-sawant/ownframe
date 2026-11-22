@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"image"
+	"image/color"
 	"image/png"
 	"testing"
 
@@ -58,12 +59,22 @@ func TestImageBytesCachesPicture(t *testing.T) {
 func TestEncodePNGRoundTrip(t *testing.T) {
 	t.Parallel()
 
-	img := image.NewNRGBA(image.Rect(0, 0, 1, 1))
+	img := image.NewNRGBA(image.Rect(0, 0, 53, 27))
+	for y := range img.Bounds().Dy() {
+		for x := range img.Bounds().Dx() {
+			img.SetNRGBA(x, y, color.NRGBA{R: uint8(x * 4), G: uint8(y * 8), B: 0x7f, A: uint8(x + y)})
+		}
+	}
 	b := EncodePNG(img)
 	if b == nil {
 		t.Fatal("encode")
 	}
-	if _, err := png.Decode(bytes.NewReader(b)); err != nil {
+	decoded, err := png.Decode(bytes.NewReader(b))
+	if err != nil {
 		t.Fatal(err)
+	}
+	got, ok := decoded.(*image.NRGBA)
+	if !ok || got.Bounds() != img.Bounds() || !bytes.Equal(got.Pix, img.Pix) {
+		t.Fatal("PNG round trip changed pixel data")
 	}
 }

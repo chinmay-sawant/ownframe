@@ -1,35 +1,59 @@
 package bitmap
 
 import (
-	"hash/fnv"
-
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 )
 
-type faceKey struct {
-	hash uint64
-	size float64
-	n    int
+type fontDataKey struct {
+	ptr *byte
+	n   int
 }
 
-type faceCache map[faceKey]font.Face
+type faceKey struct {
+	ptr  *byte
+	n    int
+	size float64
+}
 
-func (c faceCache) face(data []byte, size float64) font.Face {
+type faceCache struct {
+	parsed map[fontDataKey]*opentype.Font
+	faces  map[faceKey]font.Face
+}
+
+func newFaceCache() *faceCache {
+	return &faceCache{
+		parsed: map[fontDataKey]*opentype.Font{},
+		faces:  map[faceKey]font.Face{},
+	}
+}
+
+func (c *faceCache) face(data []byte, size float64) font.Face {
 	if len(data) == 0 {
 		return nil
 	}
-	h := fnv.New64a()
-	// hash.Hash.Write never returns an error; it always returns len(data), nil.
-	_, _ = h.Write(data)
-	key := faceKey{hash: h.Sum64(), size: size, n: len(data)}
-	if face, ok := c[key]; ok {
+
+	ptr := &data[0]
+	key := faceKey{ptr: ptr, n: len(data), size: size}
+	if face, ok := c.faces[key]; ok {
 		return face
 	}
 
-	parsed, err := opentype.Parse(data)
-	if err != nil {
-		c[key] = nil
+	dkey := fontDataKey{ptr: ptr, n: len(data)}
+	parsed, ok := c.parsed[dkey]
+	if !ok {
+		var err error
+		parsed, err = opentype.Parse(data)
+		if err != nil {
+			c.parsed[dkey] = nil
+			c.faces[key] = nil
+
+			return nil
+		}
+		c.parsed[dkey] = parsed
+	}
+	if parsed == nil {
+		c.faces[key] = nil
 
 		return nil
 	}
@@ -39,12 +63,23 @@ func (c faceCache) face(data []byte, size float64) font.Face {
 		DPI:  cssDPI,
 	})
 	if err != nil {
-		c[key] = nil
+		c.faces[key] = nil
 
 		return nil
 	}
 
-	c[key] = face
+	c.faces[key] = face
 
 	return face
+}
+
+func (c *faceCache) close() {
+	if c == nil {
+		return
+	}
+	for _, face := range c.faces {
+		if face != nil {
+			_ = face.Close()
+		}
+	}
 }

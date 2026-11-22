@@ -211,9 +211,12 @@ func Diff(prev, next *layout.Display) (Set, bool, int) {
 // DiffWithBounds diffs like Diff and also returns the next-side rounded
 // op bounds the diff already computed, so the perf accounting pass
 // reuses them instead of recomputing every bound a second time. The
-// caller frees the memo after use; a nil memo means the diff took the
-// size-mismatch early path and computed no bounds.
+// caller frees the memo after use. A nil memo means the diff computed no
+// bounds because the display was reused or the canvas size changed.
 func DiffWithBounds(prev, next *layout.Display) (Set, bool, int, *BoundsMemo) {
+	if prev == next {
+		return newSet(next.Width, next.Height), false, 0, nil
+	}
 	if prev.Width != next.Width || prev.Height != next.Height {
 		return Set{}, true, len(next.Ops), nil
 	}

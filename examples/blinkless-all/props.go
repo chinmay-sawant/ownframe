@@ -488,9 +488,6 @@ func (g *genSet) demo(r genProp) string {
 //
 //nolint:gochecknoglobals // read-only property lookup table
 var noPaint = map[string]bool{
-	"font-feature-settings": true, "font-variant": true, "font-variant-alternates": true, "font-variant-caps": true,
-	"font-variant-east-asian": true, "font-variant-ligatures": true, "text-autospace": true, "writing-mode": true,
-	"font-variant-numeric": true, "font-variant-position": true,
 	"mask-clip": true, "mask-origin": true, "mask-position": true, "mask-size": true,
 	"-webkit-mask-clip": true, "-webkit-mask-origin": true, "-webkit-mask-position": true, "-webkit-mask-size": true,
 }

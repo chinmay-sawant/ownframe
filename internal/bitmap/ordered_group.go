@@ -13,7 +13,7 @@ func paintGroup(dst *image.NRGBA, group *layout.DisplayGroup,
 	items map[*layout.DisplayGroup][]paintItem,
 	areas map[*layout.DisplayGroup]image.Rectangle,
 	radii map[*layout.DisplayGroup]float64,
-	faces faceCache,
+	faces *faceCache,
 ) error {
 	for _, item := range items[group] {
 		if item.op != nil {
@@ -32,18 +32,26 @@ func paintGroup(dst *image.NRGBA, group *layout.DisplayGroup,
 				applyBackdropFilter(dst, area, radii[item.group], filter)
 			}
 		}
-		// One full-canvas buffer per group level, capped at 7 levels above,
-		// on the cold bitmap fallback only. No pool: shared scratch would
-		// need lifetime and zeroing rules across recursive depths.
-		buffer := image.NewNRGBA(dst.Bounds())
-		if err := paintGroup(buffer, item.group, items, areas, radii, faces); err != nil {
-			return err
-		}
+		// Tight group bounds: a masked group zeros every pixel outside its
+		// mask area, so allocating only area ∩ dst.Bounds() avoids O(N*W*H)
+		// full-canvas buffers and composites when many elements carry masks.
+		bufRect := dst.Bounds()
 		if item.group.Mask != nil {
 			area, ok := areas[item.group]
 			if !ok {
 				return fmt.Errorf("bitmap: masked group has no border box")
 			}
+			bufRect = area.Intersect(dst.Bounds())
+			if bufRect.Empty() {
+				continue
+			}
+		}
+		buffer := image.NewNRGBA(bufRect)
+		if err := paintGroup(buffer, item.group, items, areas, radii, faces); err != nil {
+			return err
+		}
+		if item.group.Mask != nil {
+			area := areas[item.group]
 			if err := masking.Apply(buffer, area, item.group.Mask); err != nil {
 				return err
 			}

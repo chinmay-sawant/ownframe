@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 // halfDivisor splits a stroke width into its two-sided growth.
@@ -25,7 +26,15 @@ func OpBounds(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
 	}
 
 	if op.XformSet && !op.Transform().IsIdentity() {
-		return opBoundsXform(op, d)
+		return opBoundsXform(op, d, op.Transform())
+	}
+	// A projected or quarter-turned text run lands where its text matrix
+	// puts it, the box replay draws and clips, not its upright box.
+	if (op.Kind == layout.DisplayOpText || op.Kind == layout.DisplayOpBullet) && !op.XformSet &&
+		(op.RotateDeg != 0 || op.XformValue() != (layout.Matrix2D{})) {
+		if m, ok := masking.TextMatrix(op); ok {
+			return opBoundsXform(op, d, m)
+		}
 	}
 
 	scale := pixelScale(d)
@@ -37,13 +46,13 @@ func OpBounds(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
 	)
 }
 
-// opBoundsXform maps an op's local painted box through its baked 2D
-// transform, so a partial repaint covers where the ink actually lands.
-func opBoundsXform(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
+// opBoundsXform maps an op's local painted box through m, its baked 2D
+// transform or text matrix, so a partial repaint covers where the ink
+// actually lands.
+func opBoundsXform(op *layout.DisplayOp, d *layout.Display, m layout.Matrix2D) image.Rectangle {
 	scale := pixelScale(d)
 
 	x0, y0, x1, y1 := LocalPaintBox(op)
-	m := op.Transform()
 
 	loX, loY := math.Inf(1), math.Inf(1)
 	hiX, hiY := math.Inf(-1), math.Inf(-1)

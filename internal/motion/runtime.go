@@ -83,6 +83,7 @@ type Runtime struct {
 
 	// Scratch maps reused by CaptureTransitions across frames so steady-state
 	// commits avoid rebuilding per-element lookup maps on every hover.
+	capScope    map[string]struct{}
 	capIDs      map[string]struct{}
 	capOrdinals map[string]int
 	capOldBoxes map[entryKey]boxRef
