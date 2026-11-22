@@ -4,7 +4,10 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 )
+
+var useSystemProxy atomic.Bool
 
 // client is shared. Jar stays nil, so no cookie is stored or sent.
 // Timeout is the default client timeout; a request context with a shorter

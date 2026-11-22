@@ -29,8 +29,10 @@ const maxTextPatches = 256
 // would publish. ok is false when Update must render the whole document
 // again; the patches and actions are then meaningless.
 type treeDiff struct {
-	patches []ownframe.ElementPatch
-	actions map[string]func(context.Context) error
+	patches     []ownframe.ElementPatch
+	actions     map[string]func(context.Context) error
+	attrPatches int
+	textPatches int
 	// nextID mirrors the renderer's action counter: one ownframe-ui-N key
 	// per element with an OnClick handler, in document order.
 	nextID int
@@ -141,13 +143,17 @@ func (d *treeDiff) walk(path []*Element, last, root *Element, depth int) {
 			return
 		}
 		if textChanged && len(attrEdits) == 0 && !stylesChanged {
-			if len(d.patches) >= maxTextPatches {
+			if d.textPatches >= maxTextPatches {
 				d.ok = false
 				return
 			}
-		} else if len(d.patches) >= maxPatches {
-			d.ok = false
-			return
+			d.textPatches++
+		} else {
+			if d.attrPatches >= maxPatches {
+				d.ok = false
+				return
+			}
+			d.attrPatches++
 		}
 		edits := attrEdits
 		if stylesChanged {

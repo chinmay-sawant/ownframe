@@ -87,38 +87,19 @@ func (c *cornerCache) get(key cornerMaskKey, bake func() []byte) *ebiten.Image {
 	c.order = append(c.order, key)
 	c.pixels += w * h
 
-	for len(c.order) > cornerCacheMaxItems || c.pixels > cornerCacheMaxPix {
-		victim := cornerMaskKey{}
-		idx := -1
-		for i, candidate := range c.order {
-			if candidate == key {
-				continue
-			}
-			victim = candidate
-			idx = i
-			break
-		}
-		if idx < 0 {
-			break
-		}
-		c.order = append(c.order[:idx], c.order[idx+1:]...)
+	c.order, c.pixels = lruEvict(c.order, len(c.order), cornerCacheMaxItems, c.pixels, cornerCacheMaxPix, key, func(victim cornerMaskKey) int {
 		evicted := c.entries[victim]
 		delete(c.entries, victim)
-		c.pixels -= evicted.Bounds().Dx() * evicted.Bounds().Dy()
+		px := evicted.Bounds().Dx() * evicted.Bounds().Dy()
 		evicted.Deallocate()
-	}
+		return px
+	})
 
 	return img
 }
 
 func (c *cornerCache) touch(key cornerMaskKey) {
-	for i, candidate := range c.order {
-		if candidate == key {
-			c.order = append(c.order[:i], c.order[i+1:]...)
-			c.order = append(c.order, key)
-			return
-		}
-	}
+	c.order = lruTouch(c.order, key)
 }
 
 func (c *cornerCache) close() {

@@ -1,7 +1,10 @@
 package web
 
 import (
+	"bufio"
 	"context"
+	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -99,5 +102,57 @@ func TestEventsSilentWhenIdle(t *testing.T) {
 	case msg := <-ch:
 		t.Fatalf("idle publish emitted: %q", msg)
 	case <-time.After(200 * time.Millisecond):
+	}
+}
+
+func TestServeShutdownWithOpenSSEStream(t *testing.T) {
+	t.Parallel()
+
+	ln, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	app := &domScreen{generation: 1, width: 200, height: 100, source: "<html><body>hi</body></html>"}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	serveErr := make(chan error, 1)
+	go func() {
+		serveErr <- ServeWithOptionsContext(ctx, app, addr, Options{Listener: ln})
+	}()
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+addr+"/events", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	reader := bufio.NewReader(resp.Body)
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		t.Fatalf("read initial SSE line: %v", err)
+	}
+	if !strings.HasPrefix(line, "retry:") {
+		t.Fatalf("unexpected SSE preamble: %q", line)
+	}
+
+	cancel()
+	select {
+	case err := <-serveErr:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("ServeWithOptionsContext err = %v, want context.Canceled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("ServeWithOptionsContext hung on shutdown with open SSE stream")
 	}
 }

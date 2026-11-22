@@ -65,7 +65,7 @@ func genTabs(taken map[string]bool) []Tab {
 		for pg := range pages {
 			part := rows[pg*len(rows)/pages : (pg+1)*len(rows)/pages]
 			set := newGenSet(part)
-			set.once.Do(set.compute)
+			hint := grp.Hint
 			props := make([]Prop, 0, len(part))
 
 			for _, r := range part {
@@ -73,7 +73,7 @@ func genTabs(taken map[string]bool) []Tab {
 					Name:        r.Name,
 					Note:        fmt.Sprintf("The right box sets %s: %s.", r.Name, r.Sample),
 					Description: genDescription(r),
-					Validate:    genValidate(r, grp.Hint),
+					ValidateFn:  func() string { set.once.Do(set.compute); return genValidate(r, hint) },
 					Demo:        func() string { return set.demo(r) },
 				})
 			}
@@ -84,7 +84,13 @@ func genTabs(taken map[string]bool) []Tab {
 				title = fmt.Sprintf("%s %d/%d", title, pg+1, pages)
 			}
 
-			out = append(out, Tab{ID: id, Title: title, Props: props, Head: genHead})
+			out = append(out, Tab{
+				ID:      id,
+				Title:   title,
+				Props:   props,
+				Head:    genHead,
+				Prepare: func() { set.once.Do(set.compute) },
+			})
 		}
 	}
 
@@ -362,8 +368,8 @@ func genMeasure(r genProp, prefix string, withStyle bool) (boxes []genBox, root 
 }
 
 // readoutCache keeps the readout of each property for the life of the
-// process: a row's readout depends only on the row, and every tab page is
-// built at start, so each row is measured once.
+// process: a row's readout depends only on the row, and each generated tab
+// computes its rows lazily on first render, so each row is measured at most once.
 //
 //nolint:gochecknoglobals // process-lifetime memoization cache
 var readoutCache sync.Map

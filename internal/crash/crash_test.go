@@ -58,6 +58,32 @@ func TestWriteStoresTitleAndReason(t *testing.T) {
 	_ = readReport(t, second)
 }
 
+func TestWritePreservesPreExistingDirPerm(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "shared")
+	if err := os.Mkdir(dir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.Stat(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := crash.SetDir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = crash.SetDir(t.TempDir()) })
+
+	if _, err := crash.Write("Title", "reason"); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.Stat(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.Mode().Perm() != before.Mode().Perm() {
+		t.Fatalf("pre-existing dir mode changed from %v to %v", before.Mode().Perm(), after.Mode().Perm())
+	}
+}
+
 func readReport(t *testing.T, path string) string {
 	t.Helper()
 

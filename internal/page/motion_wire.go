@@ -8,6 +8,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/motion"
+	"github.com/chinmay-sawant/ownframe/internal/render"
 )
 
 // MotionStats is one snapshot of the automatic CSS motion counters and the
@@ -350,7 +351,7 @@ func applyLayoutRequest(p *Page, ctx context.Context, request motion.LayoutReque
 		}
 	}
 
-	patch, err := layout.RelayoutElementWithOverrides(
+	patch, err := render.RelayoutElementWithOverrides(
 		ctx,
 		p.cache.Styled(),
 		p.draw.Display,
@@ -468,7 +469,7 @@ func applyRestamp(p *Page, ctx context.Context, requests []motion.Request) {
 		overrides[i] = restampOverride(requests[i])
 	}
 
-	patch, err := layout.RestampTransforms(ctx, p.cache.Styled(), p.draw.Display, overrides,
+	patch, err := render.RestampTransforms(ctx, p.cache.Styled(), p.draw.Display, overrides,
 		layout.Options{RetainState: true})
 	if err != nil {
 		p.motion.NoteRestamp(0, err)

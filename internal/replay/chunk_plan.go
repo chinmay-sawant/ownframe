@@ -44,6 +44,7 @@ type chunkPlan struct {
 	grid    *chunkGrid
 	tiles   *planTileIndex
 	gen     uint64
+	geomGen uint64
 }
 
 // chunkPlanBuilds counts chunk-plan folds. Tests prove reuse by observing no
@@ -126,6 +127,54 @@ func indexPlanTiles(d *layout.Display, p *chunkPlan) {
 	}
 
 	p.tiles = t
+	p.geomGen = displayGeomGen(d)
+}
+
+// displayGeomGen hashes the tick-mutable geometry and transform fields of
+// every op in d. When in-place motion or frame animations move an op across a
+// 256 px tile boundary without changing displayFingerprint, this generation
+// changes so tilePlanFor refreshes the plan's tile buckets instead of culling
+// the moved op against stale buckets.
+func displayGeomGen(d *layout.Display) uint64 {
+	if d == nil {
+		return 0
+	}
+	h := fnvOffsetBasis
+	h = mix64(h, uint64(len(d.Ops)))
+	for i := range d.Ops {
+		op := &d.Ops[i]
+		h = mixF(h, op.X)
+		h = mixF(h, op.Y)
+		h = mixF(h, op.W)
+		h = mixF(h, op.H)
+		h = mixF(h, op.Width)
+		h = mix64(h, uint64(math.Float32bits(op.RotateDeg)))
+		h = mix64(h, bit(op.XformSet))
+		h = sigXformWrite(h, op)
+	}
+	return h
+}
+
+// refreshPlanTiles recomputes any mutated run or group bounds and rebuilds
+// p.tiles when in-place geometry or transform writes moved ops on d.
+func refreshPlanTiles(d *layout.Display, p *chunkPlan) {
+	for i := range p.items {
+		it := &p.items[i]
+		if it.run != nil {
+			if !it.run.hasSig || runWriteGen(it.run) != it.run.writeGen {
+				sig, box := chunkSig(d, it.run, p.content)
+				if box.Empty() {
+					it.run.hasSig = false
+					it.run.box = image.Rectangle{}
+				} else {
+					refreshRunSig(it.run, sig, box)
+				}
+			}
+		} else if it.group != nil {
+			resetNodeBox(it.group)
+		}
+	}
+	indexPlanTiles(d, p)
 }
 
 // chunkCell is the grid cell size in CSS pixels. An op only tests the boxes

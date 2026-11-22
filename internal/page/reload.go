@@ -75,8 +75,7 @@ func (p *Page) PollReload(ctx context.Context) (bool, error) {
 func installWatched(p *Page, tpl *template.Template, src string) error {
 	p.tpl = tpl
 	p.nav.Retarget(src)
-	markFormDirty(p)
-	invalidateAccessibilityDocument(p)
+	invalidateSourceState(p, false)
 	return nil
 }
 

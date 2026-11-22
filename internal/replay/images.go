@@ -6,6 +6,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"hash/fnv"
 	"image"
+	"reflect"
 	"sync"
 )
 
@@ -51,7 +52,7 @@ func (renderer *Renderer) decodedImage(op *layout.DisplayOp) *ebiten.Image {
 	if op == nil {
 		return nil
 	}
-	key := imageBytesKey(op)
+	key := renderer.images.keyFor(op)
 	if img := renderer.images.get(key); img != nil {
 		return img
 	}
@@ -69,8 +70,23 @@ func (renderer *Renderer) decodedImage(op *layout.DisplayOp) *ebiten.Image {
 // imageCacheLimit bounds entries kept to 32 decoded images.
 // maxImageCachePixels bounds total pixels to 16M (64 MB of GPU bytes), so
 // many large images evict oldest first.
-const imageCacheLimit = 32
-const maxImageCachePixels = 16 << 20
+const (
+	imageCacheLimit     = 32
+	maxImageCachePixels = 16 << 20
+	imageKeyRingSize    = 64
+	imageKeyMinBytes    = 256
+	imageKeySampleBytes = 16
+)
+
+type imageKeyEntry struct {
+	ptr    uintptr
+	length int
+	isJPEG bool
+	head   [imageKeySampleBytes]byte
+	mid    [imageKeySampleBytes]byte
+	tail   [imageKeySampleBytes]byte
+	hash   uint64
+}
 
 // imageCache keeps decoded images by payload key, least recently used first.
 // Hits take the write lock to refresh recency; decode runs lock-free and only
@@ -81,6 +97,52 @@ type imageCache struct {
 	order   []uint64
 	sizes   map[uint64]int
 	total   int
+	keyRing [imageKeyRingSize]imageKeyEntry
+	keyNext int
+}
+
+// keyFor resolves op's payload hash, reusing a bounded ring cache for large
+// buffers so unchunked image draws do not re-hash megabytes every frame.
+// Head, mid, and tail byte samples guard against reused backing arrays.
+func (c *imageCache) keyFor(op *layout.DisplayOp) uint64 {
+	if op == nil {
+		return 0
+	}
+	data, _, _ := op.ImageBytes()
+	if len(data) < imageKeyMinBytes {
+		return imageBytesKey(op)
+	}
+
+	ptr := reflect.ValueOf(data).Pointer()
+	n := len(data)
+	midStart := n/halfDiv - imageKeySampleBytes/halfDiv
+	var head, mid, tail [imageKeySampleBytes]byte
+	copy(head[:], data[:imageKeySampleBytes])
+	copy(mid[:], data[midStart:midStart+imageKeySampleBytes])
+	copy(tail[:], data[n-imageKeySampleBytes:])
+
+	c.mu.RLock()
+	for i := range c.keyRing {
+		e := &c.keyRing[i]
+		if e.ptr == ptr && e.length == n && e.isJPEG == op.IsJPEG &&
+			e.head == head && e.mid == mid && e.tail == tail {
+			h := e.hash
+			c.mu.RUnlock()
+			return h
+		}
+	}
+	c.mu.RUnlock()
+
+	h := imageBytesKey(op)
+	c.mu.Lock()
+	c.keyRing[c.keyNext] = imageKeyEntry{
+		ptr: ptr, length: n, isJPEG: op.IsJPEG,
+		head: head, mid: mid, tail: tail, hash: h,
+	}
+	c.keyNext = (c.keyNext + 1) % imageKeyRingSize
+	c.mu.Unlock()
+
+	return h
 }
 
 func (c *imageCache) get(key uint64) *ebiten.Image {
@@ -97,13 +159,7 @@ func (c *imageCache) get(key uint64) *ebiten.Image {
 // touch moves a hit key to the back of the order, so eviction drops the
 // least recently used entry first. The caller holds the write lock.
 func (c *imageCache) touch(key uint64) {
-	for i, k := range c.order {
-		if k == key {
-			c.order = append(c.order[:i], c.order[i+1:]...)
-			c.order = append(c.order, key)
-			return
-		}
-	}
+	c.order = lruTouch(c.order, key)
 }
 
 func (c *imageCache) put(key uint64, src image.Image, px int) *ebiten.Image {
@@ -121,19 +177,15 @@ func (c *imageCache) put(key uint64, src image.Image, px int) *ebiten.Image {
 	c.order = append(c.order, key)
 	c.sizes[key] = px
 	c.total += px
-	for len(c.order) > imageCacheLimit || c.total > maxImageCachePixels {
-		old := c.order[0]
-		c.order = c.order[1:]
+	c.order, c.total = lruEvict(c.order, len(c.order), imageCacheLimit, c.total, maxImageCachePixels, key, func(old uint64) int {
 		if e := c.entries[old]; e != nil {
 			e.Deallocate()
 		}
 		delete(c.entries, old)
-		c.total -= c.sizes[old]
+		sz := c.sizes[old]
 		delete(c.sizes, old)
-		if len(c.order) == 0 {
-			break
-		}
-	}
+		return sz
+	})
 	return img
 }
 

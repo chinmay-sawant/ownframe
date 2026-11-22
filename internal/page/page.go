@@ -7,7 +7,6 @@ import (
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/element"
-	"github.com/chinmay-sawant/ownframe/internal/fetch"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
@@ -46,7 +45,7 @@ var (
 	// ErrPatchRefused means PatchElement could not apply the edit.
 	ErrPatchRefused = errors.New("ownframe: element patch refused")
 
-	errNilContext = fetch.ErrNilContext
+	errNilContext = host.ErrNilContext
 
 	// errNoImage is the resolver answer for a src SetImage does not hold.
 	errNoImage = errors.New("ownframe: no image for src")
@@ -214,8 +213,7 @@ func New(cfg Config) (*Page, error) {
 	}
 	page := assemblePage(cfg, tpl, theme, themeSrc, source, htmlInfo, themeInfo, minW, minH, schemes)
 	if static {
-		page.staticSource = true
-		page.tplProbeTpl, page.tplProbeHas = nil, false
+		setSourceTemplate(page, nil, true, false, false)
 	}
 	page.width, page.height = page.Clamp(cfg.Width, cfg.Height)
 	return page, nil
@@ -476,9 +474,7 @@ func AdoptPatchedSource(p *Page, source string) error {
 	p.syncClean = true
 	p.formDirty = false
 	p.dataMu.Unlock()
-	p.staticSource = true
-	p.tpl = nil
-	p.tplProbeTpl, p.tplProbeHas = nil, false
+	setSourceTemplate(p, nil, true, false, false)
 	noteSourceHashed(p, source, hash)
 	noteCacheSource(p)
 	rememberPatched(p, renderState(p))

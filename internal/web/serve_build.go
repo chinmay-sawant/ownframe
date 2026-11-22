@@ -8,10 +8,13 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/debugtag"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
+
+const shutdownTimeout = 2 * time.Second
 
 // ServeWithOptions listens on addr.
 func ServeWithOptions(app host.Screen, addr string, opts Options) error {
@@ -83,8 +86,20 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	// WriteTimeout stays zero so the long-lived GET /events stream is not
 	// cut mid-connection. The service binds loopback only and serves small
 	// JSON/PNG bodies; slow-loris protection comes from the read timeouts.
-	hs := &http.Server{Handler: panicRecovery(securityHeaders(requireLocalHost(bindHostName(addr), mux))), ReadHeaderTimeout: readHeaderTimeout, ReadTimeout: readTimeout, IdleTimeout: idleTimeout, MaxHeaderBytes: maxHeaderBytes}
-	stop := context.AfterFunc(ctx, func() { _ = hs.Shutdown(context.Background()) })
+	hs := &http.Server{
+		Handler:           panicRecovery(securityHeaders(requireLocalHost(bindHostName(addr), mux))),
+		BaseContext:       func(net.Listener) context.Context { return ctx },
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		IdleTimeout:       idleTimeout,
+		MaxHeaderBytes:    maxHeaderBytes,
+	}
+	stop := context.AfterFunc(ctx, func() {
+		srv.closeSubs()
+		shutCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		_ = hs.Shutdown(shutCtx)
+	})
 	defer stop()
 	err = hs.Serve(ln)
 	if ctx.Err() != nil {

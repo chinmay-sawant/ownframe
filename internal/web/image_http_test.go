@@ -46,7 +46,8 @@ func TestImageRouteServesAnyRegisteredBytes(t *testing.T) {
 		{name: "photo", body: []byte{0xff, 0xd8, 0xff, 0xe0}, kind: "image/jpeg"},
 		{name: "mark", body: []byte("<svg xmlns='http://www.w3.org/2000/svg'></svg>"), kind: "image/svg+xml"},
 		{name: "still", body: []byte("RIFF\x00\x00\x00\x00WEBPVP8 "), kind: "image/webp"},
-		{name: "future", body: []byte("not-a-known-picture"), kind: "text/plain; charset=utf-8"},
+		{name: "future", body: []byte("not-a-known-picture"), kind: "application/octet-stream"},
+		{name: "html", body: []byte("<html><script>alert(1)</script></html>"), kind: "application/octet-stream"},
 	}
 	for _, tc := range cases {
 		p.SetImage(tc.name, tc.body)
@@ -56,10 +57,45 @@ func TestImageRouteServesAnyRegisteredBytes(t *testing.T) {
 			t.Fatalf("%s status = %d", tc.name, rec.Code)
 		}
 		if rec.Header().Get("Content-Type") != tc.kind {
-			t.Fatalf("%s type = %q", tc.name, rec.Header().Get("Content-Type"))
+			t.Fatalf("%s type = %q, want %q", tc.name, rec.Header().Get("Content-Type"), tc.kind)
+		}
+		if rec.Header().Get("X-Content-Type-Options") != "nosniff" {
+			t.Fatalf("%s missing nosniff: %q", tc.name, rec.Header().Get("X-Content-Type-Options"))
+		}
+		if tc.kind == "image/svg+xml" && rec.Header().Get("Content-Security-Policy") != "sandbox" {
+			t.Fatalf("%s svg missing sandbox CSP: %q", tc.name, rec.Header().Get("Content-Security-Policy"))
 		}
 		if !bytes.Equal(rec.Body.Bytes(), tc.body) {
 			t.Fatalf("%s body = %q", tc.name, rec.Body.Bytes())
+		}
+	}
+}
+
+func TestReadRoutesRejectCrossOrigin(t *testing.T) {
+	t.Parallel()
+
+	p := imagePage(t)
+	p.SetImage("logo", []byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 'x'})
+	p.SetAudio([]byte("RIFF\x00\x00\x00\x00WAVE"), "audio/wav")
+	srv := &server{app: p}
+
+	routes := []struct {
+		name string
+		path string
+		fn   func(http.ResponseWriter, *http.Request)
+	}{
+		{"dom", "/dom", srv.dom},
+		{"state", "/state", srv.state},
+		{"audio", "/audio", srv.audio},
+		{"image", "/logo", srv.image},
+	}
+	for _, rt := range routes {
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://127.0.0.1:8080"+rt.path, nil)
+		req.Header.Set("Origin", "http://evil.example")
+		rec := httptest.NewRecorder()
+		rt.fn(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("%s cross-origin status = %d, want 403", rt.name, rec.Code)
 		}
 	}
 }

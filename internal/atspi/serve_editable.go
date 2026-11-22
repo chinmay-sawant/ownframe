@@ -68,14 +68,11 @@ func decodeTextEdit(msg *dbusMsg) (*host.AccessibilityTextEdit, string, callResu
 	case "InsertText":
 		text, textErr := d.stringVal()
 		length, lengthErr := d.int32Val()
-		if textErr != nil || lengthErr != nil || length < -1 {
+		if textErr != nil || lengthErr != nil || length < -1 || !utf8.ValidString(text) {
 			return nil, "", invalid
 		}
-		if length >= 0 && int(length) < len(text) {
-			text = text[:length]
-		}
-		if !utf8.ValidString(text) {
-			return nil, "", invalid
+		if length >= 0 {
+			text = truncateRunes(text, int(length))
 		}
 		edit.Kind = host.AccessibilityReplaceText
 		return edit, text, callResult{}
@@ -97,6 +94,22 @@ func decodeTextEdit(msg *dbusMsg) (*host.AccessibilityTextEdit, string, callResu
 		}
 	}
 	return edit, "", callResult{}
+}
+
+// truncateRunes returns at most maxRunes UTF-8 runes from s without splitting
+// any multi-byte character.
+func truncateRunes(s string, maxRunes int) string {
+	if maxRunes <= 0 {
+		return ""
+	}
+	count := 0
+	for i := range s {
+		if count == maxRunes {
+			return s[:i]
+		}
+		count++
+	}
+	return s
 }
 
 const editableTextXML = `<interface name="org.a11y.atspi.EditableText">

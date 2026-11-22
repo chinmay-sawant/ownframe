@@ -142,7 +142,19 @@ func (s *shell) drawBitmapPage(screen *ebiten.Image, zoom float64) {
 }
 
 // channelMax mirrors internal/masking: the max 8-bit color channel value.
-const channelMax = 255
+const (
+	channelMax    = 255
+	opaqueAlpha16 = 0xffff
+)
+
+// fillBackground clears dst only when bg is translucent and fills it with bg,
+// avoiding a redundant Clear + Fill pair on opaque page backgrounds.
+func fillBackground(dst *ebiten.Image, bg color.Color) {
+	if _, _, _, a := bg.RGBA(); a < opaqueAlpha16 {
+		dst.Clear()
+	}
+	dst.Fill(bg)
+}
 
 // pageBackground returns the color to paint under the page: the page's own
 // background fill for a display list, or the corner pixel of the bitmap.

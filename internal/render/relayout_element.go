@@ -47,3 +47,64 @@ func RelayoutElements(
 
 	return layout.RelayoutElements(ctx, doc, prev, elementIDs, options)
 }
+
+// RelayoutElementWithOverrides lays one retained element out again with
+// sampled CSS overrides under engineMu, recovering engine panics.
+func RelayoutElementWithOverrides(
+	ctx context.Context,
+	doc *css.Document,
+	prev *layout.Display,
+	elementID string,
+	overrides []layout.Override,
+	options layout.Options,
+) (patch *layout.ElementPatch, err error) {
+	engineMu.Lock()
+	defer engineMu.Unlock()
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("render: relayout element %s with overrides panic: %v", elementID, r)
+		}
+	}()
+
+	return layout.RelayoutElementWithOverrides(ctx, doc, prev, elementID, overrides, options)
+}
+
+// RestampTransforms re-projects retained 3D transforms and perspectives under
+// engineMu, recovering engine panics.
+func RestampTransforms(
+	ctx context.Context,
+	doc *css.Document,
+	prev *layout.Display,
+	overrides []layout.TransformOverride,
+	options layout.Options,
+) (patch *layout.ElementPatch, err error) {
+	engineMu.Lock()
+	defer engineMu.Unlock()
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("render: restamp transforms panic: %v", r)
+		}
+	}()
+
+	return layout.RestampTransforms(ctx, doc, prev, overrides, options)
+}
+
+// RestyleInlineSVG applies inline SVG paint overrides under engineMu,
+// recovering engine panics.
+func RestyleInlineSVG(
+	ctx context.Context,
+	doc *css.Document,
+	prev *layout.Display,
+	overrides []layout.SVGPaintOverride,
+	options layout.Options,
+) (patch *layout.ElementPatch, err error) {
+	engineMu.Lock()
+	defer engineMu.Unlock()
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("render: restyle inline svg panic: %v", r)
+		}
+	}()
+
+	return layout.RestyleInlineSVG(ctx, doc, prev, overrides, options)
+}

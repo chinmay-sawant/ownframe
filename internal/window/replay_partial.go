@@ -21,36 +21,48 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	if s.renderer.HasBackdropFilter(display) {
 		generation := s.app.Generation()
 		scroll := image.Pt(s.scrollX, s.scrollY)
-		backdropClean := s.partial.live && s.partial.mode == repaintBlit &&
-			!s.partial.whole && s.partial.gen == generation && s.partial.scroll == scroll && !s.frameOptIn
+		bounds := dst.Bounds()
+		taker, canTake := s.damageTaker()
+		dirty := false
+		if canTake {
+			rects, available := taker.TakeDirtyRects()
+			if available && len(rects) > 0 {
+				dirty = true
+			}
+		}
+		sameBuf := s.scaleBuf != nil &&
+			s.scaleBuf.Bounds().Dx() == bounds.Dx() &&
+			s.scaleBuf.Bounds().Dy() == bounds.Dy()
+		backdropClean := canTake && !s.fullReplay() && !dirty && sameBuf &&
+			s.partial.live && s.partial.mode == repaintBlit && !s.partial.whole &&
+			s.partial.gen == generation && s.partial.scroll == scroll &&
+			s.partial.backdropDisplay == display && !s.frameOptIn
 		// Filtered output depends on pixels outside the element's own dirty
 		// rect. Replay the whole display until the damage path tracks those
-		// backdrop dependencies.
+		// backdrop dependencies, reusing the cached texture when clean.
 		s.dropTiles()
 		s.disposeViewport()
+		s.demoteLayers()
 		// Backdrop shaders read the scene painted so far. Build it in a
 		// texture, then present once, rather than sampling the window buffer.
-		bounds := dst.Bounds()
 		frame := s.ensureScaleBuf(bounds.Dx(), bounds.Dy())
-		s.paintFullReplay(frame, display)
+		if !backdropClean {
+			s.paintFullReplay(frame, display)
+		}
 		op := &ebiten.DrawImageOptions{Blend: ebiten.BlendCopy}
 		op.GeoM.Translate(float64(bounds.Min.X), float64(bounds.Min.Y))
 		dst.DrawImage(frame, op)
-		if taker, ok := s.damageTaker(); ok {
-			rects, available := taker.TakeDirtyRects()
-			if available && len(rects) > 0 {
-				backdropClean = false
-			}
-		}
 		s.partial.gen = generation
 		s.partial.scroll = scroll
 		s.partial.mode = repaintBlit
 		s.partial.whole = false
 		s.partial.live = true
 		s.partial.backdropClean = backdropClean
+		s.partial.backdropDisplay = display
 
 		return true
 	}
+	s.partial.backdropDisplay = nil
 	s.dropRetainedTiles()
 
 	scroll := image.Pt(s.scrollX, s.scrollY)
@@ -63,6 +75,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	if !canTake || s.fullReplay() || !s.bufferOrderSafe() {
 		s.disposeViewport()
 		s.dropScaleBuf()
+		s.demoteLayers()
 		s.paintFullReplay(dst, display)
 
 		return true
@@ -84,8 +97,12 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 
 		return true
 	}
+	hadViewport := s.viewport.buf != nil || s.viewport.valid
 	s.disposeViewport()
 	s.dropScaleBuf()
+	if hadViewport {
+		s.demoteLayers()
+	}
 	// Prepare this frame's retained layers before planning, so their old ∪
 	// new damage joins the page's dirty rects and the tile pass can skip their
 	// owned operations.
@@ -93,16 +110,21 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 
 	clipX := s.dockClipX(contentW)
 	rects, ok := taker.TakeDirtyRects()
-	if ok && len(layerDamage) > 0 {
+	if len(layerDamage) > 0 {
 		content := image.Rect(0, 0, contentW, contentH)
 		combined := make([]image.Rectangle, 0, len(rects)+len(layerDamage))
-		combined = append(combined, rects...)
+		if ok {
+			combined = append(combined, rects...)
+		}
 		for _, rect := range layerDamage {
 			if inside := rect.Intersect(content); !inside.Empty() {
 				combined = append(combined, inside)
 			}
 		}
-		rects = combined
+		if len(combined) > 0 {
+			rects = combined
+			ok = true
+		}
 	}
 	plans := planRepaints(contentW, contentH, s.partial, s.app.Generation(), rects, ok, clipX)
 	s.partial.mode = plans[0].mode
@@ -168,6 +190,13 @@ func (s *shell) syncPromotedLayers() {
 	promoter.SetPromotedLayers(s.renderer.ActiveLayerIDs())
 }
 
+// demoteLayers drops every retained layer and clears the page's promoted set
+// when leaving an active layer-compositing path.
+func (s *shell) demoteLayers() {
+	s.renderer.DemoteLayers()
+	s.syncPromotedLayers()
+}
+
 // ticking reports a page with a frame callback. A Page marks mutated ops
 // itself and stays on the buffer path.
 type ticking interface {
@@ -191,27 +220,28 @@ type ticking interface {
 // frame repainted and paintPx their area; blits and blitPx count the tile
 // blits; pins counts post-blit chrome draws. clipX is the dock clip.
 type partialState struct {
-	buf           *ebiten.Image
-	tiles         *tileGrid
-	gen           uint64
-	last          []image.Rectangle
-	plans         []repaintPlan
-	chrome        []image.Rectangle
-	blitRects     []image.Rectangle
-	mode          repaintMode
-	backdropClean bool
-	paints        int
-	paintPx       int
-	blits         int
-	blitPx        int
-	pins          int
-	focus         bool
-	live          bool
-	whole         bool
-	scroll        image.Point
-	screen        image.Point
-	clipX         int
-	blitOpts      ebiten.DrawImageOptions
+	buf             *ebiten.Image
+	tiles           *tileGrid
+	gen             uint64
+	last            []image.Rectangle
+	plans           []repaintPlan
+	chrome          []image.Rectangle
+	blitRects       []image.Rectangle
+	mode            repaintMode
+	backdropClean   bool
+	backdropDisplay *layout.Display
+	paints          int
+	paintPx         int
+	blits           int
+	blitPx          int
+	pins            int
+	focus           bool
+	live            bool
+	whole           bool
+	scroll          image.Point
+	screen          image.Point
+	clipX           int
+	blitOpts        ebiten.DrawImageOptions
 }
 
 // gridCurrent reports that the tile grid covers exactly this content size.

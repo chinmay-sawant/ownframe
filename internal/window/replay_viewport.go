@@ -39,7 +39,7 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	// composited after the blit, so a moving layer never repaints the page
 	// under it.
 	specs := s.layerSpecs(d)
-	s.renderer.BeginLayers(d, s.layerGeneration(), specs)
+	s.renderer.BeginViewportLayers(d, s.layerGeneration(), specs, s.viewportPinZ())
 	s.syncPromotedLayers()
 	// Paint dirty rects separately so a moving chip costs its own box instead
 	// of the bounding box of every moving chip.
@@ -96,9 +96,11 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	// Layers composite onto dst in page coordinates, not into the buffer, so
 	// they take the scroll offset alone. Adding the buffer origin here put
 	// every retained layer one overscan band low once the page scrolled.
-	s.renderer.DrawLayers(dst, d, -float64(s.scrollX), -float64(s.scrollY))
-	s.renderer.DrawFixed(dst, d)
-	s.renderer.DrawPinnedZ(dst, d, s.viewportPinZ(), -float64(s.redrawX), -float64(s.redrawY))
+	if clip := s.pinClip(dst); clip != nil {
+		s.renderer.DrawLayers(clip, d, -float64(s.scrollX), -float64(s.scrollY))
+		s.renderer.DrawFixed(clip, d)
+		s.renderer.DrawPinnedZ(clip, d, s.viewportPinZ(), -float64(s.redrawX), -float64(s.redrawY))
+	}
 	if s.prewarmViewport(d, bounds) {
 		s.viewport.blitOnly = false
 	}
@@ -225,8 +227,7 @@ func (s *shell) paintViewport(d *layout.Display, rect image.Rectangle, pinZ int)
 	}
 	s.partial.paints++
 	s.partial.paintPx += rect.Dx() * rect.Dy()
-	clip.Clear()
-	clip.Fill(s.pageBackground())
+	fillBackground(clip, s.pageBackground())
 	s.renderer.DrawVisibleUnfixedZBackground(clip, d, -float64(s.viewport.area.Min.X), -float64(s.viewport.area.Min.Y), pinZ)
 }
 
@@ -322,8 +323,7 @@ func (s *shell) prewarmViewport(d *layout.Display, bounds image.Rectangle) bool 
 	if !ok {
 		return false
 	}
-	clip.Clear()
-	clip.Fill(s.pageBackground())
+	fillBackground(clip, s.pageBackground())
 	s.renderer.DrawVisibleUnfixedZBackground(clip, d, -float64(r.Min.X), -float64(r.Min.Y), s.viewportPinZ())
 	return true
 }

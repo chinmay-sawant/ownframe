@@ -9,24 +9,6 @@ import (
 // panics. Its panic is recovered so it cannot propagate to the caller.
 var ErrHandlerPanicked = errors.New("ownframe: handler panicked")
 
-// Aliases for ErrHandlerPanicked; use ErrHandlerPanicked in new code.
-var (
-	// Deprecated: use ErrHandlerPanicked.
-	ErrHandlerPanic = ErrHandlerPanicked
-	// Deprecated: use ErrHandlerPanicked.
-	ErrPanicked = ErrHandlerPanicked
-	// Deprecated: use ErrHandlerPanicked.
-	ErrPanic = ErrHandlerPanicked
-	// Deprecated: use ErrHandlerPanicked.
-	ErrHandlePanicked = ErrHandlerPanicked
-	// Deprecated: use ErrHandlerPanicked.
-	ErrHandlePanic = ErrHandlerPanicked
-	// Deprecated: use ErrHandlerPanicked.
-	ErrRequestPanicked = ErrHandlerPanicked
-	// Deprecated: use ErrHandlerPanicked.
-	ErrRequestPanic = ErrHandlerPanicked
-)
-
 // Request calls the Handle callback and returns its reply.
 // An empty channel, or no handler, returns ErrNoHandler.
 // A nil or canceled ctx does not call the handler.

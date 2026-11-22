@@ -1400,3 +1400,146 @@ func checkLayerTransitionPixels() error {
 
 	return nil
 }
+
+// TestBeginViewportLayersRejectsCoveredLayer pins the viewport z-order guard:
+// when a later unfixed static op overlaps the layer's base or animated bounds,
+// BeginViewportLayers rejects promotion so DrawLayers never composites above
+// the later sibling/popover, while non-overlapping or fixed/pinned later ops
+// still allow promotion.
+func TestBeginViewportLayersRejectsCoveredLayer(t *testing.T) {
+	t.Parallel()
+	const pt = 72.0 / 96.0
+
+	// 1. Overlapping later static sibling (popover) covering card's base box.
+	d := layerDisplay()
+	d.Ops = append(d.Ops, layout.DisplayOp{
+		Kind: layout.DisplayOpFillRect, X: 25 * pt, Y: 20 * pt, W: 30 * pt, H: 20 * pt, G: 1, Alpha: 1,
+	})
+	d.Order = append(d.Order, 3)
+	d.OpOwners = append(d.OpOwners, 0)
+
+	var r Renderer
+	defer r.Close()
+	specs := layerSpecsFor(d, layerTranslate(2, 0), 1)
+
+	// Tile path composites at firstRank, so it still promotes.
+	r.BeginLayers(d, 1, specs)
+	if !r.LayersActive(d) {
+		t.Fatal("tile path rejected layer unnecessarily")
+	}
+	r.DemoteLayers()
+
+	// Viewport path composites above viewport.buf, so it must reject.
+	r.BeginViewportLayers(d, 1, specs, 0)
+	if r.LayersActive(d) {
+		t.Fatal("viewport path promoted a layer covered by a later static op")
+	}
+	if got := r.Layers().Reasons[layerReasonCovered]; got != 1 {
+		t.Fatalf("covered reason = %d, want 1 (%v)", got, r.Layers().Reasons)
+	}
+
+	// 2. Later static op overlapping ONLY the animated pose must also reject.
+	dAnim := layerDisplay()
+	dAnim.Ops = append(dAnim.Ops, layout.DisplayOp{
+		Kind: layout.DisplayOpFillRect, X: 70 * pt, Y: 20 * pt, W: 20 * pt, H: 15 * pt, G: 1, Alpha: 1,
+	})
+	dAnim.Order = append(dAnim.Order, 3)
+	dAnim.OpOwners = append(dAnim.OpOwners, 0)
+	r.BeginViewportLayers(dAnim, 2, layerSpecsFor(dAnim, layerTranslate(45, 0), 1), 0)
+	if r.LayersActive(dAnim) {
+		t.Fatal("viewport path promoted a layer whose animated pose overlaps a later static op")
+	}
+
+	// 3. Non-overlapping later static op still promotes.
+	dClear := layerDisplay()
+	dClear.Ops = append(dClear.Ops, layout.DisplayOp{
+		Kind: layout.DisplayOpFillRect, X: 80 * pt, Y: 60 * pt, W: 20 * pt, H: 15 * pt, G: 1, Alpha: 1,
+	})
+	dClear.Order = append(dClear.Order, 3)
+	dClear.OpOwners = append(dClear.OpOwners, 0)
+	r.BeginViewportLayers(dClear, 3, layerSpecsFor(dClear, layerTranslate(2, 0), 1), 0)
+	if !r.LayersActive(dClear) {
+		t.Fatal("viewport path rejected a layer with a non-overlapping later op")
+	}
+
+	// 4. Overlapping later Fixed op draws after DrawLayers, so it still promotes.
+	dFixed := layerDisplay()
+	dFixed.Ops = append(dFixed.Ops, layout.DisplayOp{
+		Kind: layout.DisplayOpFillRect, X: 25 * pt, Y: 20 * pt, W: 30 * pt, H: 20 * pt, G: 1, Alpha: 1, Fixed: true,
+	})
+	dFixed.Order = append(dFixed.Order, 3)
+	dFixed.OpOwners = append(dFixed.OpOwners, 0)
+	r.BeginViewportLayers(dFixed, 4, layerSpecsFor(dFixed, layerTranslate(2, 0), 1), 0)
+	if !r.LayersActive(dFixed) {
+		t.Fatal("viewport path rejected a layer covered only by a fixed op")
+	}
+}
+
+// TestLayerStoreEvictsWhenExistingLayerGrows pins that resizing an existing
+// layer still enforces layerMaxPixels by evicting LRU entries.
+func TestLayerStoreEvictsWhenExistingLayerGrows(t *testing.T) {
+	t.Parallel()
+
+	var store layerStore
+	defer store.close()
+	renderer := &Renderer{}
+	d := &layout.Display{}
+
+	// Seed an older unprotected entry taking 20M pixels (4000x5000).
+	kOld := layerKey{id: "old", box: 0, gen: 1}
+	store.use = 1
+	candOld := layerCandidate{
+		key: kOld, box: image.Rect(0, 0, 4000, 5000), sig: 1, alpha: 1, matrix: layout.IdentityMatrix(),
+	}
+	if _, _, ok, reason := store.getLocked(candOld, nil, renderer, d); !ok {
+		t.Fatalf("seed old failed: %s", reason)
+	}
+
+	// Seed the growing entry taking 1M pixels (1000x1000). Total = 21M <= 32M.
+	kGrow := layerKey{id: "grow", box: 1, gen: 1}
+	store.use = 2
+	candSmall := layerCandidate{
+		key: kGrow, box: image.Rect(0, 0, 1000, 1000), sig: 2, alpha: 1, matrix: layout.IdentityMatrix(),
+	}
+	if _, _, ok, reason := store.getLocked(candSmall, nil, renderer, d); !ok {
+		t.Fatalf("seed grow failed: %s", reason)
+	}
+
+	// Grow kGrow to 20M pixels (4000x5000). 20M + 20M > 32M, so kOld must evict.
+	store.use = 3
+	candBig := layerCandidate{
+		key: kGrow, box: image.Rect(0, 0, 4000, 5000), sig: 3, alpha: 1, matrix: layout.IdentityMatrix(),
+	}
+	if _, _, ok, reason := store.getLocked(candBig, map[layerKey]bool{kGrow: true}, renderer, d); !ok {
+		t.Fatalf("growing layer failed: %s", reason)
+	}
+	if store.pixels > layerMaxPixels {
+		t.Fatalf("pixels = %d > layerMaxPixels %d after resize", store.pixels, layerMaxPixels)
+	}
+	if _, exists := store.entries[kOld]; exists {
+		t.Fatal("old LRU entry was not evicted when existing layer grew")
+	}
+}
+
+func TestLayerStoreChurnPrunesAndCloses(t *testing.T) {
+	t.Parallel()
+
+	var store layerStore
+	k1 := layerKey{id: "expired", box: 1, gen: 1}
+	k2 := layerKey{id: "active", box: 2, gen: 1}
+	store.use = 100
+	store.churn = map[layerKey]uint64{k1: 100, k2: 150}
+
+	store.pruneChurnLocked()
+	if _, ok := store.churn[k1]; ok {
+		t.Fatal("expired churn entry was not pruned")
+	}
+	if _, ok := store.churn[k2]; !ok {
+		t.Fatal("active churn entry was pruned early")
+	}
+
+	store.close()
+	if store.churn != nil {
+		t.Fatal("close did not clear churn map")
+	}
+}

@@ -360,6 +360,22 @@ func firstPick(n *groupNode, pick opPicker) ([2]float64, bool) {
 	return [2]float64{}, false
 }
 
+// resetNodeBox clears cached group bounds so nodeBox recomputes them after
+// in-place motion or frame mutations change descendant geometry or transforms.
+func resetNodeBox(n *groupNode) {
+	if n == nil {
+		return
+	}
+	n.known = false
+	n.unbounded = false
+	n.box = image.Rectangle{}
+	for i := range n.items {
+		if n.items[i].child != nil {
+			resetNodeBox(n.items[i].child)
+		}
+	}
+}
+
 // nodeBox is the node's page box in CSS pixels, the union of its ops and
 // children. ok is false when any op is unbounded or the node is empty; the
 // caller then uses the whole destination.

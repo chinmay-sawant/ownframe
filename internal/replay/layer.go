@@ -208,7 +208,7 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 	if firstRank == len(d.Order) || lastRank < 0 {
 		return out, "no painted ops"
 	}
-	if !layerOrderSafe(d, owned, firstRank, lastRank, boxRect, matrix, ppt) {
+	if !layerOrderSafe(d, owned, firstRank, lastRank, boxRect, matrix, ppt, layerPixelPerPoint(d)) {
 		// A layer paints as one unit at its first position. An operation
 		// painted between its owned ranks that could cover it would land in
 		// the wrong order, so keep such a subtree direct.
@@ -241,7 +241,7 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 // stays outside the layer's captured and animated boxes, the two paints the
 // same pixels either way.
 func layerOrderSafe(d *layout.Display, owned []int, firstRank, lastRank int, box image.Rectangle,
-	matrix layout.Matrix2D, ppt float64) bool {
+	matrix layout.Matrix2D, ppt, ppp float64) bool {
 	if lastRank-firstRank+1 == len(owned) {
 		return true
 	}
@@ -254,7 +254,7 @@ func layerOrderSafe(d *layout.Display, owned []int, firstRank, lastRank int, box
 		isOwned[index] = struct{}{}
 	}
 
-	animated := layerMatrixBox(box, matrix, ppt)
+	animated := layerMatrixBox(box, matrix, ppp)
 	for rank := firstRank; rank <= lastRank && rank < len(d.Order); rank++ {
 		index := d.Order[rank]
 		if index < 0 || index >= len(d.Ops) {
@@ -264,11 +264,49 @@ func layerOrderSafe(d *layout.Display, owned []int, firstRank, lastRank int, box
 			continue
 		}
 		op := &d.Ops[index]
+		if op.Kind == layout.DisplayOpNoop || op.Kind == layout.DisplayOpLinkURI {
+			continue
+		}
 		if _, hasProj := op.ProjectiveTransformValue(); op.Group() != nil || hasProj {
 			return false
 		}
 		b, ok := layerOpBox(op, layout.IdentityMatrix(), ppt)
 		if !ok || b.Empty() || b.Overlaps(box) || b.Overlaps(animated) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// layerTopOrderSafe reports whether a layer may composite on top of the
+// background buffer (the viewport path, where DrawLayers runs after
+// DrawVisibleUnfixedZBackground) without inverting z-order against any later
+// unfixed, non-pinned operation. Fixed and pinned ops draw after DrawLayers
+// and are skipped here.
+func layerTopOrderSafe(d *layout.Display, cand *layerCandidate, pinZ int) bool {
+	if d == nil || cand == nil || cand.box.Empty() {
+		return false
+	}
+	ppt := layerPointsPerPixel(d)
+	animated := layerMatrixBox(cand.box, cand.matrix, layerPixelPerPoint(d))
+	for rank := cand.lastRank + 1; rank < len(d.Order); rank++ {
+		index := d.Order[rank]
+		if index < 0 || index >= len(d.Ops) {
+			continue
+		}
+		op := &d.Ops[index]
+		if op.Kind == layout.DisplayOpNoop || op.Kind == layout.DisplayOpLinkURI {
+			continue
+		}
+		if op.Fixed || atPinZ(op, pinZ) {
+			continue
+		}
+		if _, hasProj := op.ProjectiveTransformValue(); op.Group() != nil || hasProj {
+			return false
+		}
+		b, ok := layerOpBox(op, layout.IdentityMatrix(), ppt)
+		if !ok || b.Empty() || b.Overlaps(cand.box) || b.Overlaps(animated) {
 			return false
 		}
 	}
@@ -428,16 +466,7 @@ func layerBoxDepth(boxes []layout.Box, index int) int {
 // restored before this function returns.
 func layerOpBox(op *layout.DisplayOp, base layout.Matrix2D, ppt float64) (image.Rectangle, bool) {
 	if base.IsIdentity() {
-		clone := *op
-		if clone.Kind == layout.DisplayOpImage && clone.XformSet {
-			// xformPointsBox predates transformed images: an image places
-			// itself through its own matrix in drawImage. Bound the layout
-			// rectangle through that matrix here, or every rotated card with an
-			// image would demote.
-			return layerMappedBox(&clone, ppt)
-		}
-
-		return opBounds(&clone, ppt)
+		return opBounds(op, ppt)
 	}
 
 	saved, savedSet := op.Transform(), op.XformSet
@@ -451,34 +480,7 @@ func layerOpBox(op *layout.DisplayOp, base layout.Matrix2D, ppt float64) (image.
 		op.XformSet = savedSet
 	}()
 
-	clone := *op
-	if clone.Kind == layout.DisplayOpImage && clone.XformSet {
-		return layerMappedBox(&clone, ppt)
-	}
-
-	return opBounds(&clone, ppt)
-}
-
-// layerMappedBox maps an op's layout rectangle through its transform, which is
-// what an image paints.
-func layerMappedBox(op *layout.DisplayOp, ppt float64) (image.Rectangle, bool) {
-	x0, y0, x1, y1 := op.X, op.Y, op.X+op.W, op.Y+op.H
-	m := op.Transform()
-	loX, loY := math.Inf(1), math.Inf(1)
-	hiX, hiY := math.Inf(-1), math.Inf(-1)
-
-	for _, p := range [4][2]float64{{x0, y0}, {x1, y0}, {x1, y1}, {x0, y1}} {
-		x, y := m.Apply(p[0], p[1])
-		loX, loY = math.Min(loX, x), math.Min(loY, y)
-		hiX, hiY = math.Max(hiX, x), math.Max(hiY, y)
-	}
-
-	pad := float64(boundsPad)
-
-	return image.Rect(
-		int(math.Floor(loX/ppt-pad)), int(math.Floor(loY/ppt-pad)),
-		int(math.Ceil(hiX/ppt+pad)), int(math.Ceil(hiY/ppt+pad)),
-	), true
+	return opBounds(op, ppt)
 }
 
 // layerSignOp folds one operation into a layer signature. The op's matrix is

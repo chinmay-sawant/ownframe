@@ -7,7 +7,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/html"
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/fetch"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // DisplayOp is one vector op from layout under a local name.
@@ -26,7 +26,7 @@ func DisplayList(ctx context.Context, source string, width, height int) (*Displa
 // DisplayListState is DisplayList with pointer and focus state.
 func DisplayListState(ctx context.Context, source string, width, height int, state State) (*Display, error) {
 	if ctx == nil {
-		return nil, fetch.ErrNilContext
+		return nil, host.ErrNilContext
 	}
 	engineMu.Lock()
 	defer engineMu.Unlock()

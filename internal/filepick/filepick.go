@@ -9,11 +9,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/chinmay-sawant/ownframe/internal/fetch"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // ErrNilContext means Pick got a nil context.
-var ErrNilContext = fetch.ErrNilContext
+var ErrNilContext = host.ErrNilContext
 
 // ErrCanceled means the person closed the dialog or the context ended.
 var ErrCanceled = errors.New("filepick: canceled")

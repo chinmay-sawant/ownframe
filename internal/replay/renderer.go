@@ -5,7 +5,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"image"
 	"runtime/debug"
-	"sync"
 )
 
 // Renderer owns the caches retained while drawing one page. Its zero value
@@ -20,13 +19,7 @@ type Renderer struct {
 	chunks   chunkStore
 	plans    planCache
 	layers   layerStore
-	drawOpts ebiten.DrawImageOptions
-	// backdropOnce guards the compiled backdrop blur program, which lives
-	// with the renderer so pages without backdrop-filter never pay the
-	// compile cost and no process-wide mutable state is needed.
-	backdropOnce   sync.Once
-	backdropShader *ebiten.Shader
-	backdropErr    error
+	backdrop backdropState
 }
 
 // Close releases retained GPU images and forgets cached plans and fonts.
@@ -53,6 +46,8 @@ func (renderer *Renderer) Close() {
 	clear(renderer.images.sizes)
 	renderer.images.order = nil
 	renderer.images.total = 0
+	renderer.images.keyRing = [imageKeyRingSize]imageKeyEntry{}
+	renderer.images.keyNext = 0
 	renderer.images.mu.Unlock()
 
 	renderer.chunks.mu.Lock()
@@ -79,8 +74,7 @@ func (renderer *Renderer) Close() {
 	clear(renderer.fonts.sources)
 	renderer.fonts.mu.Unlock()
 
-	renderer.drawOpts.GeoM.Reset()
-	renderer.drawOpts.ColorScale.Reset()
+	renderer.backdrop.close()
 }
 
 // idleWarmCaps bound the containers Wake pre-sizes after a park. They cover
@@ -109,6 +103,7 @@ func (renderer *Renderer) SetIdle() {
 	renderer.chunks.releaseIdle()
 	renderer.plans.releaseIdle()
 	renderer.layers.releaseIdle()
+	renderer.backdrop.releaseScratch()
 
 	// FreeOSMemory scavenges the pages the cleared maps and order slices
 	// freed, which is the Go runtime's MADV_DONTNEED path: without it the
@@ -192,6 +187,8 @@ func (c *imageCache) releaseIdle() {
 	c.sizes = nil
 	c.order = nil
 	c.total = 0
+	c.keyRing = [imageKeyRingSize]imageKeyEntry{}
+	c.keyNext = 0
 }
 
 // warmIdle pre-sizes the index when a park emptied it. A live cache keeps

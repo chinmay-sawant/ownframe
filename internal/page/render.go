@@ -328,12 +328,7 @@ func commitDisplay(p *Page, display *Display, executed string, drawStart time.Ti
 	p.generation++
 	bindMotion(p, previous, display)
 	bindTransitions(p, captures)
-	if previous != nil && previous != display {
-		previous.Release()
-	}
-	if previousFallback != nil && previousFallback != display && previousFallback != previous {
-		previousFallback.Release()
-	}
+	releaseReplacedDisplays(display, previous, previousFallback)
 	remember(p, state)
 	commitAccessibility(p, executed)
 	applyPending(p)
@@ -377,12 +372,7 @@ func paintFallback(p *Page, display *Display, drawStart time.Time, track bool, s
 	p.layerGen++
 	bindMotion(p, previous, nil)
 	bindTransitions(p, nil)
-	if previous != nil && previous != display {
-		previous.Release()
-	}
-	if previousFallback != nil && previousFallback != display && previousFallback != previous {
-		previousFallback.Release()
-	}
+	releaseReplacedDisplays(display, previous, previousFallback)
 	remember(p, state)
 	markFull(p)
 	p.lastPatch = DisplayPatch{
@@ -764,6 +754,40 @@ func invalidateCache(p *Page) {
 	// Unknown sheets keep every state redraw until the next Redraw reports
 	// what the new sheets can match.
 	p.statePseudos = draw.UnknownPseudos()
+}
+
+// setSourceTemplate installs the active template or static-source marker and
+// updates the memoized delimiter probe in one place. When keepProbe is true
+// (an identical non-static template), the existing probe verdict stays intact.
+func setSourceTemplate(p *Page, tpl *template.Template, static, hasDelim, keepProbe bool) {
+	p.tpl = tpl
+	p.staticSource = static
+	if static {
+		p.tplProbeTpl, p.tplProbeHas = nil, false
+	} else if !keepProbe {
+		p.tplProbeTpl = tpl
+		p.tplProbeHas = hasDelim
+	}
+}
+
+// invalidateSourceState marks form sync and accessibility stale after a source
+// replacement, and drops the style/layout cache when dropCache is true.
+func invalidateSourceState(p *Page, dropCache bool) {
+	markFormDirty(p)
+	invalidateAccessibilityDocument(p)
+	if dropCache {
+		invalidateCache(p)
+	}
+}
+
+// releaseReplacedDisplays releases any display lists superseded by display.
+func releaseReplacedDisplays(display, previous, previousFallback *Display) {
+	if previous != nil && previous != display {
+		previous.Release()
+	}
+	if previousFallback != nil && previousFallback != display && previousFallback != previous {
+		previousFallback.Release()
+	}
 }
 
 // FallbackDisplay returns the retained operations behind a bitmap page.

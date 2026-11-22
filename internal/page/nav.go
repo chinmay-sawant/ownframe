@@ -95,23 +95,8 @@ func (p *Page) Load(ctx context.Context, html string) error {
 		}
 	}
 	p.nav.Push(html)
-	p.tpl = tpl
-	p.staticSource = static
-	if static {
-		// The envelope proves no delimiter, so seed the probe: the redraw
-		// path returns nav.Current without scanning or executing it.
-		p.tplProbeTpl, p.tplProbeHas = nil, false
-	} else if !identical {
-		// The delimiter verdict rides with the new template, so the redraw
-		// probe reuses it instead of rescanning the source it just hashed.
-		p.tplProbeTpl = tpl
-		p.tplProbeHas = incomingDelim
-	}
-	markFormDirty(p)
-	invalidateAccessibilityDocument(p)
-	if !identical {
-		invalidateCache(p)
-	}
+	setSourceTemplate(p, tpl, static, incomingDelim, identical)
+	invalidateSourceState(p, !identical)
 	markFull(p)
 	return p.Redraw(ctx)
 }
@@ -160,20 +145,9 @@ func ReplaceHTML(ctx context.Context, p *Page, source string) error {
 		next := *previousForm
 		setFormState(p, &next)
 	}
-	p.tpl = tpl
-	p.staticSource = static
+	setSourceTemplate(p, tpl, static, incomingDelim, identical)
 	p.nav.Retarget(source)
-	if static {
-		p.tplProbeTpl, p.tplProbeHas = nil, false
-	} else if !identical {
-		p.tplProbeTpl = tpl
-		p.tplProbeHas = incomingDelim
-	}
-	invalidateAccessibilityDocument(p)
-	markFormDirty(p)
-	if !identical {
-		invalidateCache(p)
-	}
+	invalidateSourceState(p, !identical)
 	if err := p.Redraw(ctx); err != nil {
 		p.tpl = previous
 		p.staticSource = previousStatic
@@ -183,10 +157,7 @@ func ReplaceHTML(ctx context.Context, p *Page, source string) error {
 		p.nav.Retarget(previousSource)
 		setFormState(p, previousForm)
 		p.ff.requestFocus, p.ff.hasFocusRequest = previousRequest, previousHasRequest
-		markFormDirty(p)
-		if !identical {
-			invalidateCache(p)
-		}
+		invalidateSourceState(p, !identical)
 		return err
 	}
 	// The success path needs no rollback: the rollback state above is dead
@@ -250,28 +221,19 @@ func drawAt(p *Page, ctx context.Context, at int) error {
 		if static {
 			// A stored builder document needs no template, so the redraw
 			// path returns it directly.
-			p.tpl = nil
-			p.staticSource = true
-			p.tplProbeTpl, p.tplProbeHas = nil, false
+			setSourceTemplate(p, nil, true, false, false)
 		} else {
 			tpl, err := template.New("page").Parse(target)
 			if err != nil {
 				return err
 			}
-			p.tpl = tpl
-			p.staticSource = false
 			// The stored delimiter verdict travels with the entry, so the
 			// redraw probe never rescans the target.
-			p.tplProbeTpl = tpl
-			p.tplProbeHas = p.nav.DelimAt(at)
+			setSourceTemplate(p, tpl, false, p.nav.DelimAt(at), false)
 		}
 	}
 	p.nav.GoTo(at)
-	markFormDirty(p)
-	invalidateAccessibilityDocument(p)
-	if !identical {
-		invalidateCache(p)
-	}
+	invalidateSourceState(p, !identical)
 	markFull(p)
 	return p.Redraw(ctx)
 }

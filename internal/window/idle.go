@@ -314,7 +314,7 @@ func (g *paceGame) Draw(screen *ebiten.Image) {
 		time.Sleep(wait)
 		now = time.Now()
 	}
-	g.lastLoop = now
+	g.lastLoop = nextLoopBase(g.maxFPS, g.lastLoop, now)
 	g.lastPresent = now
 	g.notePresent(now)
 	g.shell.Draw(screen)

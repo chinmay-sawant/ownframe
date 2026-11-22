@@ -42,7 +42,7 @@ func debugf(format string, args ...any) {
 	if !debugtag.Enabled {
 		return
 	}
-	if os.Getenv("OWNFRAME_FILEPICK_DEBUG") == "" && os.Getenv("GPUI_FILEPICK_DEBUG") == "" {
+	if os.Getenv("OWNFRAME_FILEPICK_DEBUG") == "" {
 		return
 	}
 

@@ -6,6 +6,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
+	"github.com/chinmay-sawant/ownframe/internal/render"
 	"image"
 )
 
@@ -141,7 +142,7 @@ func applySVGPaint(p *Page, ctx context.Context, request motion.SVGPaintRequest)
 		return nil
 	}
 
-	patch, err := layout.RestyleInlineSVG(ctx, p.cache.Styled(), p.draw.Display,
+	patch, err := render.RestyleInlineSVG(ctx, p.cache.Styled(), p.draw.Display,
 		request.Overrides, layout.Options{RetainState: true})
 	if err != nil {
 		return fmt.Errorf("motion: restyle svg %q: %w", request.ElementID, err)

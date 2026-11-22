@@ -102,13 +102,25 @@ func webKeyName(key string) (name string, ok bool) {
 }
 
 // attachWebLive installs the live sessions on a served page and routes the
-// page handlers into them.
-func attachWebLive(page *ownframe.Page) {
+// page handlers into them while keeping lazy tab switching active.
+func attachWebLive(app *App, page *ownframe.Page) {
 	in := &webInput{}
 	r := &liveRunner{page: page, sessions: liveSessions(), clock: wallClock{}, src: in.source()}
 	r.attach()
 
-	page.Handle(webHandlers(page, in))
+	h := webHandlers(page, in)
+	origClick := h.Click
+	h.Click = func(ctx context.Context, b ownframe.Box) error {
+		if id, ok := strings.CutPrefix(b.Action, actionPrefix); ok {
+			if _, found := app.findTab(id); found {
+				return page.Load(ctx, app.Page(id))
+			}
+		}
+
+		return origClick(ctx, b)
+	}
+
+	page.Handle(h)
 }
 
 // webHandlers routes the page handlers the web routes call into in.

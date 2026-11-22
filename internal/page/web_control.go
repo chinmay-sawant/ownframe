@@ -5,24 +5,15 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/form"
 )
 
+var _ host.WebDOM = (*Page)(nil)
+
 // WebControl is one live control for the browser document.
 // Value is the stored value, including a password. Never the painted bullets.
-type WebControl struct {
-	ID             string
-	Tag            string
-	Type           string
-	Name           string
-	Value          string
-	Checked        bool
-	Disabled       bool
-	Focused        bool
-	SelectionStart int
-	SelectionEnd   int
-	Options        []SelectOption
-}
+type WebControl = host.WebControl
 
 // WebControls returns the live controls, one per id, sorted by ID.
 // A nil page or a page with no form yet returns nil.

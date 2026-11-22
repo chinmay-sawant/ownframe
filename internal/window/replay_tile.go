@@ -410,12 +410,20 @@ func (s *shell) paintTiles(d *layout.Display, rect image.Rectangle) {
 }
 
 // paintTile clears and replays one tile's part of rect, and marks the tile
-// clean: the tile now holds current pixels for its whole area.
+// clean: the tile now holds current pixels for its whole area. A tile that was
+// marked dirty while offscreen expands to the full tile so stale pixels outside
+// rect are never marked clean.
 func (s *shell) paintTile(d *layout.Display, g *tileGrid, col, row int, rect image.Rectangle) {
 	tile := g.rectAt(col, row)
 	part := rect.Intersect(tile)
 	if part.Empty() {
 		return
+	}
+	if !g.cleanAt(col, row) {
+		part = clipDockX(tile, s.dockClipX(g.width))
+		if part.Empty() {
+			return
+		}
 	}
 
 	tileImg := g.at(col, row)

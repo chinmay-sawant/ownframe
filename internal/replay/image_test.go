@@ -260,3 +260,47 @@ func TestImageBytesKeyStableAndDistinct(t *testing.T) {
 		t.Fatal("nil op key is not zero")
 	}
 }
+
+func TestImageCachePutDoesNotSelfEvict(t *testing.T) {
+	t.Parallel()
+
+	var c imageCache
+	oversizedPx := maxImageCachePixels + 1024
+	img := c.put(42, testImage(4, 4), oversizedPx)
+	if img == nil {
+		t.Fatal("put returned nil")
+	}
+	if c.get(42) != img {
+		t.Fatal("newly inserted image exceeding pixel cap self-evicted")
+	}
+	if len(c.order) != 1 {
+		t.Fatalf("len(order) = %d, want 1", len(c.order))
+	}
+}
+
+func TestImageCacheKeyForRingMatchesFullHash(t *testing.T) {
+	t.Parallel()
+
+	var c imageCache
+	buf := bytes.Repeat([]byte("ownframe-image-payload-"), 32) // 736 bytes >= 256
+	op := imageOp(t, buf, 4, 4, false)
+
+	want := imageBytesKey(&op)
+	if got := c.keyFor(&op); got != want {
+		t.Fatalf("first keyFor = %d, want %d", got, want)
+	}
+	if got := c.keyFor(&op); got != want {
+		t.Fatalf("cached keyFor = %d, want %d", got, want)
+	}
+
+	jpegOp := imageOp(t, buf, 4, 4, true)
+	if got := c.keyFor(&jpegOp); got == want || got != imageBytesKey(&jpegOp) {
+		t.Fatalf("jpeg keyFor = %d, want %d (distinct from %d)", got, imageBytesKey(&jpegOp), want)
+	}
+
+	// Mutating the tail in place must miss the ring cache and recompute.
+	buf[len(buf)-1] ^= 0xff
+	if got := c.keyFor(&op); got == want || got != imageBytesKey(&op) {
+		t.Fatalf("mutated keyFor = %d, want %d", got, imageBytesKey(&op))
+	}
+}

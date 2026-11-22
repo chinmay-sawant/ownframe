@@ -111,13 +111,12 @@ func (v *View) Update(ctx context.Context, root *Element) error {
 		switch {
 		case d.ok && len(d.patches) == 0:
 			// Nothing in the tree changed, but Mount does not draw. If no
-			// frame or no layout boxes have been committed yet, SetTheme or
-			// SetSize may be waiting for one. RedrawIfChanged commits that
-			// pending frame and skips the layout when the page is already
-			// clean. A live frame stays untouched so a zero-patch update
-			// remains a true no-op.
-			display := v.Page.Probe().Display()
-			if display == nil || len(display.Boxes) == 0 {
+			// frame has been committed yet, SetTheme or SetSize may be waiting
+			// for one. RedrawIfChanged commits that pending frame and skips
+			// the layout when the page is already clean. Checking Generation
+			// avoids Probe().Display()'s tick-mutation side effect and lets
+			// bitmap-fallback pages take the same fast path.
+			if v.Page.Probe().Generation() == 0 {
 				if err := v.Page.RedrawIfChanged(ctx); err != nil {
 					return err
 				}

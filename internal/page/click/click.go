@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/fetch"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/form"
 	"github.com/chinmay-sawant/ownframe/internal/page/hit"
 )
@@ -119,7 +119,7 @@ func Run(ctx context.Context, s Surface, pt Point) error {
 
 func useContext(ctx context.Context) error {
 	if ctx == nil {
-		return fetch.ErrNilContext
+		return host.ErrNilContext
 	}
 
 	return ctx.Err()

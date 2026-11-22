@@ -5,6 +5,8 @@ package fetch
 import (
 	"errors"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // ErrScheme means the URL is empty or not http or https.
@@ -12,7 +14,7 @@ import (
 var ErrScheme = errors.New("ownframe: fetch scheme")
 
 // ErrNilContext means Do got a nil context.
-var ErrNilContext = errors.New("ownframe: nil context")
+var ErrNilContext = host.ErrNilContext
 
 // fetchTimeout is the default client timeout.
 const fetchTimeout = 30 * time.Second

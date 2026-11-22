@@ -19,6 +19,7 @@ const (
 	layerReasonCountCap = "layer count cap"
 	layerReasonPixelCap = "layer pixel cap"
 	layerReasonEvicted  = "evicted by last use"
+	layerReasonCovered  = "covered by later op"
 	// layerReasonContentChurn names a layer whose content changed on every
 	// frame. Re-baking it per frame costs more than painting its operations
 	// into the page, so it stays direct until its content settles.
@@ -76,6 +77,18 @@ type layerStore struct {
 // appeared, changed alpha or mode, or disappeared. The paint walk that follows
 // skips the returned frame's owned operations and composites each layer once.
 func (renderer *Renderer) BeginLayers(d *layout.Display, gen uint64, specs []LayerSpec) []image.Rectangle {
+	return renderer.beginLayers(d, gen, specs, false, 0)
+}
+
+// BeginViewportLayers is BeginLayers for the viewport path, where DrawLayers
+// composites promoted layers above the background buffer. Any candidate whose
+// base or animated box overlaps a later non-fixed, non-pinned operation stays
+// direct so z-order is never inverted.
+func (renderer *Renderer) BeginViewportLayers(d *layout.Display, gen uint64, specs []LayerSpec, pinZ int) []image.Rectangle {
+	return renderer.beginLayers(d, gen, specs, true, pinZ)
+}
+
+func (renderer *Renderer) beginLayers(d *layout.Display, gen uint64, specs []LayerSpec, compositeOnTop bool, pinZ int) []image.Rectangle {
 	store := &renderer.layers
 	store.mu.Lock()
 	defer store.mu.Unlock()
@@ -84,6 +97,7 @@ func (renderer *Renderer) BeginLayers(d *layout.Display, gen uint64, specs []Lay
 	store.damage = store.damage[:0]
 	store.topology = store.topology[:0]
 	store.frame.reset()
+	store.pruneChurnLocked()
 
 	if d == nil {
 		store.demoteAllLocked(layerReasonEnded)
@@ -110,6 +124,10 @@ func (renderer *Renderer) BeginLayers(d *layout.Display, gen uint64, specs []Lay
 		candidate, reason := resolveLayer(d, spec, gen, store.claimed, store.ranks, store.owners)
 		if reason != "" {
 			store.demote(reason)
+			continue
+		}
+		if compositeOnTop && !layerTopOrderSafe(d, &candidate, pinZ) {
+			store.demote(layerReasonCovered)
 			continue
 		}
 		if candidate.matrix.IsIdentity() && candidate.alpha == 1 && store.entries[candidate.key] == nil {
@@ -201,6 +219,7 @@ func (renderer *Renderer) DemoteLayers() []image.Rectangle {
 
 	store.resetFrameStats()
 	store.damage = store.damage[:0]
+	store.topology = store.topology[:0]
 	store.frame.reset()
 	store.demoteAllLocked(layerReasonEnded)
 
@@ -326,19 +345,36 @@ func (store *layerStore) getLocked(cand layerCandidate, keep map[layerKey]bool,
 		return old, false, true, ""
 	}
 
-	// A new box needs room. Evict the least recently used slot that this
-	// frame is not keeping.
-	for old == nil && (len(store.entries) >= layerMaxEntries || store.pixels+area > layerMaxPixels) {
+	// A new or resized box needs room. Evict the least recently used slot that
+	// this frame is not keeping, accounting for an existing layer's old pixels
+	// so growing an existing layer still honors layerMaxPixels.
+	oldArea := 0
+	if old != nil {
+		oldArea = old.Box.Dx() * old.Box.Dy()
+	}
+	for (old == nil && len(store.entries) >= layerMaxEntries) || store.pixels-oldArea+area > layerMaxPixels {
 		if !store.evictLRU(cand.key, keep) {
+			if old != nil {
+				store.addDamage(old.pose)
+				store.addTopology(old.pose)
+				store.pixels -= oldArea
+				old.Tex.Deallocate()
+				old.Valid = false
+				delete(store.entries, cand.key)
+			}
 			return nil, false, false, layerReasonPixelCap
 		}
 		old = store.entries[cand.key]
+		oldArea = 0
+		if old != nil {
+			oldArea = old.Box.Dx() * old.Box.Dy()
+		}
 	}
 
 	if old != nil {
 		store.addTopology(old.pose)
 		store.addTopology(cand.pose(d))
-		store.pixels -= old.Box.Dx() * old.Box.Dy()
+		store.pixels -= oldArea
 		old.Tex.Deallocate()
 		delete(store.entries, cand.key)
 	}
@@ -601,6 +637,14 @@ func (store *layerStore) snapshot() LayerStats {
 	return out
 }
 
+func (store *layerStore) pruneChurnLocked() {
+	for key, until := range store.churn {
+		if store.use >= until {
+			delete(store.churn, key)
+		}
+	}
+}
+
 func (store *layerStore) close() {
 	store.mu.Lock()
 	defer store.mu.Unlock()
@@ -612,6 +656,9 @@ func (store *layerStore) close() {
 	}
 	store.entries = nil
 	store.pixels = 0
+	store.churn = nil
+	store.damage = nil
+	store.topology = nil
 	store.frame.reset()
 	store.stats = LayerStats{}
 	store.reasons = nil

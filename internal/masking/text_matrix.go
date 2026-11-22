@@ -73,6 +73,8 @@ func quarterTurn(deg float32) (layout.Matrix2D, bool) {
 		return layout.Matrix2D{}, false
 	}
 	switch turn {
+	case 0:
+		return layout.IdentityMatrix(), true
 	case quarterTurnDeg:
 		return layout.Matrix2D{A: 0, B: 1, C: -1, D: 0}, true
 	case halfTurnDeg:

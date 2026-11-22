@@ -52,28 +52,13 @@ func (c *rasterCache) raster(key rasterKey, size image.Point, bake func(*ebiten.
 	c.order = append(c.order, key)
 	c.pixels += size.X * size.Y
 
-	for len(c.order) > rasterMaxEntries || c.pixels > rasterMaxTotalPixels {
-		victim := rasterKey{}
-		idx := -1
-		for i, candidate := range c.order {
-			if candidate == key {
-				continue
-			}
-			victim = candidate
-			idx = i
-			break
-		}
-		if idx < 0 {
-			// Only the entry being returned remains; keep it.
-			break
-		}
-
-		c.order = append(c.order[:idx], c.order[idx+1:]...)
+	c.order, c.pixels = lruEvict(c.order, len(c.order), rasterMaxEntries, c.pixels, rasterMaxTotalPixels, key, func(victim rasterKey) int {
 		evicted := c.entries[victim]
 		delete(c.entries, victim)
-		c.pixels -= evicted.Bounds().Dx() * evicted.Bounds().Dy()
+		px := evicted.Bounds().Dx() * evicted.Bounds().Dy()
 		evicted.Deallocate()
-	}
+		return px
+	})
 
 	return img
 }
@@ -81,13 +66,7 @@ func (c *rasterCache) raster(key rasterKey, size image.Point, bake func(*ebiten.
 // touch moves a hit key to the back of the order, so eviction drops the
 // least-recently-used entry first. The caller holds mu.
 func (c *rasterCache) touch(key rasterKey) {
-	for i, candidate := range c.order {
-		if candidate == key {
-			c.order = append(c.order[:i], c.order[i+1:]...)
-			c.order = append(c.order, key)
-			return
-		}
-	}
+	c.order = lruTouch(c.order, key)
 }
 
 // rasterKey names one cached vector rasterization. It holds everything that
@@ -150,21 +129,25 @@ var opaqueWhite = color.RGBA{
 	R: math.MaxUint8, G: math.MaxUint8, B: math.MaxUint8, A: math.MaxUint8,
 }
 
+// rasterSubpixelScale snaps sub-pixel raster offsets to 1/1024 px: fine enough
+// to preserve exact 8-bit pixel parity with uncached draws while absorbing
+// float32 translation drift so identical controls share one raster entry.
+const rasterSubpixelScale = 1024
+
+func quantizeRasterFrac(v float32) float32 {
+	return float32(math.Round(float64(v)*rasterSubpixelScale)) / rasterSubpixelScale
+}
+
 // blitRaster copies a baked white raster to dst at an integer origin and
 // applies the op's colour. An integer translation leaves every texel on its
 // center, so the copy is exact. Baking the shape as a white mask lets one
 // cached raster serve every colour, so a colour animation reuses it instead
 // of re-rasterizing the path each frame.
 func (renderer *Renderer) blitRaster(dst, img *ebiten.Image, left, top int, tint color.RGBA) {
-	if renderer == nil {
-		renderer = &defaultRenderer
-	}
-	opts := &renderer.drawOpts
-	opts.GeoM.Reset()
-	opts.ColorScale.Reset()
+	var opts ebiten.DrawImageOptions
 	opts.GeoM.Translate(float64(left), float64(top))
 	opts.ColorScale.ScaleWithColor(tint)
-	dst.DrawImage(img, opts)
+	dst.DrawImage(img, &opts)
 }
 
 func blitRaster(dst, img *ebiten.Image, left, top int, tint color.RGBA) {
@@ -188,8 +171,8 @@ func (renderer *Renderer) cachedRoundedFill(dst *ebiten.Image, op *layout.Displa
 		variant: rasterFill,
 		w:       w, h: h,
 		r:  r,
-		fx: x - float32(left),
-		fy: y - float32(top),
+		fx: quantizeRasterFrac(x - float32(left)),
+		fy: quantizeRasterFrac(y - float32(top)),
 	}
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
 		if renderer.fillRoundedNineSlice(img, key.fx, key.fy, w, h, r, opaqueWhite) {
@@ -238,8 +221,8 @@ func (renderer *Renderer) cachedStroke(dst *ebiten.Image, op *layout.DisplayOp, 
 		w:       w, h: h, width: width,
 		r:  radius4(rx),
 		ry: radius4(ry),
-		fx: x - float32(left),
-		fy: y - float32(top),
+		fx: quantizeRasterFrac(x - float32(left)),
+		fy: quantizeRasterFrac(y - float32(top)),
 	}
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
 		renderer.strokeRectNineSlice(img, key.fx, key.fy, w, h, width, key.mask, key.r, key.ry, opaqueWhite)

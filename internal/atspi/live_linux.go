@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/safego"
@@ -56,7 +57,7 @@ type liveBus struct {
 	originX       int
 	originY       int
 	parent        dbusRef
-	appID         int32
+	appID         atomic.Int32
 	lastTry       time.Time
 	failAt        time.Time
 	embedded      bool
@@ -415,7 +416,7 @@ func (b *liveBus) handleNoReplyCall(msg *dbusMsg) {
 	}
 	b.mu.Lock()
 	if b.view == view {
-		*view.appID = id
+		view.appID.Store(id)
 	}
 	b.mu.Unlock()
 }

@@ -51,8 +51,9 @@ func xformPointsBox(op *layout.DisplayOp) (l, t, r, b float64, ok bool) {
 		if bottom < top {
 			bottom = top
 		}
+		grow := textStrokePad(op)
 
-		return op.X, top, op.X + op.W, bottom, true
+		return op.X - grow, top - grow, op.X + op.W + grow, bottom + grow, true
 	case layout.DisplayOpLine:
 		x, y, w, h, width := op.PaintLineGeometry()
 		grow := math.Max(width, 1) / halfDiv
@@ -64,7 +65,7 @@ func xformPointsBox(op *layout.DisplayOp) (l, t, r, b float64, ok bool) {
 
 		return op.X - grow, op.Y - grow,
 			op.X + op.W + grow, op.Y + op.H + grow, true
-	case layout.DisplayOpFillRect:
+	case layout.DisplayOpFillRect, layout.DisplayOpImage:
 		return op.X, op.Y, op.X + op.W, op.Y + op.H, true
 	}
 
@@ -198,8 +199,8 @@ func (renderer *Renderer) fillRaster(op *layout.DisplayOp, x, y, w, h float32) (
 		variant: rasterFill,
 		w:       w, h: h,
 		r:  r,
-		fx: x - float32(left),
-		fy: y - float32(top),
+		fx: quantizeRasterFrac(x - float32(left)),
+		fy: quantizeRasterFrac(y - float32(top)),
 	}
 
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
@@ -243,8 +244,8 @@ func (renderer *Renderer) strokeRaster(op *layout.DisplayOp, x, y, w, h float32)
 		w:       w, h: h, width: width,
 		r:  radius4(rx),
 		ry: radius4(ry),
-		fx: x - float32(left),
-		fy: y - float32(top),
+		fx: quantizeRasterFrac(x - float32(left)),
+		fy: quantizeRasterFrac(y - float32(top)),
 	}
 
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
@@ -369,6 +370,11 @@ func (renderer *Renderer) drawXformText(dst *ebiten.Image, op *layout.DisplayOp,
 	}
 	shiftLocal(&geom, 0, -face.Metrics().HAscent)
 
+	renderer.drawXformTextStroke(dst, face, content, geom, op)
+	renderer.drawXformTextSpaced(dst, content, face, geom, op)
+}
+
+func (renderer *Renderer) drawXformTextSpaced(dst *ebiten.Image, content string, face *text.GoTextFace, geom ebiten.GeoM, op *layout.DisplayOp) {
 	spacing, gap := op.LetterSpacing*pxPerPt, op.TextAutospaceGap()*pxPerPt
 	if spacing == 0 && gap == 0 {
 		renderer.drawXformRun(dst, content, face, geom, op)
@@ -381,6 +387,31 @@ func (renderer *Renderer) drawXformText(dst *ebiten.Image, op *layout.DisplayOp,
 		shiftLocal(&at, offset, 0)
 		renderer.drawXformRun(dst, piece, face, at, op)
 	})
+}
+
+func (renderer *Renderer) drawXformTextStroke(dst *ebiten.Image, face *text.GoTextFace, content string, geom ebiten.GeoM, op *layout.DisplayOp) {
+	width, clr, ok := op.TextStroke()
+	if !ok {
+		return
+	}
+
+	stroked := *op
+	stroked.R, stroked.G, stroked.B = clr[0], clr[1], clr[2]
+
+	radius := width * pxPerPt / strokeHalfWidthDivisor
+	rings := []float64{radius}
+	if radius > wideStrokeRadius {
+		rings = append(rings, radius/innerRingDivisor)
+	}
+
+	for _, ring := range rings {
+		for step := range strokeRingPoints {
+			angle := 2 * math.Pi * float64(step) / strokeRingPoints
+			at := geom
+			shiftLocal(&at, ring*math.Cos(angle), ring*math.Sin(angle))
+			renderer.drawXformTextSpaced(dst, content, face, at, &stroked)
+		}
+	}
 }
 
 // drawXformRun draws one string at the text origin of geom. Fake bold strikes

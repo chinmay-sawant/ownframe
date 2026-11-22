@@ -4,11 +4,12 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 )
 
-// Transport timeouts bound slow servers. Proxy stays nil so a hostile
-// environment cannot route fetches elsewhere; call UseSystemProxy to
+// Transport timeouts bound slow servers. Proxy stays disabled by default so a
+// hostile environment cannot route fetches elsewhere; call UseSystemProxy to
 // opt into HTTP(S)_PROXY handling.
 const (
 	dialTimeout           = 10 * time.Second
@@ -19,12 +20,20 @@ const (
 	dialKeepAlive         = 30 * time.Second
 )
 
+func proxyFunc(req *http.Request) (*url.URL, error) {
+	if !useSystemProxy.Load() {
+		return nil, nil
+	}
+
+	return http.ProxyFromEnvironment(req)
+}
+
 // pinnedTransport builds a fresh transport with a validating dialer.
 // It never clones the shared global transport, so global tunables cannot
 // change fetch behavior.
 func pinnedTransport() *http.Transport {
 	return &http.Transport{
-		Proxy:                  nil,
+		Proxy:                  proxyFunc,
 		DialContext:            dialValidated,
 		TLSHandshakeTimeout:    tlsTimeout,
 		ResponseHeaderTimeout:  headerTimeout,
@@ -37,9 +46,7 @@ func pinnedTransport() *http.Transport {
 
 // UseSystemProxy opts into HTTP(S)_PROXY for callers behind a proxy.
 func UseSystemProxy() {
-	if t, ok := client.Transport.(*http.Transport); ok {
-		t.Proxy = http.ProxyFromEnvironment
-	}
+	useSystemProxy.Store(true)
 }
 
 // dialer bounds connection setup; the request context still wins first.

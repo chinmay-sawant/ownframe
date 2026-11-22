@@ -8,6 +8,7 @@ import (
 	"net"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -381,7 +382,7 @@ func noReplySetID(sender string, id int32) *dbusMsg {
 }
 
 func TestNoReplyExpectedRegistrySetUpdatesID(t *testing.T) {
-	var appID int32
+	var appID atomic.Int32
 	app := Application{
 		Name:     ApplicationName,
 		RootPath: accessibleRootPath,
@@ -395,13 +396,13 @@ func TestNoReplyExpectedRegistrySetUpdatesID(t *testing.T) {
 	}
 
 	bus.handleCall(noReplySetID(":1.7", 42))
-	if appID != 42 {
-		t.Fatalf("no-reply registry Set left Id at %d, want 42", appID)
+	if appID.Load() != 42 {
+		t.Fatalf("no-reply registry Set left Id at %d, want 42", appID.Load())
 	}
 }
 
 func TestNoReplyExpectedSetFromOtherPeerIgnored(t *testing.T) {
-	var appID int32
+	var appID atomic.Int32
 	app := Application{
 		Name:     ApplicationName,
 		RootPath: accessibleRootPath,
@@ -415,8 +416,8 @@ func TestNoReplyExpectedSetFromOtherPeerIgnored(t *testing.T) {
 	}
 
 	bus.handleCall(noReplySetID(":1.8", 42))
-	if appID != 0 {
-		t.Fatalf("no-reply Set from a non-registry peer changed Id to %d", appID)
+	if appID.Load() != 0 {
+		t.Fatalf("no-reply Set from a non-registry peer changed Id to %d", appID.Load())
 	}
 }
 
@@ -459,7 +460,7 @@ func TestMockDBusPreEmbedSetID(t *testing.T) {
 		t.Fatalf("NewLiveBus returned %T", bus)
 	}
 	lb.mu.Lock()
-	appID := lb.appID
+	appID := lb.appID.Load()
 	parent := lb.parent
 	lb.mu.Unlock()
 	if appID != 7 {

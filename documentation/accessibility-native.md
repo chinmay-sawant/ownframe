@@ -19,7 +19,9 @@ no TalkBack bridge.
 During the `v0.0.x` preview cycle, ownframe ships the Go accessibility snapshot
 (`page.Access().AccessibilityTree` and `page.Access().AccessibilityPerform`) and
 the live Linux AT-SPI bridge in `internal/atspi`. The bridge supports read,
-focus, activation, and `EditableText` for enabled text controls.
+focus, activation, and `EditableText` (`SetTextContents`, `InsertText`,
+`CopyText`, `CutText`, `DeleteText`, `PasteText`) for enabled non-password text
+controls.
 
 Windows UI Automation, macOS VoiceOver (`NSAccessibility`), and Android
 TalkBack remain unshipped. Ownframe will not make a general-purpose `v1.0`
@@ -109,8 +111,10 @@ The manual checklist:
   available actions on representative nodes.
 - Orca announces control names and roles as Tab moves focus, reads the email
   value, and does not read the password value.
-- Page changes update the native tree, and native actions update the page. The
-  second half is not implemented yet.
+- Page changes update the native tree, and Linux AT-SPI actions (`GrabFocus`,
+  supported `DoAction` entries, and `EditableText` on enabled non-password text
+  controls) update the page through the window loop. Windows UIA, macOS
+  VoiceOver, and Android TalkBack adapters remain unshipped.
 - Bounds stay correct after scrolling and resizing.
 - Password fields expose neither their value nor typed characters through the
   accessibility API.

@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"image"
 	"math"
+	"sync"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/backdrop"
@@ -15,16 +16,95 @@ var backdropBlurSource string
 
 type backdropFilter = backdrop.Filter
 
+// backdropState holds the lazily compiled backdrop blur shader and pooled
+// scratch GPU images owned by one Renderer.
+type backdropState struct {
+	mu      sync.Mutex
+	inited  bool
+	shader  *ebiten.Shader
+	err     error
+	scratch [3]*ebiten.Image
+	size    image.Point
+}
+
+func (b *backdropState) getShader() (*ebiten.Shader, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if !b.inited {
+		b.shader, b.err = ebiten.NewShader([]byte(backdropBlurSource))
+		b.inited = true
+	}
+	return b.shader, b.err
+}
+
+func (b *backdropState) acquireScratch(w, h int) (src, horiz, filt *ebiten.Image, ok bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.scratch[0] == nil || b.size.X < w || b.size.Y < h {
+		newW, newH := max(b.size.X, w), max(b.size.Y, h)
+		for i, img := range b.scratch {
+			if img != nil {
+				img.Deallocate()
+				b.scratch[i] = nil
+			}
+		}
+		opts := &ebiten.NewImageOptions{Unmanaged: true}
+		for i := range b.scratch {
+			b.scratch[i] = ebiten.NewImageWithOptions(image.Rect(0, 0, newW, newH), opts)
+		}
+		b.size = image.Pt(newW, newH)
+	}
+
+	if b.size.X == w && b.size.Y == h {
+		return b.scratch[0], b.scratch[1], b.scratch[2], true
+	}
+	sub := image.Rect(0, 0, w, h)
+	s0, ok0 := b.scratch[0].SubImage(sub).(*ebiten.Image)
+	s1, ok1 := b.scratch[1].SubImage(sub).(*ebiten.Image)
+	s2, ok2 := b.scratch[2].SubImage(sub).(*ebiten.Image)
+	if !ok0 || !ok1 || !ok2 {
+		return nil, nil, nil, false
+	}
+	return s0, s1, s2, true
+}
+
+func (b *backdropState) releaseScratch() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for i, img := range b.scratch {
+		if img != nil {
+			img.Deallocate()
+			b.scratch[i] = nil
+		}
+	}
+	b.size = image.Point{}
+}
+
+func (b *backdropState) close() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for i, img := range b.scratch {
+		if img != nil {
+			img.Deallocate()
+			b.scratch[i] = nil
+		}
+	}
+	b.size = image.Point{}
+	if b.shader != nil {
+		b.shader.Deallocate()
+		b.shader = nil
+	}
+	b.err = nil
+	b.inited = false
+}
+
 func parseBackdropFilter(value string) (backdropFilter, bool) {
 	return backdrop.Parse(value)
 }
 
 func (renderer *Renderer) backdropFilterShader() (*ebiten.Shader, error) {
-	renderer.backdropOnce.Do(func() {
-		shader, err := ebiten.NewShader([]byte(backdropBlurSource))
-		renderer.backdropShader, renderer.backdropErr = shader, err
-	})
-	return renderer.backdropShader, renderer.backdropErr
+	return renderer.backdrop.getShader()
 }
 
 func backdropFilterShader() (*ebiten.Shader, error) {
@@ -52,26 +132,20 @@ func (renderer *Renderer) applyBackdropFilter(
 		return
 	}
 
-	scale := display.PointsPerPixel * display.PixelPerPoint
-	if scale <= 0 || math.IsNaN(scale) || math.IsInf(scale, 0) {
-		scale = 1
-	}
-	radius := node.backdrop.BlurPx * scale
-	refraction := node.backdrop.RefractionPx * scale
+	radius := node.backdrop.BlurPx
+	refraction := node.backdrop.RefractionPx
 	pad := int(math.Ceil(radius+refraction)) + 1
 	sample := image.Rect(paintBox.Min.X-pad, paintBox.Min.Y-pad, paintBox.Max.X+pad, paintBox.Max.Y+pad).Intersect(dst.Bounds())
 	if sample.Empty() {
 		return
 	}
 
-	backdrop := ebiten.NewImage(sample.Dx(), sample.Dy())
-	defer backdrop.Deallocate()
-	horizontal := ebiten.NewImage(sample.Dx(), sample.Dy())
-	defer horizontal.Deallocate()
-	filtered := ebiten.NewImage(sample.Dx(), sample.Dy())
-	defer filtered.Deallocate()
+	backdrop, horizontal, filtered, ok := renderer.backdrop.acquireScratch(sample.Dx(), sample.Dy())
+	if !ok {
+		return
+	}
 
-	copyBackdrop := &ebiten.DrawImageOptions{}
+	copyBackdrop := &ebiten.DrawImageOptions{Blend: ebiten.BlendCopy}
 	copyBackdrop.GeoM.Translate(
 		float64(dst.Bounds().Min.X-sample.Min.X),
 		float64(dst.Bounds().Min.Y-sample.Min.Y),

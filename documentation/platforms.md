@@ -4,13 +4,15 @@ Target native hosts (currently in the `v0.0.x` preview cycle; no `v1.0` tag yet)
 are desktop `Run` (Linux, Windows, macOS) and Android `BindMobile`. That is a
 native window for an operator you control: one compiled Go process and an Ebiten
 window or Activity, no Chromium, no WebView. On Linux, Orca and Accerciser can
-read the page tree over AT-SPI; AT-SPI focus and activation reach the page
-through the window loop. Native text editing through AT-SPI is unsupported.
-NVDA, VoiceOver, and TalkBack cannot inspect it. Native does not mean OS widgets
-or a complete screen-reader adapter.
+read the page tree over AT-SPI; AT-SPI focus, activation, and `EditableText` for
+enabled non-password text controls reach the page through the window loop.
+NVDA, VoiceOver, and TalkBack cannot inspect it because Windows UIA, macOS
+VoiceOver, and Android TalkBack adapters are not shipped. Native does not mean
+OS widgets or a complete screen-reader adapter.
 
 `scripts/browser.sh` is a wasm canvas preview. `-web` / `Serve` is a loopback
-PNG debugger. iOS has no Xcode project and is not a planned `v1.0` target.
+browser preview and debugger (live HTML document with a `?dom=0` PNG shell), not
+a release host. iOS has no Xcode project and is not a planned `v1.0` target.
 
 ## Current (`v0.0.x`) vs planned (`v1.0`)
 
@@ -100,10 +102,13 @@ file-backed page reads its file once at startup; wasm has no watch
 ([hot-reload.md](hot-reload.md)). A panic is recovered but writes no report
 file ([crash.md](crash.md)). Idle park is off.
 
-## Serve PNG debugger
+## Serve web preview and debugger
 
-`Serve` serves the latest PNG and drives the page over HTTP. Start it with
-`-web` and change the address with `-addr`:
+`Serve` serves the live HTML document by default (with real form controls and a
+boot script that posts input back to Go), plus a `?dom=0` PNG fallback shell
+(`GET /frame.png`), and drives the page over HTTP. It is a loopback preview and
+debugger, not a release host. Start it with `-web` and change the address with
+`-addr`:
 
 ```
 go run ./examples/login -web
@@ -112,11 +117,16 @@ go run ./examples/login -web
 Every example has a default port; [examples/readme.md](../examples/readme.md)
 lists them all. login defaults to 8091, web to 8110, and platform to 8115.
 [web.md](web.md) has the routes, the click map, and what the mode drops. A
-file-backed page is polled before `GET /` and `GET /frame.png`, and the shell
-page refreshes the image while a watch or tick is active
-([hot-reload.md](hot-reload.md)). There is audio only in `Run`, no
-relayout when the browser tab resizes, and keys and wheel events arrive from
-the browser page. A handler panic becomes HTTP 500.
+file-backed page is polled before `GET /` and `GET /frame.png`. When the page
+registers a tick callback (`SetTick`), `Serve` runs a 60 Hz tick loop
+(`internal/web/tick_loop.go`), pushing snapshot updates and in-place tick
+patches over `/events` (with `/state` polling fallback) while a watch or tick is
+active ([hot-reload.md](hot-reload.md)). `Serve` creates the 48 kHz Ebiten audio
+context on the host machine and also serves `GET /audio` with `/state` playback
+metadata when a page publishes a clip with `SetAudio`
+(`internal/web/audio_http.go`). There is no clipboard route, no relayout when
+the browser tab resizes, and keys, clicks, form changes, and wheel events arrive
+from the browser page. A handler panic becomes HTTP 500.
 `Serve` writes no crash-report file.
 
 ## iOS
@@ -131,23 +141,26 @@ and App Store review. None of that is in this repo.
 
 ## Capability matrix
 
-| | Desktop `Run` | Android `BindMobile` | Wasm preview | `Serve` PNG debugger |
+| | Desktop `Run` | Android `BindMobile` | Wasm preview | `Serve` web preview/debugger |
 |---|---|---|---|---|
-| Input | pointer, keys, wheel ([pointer.md](pointer.md), [keys.md](keys.md)) | tap, Back, long press; see [android-app-creation.md](android-app-creation.md) | canvas pointer and keys | `POST /click`, `/type`, `/backspace` ([web.md](web.md)) |
+| Input | pointer, keys, wheel ([pointer.md](pointer.md), [keys.md](keys.md)) | tap, Back, long press; see [android-app-creation.md](android-app-creation.md) | canvas pointer and keys | `POST /click`, `/change`, `/key`, `/hover`, `/wheel`, plus `/type` and `/backspace` in PNG shell ([web.md](web.md)) |
 | Clipboard | X11, Windows, macOS+cgo; Wayland prefers `wl-copy`/`wl-paste`; if missing, X11 CLIPBOARD when DISPLAY is set; otherwise no-op/`ErrUnavailable` ([clipboard.md](clipboard.md)) | process memory (`internal/clipboard/clipboard_other.go`) | memory copy | none |
 | Files | desktop dialog (`internal/filepick`) | typed name; no file dialog. Telegram camera/gallery is app Java | typed name | typed name |
-| IME | Composer path with preedit; native IM unverified ([interaction.md](interaction.md)) | `exp/textinput` | canvas text | `/type` only |
-| A11y | Go snapshot plus an experimental live Linux AT-SPI bridge; Orca and Accerciser can inspect the window. No UIA, NSAccessibility, or TalkBack adapters ([accessibility.md](accessibility.md), [atspi.md](atspi.md)) | Go snapshot; no TalkBack | Go snapshot | snapshot on the page object; no AT |
+| IME | Composer path with preedit; native IM unverified ([interaction.md](interaction.md)) | `exp/textinput` | canvas text | browser input via `/change` (`/type` in PNG shell) |
+| A11y | Go snapshot plus an experimental live Linux AT-SPI bridge (read, focus, activation, and `EditableText` on enabled non-password text controls); Orca and Accerciser can inspect the window. No UIA, NSAccessibility, or TalkBack adapters ([accessibility.md](accessibility.md), [atspi.md](atspi.md)) | Go snapshot; no TalkBack | Go snapshot | snapshot on the page object; no AT |
 | Packaging | unsigned `scripts/package.sh` ([packaging.md](packaging.md)) | `scripts/android-release.sh` sideload APK; Play is not 1.0 ([play-store.md](play-store.md), [APPS.md](../examples/android-host/APPS.md)) | wasm zip preview | not a ship target |
 | Idle | desktop park after clean frames (`idle_supported.go`) | off (`idle_supported_other.go`) | off | none |
-| Tick | yes ([frames.md](frames.md)) | yes | yes | no |
-| Hot reload | file watch, 250 ms poll ([hot-reload.md](hot-reload.md)) | none; file read once | none; file read once | poll per `GET /` and `/frame.png` |
+| Tick | yes ([frames.md](frames.md)) | yes | yes | yes (about 60 Hz via `internal/web/tick_loop.go`, [web.md](web.md)) |
+| Hot reload | file watch, 250 ms poll ([hot-reload.md](hot-reload.md)) | none; file read once | none; file read once | poll per `GET /` and `/frame.png`, push over `/events` |
 | Crash | report file 0600 ([crash.md](crash.md)) | panic recover and file | recover, no file | handler 500, no file |
-| Resize | window drag relayouts ([window.md](window.md)) | rotation and split relayout | browser canvas resize | no; picture stays at `Page.Size()` |
+| Resize | window drag relayouts ([window.md](window.md)) | rotation and split relayout | browser canvas resize | no; Go layout stays at `Page.Size()` |
 
 Audio: `Run`, `BindMobile`, and `Serve` create the 48 kHz Ebiten audio context.
-In `-web` the sound comes out of this machine, not the browser tab
-([window.md](window.md), [features.md](features.md)). Drop: desktop
-and wasm canvas only ([drag-drop.md](drag-drop.md)). The window modes replay
-the display list or blit the fallback bitmap; `Serve` paints a PNG from the
-template source ([screen.md](screen.md)).
+In `-web`, Ebiten audio plays on the host machine, and a page can also publish a
+clip with `SetAudio` for browser playback via `GET /audio` and `/state`
+(`internal/web/audio_http.go`, [web.md](web.md), [window.md](window.md),
+[features.md](features.md)). Drop: desktop and wasm canvas only
+([drag-drop.md](drag-drop.md)). The window modes replay the display list or blit
+the fallback bitmap; `Serve` serves the live HTML document by default and paints
+a PNG from the template source for `GET /frame.png` and `?dom=0`
+([screen.md](screen.md)).

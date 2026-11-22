@@ -719,3 +719,180 @@ func TestViewportWarmupFollowsLargePageScroll(t *testing.T) {
 		t.Fatalf("warmup did not follow the viewport: band=%v area=%v", r, warmup.area)
 	}
 }
+
+// TestOffscreenDirtyTileExpandsSubRectPaint pins that a tile marked dirty while
+// offscreen expands a subsequent sub-rect damage repaint to the full tile
+// before marking the tile clean.
+func TestOffscreenDirtyTileExpandsSubRectPaint(t *testing.T) {
+	t.Parallel()
+
+	screen := &dirtyScreen{fakeScreen: &fakeScreen{width: 256, height: 256}}
+	screen.display = partialDisplay(256, 512)
+	screen.gen = 1
+	s := newDirtyShell(screen)
+	dst := partialBuf(256, 256)
+
+	// Frame 1 at scrollY=0: tile (0,0) paints and becomes clean; tile (0,1)
+	// sits offscreen and stays dirty.
+	s.drawReplayPartial(dst)
+	g := s.partial.tiles
+	if g == nil || !g.cleanAt(0, 0) || g.cleanAt(0, 1) {
+		t.Fatalf("unexpected initial tile clean state: (0,0)=%v (0,1)=%v", g.cleanAt(0, 0), g.cleanAt(0, 1))
+	}
+
+	// Scroll to row 1 and send a tiny 10x10 dirty rect inside dirty tile (0,1).
+	s.scrollY = 256
+	s.partial.scroll = image.Pt(0, 256)
+	screen.click(image.Rect(10, 266, 20, 276))
+	s.drawReplayPartial(dst)
+
+	if !g.cleanAt(0, 1) {
+		t.Fatal("tile (0,1) was not marked clean after paint")
+	}
+	wantFullTilePx := tileSize * tileSize
+	if s.partial.paintPx < wantFullTilePx {
+		t.Fatalf("paintPx = %d, want at least full tile %d when repainting previously dirty tile", s.partial.paintPx, wantFullTilePx)
+	}
+}
+
+// TestLayerDamageTriggersTileRepaintWhenPageDirtyEmpty verifies that tile-path
+// layerDamage triggers a repaint even when TakeDirtyRects reports ok == false.
+func TestLayerDamageTriggersTileRepaintWhenPageDirtyEmpty(t *testing.T) {
+	t.Parallel()
+
+	d := windowLayerDisplay()
+	app := &layerDirtyScreen{
+		dirtyScreen: &dirtyScreen{
+			fakeScreen: &fakeScreen{width: 100, height: 100},
+			display:    d,
+			gen:        1,
+			ok:         false,
+		},
+		specs: []replay.LayerSpec{{ElementID: "card", BoxIndex: 1, Matrix: windowLayerMatrix(2), Alpha: 1}},
+	}
+	s := newDirtyShell(app.dirtyScreen)
+	s.app = app
+	s.display = d
+	dst := partialBuf(100, 100)
+
+	// Frame 1: builds tile grid and promotes card.
+	s.drawReplayPartial(dst)
+	if !s.renderer.LayersActive(d) {
+		t.Fatal("card was not promoted on tile path")
+	}
+
+	// Frame 2: page reports NO dirty rects (ok == false), but layer moved!
+	app.ok = false
+	app.rects = nil
+	app.specs = []replay.LayerSpec{{ElementID: "card", BoxIndex: 1, Matrix: windowLayerMatrix(12), Alpha: 1}}
+	s.drawReplayPartial(dst)
+
+	if s.partial.mode != repaintRect {
+		t.Fatalf("mode = %v, want repaintRect when layerDamage is non-empty", s.partial.mode)
+	}
+	if s.partial.paints == 0 {
+		t.Fatal("layerDamage did not repaint any tile when TakeDirtyRects returned ok=false")
+	}
+}
+
+// TestLeavingViewportDemotesLayersAndClearsPromoted verifies that switching
+// away from the viewport layer-compositing path (to tile, backdrop, scaled, or
+// dropDisplayBuffers) demotes layers and clears SetPromotedLayers.
+func TestLeavingViewportDemotesLayersAndClearsPromoted(t *testing.T) {
+	t.Parallel()
+
+	makeViewportShell := func() (*shell, *promotedLayerScreen, *layout.Display, *ebiten.Image) {
+		d := windowLayerDisplay()
+		d.Height = 2000
+		app := &promotedLayerScreen{layerDirtyScreen: &layerDirtyScreen{
+			dirtyScreen: &dirtyScreen{
+				fakeScreen: &fakeScreen{width: 100, height: 100},
+				display:    d,
+				gen:        1,
+				ok:         false,
+			},
+			specs: []replay.LayerSpec{{ElementID: "card", BoxIndex: 1, Matrix: windowLayerMatrix(4), Alpha: 1}},
+		}}
+		s := newDirtyShell(app.dirtyScreen)
+		s.app = app
+		s.display = d
+		dst := partialBuf(100, 100)
+		s.drawReplayPartial(dst)
+		if !s.renderer.LayersActive(d) || len(app.promoted) != 1 || app.promoted[0] != "card" {
+			t.Fatalf("viewport setup failed: active=%v promoted=%v", s.renderer.LayersActive(d), app.promoted)
+		}
+		return s, app, d, dst
+	}
+
+	// 1. Leaving viewport via dropDisplayBuffers (used by zoom/fitted/bitmap/sticky).
+	s, app, d, _ := makeViewportShell()
+	s.dropDisplayBuffers()
+	if s.renderer.LayersActive(d) || len(app.promoted) != 0 {
+		t.Fatalf("dropDisplayBuffers kept stale layers/promoted: active=%v promoted=%v", s.renderer.LayersActive(d), app.promoted)
+	}
+
+	// 2. Leaving viewport -> tile path with no specs.
+	s, app, d, dst := makeViewportShell()
+	d.Height = 100
+	app.specs = nil
+	app.gen++
+	s.seq = app.gen
+	s.drawReplayPartial(dst)
+	if s.renderer.LayersActive(d) || len(app.promoted) != 0 {
+		t.Fatalf("viewport->tile kept stale layers/promoted: active=%v promoted=%v", s.renderer.LayersActive(d), app.promoted)
+	}
+
+	// 3. Leaving viewport -> backdrop-filter path.
+	s, app, d, dst = makeViewportShell()
+	d.Ops[1].SetBlendGroup(&layout.DisplayGroup{BackdropFilter: "blur(8px)"})
+	s.drawReplayPartial(dst)
+	if s.renderer.LayersActive(d) || len(app.promoted) != 0 {
+		t.Fatalf("viewport->backdrop kept stale layers/promoted: active=%v promoted=%v", s.renderer.LayersActive(d), app.promoted)
+	}
+
+	// 4. Leaving viewport -> zoomed scaled path via drawContent.
+	s, app, d, dst = makeViewportShell()
+	s.pageZoom = 1.5
+	s.drawContent(dst)
+	if s.renderer.LayersActive(d) || len(app.promoted) != 0 {
+		t.Fatalf("viewport->zoom kept stale layers/promoted: active=%v promoted=%v", s.renderer.LayersActive(d), app.promoted)
+	}
+}
+
+// TestViewportRejectsLayerCoveredByLaterStaticOp verifies end-to-end on the
+// viewport path that an animated element overlapped by a later static sibling
+// is not promoted above it and is not added to promoted IDs.
+func TestViewportRejectsLayerCoveredByLaterStaticOp(t *testing.T) {
+	t.Parallel()
+	const pt = 72.0 / 96.0
+
+	d := windowLayerDisplay()
+	d.Height = 2000
+	// Add a later static popover overlapping the card box (20,20)-(50,30).
+	d.Ops = append(d.Ops, layout.DisplayOp{
+		Kind: layout.DisplayOpFillRect, X: 25 * pt, Y: 18 * pt, W: 30 * pt, H: 20 * pt, G: 1, Alpha: 1,
+	})
+	d.Order = append(d.Order, len(d.Ops)-1)
+	d.OpOwners = append(d.OpOwners, 0)
+
+	app := &promotedLayerScreen{layerDirtyScreen: &layerDirtyScreen{
+		dirtyScreen: &dirtyScreen{
+			fakeScreen: &fakeScreen{width: 100, height: 100},
+			display:    d,
+			gen:        1,
+		},
+		specs: []replay.LayerSpec{{ElementID: "card", BoxIndex: 1, Matrix: windowLayerMatrix(2), Alpha: 1}},
+	}}
+	s := newDirtyShell(app.dirtyScreen)
+	s.app = app
+	s.display = d
+	dst := partialBuf(100, 100)
+
+	s.drawViewport(dst, d, &viewportTaker{})
+	if s.renderer.LayersActive(d) {
+		t.Fatal("viewport promoted a layer covered by a later static sibling")
+	}
+	if len(app.promoted) != 0 {
+		t.Fatalf("promoted = %v, want empty when layer is covered by later static op", app.promoted)
+	}
+}

@@ -115,7 +115,7 @@ var vizReadoutBlind = map[string]bool{
 //
 //nolint:gochecknoglobals // read-only property lookup table
 var vizLook = map[string]string{
-	"backdrop-filter":       "The translucent box looks the same as the control: the painter does not blur what is behind it.",
+	"backdrop-filter":       "The translucent box looks the same as the control: the generated sample `12px` is not a blur(<length>) function (the painter blurs valid blur(...) values).",
 	"filter":                "The white box and its text stay sharp: the painter does not apply blur().",
 	"scale":                 "The box keeps its size: the painter does not apply the percentage scale.",
 	"transform-box":         "The rect looks the same as the control; transform-box is accepted but changes nothing on this rect.",
@@ -123,8 +123,6 @@ var vizLook = map[string]string{
 	"background-color":      "The inner box looks the same as the control: the parent's amber shows through the transparent control and the inherited amber alike.",
 	"image-rendering":       "The picture matches the control (the painter scales the image with one filter either way); the engine's operation list differs.",
 	"mask-mode":             "The masked box looks the same as the control: alpha is already how a gradient mask is read.",
-	"object-fit":            "The picture matches the control (the painter stretches the image to the box whichever fit is set); the engine's operation list differs.",
-	"object-view-box":       "The picture matches the control (the painter ignores the view box crop); the engine's operation list differs.",
 	"clip-rule":             "The red rect is not clipped to the star in the control or the demo: the painter ignores the clipPath, so clip-rule has no shape to apply to.",
 }
 

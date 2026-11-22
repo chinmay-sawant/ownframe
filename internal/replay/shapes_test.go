@@ -682,3 +682,13 @@ func drawDirect(op *layout.DisplayOp, dst *ebiten.Image) {
 		strokeDirect(dst, op, 0, 0)
 	}
 }
+
+func TestQuantizeRasterFracSnapsToCornerGrid(t *testing.T) {
+	t.Parallel()
+
+	a := quantizeRasterFrac(0.5001)
+	b := quantizeRasterFrac(0.4999)
+	if a != b || a != 0.5 {
+		t.Fatalf("quantizeRasterFrac drift: a=%v b=%v, want both 0.5", a, b)
+	}
+}

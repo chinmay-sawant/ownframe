@@ -254,6 +254,15 @@ func gridBounds(op *layout.DisplayOp, ppt float64) image.Rectangle {
 	return box
 }
 
+// textStrokePad returns the point-space radius added around a text run by
+// -webkit-text-stroke, matching drawTextStroke.
+func textStrokePad(op *layout.DisplayOp) float64 {
+	if width, _, ok := op.TextStroke(); ok && width > 0 {
+		return width / strokeHalfWidthDivisor
+	}
+	return 0
+}
+
 // textBounds is the line box around a baseline. A text op carries its
 // baseline in Y, so the box starts one font ascent above it and ends one ink
 // descent below it, the same rule internal/frame uses to find a run.
@@ -264,7 +273,7 @@ func textBounds(op *layout.DisplayOp, ppt float64) image.Rectangle {
 		bottom = top
 	}
 
-	return boxBounds(op.X, top, op.W, bottom-top, 0, ppt)
+	return boxBounds(op.X, top, op.W, bottom-top, textStrokePad(op), ppt)
 }
 
 // fallbackAscentRatio estimates ascent from size without a face.

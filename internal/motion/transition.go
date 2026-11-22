@@ -140,6 +140,16 @@ func transitionPropertyList() []string {
 
 const maxCaptureScratchMap = 4096
 
+// resetScratchMap clears *m for reuse, or releases it when it grew past the
+// capture scratch cap (checked before clearing so peak growth is caught).
+func resetScratchMap[K comparable, V any](m *map[K]V, peak int) {
+	if len(*m) > maxCaptureScratchMap || peak > maxCaptureScratchMap {
+		*m = nil
+		return
+	}
+	clear(*m)
+}
+
 var (
 	allTransitionPropMask   = (uint64(1) << len(transitionProperties)) - 1
 	transitionPropertyIndex = func() map[string]uint {
@@ -414,10 +424,7 @@ func (r *Runtime) CaptureTransitionsScoped(previous, next *Display, roots []stri
 		}
 		scopeSet = r.capScope
 		defer func() {
-			clear(r.capScope)
-			if len(r.capScope) > maxCaptureScratchMap {
-				r.capScope = nil
-			}
+			resetScratchMap(&r.capScope, 0)
 		}()
 	}
 
@@ -462,27 +469,20 @@ func (r *Runtime) CaptureTransitionsScoped(previous, next *Display, roots []stri
 	}
 	aligned := alignedBoxes(previous.Boxes, next.Boxes)
 	var oldBoxes map[entryKey]boxRef
+	ordinalsPeak := 0
 	if !aligned {
 		if r.capOldBoxes == nil {
 			r.capOldBoxes = make(map[entryKey]boxRef, len(transitionIDs))
 		}
 		oldBoxes = r.capOldBoxes
 		indexBoxesInto(previous.Boxes, transitionIDs, oldBoxes, r.capOrdinals)
+		ordinalsPeak = len(r.capOrdinals)
 		clear(r.capOrdinals)
 	}
 	defer func() {
-		clear(r.capIDs)
-		clear(r.capOrdinals)
-		clear(r.capOldBoxes)
-		if len(r.capIDs) > maxCaptureScratchMap {
-			r.capIDs = nil
-		}
-		if len(r.capOrdinals) > maxCaptureScratchMap {
-			r.capOrdinals = nil
-		}
-		if len(r.capOldBoxes) > maxCaptureScratchMap {
-			r.capOldBoxes = nil
-		}
+		resetScratchMap(&r.capIDs, 0)
+		resetScratchMap(&r.capOrdinals, ordinalsPeak)
+		resetScratchMap(&r.capOldBoxes, 0)
 	}()
 
 	var out []TransitionCapture

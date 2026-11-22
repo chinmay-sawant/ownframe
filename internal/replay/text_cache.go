@@ -251,14 +251,7 @@ func (c *textRasterCache) lookup(key textRasterKey) (textRasterEntry, bool) {
 
 // touch moves key to the back of the eviction order. The caller holds mu.
 func (c *textRasterCache) touch(key textRasterKey) {
-	for i, candidate := range c.order {
-		if candidate == key {
-			c.order = append(c.order[:i], c.order[i+1:]...)
-			c.order = append(c.order, key)
-
-			return
-		}
-	}
+	c.order = lruTouch(c.order, key)
 }
 
 // raster returns the entry for key, running bake once while the key is new.
@@ -284,32 +277,20 @@ func (c *textRasterCache) raster(key textRasterKey, bake func() (textRasterEntry
 		c.pixels += entry.pixels()
 	}
 
-	for len(c.order) > textRunMaxEntries || c.pixels > textRunMaxPixels {
-		victim := c.order[0]
-		if victim == key {
-			// Only the entry being returned remains; keep it.
-			break
+	c.order, c.pixels = lruEvict(c.order, len(c.order), textRunMaxEntries, c.pixels, textRunMaxPixels, key, func(victim textRasterKey) int {
+		evicted, exists := c.entries[victim]
+		if !exists {
+			return 0
 		}
-
-		c.evict(victim)
-		c.order = c.order[1:]
-	}
+		px := evicted.pixels()
+		if evicted.img != nil {
+			evicted.img.Deallocate()
+		}
+		delete(c.entries, victim)
+		return px
+	})
 
 	return entry
-}
-
-// evict disposes one entry and forgets it. A declined entry has no image.
-func (c *textRasterCache) evict(key textRasterKey) {
-	entry, ok := c.entries[key]
-	if !ok {
-		return
-	}
-
-	c.pixels -= entry.pixels()
-	if entry.img != nil {
-		entry.img.Deallocate()
-	}
-	delete(c.entries, key)
 }
 
 // flush drops every raster and every remembered decline. Only the benchmark
