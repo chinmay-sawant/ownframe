@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"html"
 	"math/rand/v2"
 	"slices"
 	"strings"
@@ -177,8 +178,9 @@ func buildComboHoverDoc(head, baseStyle, hoverStyle string) string {
 	b.WriteString(`<style>#h0:hover{`)
 	b.WriteString(hoverStyle)
 	b.WriteString(`}</style><div class="pgrid">`)
+	escaped := html.EscapeString(baseStyle)
 	for i := range propBenchHoverNodes {
-		fmt.Fprintf(&b, `<div id="h%d" class="pitem" style="%s">item %d</div>`, i, baseStyle, i)
+		fmt.Fprintf(&b, `<div id="h%d" class="pitem" style="%s">item %d</div>`, i, escaped, i)
 	}
 	b.WriteString(`</div>`)
 

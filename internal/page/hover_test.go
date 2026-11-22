@@ -5,13 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 	"github.com/chinmay-sawant/ownframe/internal/render"
-	"reflect"
-	"strings"
-	"testing"
 )
 
 func TestHoverHandlerFallbackAndError(t *testing.T) {
@@ -1242,16 +1244,15 @@ func TestHoverEngineRefusedPatchesMatchFullLayout(t *testing.T) {
 	}
 }
 
-// TestHoverRootMarginMatchesFullLayout records an engine defect, not an
-// ownframe one: Blinkless accepts the patch for `#a:hover{margin-top:8px}`
-// on a flex item, keeps the item at its old y, and leaves the container 8px
-// short, where a full layout moves the item down and grows the container.
-// ownframe cannot see the change (css.Document exposes no computed style and
-// the patched root box does not move), so the fix belongs in the engine.
-// Remove the skip once the pinned Blinkless splices a root's own margin.
+// TestHoverRootMarginMatchesFullLayout pins the hovered root's own margin: a
+// patch for `#a:hover{margin-top:8px}` must equal a full layout, which moves
+// the item down and grows the container. The engine refuses the root-only
+// splice when a margin changes, so the page falls back to a full layout.
 func TestHoverRootMarginMatchesFullLayout(t *testing.T) {
-	t.Skip("blocked on Blinkless: RelayoutElement ignores the hovered root's own margin change")
-	assertHoverCyclesMatchFull(t, "margin-top:8px")
+	requireLocalBlinklessHoverFixes(t)
+	for _, rule := range []string{"margin-top:8px", "margin-bottom:8px", "margin-right:8px", "margin-block:8px"} {
+		t.Run(rule, func(t *testing.T) { assertHoverCyclesMatchFull(t, rule) })
+	}
 }
 
 // assertHoverCyclesMatchFull hovers #a and leaves it twice, on a page that
@@ -1289,5 +1290,69 @@ func assertHoverCyclesMatchFull(t *testing.T, rule string) {
 			}
 		}
 		assertSameDisplay(t, patched, full)
+	}
+}
+
+// TestHoverGroupedCardKeepsOpCount hovers a backdrop-filter card in and out
+// repeatedly. The patch replaces the card's group markers, so the display
+// keeps one steady operation count instead of growing a marker pair per hover.
+func TestHoverGroupedCardKeepsOpCount(t *testing.T) {
+	requireLocalBlinklessHoverFixes(t)
+	ctx := t.Context()
+	p, err := New(Config{
+		HTML: `<style>.g{display:flex;gap:4px;padding:4px}` +
+			`.i{width:84px;height:22px;box-sizing:border-box;background:#eee;color:#222}` +
+			`#a{backdrop-filter:blur(4px)}#a:hover{color:#c00}</style><div class="g">` +
+			`<div id="a" class="i">a</div><div id="b" class="i">b</div></div>`,
+		Width: 320, Height: 100, RetainState: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	var card Box
+	for _, b := range p.Boxes() {
+		if b.ID == "a" {
+			card = b
+			break
+		}
+	}
+	if card.ID == "" {
+		t.Fatal("missing card a")
+	}
+	steady := -1
+	before := p.Stats().HoverPatches
+	for i := range 20 {
+		x, y := card.X+card.W/2, card.Y+card.H/2
+		wantHover := "a"
+		if i%2 == 1 {
+			x, y = 300, 90
+			wantHover = ""
+		}
+		if err := p.Hover(ctx, x, y); err != nil {
+			t.Fatal(err)
+		}
+		if p.HoverID() != wantHover {
+			t.Fatalf("hover %d: target = %q, want %q", i, p.HoverID(), wantHover)
+		}
+		n := len(p.Display().Ops)
+		if steady < 0 {
+			steady = n
+		} else if n != steady {
+			t.Fatalf("hover %d: %d ops, want the steady %d", i, n, steady)
+		}
+	}
+	if got := p.Stats().HoverPatches - before; got != 20 {
+		t.Fatalf("hover patches = %d, want 20", got)
+	}
+}
+
+func requireLocalBlinklessHoverFixes(t *testing.T) {
+	t.Helper()
+	// Remove this guard once both module pins include the Blinkless hover fixes.
+	if os.Getenv("OWNFRAME_TEST_LOCAL_BLINKLESS") != "1" {
+		t.Skip("requires the Blinkless hover fixes; use the local replacement and set OWNFRAME_TEST_LOCAL_BLINKLESS=1")
 	}
 }

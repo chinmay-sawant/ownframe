@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"html"
 	"math"
 	"os"
 	"regexp"
@@ -594,9 +595,12 @@ func buildUniformScaleDoc(head, styleDecl string, count int) string {
 	var b strings.Builder
 	b.WriteString(head)
 	b.WriteString(`<div class="pgrid">`)
+	// A value such as `"liga" 0` carries double quotes that would end the
+	// attribute and drop the declaration, so the attribute value is escaped.
+	escaped := html.EscapeString(styleDecl)
 	for i := range count {
 		if styleDecl != "" {
-			fmt.Fprintf(&b, `<div id="s%d" class="pitem" style="%s">cell %d</div>`, i, styleDecl, i)
+			fmt.Fprintf(&b, `<div id="s%d" class="pitem" style="%s">cell %d</div>`, i, escaped, i)
 		} else {
 			fmt.Fprintf(&b, `<div id="s%d" class="pitem">cell %d</div>`, i, i)
 		}
@@ -827,5 +831,29 @@ func TestPropPerfEngineErrorKeepsPhases(t *testing.T) {
 	}
 	if row.Scale64NS == 0 && row.PhaseErrors["scale64"] == "" {
 		t.Fatal("scale64 phase neither ran nor recorded an error")
+	}
+}
+
+// TestUniformScaleDocKeepsQuotedValues pins the attribute escaping: a feature
+// list with double quotes must reach the engine on every box instead of ending
+// the style attribute.
+func TestUniformScaleDocKeepsQuotedValues(t *testing.T) {
+	t.Parallel()
+	doc := buildUniformScaleDoc(propBenchHead(), `font-feature-settings:"liga" 0;`, 2)
+	p, err := newBenchPage(doc, propBenchWidth, propBenchHeight, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	found := 0
+	for _, op := range p.Probe().Display().Ops {
+		if op.Text != "" && op.FontFeatures() != "" {
+			found++
+		}
+	}
+	if found < 2 {
+		t.Fatalf("%d text runs carry the feature list, want one per box", found)
 	}
 }
