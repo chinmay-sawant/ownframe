@@ -554,7 +554,7 @@ func syncForm(p *Page, body string) string {
 	// compare runs only when the frame is not already known clean. Reordering
 	// !dirty before the compare also skips the memcmp on dirty frames, where
 	// the fast path is impossible anyway.
-	cleanExec := p.tplProbeHas && p.execSkipped
+	cleanExec := p.execSkipped && p.nav.Current().Execute
 	if snap.source != "" && !snap.dirty && (cleanExec || body == snap.lastSync) {
 		c, hasFocus := snap.live[snap.focusID]
 		if !hasFocus || !form.CanEdit(c) {

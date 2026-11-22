@@ -55,11 +55,6 @@ var (
 type Page struct {
 	title string
 	tpl   *template.Template
-	// staticSource marks the current nav entry as a builder document, whose
-	// envelope proves it carries no template action. Such a page keeps tpl
-	// nil: the redraw path returns nav.Current instead of parsing or
-	// executing it, and a Load of any other source parses again.
-	staticSource bool
 	// dataMu guards data and the form-sync handoff below it. SetData
 	// takes it to publish new data; the redraw path takes it to run the
 	// template (shared) and to check, merge, and store the sync flags
@@ -133,6 +128,7 @@ type Page struct {
 	disableWheelZoom bool
 	disableKeyZoom   bool
 	watch            *watchState
+	watchStaticHTML  bool
 	dirty            dirty.Tracker
 	lastPatch        DisplayPatch
 	// painted is the display the host last took damage for. A redraw that
@@ -163,7 +159,7 @@ type Page struct {
 	audio        audioSlot // web preview clip; lock: audioSlot.mu
 }
 
-// New parses html as an html/template page. The source is trusted author
+// New loads HTML or parses an html/template page. Template source is trusted author
 // content: Go template actions in it may read fields and methods of the
 // data passed to SetData. ownframe does not sandbox template execution, so
 // never pass user-controlled or remote HTML.
@@ -182,26 +178,18 @@ func New(cfg Config) (*Page, error) {
 		}
 		return nil, sourceTooLarge(path, int64(len(source)))
 	}
-	if strings.TrimSpace(source) == "" {
-		return nil, ErrEmptyHTML
-	}
-	static := isBuilderDocument(source)
-	if !static {
-		if err := checkDOMLimits(source); err != nil {
-			return nil, err
-		}
+	if err := validateHTML(source); err != nil {
+		return nil, err
 	}
 	schemes, err := acceptedDeepLinkSchemes(cfg.DeepLinkSchemes)
 	if err != nil {
 		return nil, err
 	}
 	minW, minH := cfg.mins()
-	var tpl *template.Template
-	if !static {
-		tpl, err = template.New("page").Parse(source)
-		if err != nil {
-			return nil, err
-		}
+	entry := nav.Source(source, cfg.StaticHTML)
+	tpl, err := parseTemplate(entry)
+	if err != nil {
+		return nil, err
 	}
 	themeSrc, themeInfo, err := sourceTheme(cfg)
 	if err != nil {
@@ -211,16 +199,13 @@ func New(cfg Config) (*Page, error) {
 	if err != nil {
 		return nil, err
 	}
-	page := assemblePage(cfg, tpl, theme, themeSrc, source, htmlInfo, themeInfo, minW, minH, schemes)
-	if static {
-		setSourceTemplate(page, nil, true, false, false)
-	}
+	page := assemblePage(cfg, tpl, theme, themeSrc, entry, htmlInfo, themeInfo, minW, minH, schemes)
 	page.width, page.height = page.Clamp(cfg.Width, cfg.Height)
 	return page, nil
 }
 
 // assemblePage builds the Page shell; New clamps the size after it.
-func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc, source string, htmlInfo, themeInfo os.FileInfo, minW, minH int, schemes map[string]struct{}) *Page {
+func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc string, source nav.Entry, htmlInfo, themeInfo os.FileInfo, minW, minH int, schemes map[string]struct{}) *Page {
 	title := cfg.Title
 	if title == "" {
 		title = "ownframe"
@@ -248,7 +233,8 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		disableWheelZoom: cfg.DisableWheelZoom,
 		disableKeyZoom:   cfg.DisableKeyZoom,
 		scroll:           scroll.New(cfg.Scrollbar),
-		watch:            watchFor(cfg, []byte(source), htmlInfo, []byte(themeSrc), themeInfo),
+		watch:            watchFor(cfg, []byte(source.HTML), htmlInfo, []byte(themeSrc), themeInfo),
+		watchStaticHTML:  cfg.StaticHTML,
 		elements:         element.NewRegistry(),
 		formDirty:        true,
 	}
@@ -438,17 +424,8 @@ func (p *Page) PrepareMobile(ctx context.Context) error {
 	return PrepareMobile(ctx, p)
 }
 
-// ErrAdoptSource reports a source that cannot be adopted after a tree patch.
-var ErrAdoptSource = errors.New("page: adopted source is not a builder document")
-
-// AdoptPatchedSource records source as the current document after the caller
-// has patched the cached tree to match it. It never parses, executes a
-// template, or draws. The builder uses it after an incremental update so
-// Page.HTML and the rendered tree stay in step without paying a full rebuild.
-//
-// The source must be a builder document: the builder escapes delimiters, so it
-// carries no template actions and the patched tree is the whole truth. Any
-// other source is refused instead of silently diverging from a template.
+// AdoptPatchedSource records static HTML as the current document after the
+// caller has patched the cached tree to match it. It never parses or draws.
 func AdoptPatchedSource(p *Page, source string) error {
 	if p == nil {
 		return ErrNilPage
@@ -456,8 +433,8 @@ func AdoptPatchedSource(p *Page, source string) error {
 	if len(source) > MaxSourceSize {
 		return sourceTooLarge("html", int64(len(source)))
 	}
-	if !isBuilderDocument(source) {
-		return ErrAdoptSource
+	if strings.TrimSpace(source) == "" {
+		return ErrEmptyHTML
 	}
 
 	// One FNV-1a fold serves every consumer: nav stores this hash instead
@@ -466,7 +443,8 @@ func AdoptPatchedSource(p *Page, source string) error {
 	// redraw never folds the same bytes again.
 	hash := draw.HashString(source)
 
-	p.nav.RetargetHashed(source, hash)
+	p.nav.Retarget(nav.Entry{HTML: source, Hash: hash, Static: true})
+	p.tpl = nil
 	p.dataMu.Lock()
 	p.source = source
 	p.lastSyncBody = source
@@ -474,7 +452,6 @@ func AdoptPatchedSource(p *Page, source string) error {
 	p.syncClean = true
 	p.formDirty = false
 	p.dataMu.Unlock()
-	setSourceTemplate(p, nil, true, false, false)
 	noteSourceHashed(p, source, hash)
 	noteCacheSource(p)
 	rememberPatched(p, renderState(p))

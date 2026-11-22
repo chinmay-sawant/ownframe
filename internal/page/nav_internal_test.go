@@ -204,7 +204,7 @@ func TestHistoryRetargetIdenticalKeepsTemplate(t *testing.T) {
 	beforeCache := p.cache
 	beforeParses := p.stats.parses
 
-	if err := ReplaceHTML(ctx, p, first); err != nil {
+	if err := ReplaceHTML(ctx, p, first, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -223,7 +223,7 @@ func TestHistoryRetargetIdenticalKeepsTemplate(t *testing.T) {
 	navCacheMustHaveBox(t, p, "a")
 
 	second := `<div id="b">B</div>`
-	if err := ReplaceHTML(ctx, p, second); err != nil {
+	if err := ReplaceHTML(ctx, p, second, false); err != nil {
 		t.Fatal(err)
 	}
 

@@ -351,10 +351,9 @@ func TestViewportBufferStaysWindowSized(t *testing.T) {
 	app := &dirtyScreen{fakeScreen: &fakeScreen{width: 80, height: 60}, gen: 1}
 	app.display = partialDisplay(80, 37000)
 	s := newDirtyShell(app)
-	taker := &viewportTaker{}
 	dst := partialBuf(80, 60)
 	s.partial.tiles = newTileGrid(80, 100)
-	s.drawViewport(dst, app.display, taker)
+	s.drawContent(dst)
 	if got := s.viewport.buf.Bounds(); got != image.Rect(0, 0, 80, 180) {
 		t.Fatalf("buffer = %v", got)
 	}
@@ -362,23 +361,23 @@ func TestViewportBufferStaysWindowSized(t *testing.T) {
 		t.Fatal("content grid retained")
 	}
 	saved := s.viewport.buf
-	s.drawViewport(dst, app.display, taker)
+	s.drawContent(dst)
 	if s.viewport.buf != saved {
 		t.Fatal("idle frame reallocated")
 	}
 	s.scrollY = 2000
-	s.drawViewport(dst, app.display, taker)
+	s.drawContent(dst)
 	if s.viewport.area.Min.Y > 2000 || s.viewport.area.Max.Y < 2060 || s.viewport.buf != saved {
 		t.Fatal("scroll lost or replaced the buffer")
 	}
 	app.gen++
 	s.seq = app.gen
-	s.drawViewport(dst, app.display, taker)
+	s.drawContent(dst)
 	if s.viewport.key.generation != app.gen {
 		t.Fatal("generation did not invalidate")
 	}
-	if taker.takes != 4 {
-		t.Fatalf("takes = %d, want 4", taker.takes)
+	if app.takes != 4 {
+		t.Fatalf("takes = %d, want 4", app.takes)
 	}
 	s.disposeViewport()
 	if s.viewport.buf != nil || s.viewport.valid {
@@ -477,10 +476,10 @@ func TestViewportSpareRetainedAcrossScrollPause(t *testing.T) {
 		t.Fatal("spare missing after resuming scroll")
 	}
 
-	// dropDisplayBuffers explicitly deallocates spare.
-	s.dropDisplayBuffers()
+	// Leaving the viewport also deallocates its spare.
+	s.usePaintSurface(surfaceUnset)
 	if s.viewport.spare != nil || s.viewport.buf != nil {
-		t.Fatal("dropDisplayBuffers did not release viewport buffers")
+		t.Fatal("usePaintSurface did not release viewport buffers")
 	}
 }
 
@@ -797,7 +796,7 @@ func TestLayerDamageTriggersTileRepaintWhenPageDirtyEmpty(t *testing.T) {
 
 // TestLeavingViewportDemotesLayersAndClearsPromoted verifies that switching
 // away from the viewport layer-compositing path (to tile, backdrop, scaled, or
-// dropDisplayBuffers) demotes layers and clears SetPromotedLayers.
+// usePaintSurface) demotes layers and clears SetPromotedLayers.
 func TestLeavingViewportDemotesLayersAndClearsPromoted(t *testing.T) {
 	t.Parallel()
 
@@ -824,11 +823,11 @@ func TestLeavingViewportDemotesLayersAndClearsPromoted(t *testing.T) {
 		return s, app, d, dst
 	}
 
-	// 1. Leaving viewport via dropDisplayBuffers (used by zoom/fitted/bitmap/sticky).
+	// 1. Leaving viewport releases all its promoted layers.
 	s, app, d, _ := makeViewportShell()
-	s.dropDisplayBuffers()
+	s.usePaintSurface(surfaceUnset)
 	if s.renderer.LayersActive(d) || len(app.promoted) != 0 {
-		t.Fatalf("dropDisplayBuffers kept stale layers/promoted: active=%v promoted=%v", s.renderer.LayersActive(d), app.promoted)
+		t.Fatalf("usePaintSurface kept stale layers/promoted: active=%v promoted=%v", s.renderer.LayersActive(d), app.promoted)
 	}
 
 	// 2. Leaving viewport -> tile path with no specs.

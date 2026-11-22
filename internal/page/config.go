@@ -21,8 +21,11 @@ type Config struct {
 	HTML  string
 	// File reads the page source from disk at New and watches it. Setting
 	// File and HTML together is an error.
-	File  string
-	Theme string
+	File string
+	// StaticHTML renders HTML or File without executing Go template actions.
+	// Reloads of File use the same mode.
+	StaticHTML bool
+	Theme      string
 	// ThemeFile reads the theme stylesheet from disk and watches it.
 	ThemeFile string
 	// DisableHotReload turns the file watch off. It is ignored without File

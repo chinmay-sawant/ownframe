@@ -94,6 +94,7 @@ type shell struct {
 	cancel         context.CancelFunc
 	img            *ebiten.Image
 	scaleBuf       *ebiten.Image
+	surface        paintSurface
 	display        *layout.Display
 	viewportSticky bool
 	// drawSyncErr is a sync failure from Draw. Update reports it, because

@@ -104,14 +104,6 @@ func TestAssetResolverSandboxes(t *testing.T) {
 	}
 }
 
-// staticBuilderDocument wraps a fragment in the ui.Document envelope. The
-// page package cannot import ui (ui imports the root package, which imports
-// page), so the envelope pieces are spelled out here. The builder escapes
-// every brace it emits, so the result provably holds no template action.
-func staticBuilderDocument(body string) string {
-	return builderDocHead + "Static builder" + builderDocMid + body + builderDocTail
-}
-
 func staticSourcePage(t *testing.T) *Page {
 	t.Helper()
 
@@ -123,33 +115,31 @@ func staticSourcePage(t *testing.T) *Page {
 	return p
 }
 
-// TestBuilderDocumentSkipsTemplateParse proves a builder document loaded
-// through Load keeps no parsed template and redraws from its source while
+// TestStaticHTMLSkipsTemplateParse proves LoadHTML with StaticHTML
+// keeps no parsed template and redraws from its source while
 // form sync still reaches bound controls.
-func TestBuilderDocumentSkipsTemplateParse(t *testing.T) {
+func TestStaticHTMLSkipsTemplateParse(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 	p := staticSourcePage(t)
 
-	if p.tpl == nil || p.staticSource {
+	if p.tpl == nil || p.nav.Current().Static {
 		t.Fatal("hand-written page did not keep its parsed template")
 	}
 
-	source := staticBuilderDocument(
-		`<div id="root"><input id="email" type="text" data-bind="Email"><div id="label">Hello</div></div>`,
-	)
-	if err := p.Load(ctx, source); err != nil {
+	source := `<div id="root"><input id="email" type="text" data-bind="Email"><div id="label">Hello</div></div>`
+	if err := LoadHTML(ctx, p, source, true); err != nil {
 		t.Fatal(err)
 	}
 
-	if !p.staticSource {
-		t.Fatal("builder document did not set staticSource")
+	if !p.nav.Current().Static {
+		t.Fatal("LoadHTML did not record the static mode")
 	}
 	if p.tpl != nil {
 		t.Fatal("builder document parsed a template")
 	}
-	if p.tplProbeTpl != nil || p.tplProbeHas {
+	if p.nav.Current().Execute {
 		t.Fatal("builder document kept a template probe")
 	}
 	if p.HTML() != source {
@@ -165,16 +155,16 @@ func TestBuilderDocumentSkipsTemplateParse(t *testing.T) {
 		if err := p.Redraw(ctx); err != nil {
 			t.Fatalf("redraw %d: %v", i, err)
 		}
-		if p.tpl != nil || !p.staticSource {
+		if p.tpl != nil || !p.nav.Current().Static {
 			t.Fatalf("redraw %d changed the static source state", i)
 		}
 	}
 
 	// An identical Load reuses the static source with no parse.
-	if err := p.Load(ctx, source); err != nil {
+	if err := LoadHTML(ctx, p, source, true); err != nil {
 		t.Fatal(err)
 	}
-	if p.tpl != nil || !p.staticSource || p.tplProbeHas {
+	if p.tpl != nil || !p.nav.Current().Static || p.nav.Current().Execute {
 		t.Fatal("identical builder Load parsed a template")
 	}
 
@@ -195,21 +185,20 @@ func TestBuilderDocumentSkipsTemplateParse(t *testing.T) {
 	}
 }
 
-// TestNewBuilderDocumentSkipsTemplateParse proves the bootstrap path also
-// recognises the builder envelope, so a cold page never parses a template it
-// provably cannot execute.
-func TestNewBuilderDocumentSkipsTemplateParse(t *testing.T) {
+// TestNewStaticHTMLSkipsTemplateParse proves the bootstrap path also
+// uses the static source directly.
+func TestNewStaticHTMLSkipsTemplateParse(t *testing.T) {
 	t.Parallel()
 
-	source := staticBuilderDocument(`<div id="root">cold</div>`)
-	p, err := New(Config{HTML: source, Width: 640, Height: 480})
+	source := `<div id="root">cold</div>`
+	p, err := New(Config{HTML: source, StaticHTML: true, Width: 640, Height: 480})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.tpl != nil || !p.staticSource {
+	if p.tpl != nil || !p.nav.Current().Static {
 		t.Fatal("New parsed the builder document as a template")
 	}
-	if p.tplProbeTpl != nil || p.tplProbeHas {
+	if p.nav.Current().Execute {
 		t.Fatal("New kept a template probe for the builder document")
 	}
 	if err := p.Redraw(context.Background()); err != nil {
@@ -223,20 +212,20 @@ func TestNewBuilderDocumentSkipsTemplateParse(t *testing.T) {
 	}
 }
 
-// TestBuilderDocumentSwitchesToTemplate proves loading a template after a
+// TestStaticHTMLSwitchesToTemplate proves loading a template after a
 // builder document parses again and executes, history moves restore both
 // modes, and ReplaceHTML in either direction follows the source.
-func TestBuilderDocumentSwitchesToTemplate(t *testing.T) {
+func TestStaticHTMLSwitchesToTemplate(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 	p := staticSourcePage(t)
-	builder := staticBuilderDocument(`<div id="builder">builder</div>`)
+	builder := `<div id="builder">builder</div>`
 
-	if err := p.Load(ctx, builder); err != nil {
+	if err := LoadHTML(ctx, p, builder, true); err != nil {
 		t.Fatal(err)
 	}
-	if p.tpl != nil || !p.staticSource {
+	if p.tpl != nil || !p.nav.Current().Static {
 		t.Fatal("builder document did not stay static")
 	}
 
@@ -247,10 +236,10 @@ func TestBuilderDocumentSwitchesToTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if p.tpl == nil || p.staticSource {
+	if p.tpl == nil || p.nav.Current().Static {
 		t.Fatal("template after a builder document did not parse")
 	}
-	if !p.tplProbeHas || p.tplProbeTpl != p.tpl {
+	if !p.nav.Current().Execute {
 		t.Fatal("template after a builder document did not enable execution")
 	}
 	if got := bftBox(t, p, "out"); got != "Ada" {
@@ -271,7 +260,7 @@ func TestBuilderDocumentSwitchesToTemplate(t *testing.T) {
 	if err := p.Back(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if p.tpl != nil || !p.staticSource || !hasBox(p, "builder") {
+	if p.tpl != nil || !p.nav.Current().Static || !hasBox(p, "builder") {
 		t.Fatal("Back to a builder document did not restore the static source")
 	}
 
@@ -279,7 +268,7 @@ func TestBuilderDocumentSwitchesToTemplate(t *testing.T) {
 	if err := p.Forward(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if p.tpl == nil || p.staticSource {
+	if p.tpl == nil || p.nav.Current().Static {
 		t.Fatal("Forward to a template did not re-enable execution")
 	}
 	if got := bftBox(t, p, "out"); got != "Grace" {
@@ -287,18 +276,18 @@ func TestBuilderDocumentSwitchesToTemplate(t *testing.T) {
 	}
 
 	// ReplaceHTML in both directions follows the source type.
-	if err := ReplaceHTML(ctx, p, builder); err != nil {
+	if err := ReplaceHTML(ctx, p, builder, true); err != nil {
 		t.Fatal(err)
 	}
-	if p.tpl != nil || !p.staticSource {
+	if p.tpl != nil || !p.nav.Current().Static {
 		t.Fatal("ReplaceHTML with a builder document parsed a template")
 	}
 
 	replaced := `<p id="out">{{.Name}}!</p>`
-	if err := ReplaceHTML(ctx, p, replaced); err != nil {
+	if err := ReplaceHTML(ctx, p, replaced, false); err != nil {
 		t.Fatal(err)
 	}
-	if p.tpl == nil || p.staticSource {
+	if p.tpl == nil || p.nav.Current().Static {
 		t.Fatal("ReplaceHTML with a template did not parse")
 	}
 	if got := bftBox(t, p, "out"); got != "Grace!" {

@@ -66,7 +66,7 @@ func (p *Page) hostControls() windowHost {
 
 const MaxSourceSize = page.MaxSourceSize
 
-// New parses html as an html/template page.
+// New parses HTML as a Go template unless cfg.StaticHTML is set.
 func New(cfg Config) (*Page, error) {
 	return wrapPage(page.New(cfg))
 }

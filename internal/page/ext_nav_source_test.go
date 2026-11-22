@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/internal/page"
-	"github.com/chinmay-sawant/ownframe/internal/page/nav"
 	"github.com/chinmay-sawant/ownframe/ui"
 	"image/png"
 	"os"
@@ -106,7 +105,7 @@ func TestNavSeamIdenticalSharesTemplate(t *testing.T) {
 	}
 	same("identical Load")
 
-	if err := page.ReplaceHTML(ctx, p, first); err != nil {
+	if err := page.ReplaceHTML(ctx, p, first, false); err != nil {
 		t.Fatal(err)
 	}
 	same("identical ReplaceHTML")
@@ -154,7 +153,7 @@ func TestNavSeamIdenticalSharesTemplate(t *testing.T) {
 	}
 	parses, cascades = p.Stats().Parses, p.Stats().Cascades
 
-	if err := page.ReplaceHTML(ctx, p, third); err != nil {
+	if err := page.ReplaceHTML(ctx, p, third, false); err != nil {
 		t.Fatal(err)
 	}
 	if p.HTML() != third {
@@ -165,68 +164,16 @@ func TestNavSeamIdenticalSharesTemplate(t *testing.T) {
 			parses, got.Parses, cascades, got.Cascades)
 	}
 
-	if err := page.ReplaceHTML(ctx, p, third); err != nil {
+	if err := page.ReplaceHTML(ctx, p, third, false); err != nil {
 		t.Fatal(err)
 	}
 	parses, cascades = parses+1, cascades+1
 	same("identical ReplaceHTML after retarget")
 }
 
-// TestHistorySeamStoredHashes proves each history entry carries its own Scan
-// verdicts: the stored hash and delimiter flag follow Push, GoTo, and
-// Retarget, and the fused scan agrees with strings.Contains.
-func TestHistorySeamStoredHashes(t *testing.T) {
-	t.Parallel()
-
-	withDelim := `<div>{{.X}}</div>`
-	plain := `<div id="a">A</div>`
-
-	for _, s := range []string{"", "{{", "{{{", "a{{b}}c", "{x}", plain, withDelim} {
-		_, delim := nav.Scan(s)
-		if delim != strings.Contains(s, "{{") {
-			t.Fatalf("Scan(%q) delim = %v, want %v", s, delim, !delim)
-		}
-		if nav.Hash(s) == 0 && s != "" {
-			t.Fatalf("Hash(%q) = 0", s)
-		}
-	}
-
-	h := nav.New(withDelim)
-	if h.Current() != withDelim || h.CurrentHash() != nav.Hash(withDelim) || !h.CurrentDelim() {
-		t.Fatal("New did not store the Scan verdicts")
-	}
-
-	h.Push(plain)
-	if h.Current() != plain || h.CurrentHash() != nav.Hash(plain) || h.CurrentDelim() {
-		t.Fatal("Push did not store the Scan verdicts")
-	}
-
-	h.Push(plain)
-	h.GoTo(0)
-	if h.Current() != withDelim || h.CurrentHash() != nav.Hash(withDelim) || !h.CurrentDelim() {
-		t.Fatal("GoTo did not restore the entry verdicts")
-	}
-	if h.HashAt(1) != nav.Hash(plain) || h.DelimAt(1) {
-		t.Fatal("HashAt/DelimAt mismatch on pushed entry")
-	}
-	if h.HashAt(2) != nav.Hash(plain) || h.DelimAt(2) {
-		t.Fatal("HashAt/DelimAt mismatch on duplicate entry")
-	}
-
-	h.GoTo(2)
-	replacement := `<span>{{.Y}}</span>`
-	h.Retarget(replacement)
-	if h.Current() != replacement || h.CurrentHash() != nav.Hash(replacement) || !h.CurrentDelim() {
-		t.Fatal("Retarget did not store the fresh Scan verdicts")
-	}
-	if !h.CanBack() || h.CanForward() {
-		t.Fatal("Retarget moved the history index")
-	}
-}
-
 // TestHistorySeamCorrectness proves Load, Back, and Forward keep the exact
 // history semantics: entries, forward drops, end errors, and the DOM guard
-// for documents outside the builder envelope.
+// for new documents.
 func TestHistorySeamCorrectness(t *testing.T) {
 	t.Parallel()
 

@@ -3,7 +3,6 @@ package reload
 import (
 	"crypto/sha256"
 	"fmt"
-	"html/template"
 	"os"
 )
 
@@ -14,13 +13,13 @@ type Files interface {
 }
 
 // Hooks is the reader and the install callbacks for one poll.
-// Oversize builds the page's source-too-large error. Template receives
-// a parsed page template. Theme receives the stylesheet bytes as text.
+// Oversize builds the page's source-too-large error. HTML and Theme
+// validate and install the source for the changed file.
 type Hooks struct {
 	Files    Files
 	Limit    int64
 	Oversize func(path string, size int64) error
-	Template func(*template.Template, string) error
+	HTML     func(string) error
 	Theme    func(string) error
 }
 
@@ -98,8 +97,8 @@ func (s *State) one(kind Kind, h Hooks) (bool, error) {
 	return s.apply(kind, data, info, h)
 }
 
-// apply parses HTML before the install callback. A parse or install
-// error keeps the bytes pending and leaves the last accepted file in place.
+// apply passes the source to the install callback. An error keeps the
+// bytes pending and leaves the last accepted file in place.
 func (s *State) apply(kind Kind, data []byte, info os.FileInfo, h Hooks) (bool, error) {
 	wp := s.at(kind)
 	if err := install(kind, data, h); err != nil {
@@ -115,12 +114,7 @@ func install(kind Kind, data []byte, h Hooks) error {
 	if kind != HTML {
 		return h.Theme(string(data))
 	}
-	src := string(data)
-	tpl, err := template.New("page").Parse(src)
-	if err != nil {
-		return err
-	}
-	return h.Template(tpl, src)
+	return h.HTML(string(data))
 }
 
 // noteStat reports a stat or read error once per distinct message.

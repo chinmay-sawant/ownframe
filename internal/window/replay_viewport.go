@@ -23,7 +23,6 @@ type viewportState struct {
 }
 
 func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTaker) {
-	s.dropContentBuffers()
 	bounds := dst.Bounds()
 	if bounds.Empty() {
 		s.viewport.blitOnly = false
@@ -117,18 +116,6 @@ func (s *shell) disposeViewport() {
 		s.viewport.buf.Deallocate()
 	}
 	s.viewport = viewportState{}
-}
-
-func (s *shell) dropContentBuffers() {
-	if s.partial.tiles != nil {
-		s.partial.tiles.dispose()
-		s.partial = partialState{}
-	}
-
-	if s.scaleBuf != nil {
-		s.scaleBuf.Deallocate()
-		s.scaleBuf = nil
-	}
 }
 
 // moveViewport keeps the already painted overlap when scrolling crosses the

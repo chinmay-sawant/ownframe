@@ -301,57 +301,6 @@ func (s *shell) frameSize() (int, int) {
 	return s.app.Size()
 }
 
-// drawFitted paints the whole page inside the window.
-// One scale serves both axes, and the page stays centered.
-func (s *shell) drawFitted(dst *ebiten.Image) {
-	scale, ox, oy := s.fit()
-	w, h := s.contentSize()
-	if w < 1 || h < 1 || scale <= 0 {
-		return
-	}
-
-	if s.display != nil {
-		s.blitFitted(dst, w, h, scale, ox, oy, func(buf *ebiten.Image) {
-			s.renderer.Draw(buf, s.display, 0, 0)
-		})
-
-		return
-	}
-
-	if s.img == nil {
-		return
-	}
-
-	s.blitFitted(dst, w, h, scale, ox, oy, func(buf *ebiten.Image) {
-		buf.DrawImage(s.img, nil)
-	})
-}
-
-func (s *shell) blitFitted(dst *ebiten.Image, w, h int, scale, ox, oy float64, paint func(*ebiten.Image)) {
-	if oversized(w, h) {
-		// No image can hold the page, so the fit drops the scale.
-		s.dropDisplayBuffers()
-		if s.display != nil {
-			s.directReplay(dst, s.display)
-		}
-
-		return
-	}
-
-	// The fitted frame reads neither the tile grid nor the viewport cache.
-	s.dropDisplayBuffers()
-	buf := s.ensureScaleBuf(w, h)
-
-	fillBackground(buf, s.pageBackground())
-	paint(buf)
-
-	var op ebiten.DrawImageOptions
-	op.Filter = ebiten.FilterLinear
-	op.GeoM.Scale(scale, scale)
-	op.GeoM.Translate(ox, oy)
-	dst.DrawImage(buf, &op)
-}
-
 func (s *shell) viewLocked() bool {
 	lock, ok := s.app.(host.ViewLock)
 
@@ -654,30 +603,6 @@ func (s *shell) syncStickyViewport() {
 	width, height := s.viewSize()
 	zoom := s.zoom()
 	observer.SetScrollViewport(float64(s.scrollX)/zoom, float64(s.scrollY)/zoom, float64(width)/zoom, float64(height)/zoom)
-}
-
-// Sticky paint changes with scroll, so its display bypasses cached page tiles.
-// Replaying the current viewport clears the previous sticky position as well
-// as the new one; ordinary pages retain their existing partial repaint path.
-func (s *shell) drawStickyContent(screen *ebiten.Image) {
-	s.syncStickyViewport()
-	width, height := s.viewSize()
-	zoom := s.zoom()
-	display := layout.StickyView(s.display, float64(s.scrollX)/zoom, float64(s.scrollY)/zoom, float64(width)/zoom, float64(height)/zoom)
-	if display != s.display {
-		defer s.renderer.EvictDisplay(display)
-	}
-	s.partial.live = false
-	s.dropDisplayBuffers()
-	screen.Fill(s.pageBackground())
-	if zoom == 1 && !s.stretched() {
-		s.directReplay(screen, display)
-		return
-	}
-	source := s.display
-	s.display = display
-	s.drawReplayScaled(screen)
-	s.display = source
 }
 
 // zoom returns the page zoom: the pinch scale times the keyboard or wheel

@@ -9,7 +9,6 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/page/form"
 	"github.com/chinmay-sawant/ownframe/internal/render"
-	"html/template"
 	"runtime"
 	"strings"
 	"time"
@@ -107,23 +106,16 @@ var _ draw.RedrawSurface = redrawSurface{}
 
 // execTemplate runs the trusted template, timing it when tracked.
 //
-// The "{{" probe is memoized to template-write time: the scan runs once
-// when p.tpl changes and the verdict is reused, so repeat frames pay no
-// scan. A clean form reuses the last merged body with no Execute. A dirty
-// frame executes into a pooled buffer and keeps one copy; its hash is taken
-// once in the sync path, which pairs it with the body for the next reuse.
+// A static source and a template with no actions use the stored HTML. A
+// clean form reuses the last merged body without running the template.
 func execTemplate(p *Page, track bool) (string, error) {
 	applyScrollWindow(p)
-	if p.tplProbeTpl != p.tpl {
-		p.tplProbeHas = strings.Contains(p.nav.Current(), "{{")
-		p.tplProbeTpl = p.tpl
-	}
-
-	if !p.tplProbeHas {
+	source := p.nav.Current()
+	if !source.Execute {
 		p.stats.lastTemplate = 0
 		p.execSkipped = true
 
-		return p.nav.Current(), nil
+		return source.HTML, nil
 	}
 
 	p.dataMu.RLock()
@@ -568,13 +560,6 @@ type renderTrack struct {
 	relayedFocus       string
 	relayedTheme       *css.Sheet
 	relayedImages      uint64
-	// tplProbeTpl and tplProbeHas memoize the template probe. The probe
-	// moves to template-write time: execTemplate rescans nav.Current for
-	// "{{" only when p.tpl changed, and reuses the verdict otherwise. A
-	// builder document keeps both at zero (staticSource), so execTemplate
-	// returns nav.Current with no scan and no Execute.
-	tplProbeTpl *template.Template
-	tplProbeHas bool
 	// execSkipped reports that execTemplate returned without executing:
 	// either the template is static or the form is clean and the cached
 	// body was reused. The SyncForm adapter consumes it.
@@ -754,20 +739,6 @@ func invalidateCache(p *Page) {
 	// Unknown sheets keep every state redraw until the next Redraw reports
 	// what the new sheets can match.
 	p.statePseudos = draw.UnknownPseudos()
-}
-
-// setSourceTemplate installs the active template or static-source marker and
-// updates the memoized delimiter probe in one place. When keepProbe is true
-// (an identical non-static template), the existing probe verdict stays intact.
-func setSourceTemplate(p *Page, tpl *template.Template, static, hasDelim, keepProbe bool) {
-	p.tpl = tpl
-	p.staticSource = static
-	if static {
-		p.tplProbeTpl, p.tplProbeHas = nil, false
-	} else if !keepProbe {
-		p.tplProbeTpl = tpl
-		p.tplProbeHas = hasDelim
-	}
 }
 
 // invalidateSourceState marks form sync and accessibility stale after a source
