@@ -210,9 +210,11 @@ linters:
         path: "examples/desktop-cat/media_post\\.go"
       # Intentional run-loop coordination: the custom window chrome close
       # request is an atomic flag the desktop loop consumes on its next
-      # frame. One desktop window runs per process, so no registry is owed.
+      # frame, and a11ybridge holds the published accessibility snapshot
+      # and action performer for the single bound mobile page in the
+      # process. One window runs per process, so no registry is owed.
       - linters: [gochecknoglobals]
-        path: "internal/window/chrome\\.go"
+        path: "internal/(a11ybridge/a11ybridge|window/chrome)\\.go"
 
       # Windows drag keeps immutable System32 procedure bindings for the run.
       - linters: [gochecknoglobals]
