@@ -213,7 +213,7 @@ func buildVtables() {
 		})
 		unknown := []uintptr{qi, addRef, release}
 		simple := append(slices3(unknown),
-			guard(func(_ *comObj, p, _, _ uintptr) uintptr { putU32(p, 1); return sOK }), // ProviderOptions_ServerSideProvider
+			guard(func(_ *comObj, p, _, _ uintptr) uintptr { putU32(p, providerOptionsServerSide); return sOK }),
 			guard((*comObj).getPattern),
 			guard((*comObj).getProperty),
 			guard((*comObj).getHostProvider),

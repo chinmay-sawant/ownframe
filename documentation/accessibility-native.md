@@ -4,7 +4,8 @@ Currently (`v0.0.x`; no `v1.0` tag yet), ownframe does not ship a cross-platform
 screen-reader adapter. On Linux, the window registers a live AT-SPI application,
 so Accerciser and Orca can inspect it. On Windows (amd64 and arm64), the window
 answers UI Automation (see [Windows UI Automation](#windows-ui-automation)); that
-provider is a preview and has not been tried with NVDA or Narrator. VoiceOver
+provider is a preview. NVDA announces its controls (see the recorded validation
+below); Narrator and JAWS have not been tried. VoiceOver
 and TalkBack cannot inspect an ownframe window because the macOS VoiceOver and
 Android TalkBack adapters are not shipped.
 
@@ -125,7 +126,27 @@ refused before it reaches the page.
 Events: a changed document or tree shape raises a structure-changed
 (`ChildrenInvalidated`) event on the root. Name, value, toggle, enabled, and
 selected changes raise property-changed events, and a focus move raises
-`AutomationFocusChanged`. Raising is skipped while no client listens.
+`AutomationFocusChanged`, followed by an `EVENT_OBJECT_FOCUS` WinEvent for the
+clients that follow the focus that way. Raising is skipped while no client
+listens.
+
+Two details decide whether any event reaches a client, and getting either wrong
+drops every event without an error:
+
+- `get_ProviderOptions` must report `ProviderOptions_ServerSideProvider`
+  (`0x2`). The enum is `ClientSideProvider = 1`, `ServerSideProvider = 2`; a
+  provider hosted in the window it serves that reports `1` is treated as a
+  client-side one.
+- The window must answer `WM_GETOBJECT` for more than `UiaRootObjectId`. When
+  UI Automation delivers an event it sends object IDs from zero up, and
+  `UiaReturnRawElementProvider` resolves them. `OBJID_CLIENT` gets the MSAA
+  view of the same tree, which NVDA reads. Other negative IDs (title bar, scroll
+  bars) stay with the window.
+
+`internal/uia/live_events_windows_test.go` hosts the provider in a plain Win32
+window and keeps changing focus and names. Run it with `OWNFRAME_UIA_LIVE=1`
+while a UIA client listens; it isolates the provider from Ebiten.
+`go test -c` for `GOOS=windows`, then run the test binary on a desktop.
 
 Known limits:
 
@@ -150,13 +171,21 @@ from PowerShell):
   selected a radio button, and `SetFocus` focused a textbox.
 - The password field reported `IsPassword`, no patterns, and no value.
 - `SetValue` on a disabled field raised `ElementNotEnabledException`.
-- The provider calls to raise property events returned `S_OK` and listeners were
-  reported. The PowerShell client did not receive our property, structure, or
-  focus events in the runs I made, so event delivery is **not validated**.
-- Not run: NVDA, Narrator, Accessibility Insights, DPI above 100 percent checks,
+- Event delivery: with the two fixes above, a .NET UI Automation client
+  received the name-changed and focus-changed events of a standalone Win32
+  window hosting the provider (`live_events_windows_test.go`). Before them it
+  received none, although every raise call returned `S_OK`.
+- NVDA 2026.3 (debug log) on `examples/accessibility` announced the focused
+  controls as the focus moved with Tab: "Display name, edit, Ada", "Private
+  value, edit, protected" (the password text is not exposed), "Receive updates,
+  check box, checked", and "Email, radio button, checked".
+- The NVDA result was also heard by ear on a real desktop, not only read from
+  NVDA's log.
+- Not run: Narrator, JAWS, Accessibility Insights, DPI above 100 percent checks,
   multi-monitor bounds checks, and arm64 execution. The Go suite
-  (`go test ./internal/uia`) runs the portable layer only; the COM layer has no
-  automated test.
+  (`go test ./internal/uia`) runs the portable layer; the two regression tests
+  for the details above (`host_object_windows_test.go`) run on a Windows host,
+  and the COM layer has no other automated test.
 
 Run the portable tests with `go test -p 1 ./internal/uia`, and compile the
 Windows layer with `GOOS=windows go vet ./internal/uia ./internal/window`.

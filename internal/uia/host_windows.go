@@ -206,6 +206,10 @@ func (h *Host) raise(ch Change) {
 	if ch.Focus != "" {
 		if o := h.objFor(ch.Focus); o != nil {
 			procRaiseEvent.Call(o.slotAddr(slotSimple), eventFocusChanged)
+			// Clients that follow the focus through WinEvents, such as
+			// System.Windows.Automation and NVDA's MSAA path, then ask the
+			// window for it.
+			procNotifyWinEvent.Call(eventObjectFocus, h.hwnd, uintptr(uint32(objidClient&0xffffffff)), 0)
 		}
 	}
 }
@@ -313,6 +317,19 @@ func (h *Host) Close() {
 	}
 }
 
+// answersObject reports whether a WM_GETOBJECT request with this object ID is
+// UI Automation's. Besides the root (UiaRootObjectId), UI Automation sends IDs
+// from zero up when it delivers an event: the client's side asks the window
+// for the element behind the event, and UiaReturnRawElementProvider resolves
+// that ID to the right provider. A window that answers only the root leaves
+// those requests to the default window procedure, which cannot, so UI
+// Automation drops every event the window raises. OBJID_CLIENT gets the
+// MSAA view of the same tree, which clients such as NVDA read. Other negative
+// IDs (the title bar, the scroll bars) stay with the window.
+func answersObject(id int32) bool {
+	return id >= 0 || id == uiaRootObject || id == objidClient
+}
+
 func wndProc(hwnd, msg, wparam, lparam uintptr) (ret uintptr) {
 	hosts.RLock()
 	h := hosts.m[hwnd]
@@ -320,7 +337,7 @@ func wndProc(hwnd, msg, wparam, lparam uintptr) (ret uintptr) {
 	if h == nil {
 		return 0
 	}
-	if msg == wmGetObject && int32(lparam) == uiaRootObject && !h.isClosed() {
+	if msg == wmGetObject && answersObject(int32(lparam)) && !h.isClosed() {
 		defer func() {
 			if recover() != nil {
 				ret = 0

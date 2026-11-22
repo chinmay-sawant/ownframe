@@ -41,33 +41,42 @@ var (
 	procClientToScreen = user32.NewProc("ClientToScreen")
 	procGetClientRect  = user32.NewProc("GetClientRect")
 	procGetDpiForWnd   = user32.NewProc("GetDpiForWindow")
+	procNotifyWinEvent = user32.NewProc("NotifyWinEvent")
 )
 
 // HRESULT values the provider returns.
 const (
-	sOK            = 0
-	eNoInterface   = 0x80004002
-	eFail          = 0x80004005
-	ePointer       = 0x80004003
-	eNotImpl       = 0x80004001
-	eElementNoAvl  = 0x80040201
-	eElementNoEn   = 0x80040200
-	eNotSupported  = 0x80040204
-	hrTimeout      = 0x800705B4
-	vtEmpty        = 0
-	vtI4           = 3
-	vtBstr         = 8
-	vtBool         = 11
-	vtUnknown      = 13
-	variantTrue    = 0xFFFF
-	uiaRootObject  = -25
-	wmGetObject    = 0x003D
-	wmNCDestroy    = 0x0082
-	gwlpWndProc    = -4
-	glfwClassName  = "GLFW30"
-	maxPropEvents  = 64
-	uiaAppendRtID  = 3
-	structChildInv = 2
+	sOK           = 0
+	eNoInterface  = 0x80004002
+	eFail         = 0x80004005
+	ePointer      = 0x80004003
+	eNotImpl      = 0x80004001
+	eElementNoAvl = 0x80040201
+	eElementNoEn  = 0x80040200
+	eNotSupported = 0x80040204
+	hrTimeout     = 0x800705B4
+	vtEmpty       = 0
+	vtI4          = 3
+	vtBstr        = 8
+	vtBool        = 11
+	vtUnknown     = 13
+	variantTrue   = 0xFFFF
+	uiaRootObject = -25
+	objidClient   = -4
+	// eventObjectFocus is EVENT_OBJECT_FOCUS.
+	eventObjectFocus = 0x8005
+	// providerOptionsServerSide is ProviderOptions_ServerSideProvider. The
+	// enum is ClientSideProvider = 1, ServerSideProvider = 2; reporting 1
+	// from a provider hosted in the window it serves makes UI Automation
+	// treat it as a client-side one and deliver none of its events.
+	providerOptionsServerSide = 0x2
+	wmGetObject               = 0x003D
+	wmNCDestroy               = 0x0082
+	gwlpWndProc               = -4
+	glfwClassName             = "GLFW30"
+	maxPropEvents             = 64
+	uiaAppendRtID             = 3
+	structChildInv            = 2
 )
 
 // ptr turns an address handed to a callback into a pointer. The pointee is
