@@ -355,6 +355,15 @@ func (renderer *Renderer) drawXformText(dst *ebiten.Image, op *layout.DisplayOp,
 	content := layout.DisplayTransformText(op.Text, op.TextTransformValue())
 	geom := xformGeom(op, dx, dy)
 	if !op.XformSet {
+		// The run's map is the projection payload or a quarter-turn glyph
+		// rotation, pivoted on the baseline origin. op.Transform() only
+		// knows the payload, so take the linear part from the shared map.
+		if m, ok := textProjection(op); ok {
+			geom.SetElement(0, 0, m.A)
+			geom.SetElement(0, 1, m.C)
+			geom.SetElement(1, 0, m.B)
+			geom.SetElement(1, 1, m.D)
+		}
 		geom.SetElement(0, geomTransCol, op.X*pxPerPt+dx)
 		geom.SetElement(1, geomTransCol, op.Y*pxPerPt+dy)
 	}

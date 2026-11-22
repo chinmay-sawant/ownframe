@@ -3,6 +3,7 @@ package replay
 import (
 	"errors"
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"golang.org/x/image/font/sfnt"
@@ -236,16 +237,7 @@ func (renderer *Renderer) drawTextStroke(
 // internal/page/dirty compares Transform to diff a painted display against the
 // next one, so that bind would dirty every text run on each redraw.
 func textProjection(op *layout.DisplayOp) (layout.Matrix2D, bool) {
-	if op.XformSet || (op.Kind != layout.DisplayOpText && op.Kind != layout.DisplayOpBullet) {
-		return layout.Matrix2D{}, false
-	}
-	m := op.XformValue()
-	if m == (layout.Matrix2D{}) || m.IsIdentity() {
-		return layout.Matrix2D{}, false
-	}
-	m.E = op.X - m.A*op.X - m.C*op.Y
-	m.F = op.Y - m.B*op.X - m.D*op.Y
-	return m, true
+	return masking.TextMatrix(op)
 }
 
 // MaxUserFontBytes caps a user-supplied font at 2 MiB.

@@ -812,10 +812,19 @@ type transformStop struct {
 // rotate3DArgCount is the axis plus angle count of rotate3d().
 const rotate3DArgCount = 4
 
-// transformStops collects the keyframes that declare a transform, in sorted
-// order, with the easing that applies from each one.
-func transformStops(frames []Keyframe) []transformStop {
-	stops := make([]transformStop, 0, len(frames)+extraStops)
+// inlineTransformStops is the stop count sampleTransform keeps on the stack.
+// Keyframe lists longer than this, less the two padded endpoints, spill to
+// the heap.
+const inlineTransformStops = 8
+
+// appendTransformStops appends the keyframes that declare a transform, in
+// sorted order, with the easing that applies from each one, then brackets
+// them with the underlying none at 0% and 100%. A keyframe that omits
+// transform holds the underlying paint, which is the identity matrix, and a
+// synthetic endpoint uses the effect's own easing. The leading endpoint is
+// shifted in place, so a buffer with room never reallocates.
+func appendTransformStops(stops []transformStop, frames []Keyframe) []transformStop {
+	start := len(stops)
 	for _, frame := range frames {
 		if value, ok := frame.transformValue(); ok {
 			stops = append(stops, transformStop{
@@ -823,17 +832,14 @@ func transformStops(frames []Keyframe) []transformStop {
 			})
 		}
 	}
-
-	return stops
-}
-
-// padStops brackets the stops with the underlying none at 0% and 100%. A
-// keyframe that omits transform holds the underlying paint, which is the
-// identity matrix. A synthetic endpoint uses the effect's own easing.
-func padStops(stops []transformStop) []transformStop {
+	if len(stops) == start {
+		return stops
+	}
 	fallback := TransformValue{Decomposed: IdentityTransform()}
-	if stops[0].at > 0 {
-		stops = append([]transformStop{{at: 0, value: fallback}}, stops...)
+	if stops[start].at > 0 {
+		stops = append(stops, transformStop{})
+		copy(stops[start+1:], stops[start:len(stops)-1])
+		stops[start] = transformStop{at: 0, value: fallback}
 	}
 	if stops[len(stops)-1].at < 1 {
 		stops = append(stops, transformStop{at: 1, value: fallback})
@@ -846,13 +852,15 @@ func padStops(stops []transformStop) []transformStop {
 // function list, the parsed functions. A singular matrix endpoint has no
 // interpolation, so the interval steps to one endpoint at its midpoint: CSS
 // falls back to a discrete animation when a matrix cannot be decomposed. The
-// interval from keyframe i to i+1 uses keyframe i's timing function.
+// interval from keyframe i to i+1 uses keyframe i's timing function. It runs
+// on every animation tick, so the stop list lives on the stack instead of
+// being rebuilt on the heap per sample.
 func (e Effect) sampleTransform(at float64) (TransformValue, bool) {
-	stops := transformStops(e.Frames)
+	var buf [inlineTransformStops]transformStop
+	stops := appendTransformStops(buf[:0], e.Frames)
 	if len(stops) == 0 {
 		return TransformValue{}, false
 	}
-	stops = padStops(stops)
 	if at <= stops[0].at {
 		return stops[0].value, true
 	}

@@ -460,20 +460,28 @@ func recordPartialBounds(p *Page, changed int, rects []image.Rectangle, memo *di
 	}
 }
 
-// boxCaches holds one pageBoxes per page, keyed by page pointer and guarded
-// by its own mutex. setBoxes publishes into the entry; kidRect and
-// displayDeclarations read it; forgetBoxes evicts it. There is no page
-// close/teardown path in this file, so nothing calls forgetBoxes yet: a
-// future Page Close/teardown, and any test or bench helper that churns
-// pages, should call it when a page is discarded. Until that wiring lands,
-// entries live until the process exits; the proper home is a field on Page,
-// which needs a wider change.
-//
-//nolint:gochecknoglobals // reason: process-wide per-page box cache keyed by page pointer, guarded by its own mutex; entries are replaced wholesale by setBoxes, never mutated from another page.
-var boxCaches = struct {
-	sync.Mutex
-	byPage map[*Page]*pageBoxes
-}{byPage: map[*Page]*pageBoxes{}}
+// boxCache is the page-owned box cache: the lazy kid index and the motion
+// declaration verdict derived from the committed box list. It is allocated on
+// first use and dropped by forgetBoxes, so a discarded page takes its cache
+// with it to the collector. mu keeps the old process-wide cache's guarantee
+// that noteBoxes, kidRect, displayDeclarations, and forgetBoxes never race.
+type boxCache struct {
+	mu      sync.Mutex
+	entries *pageBoxes
+}
+
+// lockedBoxes returns the page's cache entry with the cache mutex held,
+// allocating it when create is set. The caller must call p.boxCache.mu.Unlock.
+// A nil entry (create false, nothing committed) answers like a page with no
+// committed boxes.
+func lockedBoxes(p *Page, create bool) *pageBoxes {
+	p.boxCache.mu.Lock()
+	if p.boxCache.entries == nil && create {
+		p.boxCache.entries = &pageBoxes{}
+	}
+
+	return p.boxCache.entries
+}
 
 // pageBoxes is the per-page state a commit derives from its box list: the
 // lazy parent-to-children index and the motion declaration verdict for the
@@ -603,36 +611,24 @@ func unionBoxes(boxes []Box) image.Rectangle {
 // still applies, so a commit pays no child-index build until a mark asks for a
 // subtree rect.
 func noteBoxes(p *Page, old, boxes []Box, sameIDs bool) {
-	boxCaches.Lock()
-	e := boxCaches.byPage[p]
-	if e == nil {
-		e = &pageBoxes{}
-		boxCaches.byPage[p] = e
-	}
+	e := lockedBoxes(p, true)
 	e.kid.note(old, boxes, sameIDs)
-	boxCaches.Unlock()
+	p.boxCache.mu.Unlock()
 }
 
 // forgetBoxes drops the page's box-cache entry, if any. It is a no-op on a
-// nil page or a page with no entry, and it takes the same boxCaches mutex
-// as noteBoxes, kidRect, and displayDeclarations, so it is safe to call
-// alongside a concurrent lookup. There is no close/teardown path in this
-// file, so nothing calls it yet: wire it into a future Page Close/teardown,
-// and into test or bench helpers that churn pages, to stop pinning each
-// discarded page (its pageBoxes, box list, and display verdict) until the
-// process exits. Lookup behavior is unchanged: a missing entry answers
-// like a page with no committed boxes (kidRect misses and the caller falls
-// back; displayDeclarations and the next noteBoxes rebuild the entry).
-// It is a method on *Page to sit beside setBoxes and displayDeclarations;
-// it is unexported, so ownframe.Page gains no new API until an explicit
-// delegation is added.
+// nil page or a page with no entry. invalidateCache calls it when the parsed
+// tree is discarded, so a source change does not keep the old box list alive
+// until the next commit. A missing entry answers like a page with no
+// committed boxes: kidRect misses and the caller falls back, and
+// displayDeclarations and the next noteBoxes rebuild the entry.
 func forgetBoxes(p *Page) {
 	if p == nil {
 		return
 	}
-	boxCaches.Lock()
-	defer boxCaches.Unlock()
-	delete(boxCaches.byPage, p)
+	p.boxCache.mu.Lock()
+	p.boxCache.entries = nil
+	p.boxCache.mu.Unlock()
 }
 
 // note records a commit. The built index survives when the id sequence and
@@ -670,11 +666,9 @@ func sameBoxList(a, b []Box) bool {
 // index's rects in place. ok is false when the page has no committed boxes or
 // the id is absent, and the caller falls back to the id's own box.
 func kidRect(p *Page, id string) (image.Rectangle, bool) {
-	boxCaches.Lock()
-	defer boxCaches.Unlock()
-
-	e, found := boxCaches.byPage[p]
-	if !found {
+	e := lockedBoxes(p, false)
+	defer p.boxCache.mu.Unlock()
+	if e == nil {
 		return image.Rectangle{}, false
 	}
 	k := &e.kid
@@ -700,14 +694,8 @@ func displayDeclarations(p *Page, d *Display) (animations, transitions bool) {
 	if d == nil {
 		return false, false
 	}
-	boxCaches.Lock()
-	defer boxCaches.Unlock()
-
-	e := boxCaches.byPage[p]
-	if e == nil {
-		e = &pageBoxes{}
-		boxCaches.byPage[p] = e
-	}
+	e := lockedBoxes(p, true)
+	defer p.boxCache.mu.Unlock()
 	if e.decls.display != d {
 		a, tr := false, false
 		for i := range d.Boxes {

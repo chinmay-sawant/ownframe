@@ -614,15 +614,14 @@ func keyFor(p *Page, state render.State) draw.Key {
 
 func unchanged(p *Page, state render.State) bool {
 	// A retained-state debt, or a retained flag the last commit did not lay
-	// out with, needs a fresh placement. So does a running animation or an
-	// in-flight transition, whose pose lives in the operations a publish
-	// would replace. A blink phase change repaints the caret, and a caret
-	// or anchor move does too, without a new layout key. Everything else
-	// the display shows is in the key.
+	// out with, needs a fresh placement. A blink phase change repaints the
+	// caret, and a caret or anchor move does too, without a new layout key.
+	// Everything else the display shows is in the key. Running motion is
+	// not a reason to rebuild: Tick samples each player into the committed
+	// operations in place, so the display already carries the current pose,
+	// and a rebuild from the same key would only lay out the same page and
+	// rebind the same players.
 	if p.restampRedraw || p.retainState != p.lastRetain {
-		return false
-	}
-	if p.motion != nil && p.motion.Active() {
 		return false
 	}
 	if currentCaretPaint(p) != p.lastCaret {

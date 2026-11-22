@@ -19,7 +19,6 @@ import (
 	"html/template"
 	"image"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -66,7 +65,11 @@ type Page struct {
 	// takes it to publish new data; the redraw path takes it to run the
 	// template (shared) and to check, merge, and store the sync flags
 	// (exclusive), so a concurrent SetData never races a Redraw.
-	dataMu        sync.RWMutex
+	dataMu sync.RWMutex
+	// boxCache holds the lazy kid index and motion declaration verdict for
+	// the committed box list (dirty.go). It lives on the page so a
+	// discarded page releases it with everything else.
+	boxCache      boxCache
 	data          any
 	theme         *css.Sheet
 	themeSrc      string
@@ -253,12 +256,6 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 	}
 	p.surf = redrawSurface{p}
 	p.imageResolver = func(src string) ([]byte, error) { return imageBytes(p, src) }
-	// Evict the per-page box-cache entry when the page is collected. Benches
-	// and apps that churn pages (e.g. a fresh page per cold build) otherwise
-	// pin every discarded page through the boxCaches map key until the
-	// process exits. The finalizer only deletes the map entry; lookup
-	// callers already treat a missing entry as a page with no boxes.
-	runtime.SetFinalizer(p, func(q *Page) { forgetBoxes(q) })
 	return p
 }
 

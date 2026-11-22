@@ -1802,12 +1802,14 @@ func TestRedrawRebindsCSSAnimationWithPhase(t *testing.T) {
 		t.Fatalf("the animation did not advance before the redraw: X = %v", before)
 	}
 
+	// A real input change rebuilds the display and rebinds the players.
 	gen := p.Generation()
+	p.SetSize(220, 100)
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
 	if p.Generation() == gen {
-		t.Fatal("Redraw did not bump the generation")
+		t.Fatal("a resized Redraw did not bump the generation")
 	}
 
 	if err := p.Tick(ctx); err != nil {
@@ -1818,6 +1820,59 @@ func TestRedrawRebindsCSSAnimationWithPhase(t *testing.T) {
 	}
 	if got := p.Motion().Rebinds; got == 0 {
 		t.Fatal("the redraw did not rebind the players")
+	}
+}
+
+// TestIdenticalRedrawKeepsAnimatedFrame pins frame reuse during an active
+// animation: Tick already sampled the pose into the committed operations, so
+// a Redraw with the same input keeps that display, its pose, and the players'
+// phase instead of laying the page out again.
+func TestIdenticalRedrawKeepsAnimatedFrame(t *testing.T) {
+	t.Parallel()
+
+	p := newMotionPage(t, motionRunning)
+	index := motionTargetIndex(t, p)
+	ctx := context.Background()
+
+	if err := p.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(5 * time.Millisecond)
+	if err := p.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if p.Motion().Active == 0 {
+		t.Fatal("the fixture animation is not active")
+	}
+	before := motionTargetX(p, index)
+	if before <= 0 {
+		t.Fatalf("the animation did not advance before the redraw: X = %v", before)
+	}
+	gen, layouts, rebinds := p.Generation(), p.stats.fullLayouts, p.Motion().Rebinds
+	display := p.Display()
+
+	for range 3 {
+		if err := p.Redraw(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if p.Generation() != gen || p.stats.fullLayouts != layouts || p.Display() != display {
+		t.Fatalf("identical Redraw rebuilt the frame: generation %d->%d, layouts %d->%d",
+			gen, p.Generation(), layouts, p.stats.fullLayouts)
+	}
+	if got := p.Motion().Rebinds; got != rebinds {
+		t.Fatalf("identical Redraw rebound the players: rebinds %d->%d", rebinds, got)
+	}
+	if got := motionTargetX(p, index); got != before {
+		t.Fatalf("identical Redraw moved the pose: X = %v, want %v", got, before)
+	}
+
+	time.Sleep(5 * time.Millisecond)
+	if err := p.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if after := motionTargetX(p, index); after <= before {
+		t.Fatalf("the animation stopped after identical redraws: X = %v, want past %v", after, before)
 	}
 }
 
