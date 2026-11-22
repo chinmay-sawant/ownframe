@@ -10,6 +10,13 @@ android {
         versionCode 1
         versionName '0.0.2'
     }
+    buildTypes {
+        debug {
+            // A debug build installs beside a signed release build: Android
+            // refuses to replace an app with one signed by a different key.
+            applicationIdSuffix '.debug'
+        }
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

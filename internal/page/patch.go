@@ -166,7 +166,7 @@ func commitPatchedDisplay(p *Page, d *Display, roots []string, refreshA11y func(
 	bindMotion(p, prev, d)
 	bindTransitions(p, captures)
 	if prev != nil && prev != d {
-		prev.Release()
+		releaseDisplay(p, prev)
 	}
 	if refreshA11y != nil {
 		refreshA11y()
@@ -902,7 +902,7 @@ func listHoverPatched(p *Page, ctx context.Context,
 		patch, err := p.hoverPatch(ctx, styled, current, root, options)
 		if err != nil {
 			if current != nil && current != p.draw.Display {
-				current.Release()
+				render.ReleaseDisplay(current)
 			}
 			p.commitRoots = nil
 			return nil, &hoverPatchAttemptError{target: root, err: err}
@@ -910,14 +910,14 @@ func listHoverPatched(p *Page, ctx context.Context,
 
 		if patch == nil || patch.Display == nil {
 			if current != nil && current != p.draw.Display {
-				current.Release()
+				render.ReleaseDisplay(current)
 			}
 			p.commitRoots = nil
 			return nil, &hoverPatchAttemptError{target: root, err: errHoverPatchEmpty}
 		}
 
 		if current != nil && current != p.draw.Display && current != patch.Display {
-			current.Release()
+			render.ReleaseDisplay(current)
 		}
 		current = patch.Display
 	}

@@ -90,3 +90,21 @@ Android calls `Callbacks.onBackPressed` on the UI thread. Return `false` when
 the current screen cannot handle Back. Queue accepted requests and apply page
 changes from the app's `Page.SetTick` callback. Do not redraw the Go page from
 the Android callback.
+
+## Expose the page to TalkBack
+
+Attach `AccessibilityBridge` to the `EbitenView` and forward the two exported
+functions from `github.com/chinmay-sawant/ownframe/androidaccess`:
+
+```java
+a11y = AccessibilityBridge.attach(view, new AccessibilityBridge.Source() {
+    @Override public String tree() { return Mobile.accessibility(); }
+    @Override public String perform(long document, String node, int action, String value) {
+        return Mobile.accessibilityPerform(document, node, action, value);
+    }
+});
+```
+
+Call `a11y.close()` when the Activity is destroyed. In the Go `mobile` package,
+wrap `androidaccess.Tree()` and `androidaccess.Perform(document, node, action, value)`
+so `ebitenmobile bind` exports them on `Mobile`.

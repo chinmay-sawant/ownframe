@@ -99,7 +99,7 @@ func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
 	oldPainted := p.painted
 	p.painted = p.draw.Display
 	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
-		oldPainted.Release()
+		releaseDisplay(p, oldPainted)
 	}
 	maybeReleasePainted(p)
 
@@ -115,7 +115,7 @@ func (p *Page) TakeDirty() (image.Rectangle, bool) {
 	oldPainted := p.painted
 	p.painted = p.draw.Display
 	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
-		oldPainted.Release()
+		releaseDisplay(p, oldPainted)
 	}
 	maybeReleasePainted(p)
 	if !ok {
@@ -161,7 +161,10 @@ func maybeReleasePainted(p *Page) {
 		return
 	}
 	if p.painted != p.draw.Display {
-		p.painted.Release()
+		old := p.painted
+		p.painted = nil
+		releaseDisplay(p, old)
+		return
 	}
 	p.painted = nil
 }

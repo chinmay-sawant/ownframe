@@ -1217,7 +1217,7 @@ func TestDisplayReleaseOnCommit(t *testing.T) {
 	}
 
 	// first should have been released during commit; calling Release again is safe and idempotent.
-	first.Release()
+	render.ReleaseDisplay(first)
 }
 
 func TestFallbackDisplayReleaseOnCommit(t *testing.T) {
@@ -1242,8 +1242,11 @@ func TestFallbackDisplayReleaseOnCommit(t *testing.T) {
 	if first == nil {
 		t.Fatal("no fallback display after the first redraw")
 	}
-	if _, err := layout.RelayoutElement(ctx, p.cache.Styled(), first, "box", layout.Options{RetainState: true}); err != nil {
+	if patch, err := render.RelayoutElement(ctx, p.cache.Styled(), first, "box", layout.Options{RetainState: true}); err != nil {
 		t.Fatalf("first fallback is not patchable before release: %v", err)
+	} else if patch != nil && patch.Display != nil && patch.Display != first {
+		detachSharedDisplaySlices(patch.Display, first)
+		render.ReleaseDisplay(patch.Display)
 	}
 
 	p.TakeDirty()
@@ -1255,7 +1258,7 @@ func TestFallbackDisplayReleaseOnCommit(t *testing.T) {
 	if second == nil || second == first {
 		t.Fatal("expected a new fallback display after the second redraw")
 	}
-	if _, err := layout.RelayoutElement(ctx, p.cache.Styled(), first, "box", layout.Options{RetainState: true}); !errors.Is(err, layout.ErrNoRetainedState) {
+	if _, err := render.RelayoutElement(ctx, p.cache.Styled(), first, "box", layout.Options{RetainState: true}); !errors.Is(err, layout.ErrNoRetainedState) {
 		t.Fatalf("replaced fallback is still patchable: %v", err)
 	}
 }
