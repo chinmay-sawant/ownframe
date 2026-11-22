@@ -41,7 +41,7 @@ concurrency:
 # One-gate validation: a push whose message contains "[ci only=<job>]"
 # runs just that job, where <job> is one of test, lint, graphics, module,
 # site, test-race, sec, cross, secrets, lint-actions, reproducible,
-# examples-race, native-package, performance, or android-bind. The gates
+# examples-race, native-package, windows-arm64, performance, or android-bind. The gates
 # aggregator stays skipped on those runs and the single job reports for
 # itself. Example: git commit -m "[ci only=site] debug CDP startup".
 
@@ -482,6 +482,35 @@ jobs:
             dist/*-windows-*.zip
             dist/*-macos-*.zip
           if-no-files-found: error
+
+  # Windows on ARM64: the UI Automation provider keeps a thunk written in
+  # arm64 assembly (hit testing reads two doubles from floating-point
+  # registers), and nothing else builds or runs that file on real hardware.
+  windows-arm64:
+    if: >
+      github.event_name != 'pull_request' && (
+        github.event_name != 'push' ||
+        (contains(github.event.head_commit.message, '[ci only=') &&
+        contains(github.event.head_commit.message, '[ci only=windows-arm64]')) ||
+        (!contains(github.event.head_commit.message, '[ci only=') &&
+        github.ref == 'refs/heads/master')
+      )
+    runs-on: windows-11-arm
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.11"
+          cache: false
+      - run: go env GOOS GOARCH
+      - run: go vet -p 1 ./internal/uia ./internal/window
+      # Runs natively, so the arm64 assembly thunk and the COM layer execute.
+      - run: go test -p 1 -count=1 ./internal/uia ./internal/window
 
   performance:
     if: >

@@ -5,7 +5,6 @@ package uia
 import (
 	"context"
 	"errors"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -227,7 +226,7 @@ func buildVtables() {
 			guard((*comObj).getFragmentRoot),
 		)
 		root := append(slices3(unknown),
-			guard((*comObj).fromPoint),
+			hitThunkAddr(), // ElementProviderFromPoint: the x and y doubles need the assembly thunk
 			guard((*comObj).getFocus),
 		)
 		invoke := append(slices3(unknown), guard(func(o *comObj, _, _, _ uintptr) uintptr {
@@ -527,17 +526,19 @@ func (o *comObj) getFragmentRoot(out, _, _ uintptr) uintptr {
 	return sOK
 }
 
-// fromPoint cannot read its two double arguments: syscall callbacks only
-// receive integer registers, and the x64 and arm64 conventions pass doubles
-// in floating-point registers. It reports "no child here" so UIA falls back to
-// the window element, and writes the result through the one pointer it can
-// locate (the fourth integer-class argument on amd64, the first on arm64).
-func (o *comObj) fromPoint(a1, _, a3 uintptr) uintptr {
-	out := a3
-	if runtimeArm64 {
-		out = a1
+// fromPointAt answers ElementProviderFromPoint for the screen point (x, y).
+// It writes nothing but a null when no element is there, so UI Automation
+// falls back to the window itself.
+func (o *comObj) fromPointAt(x, y float64, out uintptr) uintptr {
+	if out == 0 {
+		return hr(ePointer)
 	}
 	putPtr(out, 0)
+	if id, ok := o.h.prov.ElementAt(x, y); ok {
+		if t := o.h.objFor(id); t != nil {
+			t.give(out, slotFragment)
+		}
+	}
 	return sOK
 }
 
@@ -566,6 +567,3 @@ func (o *comObj) getValue(out, _, _ uintptr) uintptr {
 	putPtr(out, allocBSTR(e.Value))
 	return sOK
 }
-
-// runtimeArm64 picks the argument slot fromPoint writes to.
-const runtimeArm64 = runtime.GOARCH == "arm64"

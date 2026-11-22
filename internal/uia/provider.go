@@ -321,6 +321,59 @@ func (p *Provider) Bounds(id host.AccessibilityNodeID) (Rect, bool, error) {
 	}, true, nil
 }
 
+// ElementAt returns the element under the screen point (x, y), in the pixels
+// Bounds uses. It returns the deepest element whose rectangle contains the
+// point, and the later one in document order when two at the same depth
+// overlap, as a later sibling paints over an earlier one. The root is never
+// returned: UI Automation then falls back to the window itself.
+func (p *Provider) ElementAt(x, y float64) (host.AccessibilityNodeID, bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.snap == nil || p.stopped {
+		return "", false
+	}
+
+	g := p.geom
+	best, bestDepth := host.AccessibilityNodeID(""), -1
+
+	for _, id := range p.snap.order {
+		e := p.snap.byID[id]
+		if id == p.snap.Root || !e.HasBounds {
+			continue
+		}
+
+		left := g.OriginX + e.Bounds.X*g.Scale
+		top := g.OriginY + e.Bounds.Y*g.Scale
+		right := left + math.Max(0, e.Bounds.W*g.Scale)
+		bottom := top + math.Max(0, e.Bounds.H*g.Scale)
+
+		if x < left || x >= right || y < top || y >= bottom {
+			continue
+		}
+
+		if depth := p.depthLocked(id); depth >= bestDepth {
+			best, bestDepth = id, depth
+		}
+	}
+
+	return best, best != ""
+}
+
+// depthLocked counts the ancestors of id. The caller holds p.mu.
+func (p *Provider) depthLocked(id host.AccessibilityNodeID) int {
+	depth := 0
+
+	for e := p.snap.byID[id]; e != nil && e.Parent != ""; e = p.snap.byID[e.Parent] {
+		depth++
+		if depth > len(p.snap.order) { // a cycle in a malformed tree
+			break
+		}
+	}
+
+	return depth
+}
+
 // SetFocus moves page focus to the element.
 func (p *Provider) SetFocus(id host.AccessibilityNodeID) error {
 	return p.run(id, func(e *Element) error {
