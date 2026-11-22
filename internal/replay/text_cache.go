@@ -3,6 +3,7 @@ package replay
 import (
 	"bytes"
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"golang.org/x/text/language"
@@ -17,6 +18,10 @@ type faceKey struct {
 	source   any
 	size     float64
 	language string
+	// features is the op's OpenType feature list. Ebiten keys its glyph
+	// cache on the face's features, so equal sources and sizes with different
+	// features need separate faces.
+	features string
 }
 
 // faceSourceCap bounds parsed font sources before a reset.
@@ -41,7 +46,7 @@ func (renderer *Renderer) textFace(op *layout.DisplayOp) *text.GoTextFace {
 	}
 
 	size := op.Size * pxPerPt
-	key := faceKey{source: op.Font, size: size, language: op.TextLanguage()}
+	key := faceKey{source: op.Font, size: size, language: op.TextLanguage(), features: op.FontFeatures()}
 
 	renderer.fonts.mu.RLock()
 	source := renderer.fonts.sources[op.Font]
@@ -76,6 +81,11 @@ func (renderer *Renderer) textFace(op *layout.DisplayOp) *text.GoTextFace {
 	}
 
 	face := &text.GoTextFace{Source: source, Size: size, Language: language.Make(key.language)}
+	for _, feature := range masking.ParseFontFeatures(key.features) {
+		if tag, err := text.ParseTag(feature.Tag); err == nil {
+			face.SetFeature(tag, feature.Value)
+		}
+	}
 	if len(renderer.fonts.faces) >= faceCap {
 		clear(renderer.fonts.faces)
 	}
@@ -102,6 +112,8 @@ func (renderer *Renderer) cachedTextRun(dst *ebiten.Image, op *layout.DisplayOp,
 		language: op.TextLanguage(),
 		size:     op.Size,
 		spacing:  op.LetterSpacing * pxPerPt,
+		gap:      op.TextAutospaceGap() * pxPerPt,
+		features: op.FontFeatures(),
 		fakeBold: layout.DisplayFakeBold(op),
 		fx:       textPhase(offX),
 		fy:       textPhase(offY),
@@ -214,6 +226,10 @@ type textRasterKey struct {
 	language string
 	size     float64
 	spacing  float64
+	// gap is the autospace advance at each ideograph and Latin boundary, in
+	// pixels; features is the op's feature list. Both change the baked run.
+	gap      float64
+	features string
 	fakeBold bool
 	fx, fy   float64
 }

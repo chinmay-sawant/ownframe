@@ -369,24 +369,18 @@ func (renderer *Renderer) drawXformText(dst *ebiten.Image, op *layout.DisplayOp,
 	}
 	shiftLocal(&geom, 0, -face.Metrics().HAscent)
 
-	if op.LetterSpacing == 0 {
+	spacing, gap := op.LetterSpacing*pxPerPt, op.TextAutospaceGap()*pxPerPt
+	if spacing == 0 && gap == 0 {
 		renderer.drawXformRun(dst, content, face, geom, op)
 
 		return
 	}
 
-	pen := 0.0
-
-	for i := 0; i < len(content); {
-		glyph, size := glyphAt(content, i)
-		i += size
+	walkRun(face, content, spacing, gap, func(piece string, offset float64) {
 		at := geom
-		shiftLocal(&at, pen, 0)
-		renderer.drawXformRun(dst, glyph, face, at, op)
-
-		width, _ := text.Measure(glyph, face, 0)
-		pen += width + op.LetterSpacing*pxPerPt
-	}
+		shiftLocal(&at, offset, 0)
+		renderer.drawXformRun(dst, piece, face, at, op)
+	})
 }
 
 // drawXformRun draws one string at the text origin of geom. Fake bold strikes

@@ -58,18 +58,61 @@ func (renderer *Renderer) drawText(dst *ebiten.Image, op *layout.DisplayOp, dx, 
 // has already moved up by the face ascent. A letter-spaced run is drawn glyph
 // by glyph with the extra advance.
 func (renderer *Renderer) drawTextRun(dst *ebiten.Image, face *text.GoTextFace, content string, x, y float64, op *layout.DisplayOp) {
-	if op.LetterSpacing == 0 {
+	spacing, gap := op.LetterSpacing*pxPerPt, op.TextAutospaceGap()*pxPerPt
+	if spacing == 0 && gap == 0 {
 		renderer.drawRun(dst, content, face, x, y, op)
 
 		return
 	}
 
+	walkRun(face, content, spacing, gap, func(piece string, offset float64) {
+		renderer.drawRun(dst, piece, face, x+offset, y, op)
+	})
+}
+
+// walkRun calls draw with each piece of a spaced run and its pen offset from
+// the run origin, in pixels. Letter spacing advances glyph by glyph. With no
+// letter spacing, text-autospace splits the run only at ideograph and Latin
+// boundaries, so kerning and ligatures survive inside each piece. gap is the
+// extra advance at a boundary, as layout measured it.
+func walkRun(face *text.GoTextFace, content string, spacing, gap float64, draw func(piece string, offset float64)) {
+	if spacing == 0 && gap == 0 {
+		draw(content, 0)
+
+		return
+	}
+
+	pen := 0.0
+
+	if spacing == 0 {
+		start, prev := 0, rune(0)
+
+		for i, r := range content {
+			if i > 0 && masking.AutospaceGapBetween(prev, r, gap) != 0 {
+				piece := content[start:i]
+				draw(piece, pen)
+				width, _ := text.Measure(piece, face, 0)
+				pen += width + gap
+				start = i
+			}
+			prev = r
+		}
+		draw(content[start:], pen)
+
+		return
+	}
+
+	prev := rune(0)
+
 	for i := 0; i < len(content); {
 		glyph, size := glyphAt(content, i)
-		i += size
-		renderer.drawRun(dst, glyph, face, x, y, op)
+		r, _ := utf8.DecodeRuneInString(content[i:])
+		pen += masking.AutospaceGapBetween(prev, r, gap)
+		draw(glyph, pen)
 		width, _ := text.Measure(glyph, face, 0)
-		x += width + op.LetterSpacing*pxPerPt
+		pen += width + spacing
+		prev = r
+		i += size
 	}
 }
 
@@ -82,7 +125,7 @@ func (renderer *Renderer) drawTextRun(dst *ebiten.Image, face *text.GoTextFace, 
 // the double strike the direct path draws. Baking white keeps color out of
 // the raster, so equal runs in different colors share one entry.
 func (renderer *Renderer) bakeTextRun(face *text.GoTextFace, key textRasterKey, offX, offY float64) (textRasterEntry, bool) {
-	ink, found := textInkBox(face, key.content, key.spacing)
+	ink, found := textInkBox(face, key.content, key.spacing, key.gap)
 	if !found {
 		return textRasterEntry{}, false
 	}
@@ -93,7 +136,7 @@ func (renderer *Renderer) bakeTextRun(face *text.GoTextFace, key textRasterKey, 
 	}
 
 	img := ebiten.NewImage(size.X, size.Y)
-	renderer.drawWhiteTextRun(img, face, key.content, key.spacing, offX-float64(dx), offY-float64(dy))
+	renderer.drawWhiteTextRun(img, face, key.content, key.spacing, key.gap, offX-float64(dx), offY-float64(dy))
 
 	return textRasterEntry{img: img, dx: dx, dy: dy}, true
 }
@@ -101,33 +144,20 @@ func (renderer *Renderer) bakeTextRun(face *text.GoTextFace, key textRasterKey, 
 // drawWhiteTextRun draws one single-strike run in opaque white. Letter
 // spacing advances glyph by glyph exactly as the direct painter does, so the
 // mask matches the direct paint.
-func (renderer *Renderer) drawWhiteTextRun(dst *ebiten.Image, face *text.GoTextFace, content string, spacing float64, x, y float64) {
-	if spacing == 0 {
+func (renderer *Renderer) drawWhiteTextRun(dst *ebiten.Image, face *text.GoTextFace, content string, spacing, gap float64, x, y float64) {
+	walkRun(face, content, spacing, gap, func(piece string, offset float64) {
 		options := &text.DrawOptions{}
-		options.GeoM.Translate(x, y)
+		options.GeoM.Translate(x+offset, y)
 		options.ColorScale.ScaleWithColor(opaqueWhite)
-		text.Draw(dst, content, face, options)
-
-		return
-	}
-
-	for i := 0; i < len(content); {
-		glyph, size := glyphAt(content, i)
-		i += size
-		options := &text.DrawOptions{}
-		options.GeoM.Translate(x, y)
-		options.ColorScale.ScaleWithColor(opaqueWhite)
-		text.Draw(dst, glyph, face, options)
-		width, _ := text.Measure(glyph, face, 0)
-		x += width + spacing
-	}
+		text.Draw(dst, piece, face, options)
+	})
 }
 
 // textInkBox is the union of the run's glyph image rectangles, in run-local
 // coordinates with the text origin at 0, 0. It reports false when no glyph
 // paints, so an empty run is never cached. A letter-spaced run advances glyph
 // by glyph exactly as the painter does, so the box matches the paint.
-func textInkBox(face *text.GoTextFace, content string, spacing float64) (image.Rectangle, bool) {
+func textInkBox(face *text.GoTextFace, content string, spacing, gap float64) (image.Rectangle, bool) {
 	var box image.Rectangle
 	found := false
 
@@ -142,20 +172,9 @@ func textInkBox(face *text.GoTextFace, content string, spacing float64) (image.R
 		}
 	}
 
-	if spacing == 0 {
-		add(text.AppendLazyGlyphs(nil, content, face, nil), 0)
-
-		return box, found
-	}
-
-	x := 0.0
-	for i := 0; i < len(content); {
-		glyph, size := glyphAt(content, i)
-		i += size
-		add(text.AppendLazyGlyphs(nil, glyph, face, nil), x)
-		width, _ := text.Measure(glyph, face, 0)
-		x += width + spacing
-	}
+	walkRun(face, content, spacing, gap, func(piece string, offset float64) {
+		add(text.AppendLazyGlyphs(nil, piece, face, nil), offset)
+	})
 
 	return box, found
 }

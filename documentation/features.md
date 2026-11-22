@@ -48,7 +48,7 @@ This matrix is the 1.0 language. Most holes are blinkless. The motion rows below
 | `prefers-color-scheme` | never matches ([theming.md](theming.md)) |
 | Elliptical fill radii | bitmap fallback ([screen.md](screen.md)) |
 | Non-separable blend modes | bitmap fallback ([repaint.md](repaint.md)) |
-| Glyph rotation other than a quarter turn, fake oblique, font features, autospacing, missing font | bitmap fallback on desktop; quarter-turn runs from `writing-mode: vertical-rl` / `vertical-lr` replay on the display list; on Android `FontFeatures` and `TextAutospaceGap` fail bitmap painting ([screen.md](screen.md), [android-runtime.md](android-runtime.md)) |
+| Glyph rotation other than a quarter turn, fake oblique, missing font | bitmap fallback on desktop; quarter-turn runs from `writing-mode: vertical-rl` / `vertical-lr`, font features (`font-variant-*`, `font-kerning`), and `text-autospace` replay on the display list; the software painter draws a run without its font features instead of failing the page ([screen.md](screen.md), [android-runtime.md](android-runtime.md)) |
 | `display`, `order`, and grid-line transitions | blocked by the engine; the change snaps, and `Probe().Motion()` reports the reason ([css-motion.md](css-motion.md)) |
 | `@starting-style` | not read ([css-motion.md](css-motion.md)) |
 | A `display` cross-fade | blocked on the outgoing layer; the change snaps ([css-motion.md](css-motion.md)) |

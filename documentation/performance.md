@@ -235,3 +235,21 @@ its CPU and memory figures do not establish hardware GPU or power savings.
 The native `presents` counter counts calls that draw OwnFrame content. It is
 not a GPU swap counter. A zero delta proves that OwnFrame skipped rendering;
 it does not prove that the window backend submitted no buffers.
+
+## Hover patch fallbacks
+
+A hover change re-lays only the subtree the cascade names. When the engine
+refuses the patch, `Page.Probe().Stats()` counts a `HoverFallback` and the page
+runs the full layout, so the picture matches a page that never patches. The
+property dump's 11 fallback rows are all engine refusals:
+
+| Rows | Engine reason | Verdict |
+|---|---|---|
+| `width`, `size`, `margin`, `margin-block`, `margin-block-start`, `margin-block-end`, `margin-top`, `margin-bottom` | the hovered box changes size, so siblings and the container reflow | **legitimate**; a patch cannot place them |
+| `float`, `anchor-name`, `position-anchor` | the enter patches, but the leave is refused because the subtree now holds a float or an anchored element | **engine limitation**; the full layout is correct and the failed attempt is cheap |
+
+`TestHoverEngineRefusedPatchesMatchFullLayout` pins that a refused patch equals
+the full layout. A hover rule that sets `margin-top` on a flex item is a
+separate engine defect: the engine accepts the patch but ignores the item's own
+margin, so the container stays short. `TestHoverRootMarginMatchesFullLayout`
+records it and stays skipped until the pinned Blinkless splices a root's margin.

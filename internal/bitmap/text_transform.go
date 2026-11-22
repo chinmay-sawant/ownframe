@@ -8,6 +8,7 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/f64"
@@ -19,14 +20,24 @@ const (
 	nrgbaAlphaOffset   = 3
 )
 
-func drawString(d *font.Drawer, s string, spacing float64) {
-	if spacing == 0 {
+// drawString draws s with letter spacing and the text-autospace gap. The gap
+// is the extra advance layout put at each ideograph and Latin boundary, in
+// pixels. x/image's face does no OpenType shaping, so this painter draws a run
+// without its font features (small caps, tabular numerals, ligature control):
+// the glyphs keep their default forms and advances. That is the degraded
+// picture a fallback page shows instead of failing; the display-list replay
+// applies the features.
+func drawString(d *font.Drawer, s string, spacing, gap float64) {
+	if spacing == 0 && gap == 0 {
 		d.DrawString(s)
 		return
 	}
+	var prev rune
 	for _, r := range s {
+		d.Dot.X += fixedSpacing(masking.AutospaceGapBetween(prev, r, gap))
 		d.DrawString(string(r))
 		d.Dot.X += fixedSpacing(spacing)
+		prev = r
 	}
 }
 

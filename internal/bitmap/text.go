@@ -41,11 +41,12 @@ func paintText(dst *image.NRGBA, op *layout.DisplayOp, cache *faceCache) error {
 		},
 	}
 	paintTextStroke(dst, op, face, content, x, y)
-	drawString(&draw, content, op.LetterSpacing*pxPerPt)
+	gap := op.TextAutospaceGap() * pxPerPt
+	drawString(&draw, content, op.LetterSpacing*pxPerPt, gap)
 
 	if layout.DisplayFakeBold(op) {
 		draw.Dot = fixed.Point26_6{X: fixed.Int26_6(math.Round(x*pxPerPt*fixedPointScale)) + fixed.I(1), Y: fixed.Int26_6(math.Round(y * pxPerPt * fixedPointScale))}
-		drawString(&draw, content, op.LetterSpacing*pxPerPt)
+		drawString(&draw, content, op.LetterSpacing*pxPerPt, gap)
 	}
 	return nil
 }

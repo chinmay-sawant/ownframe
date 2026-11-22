@@ -12,7 +12,7 @@ import "strings"
 var painterDeclines = map[string]bool{
 	"visibility": true, "gap": true, "filter": true, "scale": true, "backdrop-filter": true,
 	"color-scheme": true, "transform-box": true, "grid-auto-columns": true, "grid-auto-flow": true,
-	"writing-mode": true, "position-area": true, "outline-color": true, "clip-rule": true,
+	"position-area": true, "outline-color": true, "clip-rule": true,
 	"border-image": true, "border-image-source": true, "border-image-slice": true, "border-image-width": true,
 	"mask-border-mode": true, "mask-border-outset": true, "mask-border-repeat": true, "mask-border-slice": true,
 	"mask-border-width": true, "grid-row-start": true, "grid-row-end": true, "grid-template-areas": true,

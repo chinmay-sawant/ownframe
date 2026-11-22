@@ -373,7 +373,7 @@ var textLookOf = map[string]string{
 	"text-decoration-line":        "The control is already underlined and the engine draws `spelling-error` like the plain underline, so the picture stays the same as the control.",
 	"text-box":                    "The demo box trims to the cap height and alphabetic baseline of its text, so the blue box is shorter than the control's; the glyphs touch or cross its edges, and the 8px padding keeps the box from collapsing.",
 	"text-box-trim":               "The demo box loses the half-leading at its start edge, so it is shorter than the control's box.",
-	"writing-mode":                "The engine lays the demo out vertically (the readout shows a different size), but the window painter declines writing-mode, so the picture is drawn without it and stays horizontal, the same as the control.",
+	"writing-mode":                "The demo is laid out vertically (the readout shows a different size) and the glyphs are quarter-turned: `vertical-rl` and `vertical-lr` replay on the display list like horizontal text. A rotation that is not a whole quarter turn, or a rotated run that is also skewed or projected, still falls back to the software painter.",
 	"text-emphasis":               "The demo marks are red dots instead of the control's dark filled marks, drawn above each word; line-height 3 and padding leave room for the marks.",
 	"text-emphasis-color":         "The demo marks turn red; the control marks are dark. Line-height 3 and padding leave room for the marks.",
 	"text-emphasis-position":      "The demo marks move below the text; the control marks are above. Line-height 3 and padding leave room for the marks on both sides.",

@@ -1,6 +1,8 @@
 package motion
 
 import (
+	"github.com/chinmay-sawant/blinkless/layout"
+	"math"
 	"reflect"
 	"testing"
 )
@@ -97,5 +99,71 @@ func BenchmarkSampleTransform(b *testing.B) {
 		if _, ok := effect.sampleTransform(float64(i%100) / 100); !ok {
 			b.Fatal("no sample")
 		}
+	}
+}
+
+// TestSampleTransformSkipsDeadFunctionList holds the sampler that leaves the
+// blended list out of a 2D sample to the full sampler. Whatever the mode, the
+// target, or the keyframes, composing either sample must write the same paint
+// and report the same restamp request, and every sample that reaches the
+// restamp pass must still carry its function list.
+func TestSampleTransformSkipsDeadFunctionList(t *testing.T) {
+	scale := func(s float64) TransformValue {
+		return TransformValue{
+			Decomposed: Transform{Sx: s, Sy: s, Set: true},
+			Functions:  []TransformFunction{{Name: Scale, Args: []float64{s, s}}},
+		}
+	}
+	lists := map[string][]Keyframe{
+		"translate": {{Offset: 0, Transform: translateValue(0, 0)}, {Offset: 1, Transform: translateValue(12, 4)}},
+		"scale":     {{Offset: 0, Transform: scale(1)}, {Offset: 1, Transform: scale(2)}},
+		"padded":    {{Offset: 0.5, Transform: translateValue(8, 0)}},
+		"rotate2d": {
+			{Offset: 0, Transform: rotateValue(Rotate, 0, false)},
+			{Offset: 1, Transform: rotateValue(Rotate, math.Pi/2, false)},
+		},
+		"mismatched": {{Offset: 0, Transform: translateValue(0, 0)}, {Offset: 1, Transform: scale(2)}},
+		"rotateY":    {{Offset: 0, Transform: rotateValue(RotateY, 0, true)}, {Offset: 1, Transform: rotateValue(RotateY, 1, true)}},
+	}
+	for name, frames := range lists {
+		for _, mode := range []Composition{Replace, Add, Accumulate} {
+			for _, threeD := range []bool{false, true} {
+				for i := 0; i <= 8; i++ {
+					at := float64(i) / 8
+					effect := Effect{Frames: frames, Timing: Timing{TimingFunction: "linear", Composition: mode}}
+					op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, Alpha: 1}
+					target := Target{Op: op, From: Read(op), World: layout.Matrix2D{A: 2, D: 2}, HasTransform3D: threeD}
+
+					full, okFull := effect.sampleTransform(at)
+					lean, okLean := effect.sampleTransformFor(at, target.HasTransform3D)
+					if okFull != okLean {
+						t.Fatalf("%s/%v/3d=%t at %.2f: ok %t vs %t", name, mode, threeD, at, okFull, okLean)
+					}
+					paintFull, paintLean := Read(op), Read(op)
+					gotFull, restampFull := composeTransform(&target, &paintFull, full, mode)
+					gotLean, restampLean := composeTransform(&target, &paintLean, lean, mode)
+					if restampFull != restampLean || paintFull != paintLean ||
+						!reflect.DeepEqual(gotFull.Decomposed, gotLean.Decomposed) {
+						t.Fatalf("%s/%v/3d=%t at %.2f: lean sample diverged:\nfull %+v %t\nlean %+v %t",
+							name, mode, threeD, at, gotFull, restampFull, gotLean, restampLean)
+					}
+					if restampLean && !reflect.DeepEqual(gotFull, gotLean) {
+						t.Fatalf("%s/%v/3d=%t at %.2f: restamp sample lost its list:\nfull %+v\nlean %+v",
+							name, mode, threeD, at, gotFull, gotLean)
+					}
+				}
+			}
+		}
+	}
+}
+
+// TestSampleTransformAllocatesNothingFor2D pins the per-tick cost of a plain
+// two-dimensional transform animation.
+func TestSampleTransformAllocatesNothingFor2D(t *testing.T) {
+	effect := Effect{Frames: []Keyframe{
+		{Offset: 0, Transform: translateValue(0, 0)}, {Offset: 1, Transform: translateValue(12, 0)},
+	}, Timing: Timing{TimingFunction: "linear"}}
+	if allocs := testing.AllocsPerRun(100, func() { effect.sampleTransformFor(0.4, false) }); allocs != 0 {
+		t.Fatalf("2D sample allocated %v times, want 0", allocs)
 	}
 }

@@ -763,6 +763,8 @@ func sigOp(h uint64, op *layout.DisplayOp) uint64 {
 	h = mixStr(h, op.Text)
 	h = mixStr(h, op.TextTransformValue())
 	h = mixStr(h, op.TextLanguage())
+	h = mixStr(h, op.FontFeatures())
+	h = mixF(h, op.TextAutospaceGap())
 	h = mix64(h, ptrBits(op.Font))
 	h = sigGroup(h, op)
 

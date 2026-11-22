@@ -109,10 +109,10 @@ viewport without another HTML parse. Idle frames reuse its GPU image.
 
 Bitmap painting allows at most 16,777,216 pixels across the canvas and active
 blend buffers and at most seven nested groups. Unknown operation kinds, missing
-payloads, unsupported text shaping options, and excessive buffers return a
-rendering error. The fallback does not claim full browser typography. It uses
-OpenType font drawing and does not support `FontFeatures` or `TextAutospaceGap`.
-These options currently fail bitmap painting instead of disappearing. The
+payloads, and excessive buffers return a rendering error. The fallback does not
+claim full browser typography. It has no OpenType shaper, so a run with
+`FontFeatures` draws in its default glyph forms, while `TextAutospaceGap` is
+applied at ideograph and Latin boundaries. Neither fails bitmap painting. The
 fallback also costs more CPU during scrolling than display-list replay.
 
 Fixed fallback projection applies at the committed viewport size. A pending

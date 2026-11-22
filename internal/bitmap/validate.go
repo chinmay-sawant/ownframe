@@ -58,9 +58,9 @@ func validate(d *layout.Display) error {
 			if op.Text != "" && op.Font == nil {
 				return fmt.Errorf("bitmap: missing font")
 			}
-			if op.FontFeatures() != "" || op.TextAutospaceGap() != 0 {
-				return fmt.Errorf("bitmap: unsupported text shaping options")
-			}
+			// OpenType features and text-autospace are not a reason to reject
+			// the page: paintText draws the run without the features (the
+			// software face does no shaping) and reproduces the autospace gap.
 		default:
 			return fmt.Errorf("bitmap: unsupported operation %d", op.Kind)
 		}

@@ -66,7 +66,10 @@ func composeSampled(
 		// A singular endpoint makes the interval discrete, and a frame list
 		// that changed after NewComposite can still fail here. Both leave the
 		// underlying paint in place rather than snapping the transform.
-		if value, ok := e.sampleTransform(at); ok {
+		// The blended function list only matters to the 3D restamp pass; a
+		// plain 2D sample is fully described by its decomposition, so skip
+		// building the list unless the target already carries a 3D transform.
+		if value, ok := e.sampleTransformFor(at, target.HasTransform3D); ok {
 			composed, restamp := composeTransform(target, &current, value, mode)
 			sample.hasTransform = true
 			sample.transform = composed
@@ -856,6 +859,14 @@ func appendTransformStops(stops []transformStop, frames []Keyframe) []transformS
 // on every animation tick, so the stop list lives on the stack instead of
 // being rebuilt on the heap per sample.
 func (e Effect) sampleTransform(at float64) (TransformValue, bool) {
+	return e.sampleTransformFor(at, true)
+}
+
+// sampleTransformFor is sampleTransform with control over the blended
+// function list. wantFunctions false leaves Functions empty on a blend of two
+// 2D values, whose Decomposed field already carries the pose; any 3D endpoint
+// still blends its list. An endpoint returned as is keeps its own list.
+func (e Effect) sampleTransformFor(at float64, wantFunctions bool) (TransformValue, bool) {
 	var buf [inlineTransformStops]transformStop
 	stops := appendTransformStops(buf[:0], e.Frames)
 	if len(stops) == 0 {
@@ -874,7 +885,7 @@ func (e Effect) sampleTransform(at float64) (TransformValue, bool) {
 			return next.value, true
 		}
 		part := segmentEase(prev.ease, e.Timing, (at-prev.at)/span)
-		value, err := interpolateTransform(prev.value, next.value, part)
+		value, err := interpolateTransformFor(prev.value, next.value, part, wantFunctions)
 		if err != nil {
 			if part < discreteMidpoint {
 				return prev.value, true
@@ -1073,11 +1084,17 @@ func interpolatePerspective(a, b PerspectiveValue, t float64) PerspectiveValue {
 // decomposition; only a singular endpoint reports an error, and the sampler
 // falls back to a discrete step for it.
 func interpolateTransform(a, b TransformValue, t float64) (TransformValue, error) {
+	return interpolateTransformFor(a, b, t, true)
+}
+
+// interpolateTransformFor is interpolateTransform that can leave the blended
+// function list out of a two-dimensional result.
+func interpolateTransformFor(a, b TransformValue, t float64, wantFunctions bool) (TransformValue, error) {
 	if a.ThreeD || b.ThreeD {
 		return interpolate3D(a, b, t)
 	}
 	value := TransformValue{Decomposed: blendTransform(a.Decomposed, b.Decomposed, t)}
-	if interpolable(a.Functions, b.Functions) {
+	if wantFunctions && interpolable(a.Functions, b.Functions) {
 		value.Functions = blendFunctions(a.Functions, b.Functions, t)
 	}
 	return value, nil
