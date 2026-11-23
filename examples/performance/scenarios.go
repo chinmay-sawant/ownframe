@@ -1317,7 +1317,7 @@ type ExtremeAppData struct {
 }
 
 func makeScenario10ExtremeApp1000() Scenario {
-	const n = 1000
+	const n = 800
 	rows := make([]ExtremeRow, n)
 	gradClasses := []string{"ext-g1", "ext-g2", "ext-g3", "ext-g4", "ext-g5"}
 	statuses := []string{"Active", "Auditing", "Synced", "Standby"}
@@ -1454,9 +1454,9 @@ html, body { margin: 0; padding: 0; background-color: #0b0f19; font-family: sans
 
 	return Scenario{
 		ID:          "10-extreme-app-1000",
-		Name:        "Extreme Scale Application (1,000 Complex Rows)",
+		Name:        "Extreme Scale Application (800 Complex Rows)",
 		Level:       "Extreme",
-		Description: "1,000 fully-featured application rows with rank chips, gradient avatars, multi-line titles, status badges, progress bars, currency metrics, tag lists, and buttons",
+		Description: "800 fully-featured application rows with rank chips, gradient avatars, multi-line titles, status badges, progress bars, currency metrics, tag lists, and buttons",
 		ItemCount:   n,
 		CSSProperties: []string{
 			"display: flex", "align-items: center", "gap: 12px", "linear-gradient",

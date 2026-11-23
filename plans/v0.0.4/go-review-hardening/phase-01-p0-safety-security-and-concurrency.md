@@ -52,6 +52,7 @@ This phase closes every confirmed memory-safety hazard, command/markup injection
   - **Fix:** When `strings.EqualFold(c.Type, "password")`, return `"", false, nil` from `Copy` and refuse copying plaintext on `Cut` (either no-op like browsers or clear without returning plaintext; match standard browser behavior: block both copy and cut on password fields).
   - **Proof:** Unit tests in `internal/page/` asserting `Copy` and `Cut` on a focused `type="password"` input return `("", false, nil)` and never expose the password value.
   - **Result (done, commit `17caf6c9`):** `Page.Copy` and `Page.Cut` return `("", false, nil)` for a focused `type="password"` field (no hook fired, value untouched). Files: `internal/page/gesture.go`, `documentation/editing.md`, `documentation/forms.md`; test `TestFormPasswordCopy` (rewritten: it used to assert the plaintext came back) in `internal/page/ext_form_test.go`. Command: `go test -race -count=1 ./internal/page/...` exit 0, all `ok`.
+  - **CI follow-up:** PR #98 `test` failed in `examples/login/login` `TestPasswordCopyAndDeleteWord`, which still asserted that Copy returned `secret`. It now asserts the intended behaviour (empty, not ok); `go test ./login/...` exit 0.
 
 ## 1.3 Web Server, Page & Clipboard Concurrency Fixes
 
