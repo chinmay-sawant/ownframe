@@ -15,8 +15,9 @@ const (
 	bezierHandleCount      = 4
 )
 
-// Ease samples a CSS timing-function string at progress t. It parses value on
-// every call; per-frame callers use compileEase once and sample the result.
+// Ease samples a CSS timing-function string at progress t. Compiled samplers
+// are cached in cachedEase (up to easeCacheLimit entries); per-frame animation
+// bindings call compileEase once at bind time and sample the closure directly.
 func Ease(value string, t float64) float64 {
 	return cachedEase(value)(t)
 }

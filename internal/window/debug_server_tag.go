@@ -106,6 +106,10 @@ func debugWriteDeadline(r *http.Request) time.Duration {
 	}
 	capture := debugProfileDefault
 	if n, err := strconv.Atoi(r.URL.Query().Get("seconds")); err == nil && n > 0 {
+		maxSeconds := int(debugProfileMax / time.Second)
+		if n > maxSeconds {
+			n = maxSeconds
+		}
 		capture = time.Duration(n) * time.Second
 	}
 	capture = min(capture, debugProfileMax)
@@ -116,7 +120,9 @@ func debugWriteDeadline(r *http.Request) time.Duration {
 func withDebugWriteDeadline(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Unsupported writers (tests) just keep no deadline.
-		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(debugWriteDeadline(r)))
+		rc := http.NewResponseController(w)
+		_ = rc.SetWriteDeadline(time.Now().Add(debugWriteDeadline(r)))
+		defer func() { _ = rc.SetWriteDeadline(time.Time{}) }()
 		next(w, r)
 	}
 }

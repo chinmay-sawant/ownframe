@@ -333,21 +333,25 @@ const (
 )
 
 // putRenderer returns a renderer whose maps the caller has detached or
-// cleared. The key scratch keeps its capacity up to the retention bounds; the
-// stack is cleared so a pooled renderer holds no Element tree, and anything
-// that grew past the bounds is dropped for the GC.
+// cleared. The output buffer is reset and the key/stack slices are cleared so
+// a pooled renderer holds no Element tree, string references, or large output
+// buffer, and anything that grew past the bounds is dropped for the GC.
 func putRenderer(r *renderer) {
 	if r == nil {
 		return
 	}
+	r.output.Reset()
 	clear(r.stack[:cap(r.stack)])
 	r.stack = r.stack[:0]
 	if cap(r.stack) > maxPooledSlots {
 		r.stack = nil
 	}
+	clear(r.keys[:cap(r.keys)])
+	r.keys = r.keys[:0]
 	if cap(r.keys) > maxPooledSlots {
 		r.keys = nil
 	}
+	r.scratch = r.scratch[:0]
 	if cap(r.scratch) > maxPooledScratchBytes {
 		r.scratch = nil
 	}

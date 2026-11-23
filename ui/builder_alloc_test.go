@@ -530,9 +530,10 @@ func TestControlIDStability(t *testing.T) {
 
 // TestPutRendererBoundsRetainedScratch pins the GPU-LIFE-02 pool bound: a
 // renderer that grew past the retention limits returns without that scratch,
-// and the visit stack never keeps an Element alive.
+// and the visit stack, key scratch, and output buffer never stay retained.
 func TestPutRendererBoundsRetainedScratch(t *testing.T) {
 	r := newRenderer()
+	r.output.WriteString("retained markup")
 	r.stack = append(r.stack, &Element{})
 	r.keys = make([]string, 0, maxPooledSlots+1)
 	r.scratch = make([]byte, 0, maxPooledScratchBytes+1)
@@ -541,10 +542,21 @@ func TestPutRendererBoundsRetainedScratch(t *testing.T) {
 	}
 	backing := r.stack[:1]
 	putRenderer(r)
+	if r.output.Len() != 0 {
+		t.Fatalf("pooled renderer kept %d bytes in output buffer", r.output.Len())
+	}
 	if backing[0] != nil {
 		t.Fatal("pooled renderer still references an Element")
 	}
 	if r.keys != nil || r.scratch != nil || len(r.identities) > maxPooledSlots {
 		t.Fatalf("oversized scratch kept: keys cap %d scratch cap %d identities %d", cap(r.keys), cap(r.scratch), len(r.identities))
+	}
+
+	r2 := newRenderer()
+	r2.keys = append(r2.keys, "kept-key")
+	keyBacking := r2.keys[:1]
+	putRenderer(r2)
+	if keyBacking[0] != "" {
+		t.Fatalf("pooled renderer retained key string %q", keyBacking[0])
 	}
 }

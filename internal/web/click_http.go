@@ -71,9 +71,10 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// s.app.Boxes() aliases page state that the tick loop and other handlers
-	// mutate, so resolve ids and actions only while holding s.mu.
+	// mutate, so resolve ids and actions only while holding s.mu. Release s.mu
+	// before writing to http.ResponseWriter so a slow client cannot stall the
+	// tick loop.
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	// A box found by id or action already holds document coordinates, so the
 	// server's frame scroll offset must not shift it.
 	resolved := false
@@ -103,6 +104,7 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 	x, errX := strconv.ParseFloat(q.Get("x"), 64)
 	y, errY := strconv.ParseFloat(q.Get("y"), 64)
 	if errX != nil || errY != nil || math.IsNaN(x) || math.IsInf(x, 0) || math.IsNaN(y) || math.IsInf(y, 0) {
+		s.mu.Unlock()
 		http.Error(w, "bad coordinates", http.StatusBadRequest)
 		return
 	}
@@ -117,13 +119,16 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		}
 		return s.ptr().Click(r.Context(), x, y)
 	})
+	if err == nil {
+		s.syncScroll()
+		s.publishIfChangedLocked()
+	}
+	s.mu.Unlock()
 	if err != nil {
 		log.Printf("click: %s", sanitizeLine(err.Error()))
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	s.syncScroll()
-	s.publishIfChangedLocked()
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

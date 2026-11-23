@@ -91,6 +91,7 @@ func TestWindowNonFiniteInputs(t *testing.T) {
 		{"nan row", 0, 100, nan},
 		{"inf row", 0, 100, inf},
 		{"tiny row", 1e300, 100, 1e-300},
+		{"huge row overflow", 0, 100, math.MaxFloat64},
 	}
 	for _, c := range cases {
 		r := Window(c.scrollY, c.viewportH, c.rowH, 50, 2)

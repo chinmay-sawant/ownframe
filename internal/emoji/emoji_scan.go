@@ -72,8 +72,8 @@ func rawTextTag(name string) bool {
 // false when the body never closes.
 func rawText(html string, i int, name string) (string, bool) {
 	close := "</" + name
-	for k := i; k < len(html); k++ {
-		if html[k] != '<' || len(html)-k < len(close) || !strings.EqualFold(html[k:k+len(close)], close) {
+	for k := i; k+len(close) < len(html); k++ {
+		if html[k] != '<' || !strings.EqualFold(html[k:k+len(close)], close) || !isTagEndDelim(html[k+len(close)]) {
 			continue
 		}
 
@@ -83,4 +83,13 @@ func rawText(html string, i int, name string) (string, bool) {
 	}
 
 	return html[i:], false
+}
+
+func isTagEndDelim(c byte) bool {
+	switch c {
+	case '>', '/', ' ', '\t', '\n', '\r', '\f':
+		return true
+	default:
+		return false
+	}
 }

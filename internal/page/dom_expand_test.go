@@ -25,6 +25,16 @@ func TestCheckDOMIgnoresRawTextBodies(t *testing.T) {
 	if err := checkDOMLimits("<style>x</style>" + strings.Repeat("<i>", MaxDOMDepth+5)); !errors.Is(err, ErrDOMTooDeep) {
 		t.Fatalf("depth after style: %v", err)
 	}
+	// Prefix lookalikes like </scripting> or </styles> inside raw text must
+	// not prematurely close the raw-text body.
+	for _, html := range []string{
+		"<script>var s = '</scripting>' + '" + many + "';</script ><p>x</p>",
+		"<style>/* </styles> " + many + " */</style\t><p>x</p>",
+	} {
+		if err := checkDOMLimits(html); err != nil {
+			t.Fatalf("prefix closing tag prematurely ended raw text: %v", err)
+		}
+	}
 }
 
 // TestRedrawChecksExpandedTemplate keeps New's small template under the

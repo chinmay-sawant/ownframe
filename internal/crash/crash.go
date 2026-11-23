@@ -33,7 +33,10 @@ const crashDirPerm = 0o700
 func Write(title, reason string) (string, error) {
 	folder, shared := locate()
 
-	_, statErr := os.Stat(folder)
+	info, statErr := os.Lstat(folder)
+	if statErr == nil && (info.Mode()&os.ModeSymlink != 0 || !info.IsDir()) {
+		return "", fmt.Errorf("crash: %s is not a plain directory", folder)
+	}
 	if err := os.MkdirAll(folder, crashDirPerm); err != nil {
 		return "", err
 	}
@@ -126,7 +129,7 @@ func secureSharedDir(folder string) error {
 	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
 		return fmt.Errorf("crash: %s is not a plain directory", folder)
 	}
-	if runtime.GOOS != "windows" && info.Mode().Perm() != crashDirPerm {
+	if runtime.GOOS != "windows" {
 		return os.Chmod(folder, crashDirPerm)
 	}
 

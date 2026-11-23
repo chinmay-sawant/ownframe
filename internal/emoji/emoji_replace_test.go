@@ -133,6 +133,16 @@ func TestReplaceRCDATAUntouched(t *testing.T) {
 	if !changed || !strings.Contains(got, "<img") || strings.Contains(got, "<title>x</title><img") {
 		t.Fatalf("text after title not rewritten: %q", got)
 	}
+
+	// Prefix lookalikes like </scripting> or </styles> must not end raw text.
+	for _, src := range []string{
+		`<script>const a = "</scripting> 😂";</script>`,
+		`<style>.a{content:"</styles> 😂"}</style >`,
+	} {
+		if got, changed := Replace(src); got != src || changed {
+			t.Fatalf("Replace(%q) = %q, %v; want unchanged", src, got, changed)
+		}
+	}
 }
 
 // TestRawTextLinear builds a script with many '<' and checks the scan stays

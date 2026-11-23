@@ -1,9 +1,9 @@
 # v0.0.4 - Go Review Hardening Plan
 
 > **Parent:** [plans/v0.0.4/README.md](../README.md) (and [maintenance ledger](../../README.md))
-> **Branch:** `chore/v0.0.4-go-review-hardening`
-> **Baseline:** `master` at `cf529aba` (pinned to `blinkless` `b2fe5ba5105e`, 2026-11-23)
-> **Status:** Code complete at `17caf6c9` (pinned to `blinkless` `master` `8bbafad`); `[~]` rows need a Windows host/CI runner or Android bind job; remaining gates need full `make test`/`make test-race`, benchmarks, and CI
+> **Branch:** `fix/v0.0.4-review-followups`
+> **Baseline:** `master` at `b83a88f1` (pinned to `blinkless` `8bbafad275a5`, 2026-11-23)
+> **Status:** Follow-up hardening complete on `fix/v0.0.4-review-followups`; `HYG-MOD-02` and `HYG-API-02` closed `[x]` from PR #98 (`b83a88f1`) green `android-bind` CI; remaining `[~]` rows need a Windows host/CI runner
 
 ---
 

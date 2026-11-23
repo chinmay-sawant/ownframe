@@ -11,14 +11,31 @@ import (
 )
 
 // bareHost builds a Host without a window so the object lifetime rules can be
-// stressed without subclassing anything.
-func bareHost() *Host {
+// stressed without subclassing anything. It registers a Cleanup that releases
+// rootObj and any cached elements so registry.m does not leak across tests.
+func bareHost(t *testing.T) *Host {
+	t.Helper()
 	h := &Host{
 		prov:  NewProvider(func(context.Context, host.AccessibilityRequest) error { return nil }),
 		elems: map[host.AccessibilityNodeID]*comObj{},
 	}
 	h.prov.Update(sampleTree())
 	h.rootObj = newObj(h, "", true)
+	t.Cleanup(func() {
+		h.mu.Lock()
+		h.closed = true
+		old := h.elems
+		h.elems = nil
+		root := h.rootObj
+		h.rootObj = nil
+		h.mu.Unlock()
+		for _, o := range old {
+			o.release()
+		}
+		if root != nil {
+			root.release()
+		}
+	})
 	return h
 }
 
@@ -27,7 +44,7 @@ func bareHost() *Host {
 // swaps documents and drops the cache's own references. Run with -race on a
 // Windows host.
 func TestObjForSurvivesConcurrentPublish(t *testing.T) {
-	h := bareHost()
+	h := bareHost(t)
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
@@ -58,7 +75,7 @@ func TestObjForSurvivesConcurrentPublish(t *testing.T) {
 
 // TestObjForRefusesAfterClose asserts a released root cannot be revived.
 func TestObjForRefusesAfterClose(t *testing.T) {
-	h := bareHost()
+	h := bareHost(t)
 	h.mu.Lock()
 	h.closed = true
 	h.mu.Unlock()
