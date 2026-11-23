@@ -6,6 +6,7 @@ package window
 #cgo LDFLAGS: -lX11
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -28,25 +29,33 @@ static Window ownframe_find_window(Display *d, Window w, Atom pid_atom, int dept
 // Xlib's default error handler exits the process. A window that closes while
 // the tree is walked or queried raises BadWindow, so each Xlib call runs under
 // a scoped handler that ignores errors for the active Display connection.
-// Because XSetErrorHandler is process-wide in Xlib, x11Mu serializes all Xlib
-// entry points in Go and ownframe_x_begin/ownframe_x_end restore the previous
-// handler after XSync flushes pending errors on the connection.
+// Because XSetErrorHandler is process-wide in Xlib, ownframe_x_mu serializes
+// ownframe_x_begin/ownframe_x_end and restores the previous handler after XSync
+// flushes pending errors on the connection.
+static pthread_mutex_t ownframe_x_mu = PTHREAD_MUTEX_INITIALIZER;
 static Display *ownframe_active_display = NULL;
+static XErrorHandler ownframe_prev_handler = NULL;
 static int ownframe_ignore_x_error(Display *d, XErrorEvent *e) {
  if (d == ownframe_active_display || ownframe_active_display == NULL) {
   return 0;
  }
- (void)e;
+ if (ownframe_prev_handler != NULL) {
+  return ownframe_prev_handler(d, e);
+ }
  return 0;
 }
 static XErrorHandler ownframe_x_begin(Display *d) {
+ pthread_mutex_lock(&ownframe_x_mu);
  ownframe_active_display = d;
- return XSetErrorHandler(ownframe_ignore_x_error);
+ ownframe_prev_handler = XSetErrorHandler(ownframe_ignore_x_error);
+ return ownframe_prev_handler;
 }
 static void ownframe_x_end(Display *d, XErrorHandler prev) {
  if (d) XSync(d, False);
  XSetErrorHandler(prev);
+ ownframe_prev_handler = NULL;
  ownframe_active_display = NULL;
+ pthread_mutex_unlock(&ownframe_x_mu);
 }
 static Window ownframe_client_in(Display *d, Window start) {
  XErrorHandler prev = ownframe_x_begin(d);
@@ -126,15 +135,7 @@ static int ownframe_query_pointer(Display *d, Window w, int *x, int *y) {
 */
 import "C"
 
-import (
-	"errors"
-	"sync"
-)
-
-// x11Mu serializes Xlib calls that temporarily install ownframe_ignore_x_error
-// via process-wide XSetErrorHandler so concurrent callers never clobber or
-// permanently overwrite the previous error handler.
-var x11Mu sync.Mutex
+import "errors"
 
 type nativeWindowDrag struct {
 	display      *C.Display
@@ -144,9 +145,7 @@ type nativeWindowDrag struct {
 
 func (d *nativeWindowDrag) end() {
 	if d.display != nil {
-		x11Mu.Lock()
 		C.XCloseDisplay(d.display)
-		x11Mu.Unlock()
 	}
 	*d = nativeWindowDrag{}
 }
@@ -156,8 +155,6 @@ func (d *nativeWindowDrag) begin() {
 	if !isWSLg() {
 		return
 	}
-	x11Mu.Lock()
-	defer x11Mu.Unlock()
 	display := C.XOpenDisplay(nil)
 	if display == nil {
 		return
@@ -180,10 +177,7 @@ func (d *nativeWindowDrag) move() (bool, error) {
 	if d.started {
 		return true, nil
 	}
-	x11Mu.Lock()
-	ok := C.ownframe_move(d.display, d.root, d.window)
-	x11Mu.Unlock()
-	if ok == 0 {
+	if C.ownframe_move(d.display, d.root, d.window) == 0 {
 		return true, errors.New("start WSLg window-manager move failed")
 	}
 	d.started = true
@@ -210,9 +204,7 @@ func setNativeWindowRect(x, y, w, h int) bool {
 	}
 	for _, m := range layout {
 		if m.name == "XWAYLAND0" {
-			x11Mu.Lock()
 			C.ownframe_set_rect(d.display, d.window, C.int(x+m.x), C.int(y+m.y), C.uint(w), C.uint(h))
-			x11Mu.Unlock()
 			return true
 		}
 	}
@@ -223,8 +215,6 @@ func setNativeWindowRect(x, y, w, h int) bool {
 // client window. An invalid start window yields 0 instead of ending the
 // process. It exists so the error-handler guard can be exercised directly.
 func nativeClientFrom(start uint64) (uint64, bool) {
-	x11Mu.Lock()
-	defer x11Mu.Unlock()
 	display := C.XOpenDisplay(nil)
 	if display == nil {
 		return 0, false
@@ -245,10 +235,7 @@ func nativeWindowGeometry() (workarea, bool) {
 		return workarea{}, false
 	}
 	var x, y, width, height C.int
-	x11Mu.Lock()
-	okGeom := C.ownframe_geometry(d.display, d.window, d.root, &x, &y, &width, &height)
-	x11Mu.Unlock()
-	if okGeom == 0 {
+	if C.ownframe_geometry(d.display, d.window, d.root, &x, &y, &width, &height) == 0 {
 		return workarea{}, false
 	}
 	layout, ok := xrandrLayout()
@@ -273,9 +260,7 @@ func (d *nativeWindowDrag) cursor() (int, int, bool) {
 		return 0, 0, false
 	}
 	var x, y C.int
-	x11Mu.Lock()
 	ok := C.ownframe_query_pointer(d.display, d.window, &x, &y)
-	x11Mu.Unlock()
 	return int(x), int(y), ok != 0
 }
 
@@ -290,19 +275,15 @@ func nativeWindowTarget() (hostWindowTarget, bool) {
 	if !ok {
 		return hostWindowTarget{}, false
 	}
-	x11Mu.Lock()
 	name := C.ownframe_title(d.display, d.window)
 	if name == nil {
-		x11Mu.Unlock()
 		return hostWindowTarget{}, false
 	}
 	title := C.GoString(name)
 	C.ownframe_free_name(name)
 	var x, y, w, h, cx, cy, cw, ch C.int
-	okFrame := C.ownframe_frame_geometry(d.display, d.window, d.root, &x, &y, &w, &h) != 0 &&
-		C.ownframe_geometry(d.display, d.window, d.root, &cx, &cy, &cw, &ch) != 0
-	x11Mu.Unlock()
-	if !okFrame {
+	if C.ownframe_frame_geometry(d.display, d.window, d.root, &x, &y, &w, &h) == 0 ||
+		C.ownframe_geometry(d.display, d.window, d.root, &cx, &cy, &cw, &ch) == 0 {
 		return hostWindowTarget{}, false
 	}
 	return hostWindowTarget{Title: title, Client: desktopRect{X: client.x, Y: client.y, W: client.w, H: client.h}, Frame: desktopRect{X: client.x + int(x-cx), Y: client.y + int(y-cy), W: int(w), H: int(h)}}, true
