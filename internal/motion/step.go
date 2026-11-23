@@ -205,7 +205,7 @@ func cssEase(value string) easingFn {
 	if invalidStepsJumpNone(value) {
 		value = "ease"
 	}
-	return func(part float64) float64 { return Ease(value, part) }
+	return compileEase(value)
 }
 
 // stepsJumpNoneMin is the smallest step count jump-none accepts. CSS Easing

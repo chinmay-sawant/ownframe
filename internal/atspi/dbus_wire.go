@@ -213,21 +213,22 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 	}
 
 	offset := 0
+fields:
 	for offset < len(fieldsBytes) {
 		pad := (dbusAlign8 - ((dbusFixedHeaderLen + offset) % dbusAlign8)) % dbusAlign8
 		offset += pad
 		if offset >= len(fieldsBytes) {
-			break
+			break fields
 		}
 		code := fieldsBytes[offset]
 		offset++
 		if offset >= len(fieldsBytes) {
-			break
+			break fields
 		}
 		sigLen := int(fieldsBytes[offset])
 		offset++
 		if offset+sigLen >= len(fieldsBytes) {
-			break
+			break fields
 		}
 		sig := string(fieldsBytes[offset : offset+sigLen])
 		offset += sigLen + 1
@@ -237,12 +238,12 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 			pad := (dbusAlign4 - ((dbusFixedHeaderLen + offset) % dbusAlign4)) % dbusAlign4
 			offset += pad
 			if offset+4 > len(fieldsBytes) {
-				break
+				break fields
 			}
 			uStrLen := binary.LittleEndian.Uint32(fieldsBytes[offset : offset+4])
 			offset += 4
 			if uStrLen > uint32(len(fieldsBytes)-offset) { //nolint:gosec // reason: offset is bounds-checked above so the difference is non-negative and fits uint32.
-				break
+				break fields
 			}
 			strLen := int(uStrLen)
 			val := string(fieldsBytes[offset : offset+strLen])
@@ -266,7 +267,7 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 			pad := (dbusAlign4 - ((dbusFixedHeaderLen + offset) % dbusAlign4)) % dbusAlign4
 			offset += pad
 			if offset+4 > len(fieldsBytes) {
-				break
+				break fields
 			}
 			uVal := binary.LittleEndian.Uint32(fieldsBytes[offset : offset+4])
 			offset += 4
@@ -275,12 +276,12 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 			}
 		case "g":
 			if offset >= len(fieldsBytes) {
-				break
+				break fields
 			}
 			gLen := int(fieldsBytes[offset])
 			offset++
 			if offset+gLen > len(fieldsBytes) {
-				break
+				break fields
 			}
 			gVal := string(fieldsBytes[offset : offset+gLen])
 			offset += gLen + 1

@@ -6,6 +6,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/debugtag"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/safego"
+	"github.com/chinmay-sawant/ownframe/internal/textrun"
 	"github.com/chinmay-sawant/ownframe/internal/window/pacing"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -88,6 +89,7 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 	g.input = false
 	if g.idle && !dirty && !input && !g.trimmed && now.Sub(g.idleSince) >= idleTrimDelay {
 		g.shell.renderer.SetIdle()
+		textrun.Trim()
 		g.trimmed = true
 	}
 
@@ -216,7 +218,9 @@ type paceGame struct {
 	pacePage
 	mu   sync.Mutex
 	stop chan struct{}
-	once sync.Once
+	// timerDone closes when the timer goroutine returns, so close can join it.
+	timerDone chan struct{}
+	once      sync.Once
 }
 
 // paceWindow wraps the shell when pacing is on. The returned stop releases
@@ -234,12 +238,13 @@ func paceWindow(ctx context.Context, game *shell, options Options) (ebiten.Game,
 	}
 
 	pace := &paceGame{
-		shell:  game,
-		policy: pacing.New(time.Now()),
-		base:   ebiten.TPS(),
-		maxFPS: maxFPS,
-		noIdle: options.NoIdlePace,
-		stop:   make(chan struct{}),
+		shell:     game,
+		policy:    pacing.New(time.Now()),
+		base:      ebiten.TPS(),
+		maxFPS:    maxFPS,
+		noIdle:    options.NoIdlePace,
+		stop:      make(chan struct{}),
+		timerDone: make(chan struct{}),
 	}
 	// Capped active path ticks at the loop rate (present cap + headroom) so
 	// the app runs hotter than the FE presents. Uncapped updates follow each rendered frame.
@@ -250,13 +255,21 @@ func paceWindow(ctx context.Context, game *shell, options Options) (ebiten.Game,
 	}
 	pace.kick = make(chan struct{}, 1)
 	pace.debug, pace.debugAt = paceDebugWriter(), time.Now()
-	safego.Go("pace timer", func() { pace.timer(ctx) })
+	safego.Go("pace timer", func() {
+		defer close(pace.timerDone)
+		pace.timer(ctx)
+	})
 
 	return pace, pace.close
 }
 
+// close stops the timer goroutine and waits for it to return, so no wake
+// races the GPU teardown that follows the run loop.
 func (g *paceGame) close() {
 	g.once.Do(func() { close(g.stop) })
+	if g.timerDone != nil {
+		<-g.timerDone
+	}
 }
 
 func (g *paceGame) Update() error {
@@ -306,7 +319,12 @@ func (g *paceGame) Draw(screen *ebiten.Image) {
 		return
 	}
 	// Pace the loop to the present cap with a monotonic sleep (no VSync,
-	// no busy-spin). Every iteration presents once; Updates run hotter via
+	// no busy-spin). The sleep runs on Ebiten's game goroutine, so OS events
+	// queue until the next Update polls them; loopWait never exceeds one
+	// present interval (33 ms at 30 FPS), which is the same latency any
+	// frame-capped loop has, and Update runs at LoopFPS (hotter than the
+	// cap) so input is still sampled between presents. Tested in
+	// TestLoopWaitNeverExceedsOnePresentInterval. Every iteration presents once; Updates run hotter via
 	// TPS headroom, so the FE shows MaxFPS while the app ticks at
 	// MaxFPS+20. TPS/ActualTPS carries the hotter rate, FPS the cap.
 	now := time.Now()

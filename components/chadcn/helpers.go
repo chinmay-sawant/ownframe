@@ -9,7 +9,7 @@ import (
 
 // classes joins non-empty class names for one class attribute.
 func classes(names ...string) string {
-	kept := names[:0]
+	kept := make([]string, 0, len(names))
 	for _, name := range names {
 		if name != "" {
 			kept = append(kept, name)

@@ -238,9 +238,19 @@ func TestFormPasswordCopy(t *testing.T) {
 		t.Fatalf("box %q", got)
 	}
 
+	// Browsers refuse copy and cut on password fields; so do we.
 	text, ok, err := screen.Copy(ctx)
-	if err != nil || !ok || text != "secret" {
+	if err != nil || ok || text != "" {
 		t.Fatalf("copy %q %v %v", text, ok, err)
+	}
+
+	text, ok, err = screen.Cut(ctx)
+	if err != nil || ok || text != "" {
+		t.Fatalf("cut %q %v %v", text, ok, err)
+	}
+
+	if screen.FormValue("pw") != "secret" {
+		t.Fatalf("cut changed value to %q", screen.FormValue("pw"))
 	}
 }
 

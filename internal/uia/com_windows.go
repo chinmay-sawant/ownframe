@@ -108,6 +108,21 @@ func newObj(h *Host, id host.AccessibilityNodeID, isRoot bool) *comObj {
 
 func (o *comObj) addRef() int32 { return o.ref.Add(1) }
 
+// tryAddRef takes a reference only while the object is still alive. An
+// object whose count already reached zero has left the registry and must not
+// be resurrected, so the caller gets false and stops using it.
+func (o *comObj) tryAddRef() bool {
+	for {
+		n := o.ref.Load()
+		if n <= 0 {
+			return false
+		}
+		if o.ref.CompareAndSwap(n, n+1) {
+			return true
+		}
+	}
+}
+
 func (o *comObj) release() int32 {
 	n := o.ref.Add(-1)
 	if n <= 0 {
@@ -338,7 +353,9 @@ func (o *comObj) queryInterface(riid, ppv uintptr) uintptr {
 	return sOK
 }
 
-// give hands out an interface pointer with a reference for the client.
+// give hands out an interface pointer with a reference for the client. The
+// caller keeps its own reference (from Host.objFor or Host.acquireRoot) and
+// releases it afterwards, so the count never dips to zero in between.
 func (o *comObj) give(out uintptr, slot int) {
 	o.addRef()
 	putPtr(out, o.slotAddr(slot))
@@ -482,6 +499,7 @@ func (o *comObj) navigate(dir, out, _ uintptr) uintptr {
 	}
 	if t := o.h.objFor(id); t != nil {
 		t.give(out, slotFragment)
+		t.release()
 	}
 	return sOK
 }
@@ -522,7 +540,11 @@ func (o *comObj) getFragmentRoot(out, _, _ uintptr) uintptr {
 	if out == 0 {
 		return hr(ePointer)
 	}
-	o.h.rootObj.give(out, slotRoot)
+	putPtr(out, 0)
+	if root := o.h.acquireRoot(); root != nil {
+		root.give(out, slotRoot)
+		root.release()
+	}
 	return sOK
 }
 
@@ -537,6 +559,7 @@ func (o *comObj) fromPointAt(x, y float64, out uintptr) uintptr {
 	if id, ok := o.h.prov.ElementAt(x, y); ok {
 		if t := o.h.objFor(id); t != nil {
 			t.give(out, slotFragment)
+			t.release()
 		}
 	}
 	return sOK
@@ -550,6 +573,7 @@ func (o *comObj) getFocus(out, _, _ uintptr) uintptr {
 	if id := o.h.prov.Focused(); id != "" {
 		if t := o.h.objFor(id); t != nil {
 			t.give(out, slotFragment)
+			t.release()
 		}
 	}
 	return sOK

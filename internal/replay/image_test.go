@@ -175,8 +175,8 @@ func TestImageCacheCapsTotalPixels(t *testing.T) {
 	if c.total > maxImageCachePixels {
 		t.Fatalf("cache holds %d pixels over the %d cap", c.total, maxImageCachePixels)
 	}
-	if len(c.order) != 2 {
-		t.Fatalf("cache holds %d entries, want 2 after pixel eviction", len(c.order))
+	if c.order.length() != 2 {
+		t.Fatalf("cache holds %d entries, want 2 after pixel eviction", c.order.length())
 	}
 }
 
@@ -273,8 +273,8 @@ func TestImageCachePutDoesNotSelfEvict(t *testing.T) {
 	if c.get(42) != img {
 		t.Fatal("newly inserted image exceeding pixel cap self-evicted")
 	}
-	if len(c.order) != 1 {
-		t.Fatalf("len(order) = %d, want 1", len(c.order))
+	if c.order.length() != 1 {
+		t.Fatalf("len(order) = %d, want 1", c.order.length())
 	}
 }
 
@@ -302,5 +302,17 @@ func TestImageCacheKeyForRingMatchesFullHash(t *testing.T) {
 	buf[len(buf)-1] ^= 0xff
 	if got := c.keyFor(&op); got == want || got != imageBytesKey(&op) {
 		t.Fatalf("mutated keyFor = %d, want %d", got, imageBytesKey(&op))
+	}
+}
+
+// TestImageCacheKeyForRingHitAllocsZero pins PERF-IMG-01: a ring hit no
+// longer boxes the slice header through reflect.
+func TestImageCacheKeyForRingHitAllocsZero(t *testing.T) {
+	var c imageCache
+	buf := bytes.Repeat([]byte("ownframe-image-payload-"), 32)
+	op := imageOp(t, buf, 4, 4, false)
+	c.keyFor(&op)
+	if allocs := testing.AllocsPerRun(100, func() { c.keyFor(&op) }); allocs != 0 {
+		t.Fatalf("keyFor ring hit allocs/op = %v, want 0", allocs)
 	}
 }

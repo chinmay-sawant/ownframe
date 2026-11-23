@@ -1,6 +1,6 @@
 # CSS Property Profiling & Dump Guide
 
-This guide explains how to benchmark all 688 CSS properties in `examples/blinkless-all` individually and in combination, generate structured performance dumps, compare runs with `cmd/benchscore`, and attribute slow paths to `blinkless` or `ownframe` functions.
+This guide explains how to benchmark all 688 CSS properties in `examples/blinkless-all` individually and in combination, generate structured performance dumps, compare runs with `scripts/cmd/benchscore`, and attribute slow paths to `blinkless` or `ownframe` functions.
 
 ## Quick start
 
@@ -59,7 +59,7 @@ go test -v -count=1 -timeout=20m ./examples/blinkless-all -run '^TestPropPerfDum
 Then compare the WSL2 and Windows benchmark dumps (or before/after runs on either OS) with:
 
 ```sh
-go run ./cmd/benchscore -ref temp/perf-dumps/props-wsl2/props-bench.txt -cand temp/perf-dumps/props-win/props-bench.txt
+make bench-gate BENCH_REF=temp/perf-dumps/props-wsl2/props-bench.txt BENCH_CAND=temp/perf-dumps/props-win/props-bench.txt
 ```
 
 ## Flags and environment variables
@@ -113,7 +113,7 @@ Each combination times its own control, the same fixture without the declaration
 | `summary.md` | Markdown | Ranked tables, hover fallbacks, warm allocations, bitmap fallbacks, UI recipes, and profile summaries |
 | `props-individual.jsonl` | JSON Lines | One record per property with controls, timing spread, effect evidence, and phase errors |
 | `props-combos.jsonl` | JSON Lines | Combination declarations, phase timings, per-phase multipliers, and the `super_linear` flag |
-| `props-bench.txt` | Go benchmark text | Refined rows only, with their real iteration counts, for `make bench-gate` (`cmd/benchscore`) |
+| `props-bench.txt` | Go benchmark text | Refined rows only, with their real iteration counts, for `make bench-gate` (`scripts/cmd/benchscore`) |
 | `manifest.json` | JSON | Measurement version and sampling flags that `--reference` checks |
 | `profiles/*.pprof` | `pprof` protobuf | CPU profiles and before/after allocation snapshots; inspect with `go tool pprof -http=:0 <file>` (add `-base` for allocations) |
 

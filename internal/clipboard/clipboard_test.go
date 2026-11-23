@@ -1,9 +1,12 @@
 package clipboard
 
 import (
+	"context"
+	"errors"
 	"os"
 	"testing"
 
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/leakcheck"
 )
 
@@ -75,5 +78,22 @@ func TestUTF16Clipboard(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("byte %d = %d", i, got[i])
 		}
+	}
+}
+
+func TestContextEntryPointsRejectNilAndCanceled(t *testing.T) {
+	UseMemory(true)
+	//nolint:staticcheck // reason: intentionally passes nil to verify the nil-context contract.
+	if err := WriteContext(nil, "x"); !errors.Is(err, host.ErrNilContext) {
+		t.Fatalf("WriteContext(nil) = %v, want ErrNilContext", err)
+	}
+	//nolint:staticcheck // reason: intentionally passes nil to verify the nil-context contract.
+	if _, err := ReadContext(nil); !errors.Is(err, host.ErrNilContext) {
+		t.Fatalf("ReadContext(nil) = %v, want ErrNilContext", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := WriteContext(ctx, "x"); !errors.Is(err, context.Canceled) {
+		t.Fatalf("WriteContext(canceled) = %v", err)
 	}
 }

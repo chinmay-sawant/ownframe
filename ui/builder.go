@@ -6,6 +6,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -255,6 +256,11 @@ func Render(root *Element) (string, error) {
 	return r.output.String(), nil
 }
 
+// ErrNilElement means View.Update, NewPage, or Mount received a nil component
+// tree. Render is the one exception: a nil element renders as an empty
+// fragment, so builders can return nil for an absent optional part.
+var ErrNilElement = errors.New("ui: a non-nil component tree is required")
+
 type renderer struct {
 	output  strings.Builder
 	actions map[string]func(context.Context) error
@@ -317,11 +323,36 @@ func getRenderer() *renderer {
 	return r
 }
 
+// Retention bounds for pooled renderers: one pathological document must not
+// pin its scratch for the life of the process.
+const (
+	// maxPooledScratchBytes bounds the numeric scratch kept in the pool.
+	maxPooledScratchBytes = 64 << 10
+	// maxPooledSlots bounds the stack, key, and identity capacity kept.
+	maxPooledSlots = 4096
+)
+
 // putRenderer returns a renderer whose maps the caller has detached or
-// cleared. The output buffer and key scratch keep their capacity.
+// cleared. The key scratch keeps its capacity up to the retention bounds; the
+// stack is cleared so a pooled renderer holds no Element tree, and anything
+// that grew past the bounds is dropped for the GC.
 func putRenderer(r *renderer) {
 	if r == nil {
 		return
+	}
+	clear(r.stack[:cap(r.stack)])
+	r.stack = r.stack[:0]
+	if cap(r.stack) > maxPooledSlots {
+		r.stack = nil
+	}
+	if cap(r.keys) > maxPooledSlots {
+		r.keys = nil
+	}
+	if cap(r.scratch) > maxPooledScratchBytes {
+		r.scratch = nil
+	}
+	if len(r.identities) > maxPooledSlots {
+		r.identities = make(map[string]int)
 	}
 	rendererPool.Put(r)
 }

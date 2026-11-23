@@ -38,7 +38,7 @@ through the accessibility snapshot ([accessibility.md](accessibility.md)).
 
 ## Copy and Cut
 
-`page.Edit().Copy` and `page.Edit().Cut` return `(text, ok, err)`. A focused field returns its selected range, or its whole value when the range is empty, and does not call the handler. `Copy` leaves the field alone and never draws. `Cut` removes that range, writes the bound field, fires `BeforeEdit` and `Change`, and draws; it fires both hooks even when the field is empty. With no focused field the handler runs: `Copy` still does not draw, and `Cut` draws only when the handler returns `ok` with no error. The hook contract is in [binding.md](binding.md).
+`page.Edit().Copy` and `page.Edit().Cut` return `(text, ok, err)`. A focused field returns its selected range, or its whole value when the range is empty, and does not call the handler. `Copy` leaves the field alone and never draws. `Cut` removes that range, writes the bound field, fires `BeforeEdit` and `Change`, and draws; it fires both hooks even when the field is empty. A focused `type="password"` field refuses both: they return `("", false, nil)`, fire no hook, and leave the value alone, as browsers do. With no focused field the handler runs: `Copy` still does not draw, and `Cut` draws only when the handler returns `ok` with no error. The hook contract is in [binding.md](binding.md).
 
 ## SelectAll
 

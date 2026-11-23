@@ -1,4 +1,4 @@
-package atspi
+package a11yqueue
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 func actionQueueForTest(t *testing.T) (*Actions, <-chan struct{}) {
 	t.Helper()
-	wake := make(chan struct{}, actionCapacity)
+	wake := make(chan struct{}, Capacity)
 	queue := NewActions(t.Context(), func() { wake <- struct{}{} })
 	t.Cleanup(queue.Close)
 	return queue, wake
@@ -71,7 +71,7 @@ func TestActionQueueShutdownCancelsExecutingAndQueuedRequests(t *testing.T) {
 		t.Fatalf("executing request survived shutdown: %v", err)
 	}
 	queue.Close()
-	if err := queue.Request(t.Context(), host.AccessibilityRequest{}); !errors.Is(err, ErrActionQueueClosed) {
+	if err := queue.Request(t.Context(), host.AccessibilityRequest{}); !errors.Is(err, ErrClosed) {
 		t.Fatalf("closed queue accepted action: %v", err)
 	}
 }
@@ -93,15 +93,15 @@ func TestActionQueueShutdownBeforeExecution(t *testing.T) {
 
 func TestActionQueueSaturationAndBatchLimit(t *testing.T) {
 	queue, wake := actionQueueForTest(t)
-	for range actionCapacity {
+	for range Capacity {
 		queue.pending <- &pendingAction{ctx: t.Context(), result: make(chan error, 1)}
 	}
-	if err := queue.Request(t.Context(), host.AccessibilityRequest{}); !errors.Is(err, ErrActionQueueFull) {
+	if err := queue.Request(t.Context(), host.AccessibilityRequest{}); !errors.Is(err, ErrFull) {
 		t.Fatalf("full queue = %v", err)
 	}
 	executed := 0
 	queue.Drain(func(context.Context, host.AccessibilityRequest) error { executed++; return nil })
-	if executed != actionBatch || len(queue.pending) != actionCapacity-actionBatch {
+	if executed != actionBatch || len(queue.pending) != Capacity-actionBatch {
 		t.Fatal("page loop did not respect the action batch limit")
 	}
 	select {

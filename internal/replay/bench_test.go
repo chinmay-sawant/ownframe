@@ -307,7 +307,7 @@ func BenchmarkCachedRoundedFill_Cold(b *testing.B) {
 			img.Deallocate()
 		}
 		clear(r.rasters.entries)
-		r.rasters.order = nil
+		r.rasters.order.reset()
 		r.rasters.pixels = 0
 		r.rasters.mu.Unlock()
 
@@ -375,7 +375,7 @@ func BenchmarkCachedStroke_Cold(b *testing.B) {
 			img.Deallocate()
 		}
 		clear(r.rasters.entries)
-		r.rasters.order = nil
+		r.rasters.order.reset()
 		r.rasters.pixels = 0
 		r.rasters.mu.Unlock()
 

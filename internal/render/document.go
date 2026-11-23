@@ -32,8 +32,6 @@ func DisplayListDocumentOptions(
 	if ctx == nil {
 		return nil, host.ErrNilContext
 	}
-	engineMu.Lock()
-	defer engineMu.Unlock()
 	display, err := layout.DisplayListOptions(ctx, styled, options)
 	if err != nil {
 		return nil, fmt.Errorf("render: display: %w", err)
@@ -42,17 +40,14 @@ func DisplayListDocumentOptions(
 	return display, nil
 }
 
-// ReleaseDisplay returns a superseded display list to the engine pool under
-// engineMu, synchronizing the caller's prior reads of display.Boxes and
-// display.Ops with the next DisplayListOptions call that reuses the pooled
-// backing arrays.
+// ReleaseDisplay returns a superseded display list to the engine pool. The
+// caller must not read display.Boxes or display.Ops afterwards: the next
+// DisplayListOptions call may reuse the pooled backing arrays.
 func ReleaseDisplay(d *Display) {
 	if d == nil {
 		return
 	}
-	engineMu.Lock()
 	d.Release()
-	engineMu.Unlock()
 }
 
 // PaintDocument lays out an already styled document. It is the layout half

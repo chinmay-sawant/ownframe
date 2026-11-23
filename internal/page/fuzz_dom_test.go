@@ -10,7 +10,7 @@ import (
 // cover flat, nested, void, comment, and attribute-quote cases.
 // Markup the guard documents as over-depth or over-size must error.
 func FuzzDOMLimits(f *testing.F) {
-	for _, seed := range []string{"<p>x</p>", "<div><div></div></div>", "<br><img src=\"a>b\">", "<!-- <div> -->", "<!DOCTYPE html>", strings.Repeat("<div>", 300), strings.Repeat("<i>x</i>", 10)} {
+	for _, seed := range []string{"<p>x</p>", "<div><div></div></div>", "<br><img src=\"a>b\">", "<!-- <div> -->", "<!DOCTYPE html>", "<style>a<b<c<d</style>", "<script>" + strings.Repeat("<i>", 600) + "</script>", strings.Repeat("<div>", 300), strings.Repeat("<i>x</i>", 10)} {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, s string) {
@@ -68,6 +68,10 @@ func domCapError(s string) error {
 		depth++
 		if depth > MaxDOMDepth {
 			return ErrDOMTooDeep
+		}
+		if name == "script" || name == "style" {
+			// Raw text: the guard skips the body, so stop predicting.
+			return nil
 		}
 	}
 

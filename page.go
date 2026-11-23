@@ -104,7 +104,7 @@ func (p *Page) RedrawIfChanged(ctx context.Context) error {
 func (p *Page) Click(ctx context.Context, x, y float64) error {
 	inner := innerPage(p)
 	if inner == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return inner.Click(ctx, x, y)

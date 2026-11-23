@@ -1,6 +1,11 @@
 // Package ipc passes strings between callers in this process.
 package ipc
 
+import (
+	"log"
+	"slices"
+)
+
 // Send calls each Listen callback for channel.
 // A callback that panics does not stop the others.
 // An empty channel does nothing.
@@ -17,12 +22,18 @@ func Send(channel, payload string) {
 	mu.Unlock()
 
 	for _, item := range snap {
-		call(item.fn, payload)
+		call(channel, item.fn, payload)
 	}
 }
 
-func call(fn func(string), payload string) {
-	defer func() { _ = recover() }()
+func call(channel string, fn func(string), payload string) {
+	defer func() {
+		if r := recover(); r != nil {
+			// One listener's panic never stops the others, but it is not
+			// silent: log the channel and the panic type, never the payload.
+			log.Printf("ownframe: ipc listener on %q panicked: %T", channel, r)
+		}
+	}()
 
 	fn(payload)
 }
@@ -43,6 +54,8 @@ func Listen(channel string, fn func(string)) (cancel func()) {
 	defer mu.Unlock()
 
 	if len(ears[channel]) >= maxListeners {
+		log.Printf("ownframe: ipc channel %q already has %d listeners; this Listen is ignored", channel, maxListeners)
+
 		return noop
 	}
 	seq++
@@ -62,7 +75,9 @@ func removeEar(channel string, id int64) {
 			continue
 		}
 
-		ears[channel] = append(list[:i], list[i+1:]...)
+		// slices.Delete zeroes the vacated tail slot, so the removed closure
+		// is not kept alive by the backing array.
+		ears[channel] = slices.Delete(list, i, i+1)
 		if len(ears[channel]) == 0 {
 			delete(ears, channel)
 		}

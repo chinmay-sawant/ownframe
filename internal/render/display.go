@@ -28,8 +28,6 @@ func DisplayListState(ctx context.Context, source string, width, height int, sta
 	if ctx == nil {
 		return nil, host.ErrNilContext
 	}
-	engineMu.Lock()
-	defer engineMu.Unlock()
 	doc, err := html.Parse([]byte(source))
 	if err != nil {
 		return nil, fmt.Errorf("render: parse: %w", err)

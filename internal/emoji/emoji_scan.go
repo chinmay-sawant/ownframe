@@ -56,12 +56,24 @@ func isNameByte(c byte) bool {
 		'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9'
 }
 
+// rawTextTag reports whether the element's content is not markup: script and
+// style hold raw text, textarea and title hold RCDATA. Rewriting any of them
+// would put literal <img> source into what the page shows or runs.
+func rawTextTag(name string) bool {
+	switch name {
+	case "script", "style", "textarea", "title":
+		return true
+	}
+
+	return false
+}
+
 // rawText returns the script or style body through its closing tag. ok is
 // false when the body never closes.
 func rawText(html string, i int, name string) (string, bool) {
 	close := "</" + name
 	for k := i; k < len(html); k++ {
-		if html[k] != '<' || !strings.HasPrefix(strings.ToLower(html[k:]), close) {
+		if html[k] != '<' || len(html)-k < len(close) || !strings.EqualFold(html[k:k+len(close)], close) {
 			continue
 		}
 

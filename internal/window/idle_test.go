@@ -469,3 +469,52 @@ func TestNextLoopBaseAbsorbsOvershootAndResyncsOnStall(t *testing.T) {
 		t.Fatalf("stalled base = %v, want resynced %v", resynced, stalled)
 	}
 }
+
+// TestPaceGameCloseJoinsTimerGoroutine pins GPU-LIFE-02: close returns only
+// after the timer goroutine has exited.
+func TestPaceGameCloseJoinsTimerGoroutine(t *testing.T) {
+	sh := &shell{ctx: context.Background()}
+	saved := ebiten.TPS()
+	defer ebiten.SetTPS(saved)
+
+	out, stop := paceWindow(context.Background(), sh, Options{NoIdlePace: true, MaxFPS: 60})
+	pg, ok := out.(*paceGame)
+	if !ok {
+		t.Fatalf("wrapped %T, want *paceGame", out)
+	}
+	stop()
+	select {
+	case <-pg.timerDone:
+	default:
+		t.Fatal("close returned before the timer goroutine exited")
+	}
+}
+
+// TestDisposeSurfacesIsIdempotentOnBareShell pins that the run-exit disposal
+// tolerates a shell that never built any surface, and runs twice.
+func TestDisposeSurfacesIsIdempotentOnBareShell(t *testing.T) {
+	sh := &shell{ctx: context.Background()}
+	sh.disposeSurfaces()
+	sh.disposeSurfaces()
+	if sh.img != nil || sh.scaleBuf != nil || sh.partial.tiles != nil || sh.bitmapView.img != nil || sh.titlebar.canvas != nil {
+		t.Fatal("surfaces remain after disposeSurfaces")
+	}
+}
+
+// TestLoopWaitNeverExceedsOnePresentInterval pins GPU-LIFE-03: the sleep in
+// paceGame.Draw is bounded by one present interval for any anchor, so a
+// MaxFPS cap of 30 delays OS event pumping by at most ~33 ms.
+func TestLoopWaitNeverExceedsOnePresentInterval(t *testing.T) {
+	for _, fps := range []int{10, 24, 30, 60} {
+		interval := LoopInterval(fps)
+		now := time.Now()
+		for _, ago := range []time.Duration{0, interval / 4, interval / 2, interval, 10 * interval} {
+			if wait := loopWait(fps, now.Add(-ago), now); wait < 0 || wait > interval {
+				t.Fatalf("fps %d anchor %v ago: wait %v outside [0,%v]", fps, ago, wait, interval)
+			}
+		}
+	}
+	if got := LoopInterval(30); got > 34*time.Millisecond {
+		t.Fatalf("30 FPS interval %v exceeds the 34 ms input budget", got)
+	}
+}

@@ -25,6 +25,59 @@ type backdropState struct {
 	err     error
 	scratch [3]*ebiten.Image
 	size    image.Point
+	sizing  scratchSizing
+
+	// horizontalUniforms and verticalUniforms are reused across draws so a
+	// frame with a backdrop filter allocates no uniform maps. Only the render
+	// loop draws through one renderer, so no lock guards them.
+	horizontalUniforms map[string]any
+	verticalUniforms   map[string]any
+}
+
+const (
+	// blurUniformCount is the number of shader uniforms a blur pass sets.
+	blurUniformCount = 9
+	// scratchShrinkFrames is how many acquires one shrink decision watches.
+	scratchShrinkFrames = 120
+	// scratchShrinkRatio is how much larger than the window's peak demand the
+	// scratch area may be before it is reallocated smaller.
+	scratchShrinkRatio = 4
+)
+
+// scratchSizing decides when the three backdrop scratch textures grow, shrink,
+// or are refused. It is pure state so aspect-ratio swings and the
+// MaxImageSize clamp are testable without a GPU.
+type scratchSizing struct {
+	frames       int
+	peakW, peakH int
+	peakArea     int
+}
+
+// plan answers for one acquire of a w by h sample while the textures hold
+// current. It returns the size the textures must have, and ok false when the
+// request cannot be served (empty, or beyond maxEdge).
+func (s *scratchSizing) plan(current image.Point, w, h, maxEdge int) (image.Point, bool) {
+	if w <= 0 || h <= 0 || w > maxEdge || h > maxEdge {
+		return current, false
+	}
+
+	s.frames++
+	s.peakW, s.peakH = max(s.peakW, w), max(s.peakH, h)
+	s.peakArea = max(s.peakArea, w*h)
+
+	target := current
+	if current.X < w || current.Y < h {
+		target = image.Pt(min(max(current.X, w), maxEdge), min(max(current.Y, h), maxEdge))
+	}
+
+	if s.frames >= scratchShrinkFrames {
+		if target.X*target.Y > scratchShrinkRatio*s.peakArea {
+			target = image.Pt(s.peakW, s.peakH)
+		}
+		s.frames, s.peakW, s.peakH, s.peakArea = 0, 0, 0, 0
+	}
+
+	return target, true
 }
 
 func (b *backdropState) getShader() (*ebiten.Shader, error) {
@@ -41,8 +94,17 @@ func (b *backdropState) acquireScratch(w, h int) (src, horiz, filt *ebiten.Image
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if b.scratch[0] == nil || b.size.X < w || b.size.Y < h {
-		newW, newH := max(b.size.X, w), max(b.size.Y, h)
+	edge := ebiten.MaxImageSize()
+	if edge <= 0 {
+		// No running game reports no limit; leave the request unclamped.
+		edge = math.MaxInt32
+	}
+	target, ok := b.sizing.plan(b.size, w, h, edge)
+	if !ok {
+		return nil, nil, nil, false
+	}
+
+	if b.scratch[0] == nil || target != b.size {
 		for i, img := range b.scratch {
 			if img != nil {
 				img.Deallocate()
@@ -51,9 +113,9 @@ func (b *backdropState) acquireScratch(w, h int) (src, horiz, filt *ebiten.Image
 		}
 		opts := &ebiten.NewImageOptions{Unmanaged: true}
 		for i := range b.scratch {
-			b.scratch[i] = ebiten.NewImageWithOptions(image.Rect(0, 0, newW, newH), opts)
+			b.scratch[i] = ebiten.NewImageWithOptions(image.Rect(0, 0, target.X, target.Y), opts)
 		}
-		b.size = image.Pt(newW, newH)
+		b.size = target
 	}
 
 	if b.size.X == w && b.size.Y == h {
@@ -69,6 +131,19 @@ func (b *backdropState) acquireScratch(w, h int) (src, horiz, filt *ebiten.Image
 	return s0, s1, s2, true
 }
 
+// blurUniforms fills the reused uniform map held in slot and returns it.
+func (b *backdropState) blurUniforms(slot *map[string]any, radius, axis, saturation, refraction, boxX, boxY, boxW, boxH, cornerRadius float32) map[string]any {
+	m := *slot
+	if m == nil {
+		m = make(map[string]any, blurUniformCount)
+		*slot = m
+	}
+	m["Radius"], m["Axis"], m["Saturation"], m["Refraction"] = radius, axis, saturation, refraction
+	m["BoxX"], m["BoxY"], m["BoxW"], m["BoxH"], m["CornerRadius"] = boxX, boxY, boxW, boxH, cornerRadius
+
+	return m
+}
+
 func (b *backdropState) releaseScratch() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -79,6 +154,7 @@ func (b *backdropState) releaseScratch() {
 		}
 	}
 	b.size = image.Point{}
+	b.sizing = scratchSizing{}
 }
 
 func (b *backdropState) close() {
@@ -91,6 +167,7 @@ func (b *backdropState) close() {
 		}
 	}
 	b.size = image.Point{}
+	b.sizing = scratchSizing{}
 	if b.shader != nil {
 		b.shader.Deallocate()
 		b.shader = nil
@@ -162,34 +239,16 @@ func (renderer *Renderer) applyBackdropFilter(
 	horizontalOptions := &ebiten.DrawRectShaderOptions{}
 	horizontalOptions.Images[0] = backdrop
 	horizontalOptions.Blend = ebiten.BlendCopy
-	horizontalOptions.Uniforms = map[string]any{
-		"Radius":       float32(radius),
-		"Axis":         float32(0),
-		"Saturation":   float32(1),
-		"Refraction":   float32(0),
-		"BoxX":         boxX,
-		"BoxY":         boxY,
-		"BoxW":         boxW,
-		"BoxH":         boxH,
-		"CornerRadius": cornerRadius,
-	}
+	horizontalOptions.Uniforms = renderer.backdrop.blurUniforms(&renderer.backdrop.horizontalUniforms,
+		float32(radius), 0, 1, 0, boxX, boxY, boxW, boxH, cornerRadius)
 	horizontal.DrawRectShader(sample.Dx(), sample.Dy(), shader, horizontalOptions)
 
 	verticalOptions := &ebiten.DrawRectShaderOptions{}
 	verticalOptions.Images[0] = horizontal
 	verticalOptions.Images[1] = backdrop
 	verticalOptions.Blend = ebiten.BlendCopy
-	verticalOptions.Uniforms = map[string]any{
-		"Radius":       float32(radius),
-		"Axis":         float32(1),
-		"Saturation":   float32(node.backdrop.Saturation),
-		"Refraction":   float32(refraction),
-		"BoxX":         boxX,
-		"BoxY":         boxY,
-		"BoxW":         boxW,
-		"BoxH":         boxH,
-		"CornerRadius": cornerRadius,
-	}
+	verticalOptions.Uniforms = renderer.backdrop.blurUniforms(&renderer.backdrop.verticalUniforms,
+		float32(radius), 1, float32(node.backdrop.Saturation), float32(refraction), boxX, boxY, boxW, boxH, cornerRadius)
 	filtered.DrawRectShader(sample.Dx(), sample.Dy(), shader, verticalOptions)
 
 	filterRegion := image.Rect(

@@ -116,13 +116,16 @@ func (r *Runtime) SetPromotedLayers(ids []string) {
 		return
 	}
 
-	set := make(map[string]struct{}, len(ids))
+	if r.promoted == nil {
+		r.promoted = make(map[string]struct{}, len(ids))
+	} else {
+		clear(r.promoted)
+	}
 	for _, id := range ids {
 		if id != "" {
-			set[id] = struct{}{}
+			r.promoted[id] = struct{}{}
 		}
 	}
-	r.promoted = set
 }
 
 // promotedEntry reports that the entry's changed paint lands in a retained

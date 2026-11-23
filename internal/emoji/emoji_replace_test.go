@@ -104,3 +104,56 @@ func TestReplaceGateSkipsNonEmoji(t *testing.T) {
 		}
 	}
 }
+
+func TestReplaceUnclosedCommentEndingInEmoji(t *testing.T) {
+	t.Parallel()
+
+	for _, src := range []string{"<!--😂", "a <!-- x 😂", "<!-"} {
+		got, changed := Replace(src)
+		if got != src || changed {
+			t.Fatalf("Replace(%q) = %q, %v; want unchanged", src, got, changed)
+		}
+	}
+}
+
+func TestReplaceRCDATAUntouched(t *testing.T) {
+	t.Parallel()
+
+	for _, src := range []string{
+		"<textarea>hi 😂</textarea>",
+		"<TEXTAREA rows=2>😂 < b</TEXTAREA>",
+		"<title>😂</title>",
+	} {
+		if got, changed := Replace(src); got != src || changed {
+			t.Fatalf("Replace(%q) = %q, %v; want unchanged", src, got, changed)
+		}
+	}
+
+	got, changed := Replace("<title>x</title><p>😂</p>")
+	if !changed || !strings.Contains(got, "<img") || strings.Contains(got, "<title>x</title><img") {
+		t.Fatalf("text after title not rewritten: %q", got)
+	}
+}
+
+// TestRawTextLinear builds a script with many '<' and checks the scan stays
+// linear: the old code lowercased the whole remaining tail for each one.
+func TestRawTextLinear(t *testing.T) {
+	// AllocsPerRun cannot run in a parallel test.
+	body := strings.Repeat("a<b ", 200000)
+	src := "<script>" + body + "</script>😂"
+	allocs := testing.AllocsPerRun(1, func() { rawText(src, len("<script>"), "script") })
+	if allocs > 2 {
+		t.Fatalf("rawText allocated %v times; want no tail copies", allocs)
+	}
+	rest, ok := rawText(src, len("<script>"), "script")
+	if !ok || !strings.HasSuffix(rest, "</script>") {
+		t.Fatalf("rawText did not find the closing tag (ok=%v)", ok)
+	}
+}
+
+func BenchmarkRawTextManyAngles(b *testing.B) {
+	src := "<script>" + strings.Repeat("a<b ", 50000) + "</script>"
+	for range b.N {
+		rawText(src, len("<script>"), "script")
+	}
+}

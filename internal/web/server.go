@@ -35,6 +35,9 @@ type server struct {
 	lastNote     string
 	perf         bool
 	debugEnabled bool
+	// redactPasswords blanks type=password values in the live document. It is
+	// set for a remote bind, where the plaintext would cross the network.
+	redactPasswords bool
 	// ticking is true while the frame loop runs. frameGen advances when a
 	// dirty tick changes the picture without a page redraw, so /state can
 	// tell the shell to fetch a new frame.

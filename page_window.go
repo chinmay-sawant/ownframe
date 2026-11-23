@@ -26,7 +26,7 @@ func (w Window) CursorPosition() (int, int) {
 func (w Window) PollReload(ctx context.Context) (bool, error) {
 	p := innerPage(w.page)
 	if p == nil {
-		return false, nil
+		return false, ErrNilPage
 	}
 
 	return p.PollReload(ctx)

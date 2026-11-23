@@ -87,7 +87,7 @@ func TestRendererIdleReleasesPixelCaches(t *testing.T) {
 
 	r.SetIdle()
 
-	if len(r.chunks.entries) != 0 || r.chunks.pixels != 0 || r.chunks.order != nil {
+	if len(r.chunks.entries) != 0 || r.chunks.pixels != 0 || r.chunks.order.length() != 0 {
 		t.Fatal("SetIdle must empty the chunk cache")
 	}
 	if len(r.textRuns.entries) != 0 || r.textRuns.pixels != 0 {

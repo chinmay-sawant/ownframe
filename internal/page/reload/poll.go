@@ -23,17 +23,15 @@ type Hooks struct {
 	Theme    func(string) error
 }
 
-// Poll rereads a changed file, or retries a parse that failed last time.
-// It reports whether a template or theme was installed, and the first
-// error. A later successful install in the same poll clears a pending
-// edit from the earlier kind. The caller redraws only when installed
-// is true.
+// Poll rereads each changed file. HTML and theme are polled independently, so
+// a syntax error in one never starves a reload of the other. A file whose
+// install failed keeps its error until its stat changes; unchanged broken
+// bytes are not parsed again. It reports whether a template or theme was
+// installed, and the first error. The caller redraws only when applied is
+// true.
 func (s *State) Poll(h Hooks) (bool, error) {
 	if s == nil || !s.On() {
 		return false, nil
-	}
-	if s.pending != nil {
-		return s.retry(h)
 	}
 	applied := false
 	var first error
@@ -49,23 +47,6 @@ func (s *State) Poll(h Hooks) (bool, error) {
 	return applied, first
 }
 
-// retry reapplies the bytes a parse error kept. A later stat change
-// drops those bytes and reads the path again.
-func (s *State) retry(h Hooks) (bool, error) {
-	pend := s.pending
-	wp := s.at(pend.kind)
-	info, err := h.Files.Stat(wp.path)
-	if err != nil {
-		return false, noteStat(wp, err)
-	}
-	wp.statErr = ""
-	if !sameStat(info, pend.info) {
-		s.pending = nil
-		return s.one(pend.kind, h)
-	}
-	return s.apply(pend.kind, pend.data, info, h)
-}
-
 // one rereads one path when its stat changed and its hash differs.
 func (s *State) one(kind Kind, h Hooks) (bool, error) {
 	wp := s.at(kind)
@@ -77,6 +58,12 @@ func (s *State) one(kind Kind, h Hooks) (bool, error) {
 		return false, noteStat(wp, err)
 	}
 	wp.statErr = ""
+	if pend := s.pending[kind]; pend != nil {
+		if sameStat(info, pend.info) {
+			return false, pathErr(wp.path, pend.err)
+		}
+		s.pending[kind] = nil
+	}
 	if sameStat(info, wp.info) {
 		return false, nil
 	}
@@ -97,15 +84,15 @@ func (s *State) one(kind Kind, h Hooks) (bool, error) {
 	return s.apply(kind, data, info, h)
 }
 
-// apply passes the source to the install callback. An error keeps the
-// bytes pending and leaves the last accepted file in place.
+// apply passes the source to the install callback. An error remembers the
+// failed stat and leaves the last accepted file in place.
 func (s *State) apply(kind Kind, data []byte, info os.FileInfo, h Hooks) (bool, error) {
 	wp := s.at(kind)
 	if err := install(kind, data, h); err != nil {
-		s.pending = &edit{kind: kind, data: data, info: info}
+		s.pending[kind] = &edit{info: info, err: err}
 		return false, pathErr(wp.path, err)
 	}
-	s.pending = nil
+	s.pending[kind] = nil
 	wp.accept(data, info)
 	return true, nil
 }

@@ -54,7 +54,7 @@ func (p *Page) PollReload(ctx context.Context) (bool, error) {
 	}
 	applied, first := p.watch.Poll(reload.Hooks{
 		Files:    srcFiles,
-		Limit:    maxSourceSize,
+		Limit:    MaxSourceSize,
 		Oversize: sourceTooLarge,
 		HTML:     func(src string) error { return installWatched(p, src) },
 		Theme:    p.SetTheme,
@@ -73,10 +73,16 @@ func (p *Page) PollReload(ctx context.Context) (bool, error) {
 }
 
 func installWatched(p *Page, src string) error {
+	// Every hot-reloaded source meets the DOM limits New and Load enforce, so
+	// a Go template cannot slip past them through a file edit. Only a static
+	// page must also be non-blank: a template may be blank and produce its
+	// content from data.
 	if p.watchStaticHTML {
 		if err := validateHTML(src); err != nil {
 			return err
 		}
+	} else if err := checkDOMLimits(src); err != nil {
+		return err
 	}
 	entry := nav.Source(src, p.watchStaticHTML)
 	tpl, err := parseTemplate(entry)

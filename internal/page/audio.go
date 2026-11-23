@@ -2,6 +2,7 @@ package page
 
 import (
 	"bytes"
+	"math"
 	"sync"
 )
 
@@ -96,6 +97,10 @@ func (a *audioSlot) set(data []byte, contentType string) {
 }
 
 func (a *audioSlot) setPlayback(playing bool, volume float64) {
+	// NaN fails both clamps below and would break JSON encoding of /state.
+	if math.IsNaN(volume) {
+		volume = 0
+	}
 	if volume < 0 {
 		volume = 0
 	}

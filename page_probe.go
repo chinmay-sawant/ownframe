@@ -246,7 +246,7 @@ func (pr Probe) BeginRedrawBatch() {
 func (pr Probe) EndRedrawBatch(ctx context.Context) error {
 	p := innerPage(pr.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.EndRedrawBatch(ctx)

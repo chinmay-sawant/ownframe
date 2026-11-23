@@ -4,12 +4,8 @@ package filepick
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"os/exec"
 	"strings"
-
-	"github.com/chinmay-sawant/ownframe/internal/debugtag"
 )
 
 const script = `on run argv
@@ -27,7 +23,7 @@ func Pick(ctx context.Context, title string) (string, error) {
 	out, err := exec.CommandContext(ctx, "osascript", "-e", script, title).Output()
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
-			return "", ctxErr
+			return "", ctxCanceled(ctxErr)
 		}
 		debugf("osascript failed: %v", err)
 
@@ -39,18 +35,4 @@ func Pick(ctx context.Context, title string) (string, error) {
 	}
 
 	return picked, nil
-}
-
-// debugf writes to stderr when OWNFRAME_FILEPICK_DEBUG is not empty.
-// Values are sanitized to one line. Keep this flag off in shipped builds.
-// The output is compiled out without -tags ownframe_debug.
-func debugf(format string, args ...any) {
-	if !debugtag.Enabled {
-		return
-	}
-	if os.Getenv("OWNFRAME_FILEPICK_DEBUG") == "" {
-		return
-	}
-
-	fmt.Fprintf(os.Stderr, "filepick: "+format+"\n", cleanArgs(args)...)
 }

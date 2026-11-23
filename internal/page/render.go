@@ -151,6 +151,11 @@ func execTemplate(p *Page, track bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// New and Load check the template text, but {{range}} and {{template}}
+	// can expand it far past the node and depth limits, so check what ran.
+	if err := checkDOMLimits(body); err != nil {
+		return "", err
+	}
 
 	return body, nil
 }

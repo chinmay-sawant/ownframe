@@ -24,7 +24,7 @@ const (
 type rasterCache struct {
 	mu      sync.Mutex
 	entries map[rasterKey]*ebiten.Image
-	order   []rasterKey
+	order   lruOrder[rasterKey]
 	pixels  int
 }
 
@@ -49,10 +49,10 @@ func (c *rasterCache) raster(key rasterKey, size image.Point, bake func(*ebiten.
 	img := ebiten.NewImage(size.X, size.Y)
 	bake(img)
 	c.entries[key] = img
-	c.order = append(c.order, key)
+	c.order.add(key)
 	c.pixels += size.X * size.Y
 
-	c.order, c.pixels = lruEvict(c.order, len(c.order), rasterMaxEntries, c.pixels, rasterMaxTotalPixels, key, func(victim rasterKey) int {
+	c.pixels = c.order.evict(c.order.length(), rasterMaxEntries, c.pixels, rasterMaxTotalPixels, key, func(victim rasterKey) int {
 		evicted := c.entries[victim]
 		delete(c.entries, victim)
 		px := evicted.Bounds().Dx() * evicted.Bounds().Dy()
@@ -66,7 +66,7 @@ func (c *rasterCache) raster(key rasterKey, size image.Point, bake func(*ebiten.
 // touch moves a hit key to the back of the order, so eviction drops the
 // least-recently-used entry first. The caller holds mu.
 func (c *rasterCache) touch(key rasterKey) {
-	c.order = lruTouch(c.order, key)
+	c.order.touch(key)
 }
 
 // rasterKey names one cached vector rasterization. It holds everything that

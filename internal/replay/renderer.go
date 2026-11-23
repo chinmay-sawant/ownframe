@@ -30,7 +30,7 @@ func (renderer *Renderer) Close() {
 		img.Deallocate()
 	}
 	clear(renderer.rasters.entries)
-	renderer.rasters.order = nil
+	renderer.rasters.order.reset()
 	renderer.rasters.pixels = 0
 	renderer.rasters.mu.Unlock()
 
@@ -44,7 +44,7 @@ func (renderer *Renderer) Close() {
 	}
 	clear(renderer.images.entries)
 	clear(renderer.images.sizes)
-	renderer.images.order = nil
+	renderer.images.order.reset()
 	renderer.images.total = 0
 	renderer.images.keyRing = [imageKeyRingSize]imageKeyEntry{}
 	renderer.images.keyNext = 0
@@ -55,7 +55,7 @@ func (renderer *Renderer) Close() {
 		entry.img.Deallocate()
 	}
 	clear(renderer.chunks.entries)
-	renderer.chunks.order = nil
+	renderer.chunks.order.reset()
 	renderer.chunks.pixels = 0
 	renderer.chunks.mu.Unlock()
 
@@ -135,7 +135,7 @@ func (c *rasterCache) releaseIdle() {
 	}
 
 	c.entries = nil
-	c.order = nil
+	c.order.reset()
 	c.pixels = 0
 }
 
@@ -148,9 +148,7 @@ func (c *rasterCache) warmIdle(n int) {
 	if c.entries == nil {
 		c.entries = make(map[rasterKey]*ebiten.Image, n)
 	}
-	if c.order == nil {
-		c.order = make([]rasterKey, 0, n)
-	}
+	c.order.reserve(n)
 }
 
 // releaseIdle drops every baked run and remembered decline. It reuses the
@@ -168,9 +166,7 @@ func (c *textRasterCache) warmIdle(n int) {
 	if c.entries == nil {
 		c.entries = make(map[textRasterKey]textRasterEntry, n)
 	}
-	if c.order == nil {
-		c.order = make([]textRasterKey, 0, n)
-	}
+	c.order.reserve(n)
 }
 
 // releaseIdle deallocates every decoded image and forgets the index, so the
@@ -185,7 +181,7 @@ func (c *imageCache) releaseIdle() {
 
 	c.entries = nil
 	c.sizes = nil
-	c.order = nil
+	c.order.reset()
 	c.total = 0
 	c.keyRing = [imageKeyRingSize]imageKeyEntry{}
 	c.keyNext = 0
@@ -201,9 +197,7 @@ func (c *imageCache) warmIdle(n int) {
 		c.entries = make(map[uint64]*ebiten.Image, n)
 		c.sizes = make(map[uint64]int, n)
 	}
-	if c.order == nil {
-		c.order = make([]uint64, 0, n)
-	}
+	c.order.reserve(n)
 }
 
 // releaseIdle deallocates every baked chunk and forgets the index.
@@ -216,7 +210,7 @@ func (c *chunkStore) releaseIdle() {
 	}
 
 	c.entries = nil
-	c.order = nil
+	c.order.reset()
 	c.pixels = 0
 }
 
@@ -229,9 +223,7 @@ func (c *chunkStore) warmIdle(n int) {
 	if c.entries == nil {
 		c.entries = make(map[chunkKey]*chunkEntry, n)
 	}
-	if c.order == nil {
-		c.order = make([]chunkKey, 0, n)
-	}
+	c.order.reserve(n)
 }
 
 // releaseIdle disposes both plan slots and forgets the displays they came

@@ -1,8 +1,6 @@
 package web
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -24,9 +22,18 @@ type debugState struct {
 
 // debug answers GET /debug/state under the server mutex. Reload errors
 // are sanitized so file paths cannot leak verbatim to the client.
-func (s *server) debug(w http.ResponseWriter, _ *http.Request) {
+func (s *server) debug(w http.ResponseWriter, r *http.Request) {
+	if !sameOrigin(r) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	rp := s.debugReplyLocked()
+	s.mu.Unlock()
+	rp.send(w, "debug state")
+}
+
+func (s *server) debugReplyLocked() reply {
 	front := host.SelectFront(s.app)
 	state := debugState{
 		Width:      front.Width,
@@ -46,9 +53,5 @@ func (s *server) debug(w http.ResponseWriter, _ *http.Request) {
 	if s.perf {
 		state.Runtime = runtimeSnapshot()
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "no-store")
-	if err := json.NewEncoder(w).Encode(state); err != nil {
-		log.Printf("write debug state: %s", sanitizeLine(err.Error()))
-	}
+	return jsonReply("application/json", state, "debug state")
 }

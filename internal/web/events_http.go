@@ -27,22 +27,27 @@ func (s *server) events(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("X-Accel-Buffering", "no")
 	fl, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
 	}
+	// Subscribe before any header goes out, so a closed server or a full
+	// subscriber table answers 503 instead of a half-open stream.
+	ch, ok := s.trySubscribe(1)
+	if !ok {
+		http.Error(w, "too many event streams", http.StatusServiceUnavailable)
+		return
+	}
+	defer s.unsubscribe(ch)
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
 	if _, err := fmt.Fprint(w, "retry: 3000\n\n"); err != nil {
 		return
 	}
 	fl.Flush()
-
-	ch := s.subscribe(1)
-	defer s.unsubscribe(ch)
 
 	// Replay the current snapshot so a late joiner converges without
 	// waiting one tick. This write happens in the handler goroutine with
@@ -80,13 +85,40 @@ func (s *server) events(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// maxSubscribers caps concurrent /events streams. Each holds a goroutine and a
+// socket, so an unbounded count lets one client exhaust the process.
+const maxSubscribers = 64
+
+// trySubscribe registers a stream unless the server is closed or already
+// serves maxSubscribers streams.
+func (s *server) trySubscribe(size int) (chan []byte, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed || len(s.subs) >= maxSubscribers {
+		return nil, false
+	}
+
+	return s.addSubLocked(size), true
+}
+
+// addSubLocked registers one buffered channel. The caller holds s.mu.
+func (s *server) addSubLocked(size int) chan []byte {
+	if size < 1 {
+		size = 1
+	}
+	if s.subs == nil {
+		s.subs = map[chan []byte]struct{}{}
+	}
+	ch := make(chan []byte, size)
+	s.subs[ch] = struct{}{}
+
+	return ch
+}
+
 // subscribe registers one /events stream. The channel is buffered size 1
 // so a slow browser coalesces to the latest snapshot instead of stalling
 // the tick loop.
 func (s *server) subscribe(size int) chan []byte {
-	if size < 1 {
-		size = 1
-	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
@@ -94,12 +126,8 @@ func (s *server) subscribe(size int) chan []byte {
 		close(ch)
 		return ch
 	}
-	if s.subs == nil {
-		s.subs = map[chan []byte]struct{}{}
-	}
-	ch := make(chan []byte, size)
-	s.subs[ch] = struct{}{}
-	return ch
+
+	return s.addSubLocked(size)
 }
 
 // unsubscribe removes the stream and closes its channel.

@@ -10,7 +10,7 @@ go 1.26.11
 // library tag.
 require (
 	github.com/brianvoe/gofakeit/v7 v7.18.0
-	github.com/chinmay-sawant/blinkless v0.1.6-0.20261122200403-b2fe5ba5105e
+	github.com/chinmay-sawant/blinkless v0.1.6-0.20261123070411-44951cb5f428
 	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/hajimehoshi/ebiten/v2 v2.10.6

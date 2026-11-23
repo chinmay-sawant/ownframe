@@ -487,6 +487,11 @@ func validateCSSValue(text string) error {
 	if strings.TrimSpace(text) == "" {
 		return fmt.Errorf("ui: empty CSS value")
 	}
+	// A closing-tag opener breaks out of an embedding <style> element even
+	// inside a quoted string, so refuse it everywhere.
+	if strings.Contains(text, "</") {
+		return fmt.Errorf("ui: closing tag sequence in CSS value")
+	}
 	stack := []byte{}
 	var quote byte
 	for i := 0; i < len(text); i++ {

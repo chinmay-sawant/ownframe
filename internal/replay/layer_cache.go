@@ -70,6 +70,14 @@ type layerStore struct {
 	claimed []bool
 	ranks   []int
 	owners  []int
+
+	// Per-frame scratch, cleared and reused so a steady retained-layer
+	// animation allocates no maps or slices.
+	candScratch   []layerCandidate
+	keepScratch   map[layerKey]bool
+	activeScratch []*Layer
+	idScratch     []string
+	dropScratch   []bool
 }
 
 // BeginLayers resolves the requested promotions, keeps or bakes their
@@ -119,7 +127,7 @@ func (renderer *Renderer) beginLayers(d *layout.Display, gen uint64, specs []Lay
 	}
 	store.ranks = layerRanks(d, store.ranks)
 	store.owners = layerOwners(d, store.owners)
-	candidates := make([]layerCandidate, 0, min(len(specs), layerMaxEntries))
+	candidates := store.candScratch[:0]
 	for _, spec := range specs {
 		candidate, reason := resolveLayer(d, spec, gen, store.claimed, store.ranks, store.owners)
 		if reason != "" {
@@ -141,12 +149,17 @@ func (renderer *Renderer) beginLayers(d *layout.Display, gen uint64, specs []Lay
 	}
 
 	candidates = store.capCandidates(candidates)
-	keep := make(map[layerKey]bool, len(candidates))
+	store.candScratch = candidates
+	if store.keepScratch == nil {
+		store.keepScratch = make(map[layerKey]bool, len(candidates))
+	}
+	keep := store.keepScratch
+	clear(keep)
 	for i := range candidates {
 		keep[candidates[i].key] = true
 	}
 
-	active := make([]*Layer, 0, len(candidates))
+	active := store.activeScratch[:0]
 	for i := range candidates {
 		cand := &candidates[i]
 		old := store.entries[cand.key]
@@ -191,6 +204,7 @@ func (renderer *Renderer) beginLayers(d *layout.Display, gen uint64, specs []Lay
 		active = append(active, layer)
 	}
 
+	store.activeScratch = active
 	store.demoteMissingLocked(keep)
 	store.buildFrame(d, active)
 	store.stats.Active = len(active)
@@ -239,7 +253,11 @@ func (store *layerStore) capCandidates(candidates []layerCandidate) []layerCandi
 		pixels += candidates[i].box.Dx() * candidates[i].box.Dy()
 	}
 
-	drop := make([]bool, len(candidates))
+	if cap(store.dropScratch) < len(candidates) {
+		store.dropScratch = make([]bool, len(candidates))
+	}
+	drop := store.dropScratch[:len(candidates)]
+	clear(drop)
 	dropOldest := func(reason string) bool {
 		best := -1
 		bestUse := uint64(0)
@@ -276,7 +294,7 @@ func (store *layerStore) capCandidates(candidates []layerCandidate) []layerCandi
 		}
 	}
 
-	kept := make([]layerCandidate, 0, len(candidates))
+	kept := candidates[:0]
 	for i := range candidates {
 		if !drop[i] {
 			kept = append(kept, candidates[i])
@@ -590,18 +608,20 @@ func (renderer *Renderer) LayerTopologyDamage() []image.Rectangle {
 
 // ActiveLayerIDs returns the element ids of this frame's retained layers. A
 // page hands them to its motion driver, so a sampled element that draws into a
-// layer stops damaging the page background.
+// layer stops damaging the page background. The slice is scratch owned by the
+// renderer and is valid until the next call.
 func (renderer *Renderer) ActiveLayerIDs() []string {
 	store := &renderer.layers
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	ids := make([]string, 0, len(store.frame.active))
+	ids := store.idScratch[:0]
 	for _, layer := range store.frame.active {
 		if layer.ElementID != "" {
 			ids = append(ids, layer.ElementID)
 		}
 	}
+	store.idScratch = ids
 
 	return ids
 }

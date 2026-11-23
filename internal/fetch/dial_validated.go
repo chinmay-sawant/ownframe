@@ -3,6 +3,7 @@ package fetch
 import (
 	"context"
 	"net"
+	"net/netip"
 )
 
 // dialValidated resolves the dial host once and dials a validated IP.
@@ -15,8 +16,8 @@ func dialValidated(ctx context.Context, network, addr string) (net.Conn, error) 
 	if allowPrivate(ctx) {
 		return dialer().DialContext(ctx, network, addr)
 	}
-	if ip := net.ParseIP(host); ip != nil {
-		if blockedIP(ip) {
+	if ip, perr := netip.ParseAddr(host); perr == nil {
+		if blockedAddr(ip) {
 			return nil, ErrPrivateAddress
 		}
 		return dialer().DialContext(ctx, network, addr)

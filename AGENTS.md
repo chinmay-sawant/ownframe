@@ -22,7 +22,7 @@ Go library that renders HTML and CSS screens through [blinkless](https://github.
 - **Engine (`blinkless`):** Pinned in `go.mod` and mirrored in `examples/go.mod` (no `replace`). Text replay requires Ebiten v2.10.4+ (`go-text/typesetting` v0.3.4+ lookup cache).
 - **Components & UI:** `ui/` + `components/chadcn` (chart skins live under `examples/builder/charts/`). See `documentation/components.md` and `documentation/chadcn.md`.
 - **Examples & Android:** See `examples/readme.md` for all examples (`login` accepts `secret`/`secret`, `code-view`, `telegram`, `spotify-player`, `desktop-cat`, `wispr-flow-dashboard`, `examples/builder/ui-builder`, `examples/builder/loglens`, etc.). For Android `ebitenmobile bind` (`scripts/android.sh`, `scripts/android-release.sh`), **do not export `GOWORK`**: gomobile copies packages into a temporary module that `go.work` would disown.
-- **Standalone CLI preview tools:** `cmd/animation-preview`, `cmd/transition-preview`, `cmd/benchscore`, and `cmd/internal/`.
+- **Standalone CLI preview tools:** `cmd/animation-preview`, `cmd/transition-preview`, `cmd/internal/`, and the `scripts/` module tool `scripts/cmd/benchscore` (it carries `golang.org/x/perf` and the `govulncheck` tool so the library module does not).
 
 Read `documentation/features.md` before changing paint, theming, frames, IPC, navigation, crash reports, fetch, clipboard, drag and drop, or DevTools.
 

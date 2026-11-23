@@ -259,3 +259,31 @@ func TestManagedRemovedFocusTargets(t *testing.T) {
 		t.Fatalf("removed trigger fallback %q", p.Form().FocusID())
 	}
 }
+
+// TestInteractionsHandleBeforeMountAndCloseRestoresHandlers pins HYG-CLEAN-01:
+// Handle is safe before Mount, the remembered callbacks survive Mount, and
+// Close hands the application's own callbacks back to the page.
+func TestInteractionsHandleBeforeMountAndCloseRestoresHandlers(t *testing.T) {
+	t.Parallel()
+	input := chadcn.NewInteractions()
+	keys := 0
+	input.Handle(ownframe.Handlers{KeyDown: func(context.Context, string) error { keys++; return nil }})
+
+	view, err := input.Mount(t.Context(), ownframe.Config{Width: 320, Height: 200, Theme: chadcn.Light + chadcn.Stylesheet},
+		func() *ui.Element { return ui.Div().Text("x") })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := view.Page.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if err := view.Page.Edit().KeyDown(t.Context(), "a"); err != nil || keys != 1 {
+		t.Fatalf("key after Mount: keys=%d err=%v, want the pre-Mount handler to run", keys, err)
+	}
+	if err := input.Close(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if err := view.Page.Edit().KeyDown(t.Context(), "b"); err != nil || keys != 2 {
+		t.Fatalf("key after Close: keys=%d err=%v, want the application handler restored", keys, err)
+	}
+}

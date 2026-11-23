@@ -4,16 +4,23 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/netip"
 	"testing"
 )
 
 // FuzzBlockedIP feeds string IPs to the SSRF guard (GEN-24). Parsing
 // never panics, and every loopback address stays blocked.
 func FuzzBlockedIP(f *testing.F) {
-	for _, seed := range []string{"127.0.0.1", "::1", "8.8.8.8", "169.254.169.254", "not-an-ip", "", "1.2.3.4.5"} {
+	for _, seed := range []string{"127.0.0.1", "::1", "8.8.8.8", "169.254.169.254", "not-an-ip", "", "1.2.3.4.5", "100.64.0.1", "64:ff9b::169.254.169.254", "198.18.0.1", "fe80::1%eth0", "::ffff:127.0.0.1"} {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, s string) {
+		if addr, err := netip.ParseAddr(s); err == nil {
+			// Never panics; loopback, mapped or not, stays blocked.
+			if blocked := blockedAddr(addr); addr.Unmap().IsLoopback() && !blocked {
+				t.Fatalf("loopback %s not blocked", s)
+			}
+		}
 		ip := net.ParseIP(s)
 		if ip == nil {
 			return

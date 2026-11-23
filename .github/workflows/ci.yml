@@ -469,6 +469,13 @@ jobs:
         run: |
           make build
           go test -p 1 ./internal/clipboard -run '^(TestMemoryRoundTrip|TestUTF16Clipboard|TestClearEmptiesMemory)$'
+      # Windows only: the UI Automation provider and window shell compile
+      # and run natively on amd64 (windows-arm64 covers arm64 off the PR path).
+      - name: Test Windows accessibility, window, and file picker packages
+        if: runner.os == 'Windows'
+        env:
+          CGO_ENABLED: "1"
+        run: go test -race -p 1 -count=1 ./internal/uia ./internal/window ./internal/filepick
       - name: Package native host and wasm preview
         env:
           CGO_ENABLED: "1"
@@ -577,7 +584,7 @@ jobs:
       - name: Install pinned Android binding tools and NDK
         run: |
           sdkmanager "platforms;android-34" "ndk;27.2.12479018"
-          go install github.com/hajimehoshi/ebiten/v2/cmd/ebitenmobile@v2.10.4
+          go install github.com/hajimehoshi/ebiten/v2/cmd/ebitenmobile@v2.10.6
           go install github.com/ebitengine/gomobile/cmd/gobind@v0.0.0-20260820040257-d11f821a26a6
       - name: Compile Android arm64 binding
         run: |

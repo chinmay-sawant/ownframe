@@ -11,26 +11,15 @@ type StatePseudos struct {
 	Focus  bool
 }
 
-// allStatePseudos keeps the old redraw behavior when the engine cannot report
-// which states it uses.
+// allStatePseudos is the conservative answer for a cache with no styled
+// document yet: every state may change paint.
 var allStatePseudos = StatePseudos{Hover: true, Active: true, Focus: true}
-
-// statePseudoReporter is the engine hook. It is an optional interface so a
-// pinned engine without it still builds and gets the conservative default.
-type statePseudoReporter interface {
-	UsesStatePseudo(name string) bool
-}
 
 // statePseudosOf reads the states a styled document can match.
 func statePseudosOf(doc *css.Document) StatePseudos {
-	reporter, ok := any(doc).(statePseudoReporter)
-	if !ok {
-		return allStatePseudos
-	}
-
 	return StatePseudos{
-		Hover:  reporter.UsesStatePseudo("hover"),
-		Active: reporter.UsesStatePseudo("active"),
-		Focus:  reporter.UsesStatePseudo("focus"),
+		Hover:  doc.UsesStatePseudo("hover"),
+		Active: doc.UsesStatePseudo("active"),
+		Focus:  doc.UsesStatePseudo("focus"),
 	}
 }

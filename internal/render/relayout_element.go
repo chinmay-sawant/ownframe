@@ -8,7 +8,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-// RelayoutElement lays one retained element out again under engineMu.
+// RelayoutElement lays one retained element out again.
 // The error is the one layout.RelayoutElement returned, with no extra wrap.
 func RelayoutElement(
 	ctx context.Context,
@@ -17,8 +17,6 @@ func RelayoutElement(
 	elementID string,
 	options layout.Options,
 ) (patch *layout.ElementPatch, err error) {
-	engineMu.Lock()
-	defer engineMu.Unlock()
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("render: relayout element %s panic: %v", elementID, r)
@@ -37,8 +35,6 @@ func RelayoutElements(
 	elementIDs []string,
 	options layout.Options,
 ) (disp *layout.Display, err error) {
-	engineMu.Lock()
-	defer engineMu.Unlock()
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("render: relayout elements panic: %v", r)
@@ -49,7 +45,7 @@ func RelayoutElements(
 }
 
 // RelayoutElementWithOverrides lays one retained element out again with
-// sampled CSS overrides under engineMu, recovering engine panics.
+// sampled CSS overrides, recovering engine panics.
 func RelayoutElementWithOverrides(
 	ctx context.Context,
 	doc *css.Document,
@@ -58,8 +54,6 @@ func RelayoutElementWithOverrides(
 	overrides []layout.Override,
 	options layout.Options,
 ) (patch *layout.ElementPatch, err error) {
-	engineMu.Lock()
-	defer engineMu.Unlock()
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("render: relayout element %s with overrides panic: %v", elementID, r)
@@ -69,8 +63,8 @@ func RelayoutElementWithOverrides(
 	return layout.RelayoutElementWithOverrides(ctx, doc, prev, elementID, overrides, options)
 }
 
-// RestampTransforms re-projects retained 3D transforms and perspectives under
-// engineMu, recovering engine panics.
+// RestampTransforms re-projects retained 3D transforms and perspectives,
+// recovering engine panics.
 func RestampTransforms(
 	ctx context.Context,
 	doc *css.Document,
@@ -78,8 +72,6 @@ func RestampTransforms(
 	overrides []layout.TransformOverride,
 	options layout.Options,
 ) (patch *layout.ElementPatch, err error) {
-	engineMu.Lock()
-	defer engineMu.Unlock()
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("render: restamp transforms panic: %v", r)
@@ -89,7 +81,7 @@ func RestampTransforms(
 	return layout.RestampTransforms(ctx, doc, prev, overrides, options)
 }
 
-// RestyleInlineSVG applies inline SVG paint overrides under engineMu,
+// RestyleInlineSVG applies inline SVG paint overrides,
 // recovering engine panics.
 func RestyleInlineSVG(
 	ctx context.Context,
@@ -98,8 +90,6 @@ func RestyleInlineSVG(
 	overrides []layout.SVGPaintOverride,
 	options layout.Options,
 ) (patch *layout.ElementPatch, err error) {
-	engineMu.Lock()
-	defer engineMu.Unlock()
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("render: restyle inline svg panic: %v", r)

@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -50,12 +49,6 @@ type formChecker interface {
 	SetFormChecked(id string, checked bool)
 }
 
-// webControls lists live controls for the browser document. A screen that
-// does not implement it leaves the control list nil.
-type webControls interface {
-	WebControls() []host.WebControl
-}
-
 // webTextApplier stores one posted text or select value and redraws.
 type webTextApplier interface {
 	ApplyWebText(ctx context.Context, id, value string) error
@@ -92,8 +85,12 @@ func (s *server) dom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	rp := s.domReplyLocked(r)
+	s.mu.Unlock()
+	rp.send(w, "dom")
+}
 
+func (s *server) domReplyLocked(r *http.Request) reply {
 	s.reload(r.Context())
 	width, height := s.app.Size()
 	state := domState{
@@ -106,8 +103,8 @@ func (s *server) dom(w http.ResponseWriter, r *http.Request) {
 		if html := src.ExecutedSource(); html != "" {
 			theme := src.ThemeSource()
 			var controls []host.WebControl
-			if listed, ok := s.app.(webControls); ok {
-				controls = listed.WebControls()
+			if listed, ok := s.app.(host.WebDOM); ok {
+				controls = s.redactControls(listed.WebControls())
 			}
 			// An empty boot keeps the shell script out of every patch payload.
 			state.HTML = browserDocument(
@@ -140,11 +137,7 @@ func (s *server) dom(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	if err := json.NewEncoder(w).Encode(state); err != nil {
-		log.Printf("write dom: %s", sanitizeLine(err.Error()))
-	}
+	return jsonReply("application/json; charset=utf-8", state, "dom")
 }
 
 // changeWriter stores one control value. Select elements post here; text

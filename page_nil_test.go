@@ -43,8 +43,8 @@ func TestNilAndZeroPageMethodsDoNotPanic(t *testing.T) {
 			if err := p.RedrawIfChanged(ctx); !errors.Is(err, ownframe.ErrNilPage) {
 				t.Fatalf("RedrawIfChanged err = %v, want ErrNilPage", err)
 			}
-			if err := p.Click(ctx, 1, 2); err != nil {
-				t.Fatalf("Click err = %v", err)
+			if err := p.Click(ctx, 1, 2); !errors.Is(err, ownframe.ErrNilPage) {
+				t.Fatalf("Click err = %v, want ErrNilPage", err)
 			}
 			p.WantFrameAt(time.Now())
 			p.WantFrameIn(time.Millisecond)
@@ -91,8 +91,8 @@ func TestNilAndZeroPageMethodsDoNotPanic(t *testing.T) {
 			if p.ContextMenuFor("a") != nil {
 				t.Fatal("expected nil ContextMenuFor")
 			}
-			if err := p.MenuAction(ctx, "a"); err != nil {
-				t.Fatalf("MenuAction err = %v", err)
+			if err := p.MenuAction(ctx, "a"); !errors.Is(err, ownframe.ErrNilPage) {
+				t.Fatalf("MenuAction err = %v, want ErrNilPage", err)
 			}
 
 			// Form door
@@ -133,9 +133,39 @@ func TestNilAndZeroPageMethodsDoNotPanic(t *testing.T) {
 			p.Probe().MarkRect(image.Rect(0, 0, 10, 10))
 			_ = p.Probe().Generation()
 			_ = p.Window().Animations()
-			_, _ = p.Access().AccessibilityTree()
+			if _, err := p.Access().AccessibilityTree(); !errors.Is(err, ownframe.ErrNilPage) {
+				t.Fatalf("AccessibilityTree err = %v, want ErrNilPage", err)
+			}
+			if err := p.Access().AccessibilityPerform(ctx, ownframe.AccessibilityRequest{}); !errors.Is(err, ownframe.ErrNilPage) {
+				t.Fatalf("AccessibilityPerform err = %v, want ErrNilPage", err)
+			}
+			if _, err := p.Window().PollReload(ctx); !errors.Is(err, ownframe.ErrNilPage) {
+				t.Fatalf("PollReload err = %v, want ErrNilPage", err)
+			}
+			if err := p.Probe().EndRedrawBatch(ctx); !errors.Is(err, ownframe.ErrNilPage) {
+				t.Fatalf("EndRedrawBatch err = %v, want ErrNilPage", err)
+			}
+			if _, _, err := p.Edit().Copy(ctx); !errors.Is(err, ownframe.ErrNilPage) {
+				t.Fatalf("Edit.Copy err = %v, want ErrNilPage", err)
+			}
+			if err := p.Edit().Type(ctx, "x"); !errors.Is(err, ownframe.ErrNilPage) {
+				t.Fatalf("Edit.Type err = %v, want ErrNilPage", err)
+			}
+			if err := p.Testing().Tick(ctx); !errors.Is(err, ownframe.ErrNilPage) {
+				t.Fatalf("Testing.Tick err = %v, want ErrNilPage", err)
+			}
 			_ = p.Edit().LastFocusID()
 			_ = p.Edit().FocusedField()
 		})
+	}
+}
+
+// TestNewWithOptionsSkipsNilOption pins HYG-API-01: a nil Option no longer
+// panics NewWithOptions.
+func TestNewWithOptionsSkipsNilOption(t *testing.T) {
+	t.Parallel()
+	p, err := ownframe.NewWithOptions(ownframe.Config{HTML: "<p>x</p>", Width: 100, Height: 100}, nil, ownframe.WithPerf(false), nil)
+	if err != nil || p == nil {
+		t.Fatalf("NewWithOptions = %v, %v", p, err)
 	}
 }

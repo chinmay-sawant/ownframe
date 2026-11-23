@@ -1,12 +1,15 @@
 package emoji
 
-import "testing"
+import (
+	"testing"
+	"unicode/utf8"
+)
 
 // FuzzReplace feeds HTML and text fragments to the emoji replacer
 // (GEN-24). Seeds cover supported runs, tags, comments, and script
 // blocks that must pass through untouched.
 func FuzzReplace(f *testing.F) {
-	for _, seed := range []string{"hello", "❤️", "❤", "⚠️", "<b>❤️</b>", "<!-- ❤️ -->", "<script>❤️</script>", "<img alt=\"❤️\">", "🫠 plain", "❤️❤️❤️"} {
+	for _, seed := range []string{"hello", "❤️", "❤", "⚠️", "<b>❤️</b>", "<!-- ❤️ -->", "<script>❤️</script>", "<!--😂", "<textarea>😂</textarea>", "<title>😂</title>", "<img alt=\"❤️\">", "🫠 plain", "❤️❤️❤️"} {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, s string) {
@@ -17,6 +20,9 @@ func FuzzReplace(f *testing.F) {
 		}
 		if changed == (out == s) {
 			t.Fatal("changed/out mismatch")
+		}
+		if utf8.ValidString(s) && !utf8.ValidString(out) {
+			t.Fatal("valid input produced invalid UTF-8")
 		}
 		if asciiOnly(s) && (changed || out != s) {
 			t.Fatal("ascii input changed")

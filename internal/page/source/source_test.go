@@ -283,3 +283,20 @@ func TestTemplateFuncsReturnStrings(t *testing.T) {
 		t.Fatalf("upper = %s", out[0])
 	}
 }
+
+// TestOSReadFileIsBounded pins HYG-REL-01: a file larger than MaxBytes is cut
+// at MaxBytes+1 so the caller's limit check trips instead of reading it all.
+func TestOSReadFileIsBounded(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "big.html")
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Truncate(path, MaxBytes+4096); err != nil {
+		t.Fatal(err)
+	}
+	data, err := OS{}.ReadFile(path)
+	if err != nil || len(data) != MaxBytes+1 {
+		t.Fatalf("ReadFile len = %d err = %v, want %d", len(data), err, MaxBytes+1)
+	}
+}

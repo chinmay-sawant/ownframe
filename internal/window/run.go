@@ -120,11 +120,7 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	game.titlebar.starting = builtinChrome && isWSLg() && options.PlacementID == "" && !options.BottomRight
 	storeContentTop(game.titlebarInset())
 	defer contentTop.Store(0)
-	defer func() {
-		if game.titlebar.canvas != nil {
-			game.titlebar.canvas.Deallocate()
-		}
-	}()
+	defer game.disposeSurfaces()
 	defer game.cancel()
 	defer game.windowDrag.native.end()
 	defer game.nativeCursor.end()

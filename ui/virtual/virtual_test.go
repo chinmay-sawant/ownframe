@@ -1,6 +1,9 @@
 package virtual
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestWindowEmptyAndInvalid(t *testing.T) {
 	cases := []struct {
@@ -71,5 +74,33 @@ func TestWindowSmallListAndResize(t *testing.T) {
 	resized := Window(1000, 400, 20, 1000, 1)
 	if resized.Start != 49 || resized.End != 71 {
 		t.Fatalf("resized = %+v, want [49, 71)", resized)
+	}
+}
+
+func TestWindowNonFiniteInputs(t *testing.T) {
+	nan, inf := math.NaN(), math.Inf(1)
+	cases := []struct {
+		name                     string
+		scrollY, viewportH, rowH float64
+	}{
+		{"nan scroll", nan, 100, 20},
+		{"inf scroll", inf, 100, 20},
+		{"-inf scroll", -inf, 100, 20},
+		{"nan viewport", 0, nan, 20},
+		{"inf viewport", 0, inf, 20},
+		{"nan row", 0, 100, nan},
+		{"inf row", 0, 100, inf},
+		{"tiny row", 1e300, 100, 1e-300},
+	}
+	for _, c := range cases {
+		r := Window(c.scrollY, c.viewportH, c.rowH, 50, 2)
+		if r.Start < 0 || r.End < r.Start || r.End > 50 {
+			t.Errorf("%s: bad range %+v", c.name, r)
+		}
+		for _, v := range []float64{r.TopSpacer, r.BottomSpacer, r.TotalHeight} {
+			if math.IsNaN(v) || math.IsInf(v, 0) {
+				t.Errorf("%s: non-finite spacer in %+v", c.name, r)
+			}
+		}
 	}
 }

@@ -2,41 +2,72 @@ package web
 
 import (
 	"bytes"
+	"encoding/json"
 	"image"
 	"image/png"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/chinmay-sawant/ownframe/internal/bitmap"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-// webControlSource is a screen that lists live form controls for the
-// application document. internal/page implements it. A screen without the
-// method contributes no controls.
-type webControlSource interface {
-	WebControls() []host.WebControl
+// reply is a response built while s.mu is held and written after it is
+// released, so a slow client never stalls the tick loop or other routes.
+type reply struct {
+	status int
+	ctype  string
+	body   []byte
+	errMsg string // when set, sent with http.Error instead of body
+}
+
+// send writes the reply. Call it with s.mu released.
+func (rp reply) send(w http.ResponseWriter, what string) {
+	if rp.errMsg != "" {
+		http.Error(w, rp.errMsg, rp.status)
+		return
+	}
+	w.Header().Set("Content-Type", rp.ctype)
+	w.Header().Set("Cache-Control", "no-store")
+	if rp.status != 0 && rp.status != http.StatusOK {
+		w.WriteHeader(rp.status)
+	}
+	if _, err := w.Write(rp.body); err != nil {
+		log.Printf("write %s: %s", what, sanitizeLine(err.Error()))
+	}
+}
+
+// jsonReply encodes v into a buffered reply.
+func jsonReply(ctype string, v any, what string) reply {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(v); err != nil {
+		log.Printf("encode %s: %s", what, sanitizeLine(err.Error()))
+		return reply{status: http.StatusInternalServerError, errMsg: "internal server error"}
+	}
+
+	return reply{ctype: ctype, body: buf.Bytes()}
 }
 
 func (s *server) page(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	rp := s.pageReplyLocked(r)
+	s.mu.Unlock()
+	rp.send(w, "page")
+}
+
+func (s *server) pageReplyLocked(r *http.Request) reply {
 	s.reload(r.Context())
 	if src, ok := s.app.(domSource); ok {
 		source := src.ExecutedSource()
 		if source != "" && r.URL.Query().Get("dom") != "0" {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Header().Set("Cache-Control", "no-store")
 			doc := browserDocument(
 				source,
 				src.ThemeSource(),
 				s.liveControls(),
 				bootScript,
 			)
-			if _, err := w.Write([]byte(doc)); err != nil {
-				log.Printf("write page: %s", sanitizeLine(err.Error()))
-			}
-			return
+			return reply{ctype: "text/html; charset=utf-8", body: []byte(doc)}
 		}
 	}
 	viewW, viewH := s.app.Size()
@@ -50,27 +81,49 @@ func (s *server) page(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	if err := s.shell.Execute(&buf, data); err != nil {
 		log.Printf("page: %s", sanitizeLine(err.Error()))
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
+		return reply{status: http.StatusInternalServerError, errMsg: "internal server error"}
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	if _, err := w.Write(buf.Bytes()); err != nil {
-		log.Printf("write page: %s", sanitizeLine(err.Error()))
-	}
+
+	return reply{ctype: "text/html; charset=utf-8", body: buf.Bytes()}
 }
 
 func (s *server) liveControls() []host.WebControl {
-	src, ok := s.app.(webControlSource)
+	src, ok := s.app.(host.WebDOM)
 	if !ok {
 		return nil
 	}
-	return src.WebControls()
+	return s.redactControls(src.WebControls())
+}
+
+// redactControls drops password values from controls headed for the browser
+// when the server accepts remote clients. It copies before changing anything,
+// because the slice belongs to the page.
+func (s *server) redactControls(controls []host.WebControl) []host.WebControl {
+	if !s.redactPasswords {
+		return controls
+	}
+	out := controls
+	for i := range controls {
+		if !strings.EqualFold(controls[i].Type, "password") || controls[i].Value == "" {
+			continue
+		}
+		if &out[0] == &controls[0] {
+			out = append([]host.WebControl(nil), controls...)
+		}
+		out[i].Value = ""
+	}
+
+	return out
 }
 
 func (s *server) frame(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	rp := s.frameReplyLocked(r)
+	s.mu.Unlock()
+	rp.send(w, "png")
+}
+
+func (s *server) frameReplyLocked(r *http.Request) reply {
 	s.reload(r.Context())
 	var pngBytes []byte
 	if s.app.Display() != nil {
@@ -81,13 +134,11 @@ func (s *server) frame(w http.ResponseWriter, r *http.Request) {
 		} else {
 			img, err := bitmap.Viewport(s.app.Display(), image.Rect(0, s.scrollY, viewW, s.scrollY+h), 1)
 			if err != nil {
-				http.Error(w, "render failed", http.StatusInternalServerError)
-				return
+				return reply{status: http.StatusInternalServerError, errMsg: "render failed"}
 			}
 			var buf bytes.Buffer
 			if err = png.Encode(&buf, img); err != nil {
-				http.Error(w, "encode failed", http.StatusInternalServerError)
-				return
+				return reply{status: http.StatusInternalServerError, errMsg: "encode failed"}
 			}
 			pngBytes = buf.Bytes()
 			s.viewportPNG = pngBytes
@@ -99,12 +150,8 @@ func (s *server) frame(w http.ResponseWriter, r *http.Request) {
 		pngBytes = s.app.PNG()
 	}
 	if len(pngBytes) == 0 {
-		http.Error(w, "no frame", http.StatusNotFound)
-		return
+		return reply{status: http.StatusNotFound, errMsg: "no frame"}
 	}
-	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Cache-Control", "no-store")
-	if _, err := w.Write(pngBytes); err != nil {
-		log.Printf("write png: %s", sanitizeLine(err.Error()))
-	}
+
+	return reply{ctype: "image/png", body: pngBytes}
 }

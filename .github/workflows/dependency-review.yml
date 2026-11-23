@@ -31,15 +31,15 @@ jobs:
       # once Settings > Code security enables the graph. Until then the
       # gates below enforce the same properties without the graph API.
       # High-severity CVEs: govulncheck built from the pinned tool
-      # directive in go.mod. govulncheck has no workspace mode, so both
-      # modules are scanned explicitly.
+      # directive in scripts/go.mod. govulncheck has no workspace mode, so
+      # both modules are scanned explicitly.
       # govulncheck loads internal/window, whose linux cgo file needs
       # X11 headers.
       - name: Install native compile dependencies
         run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - name: Scan Go vulnerabilities in both modules
         run: |
-          go build -o "${RUNNER_TEMP}/govulncheck" golang.org/x/vuln/cmd/govulncheck
+          (cd scripts && GOWORK=off go build -o "${RUNNER_TEMP}/govulncheck" golang.org/x/vuln/cmd/govulncheck)
           "${RUNNER_TEMP}/govulncheck" ./...
           cd examples && "${RUNNER_TEMP}/govulncheck" ./...
       # License inventory for both modules; every new module needs manual

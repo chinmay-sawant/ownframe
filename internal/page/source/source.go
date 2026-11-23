@@ -6,6 +6,7 @@ package source
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -53,9 +54,18 @@ type OS struct{}
 
 func (OS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
 
+// ReadFile reads at most MaxBytes+1 bytes, so a file that grew after Stat or a
+// FIFO cannot make a poll allocate without bound. A result longer than
+// MaxBytes tells the caller's limit check the file is oversize.
 func (OS) ReadFile(name string) ([]byte, error) {
 	//nolint:gosec // reason: template files are trusted build input (documented trust boundary).
-	return os.ReadFile(name)
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+
+	return io.ReadAll(io.LimitReader(f, MaxBytes+1))
 }
 
 // Text is one template or theme: an inline string, or a file, not both.

@@ -66,14 +66,18 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	if len(q.Get("id")) > maxDOMIDLength || len(q.Get("action")) > maxDOMIDLength {
+		http.Error(w, "bad coordinates", http.StatusBadRequest)
+		return
+	}
+	// s.app.Boxes() aliases page state that the tick loop and other handlers
+	// mutate, so resolve ids and actions only while holding s.mu.
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	// A box found by id or action already holds document coordinates, so the
 	// server's frame scroll offset must not shift it.
 	resolved := false
 	if id := q.Get("id"); id != "" {
-		if len(id) > maxDOMIDLength {
-			http.Error(w, "bad coordinates", http.StatusBadRequest)
-			return
-		}
 		for _, b := range s.app.Boxes() {
 			if b.ID == id {
 				resolved = true
@@ -87,10 +91,6 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else if action := q.Get("action"); action != "" {
-		if len(action) > maxDOMIDLength {
-			http.Error(w, "bad coordinates", http.StatusBadRequest)
-			return
-		}
 		for _, b := range s.app.Boxes() {
 			if b.Action == action {
 				resolved = true
@@ -106,8 +106,6 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad coordinates", http.StatusBadRequest)
 		return
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	if !resolved {
 		y += float64(s.scrollY)
 	}
