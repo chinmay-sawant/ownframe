@@ -3,7 +3,7 @@
 > **Parent:** [plans/v0.0.4/README.md](../README.md) (and [maintenance ledger](../../README.md))
 > **Branch:** `chore/v0.0.4-go-review-hardening`
 > **Baseline:** `master` at `cf529aba` (pinned to `blinkless` `b2fe5ba5105e`, 2026-11-23)
-> **Status:** Open (4 phases, 45 tasks + 12 closure gates)
+> **Status:** Code complete at `17caf6c9` (pinned to `blinkless` `44951cb`); `[~]` rows need a Windows host/CI runner or Android bind job; remaining gates need full `make test`/`make test-race`, benchmarks, and CI
 
 ---
 
