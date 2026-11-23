@@ -385,9 +385,18 @@ func TestValidatePlacementID(t *testing.T) {
 	}
 }
 
+// useConfigHome points os.UserConfigDir at dir on every host: XDG_CONFIG_HOME
+// on Linux, %AppData% on Windows, and $HOME on macOS.
+func useConfigHome(tb testing.TB, dir string) {
+	tb.Helper()
+	tb.Setenv("XDG_CONFIG_HOME", dir)
+	tb.Setenv("AppData", dir)
+	tb.Setenv("HOME", dir)
+}
+
 func TestPlacementRoundTrip(t *testing.T) {
 	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
+	useConfigHome(t, config)
 
 	want := windowPlacement{X: 12, Y: 24, W: 1500, H: 900, Maximized: true, MaxX: 0, MaxY: 0, MaxW: 1920, MaxH: 1032, Monitor: "XWAYLAND1"}
 
@@ -405,7 +414,11 @@ func TestPlacementRoundTrip(t *testing.T) {
 		t.Fatalf("placement = %+v, want %+v", got, want)
 	}
 
-	path := filepath.Join(config, "ownframe", "placement", "code-view.json")
+	path, err := placementPath("code-view")
+	if err != nil {
+		t.Fatalf("placementPath = %v", err)
+	}
+
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatalf("stat placement file = %v", err)
@@ -437,7 +450,7 @@ func TestWSLMaximizePlan(t *testing.T) {
 
 func TestPlacementLoadMissingFallsBack(t *testing.T) {
 	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
+	useConfigHome(t, config)
 
 	if _, ok := loadPlacement("nothing-saved"); ok {
 		t.Fatal("missing placement loaded")
@@ -450,7 +463,7 @@ func TestPlacementLoadMissingFallsBack(t *testing.T) {
 
 func TestPlacementRejectsBadRect(t *testing.T) {
 	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
+	useConfigHome(t, config)
 
 	if err := savePlacement("code-view", windowPlacement{W: 0, H: 900}); err != nil {
 		t.Fatalf("savePlacement = %v", err)
@@ -471,7 +484,7 @@ func TestPlacementFitsUnknownMonitorKeepsOldBehavior(t *testing.T) {
 
 func TestSavePlacementNowSkipsWorkareaDance(t *testing.T) {
 	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
+	useConfigHome(t, config)
 
 	prevLearning, prevRestoring := manualMax.learning, manualMax.restoring
 	manualMax.learning = true
@@ -656,7 +669,7 @@ func TestLiveMonitorResolutionNeverPanics(t *testing.T) {
 }
 
 func TestPlacementSamplingThrottlesUnchangedGeometry(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	useConfigHome(t, t.TempDir())
 	s := &shell{placementID: "sampling-test", lastPlacementValid: true, lastPlacement: currentPlacement()}
 	s.syncPlacement()
 	sampled := s.lastPlacementSave
@@ -670,7 +683,7 @@ func TestPlacementSamplingThrottlesUnchangedGeometry(t *testing.T) {
 }
 
 func BenchmarkPlacementSamplingUnchanged(b *testing.B) {
-	b.Setenv("XDG_CONFIG_HOME", b.TempDir())
+	useConfigHome(b, b.TempDir())
 	s := &shell{placementID: "sampling-bench", lastPlacementValid: true, lastPlacement: currentPlacement()}
 	s.syncPlacement()
 	b.ResetTimer()
