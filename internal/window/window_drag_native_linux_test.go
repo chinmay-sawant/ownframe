@@ -2,7 +2,10 @@
 
 package window
 
-import "testing"
+import (
+	"sync"
+	"testing"
+)
 
 func TestSecNativeWindowRectRejectsNonPositive(t *testing.T) {
 	t.Parallel()
@@ -24,4 +27,27 @@ func TestSecNativeClientSurvivesBadWindow(t *testing.T) {
 	if got != 0 {
 		t.Fatalf("bad window resolved to %#x", got)
 	}
+}
+
+// TestSecNativeClientConcurrentBadWindows exercises x11Mu and the scoped error
+// handler across concurrent bad-window walks so process-wide XSetErrorHandler
+// swaps never race or clobber the previous handler.
+func TestSecNativeClientConcurrentBadWindows(t *testing.T) {
+	if _, ok := nativeClientFrom(0x7ffffff0); !ok {
+		t.Skip("no X display")
+	}
+	var wg sync.WaitGroup
+	const workers = 4
+	wg.Add(workers)
+	for w := range workers {
+		go func(id uint64) {
+			defer wg.Done()
+			for range 10 {
+				if got, ok := nativeClientFrom(0x7ffffff0 + id); ok && got != 0 {
+					t.Errorf("bad window resolved to %#x", got)
+				}
+			}
+		}(uint64(w))
+	}
+	wg.Wait()
 }

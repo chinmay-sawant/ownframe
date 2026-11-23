@@ -78,6 +78,12 @@ func (s *shell) syncA11y() {
 	if !ok {
 		return
 	}
+	a.mu.Lock()
+	closed := a.closed
+	a.mu.Unlock()
+	if closed {
+		return
+	}
 	gen := s.app.Generation()
 	if a.host == nil {
 		if a.skip > 0 {

@@ -79,4 +79,31 @@ func TestSecureSharedDirRejectsSymlinkAndTightens(t *testing.T) {
 	if err != nil || info.Mode().Perm() != crashDirPerm {
 		t.Fatalf("mode = %v err = %v, want 0700", info.Mode().Perm(), err)
 	}
+	// Calling secureSharedDir on an already-0700 directory must still succeed
+	// for the owner and run Chmod unconditionally.
+	if err := secureSharedDir(real); err != nil {
+		t.Fatalf("repeat secureSharedDir on 0700 dir: %v", err)
+	}
+}
+
+func TestWriteRejectsSymlinkedCrashDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix symlinks")
+	}
+	base := t.TempDir()
+	real := filepath.Join(base, "real")
+	if err := os.Mkdir(real, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(base, "crashes")
+	if err := os.Symlink(real, link); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	custom = link
+	mu.Unlock()
+	t.Cleanup(func() { mu.Lock(); custom = ""; mu.Unlock() })
+	if _, err := Write("panic", "boom"); err == nil {
+		t.Fatal("Write accepted a symlinked crash directory")
+	}
 }

@@ -36,6 +36,9 @@ func Window(scrollY, viewportH, rowH float64, totalRows, overscan int) Range {
 	}
 
 	totalH := float64(totalRows) * rowH
+	if math.IsInf(totalH, 0) || math.IsNaN(totalH) {
+		return Range{}
+	}
 	if viewportH > totalH {
 		viewportH = totalH
 	}

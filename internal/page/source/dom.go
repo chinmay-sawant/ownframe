@@ -60,12 +60,23 @@ func CheckDOM(s string, maxDepth, maxNodes int) error {
 // nothing.
 func rawTextEnd(s string, from int, name string) int {
 	const closeOpen = len("</")
-	for k := from; k+closeOpen+len(name) <= len(s); k++ {
-		if s[k] == '<' && s[k+1] == '/' && foldEqual(s, k+closeOpen, k+closeOpen+len(name), name) {
+	for k := from; k+closeOpen+len(name) < len(s); k++ {
+		if s[k] == '<' && s[k+1] == '/' &&
+			foldEqual(s, k+closeOpen, k+closeOpen+len(name), name) &&
+			isTagEndDelim(s[k+closeOpen+len(name)]) {
 			return k
 		}
 	}
 	return len(s)
+}
+
+func isTagEndDelim(c byte) bool {
+	switch c {
+	case '>', '/', ' ', '\t', '\n', '\r', '\f':
+		return true
+	default:
+		return false
+	}
 }
 
 // SkipMeta skips a comment or a <! / <? declaration at s[i] == '<'.

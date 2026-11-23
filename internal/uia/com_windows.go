@@ -214,8 +214,8 @@ func buildVtables() {
 	vtOnce.Do(func() {
 		qi := guardSlot(func(o *comObj, _ int, riid, ppv, _ uintptr) uintptr { return o.queryInterface(riid, ppv) })
 		addRef := syscall.NewCallback(func(this, _, _, _ uintptr) uintptr {
-			if o, _, ok := resolve(this); ok {
-				return uintptr(o.addRef())
+			if o, _, ok := resolve(this); ok && o.tryAddRef() {
+				return uintptr(max(o.ref.Load(), 1))
 			}
 			return 0
 		})

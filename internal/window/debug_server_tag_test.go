@@ -140,6 +140,9 @@ func TestDebugWriteDeadlineCoversProfileCapture(t *testing.T) {
 	if d := debugWriteDeadline(req("/debug/pprof/trace?seconds=1000000")); d > debugProfileMax+debugProfileSlack {
 		t.Fatalf("deadline %v is not capped", d)
 	}
+	if d := debugWriteDeadline(req("/debug/pprof/profile?seconds=9223372036854775807")); d != debugProfileMax+debugProfileSlack {
+		t.Fatalf("max-int64 seconds overflowed deadline: %v", d)
+	}
 	if d := debugWriteDeadline(req("/debug/state")); d != debugWriteTimeout {
 		t.Fatalf("state deadline %v", d)
 	}

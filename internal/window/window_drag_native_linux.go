@@ -6,6 +6,7 @@ package window
 #cgo LDFLAGS: -lX11
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -26,53 +27,87 @@ static Window ownframe_find_window(Display *d, Window w, Atom pid_atom, int dept
  return found;
 }
 // Xlib's default error handler exits the process. A window that closes while
-// the tree is walked raises BadWindow, so the walk runs under a handler that
-// only records the error. The handler is process wide in Xlib; it is
-// installed for the walk only and the previous one is restored after XSync
-// has flushed this connection's pending errors.
-static volatile int ownframe_x_error = 0;
+// the tree is walked or queried raises BadWindow, so each Xlib call runs under
+// a scoped handler that ignores errors for the active Display connection.
+// Because XSetErrorHandler is process-wide in Xlib, ownframe_x_mu serializes
+// ownframe_x_begin/ownframe_x_end and restores the previous handler after XSync
+// flushes pending errors on the connection.
+static pthread_mutex_t ownframe_x_mu = PTHREAD_MUTEX_INITIALIZER;
+static Display *ownframe_active_display = NULL;
+static XErrorHandler ownframe_prev_handler = NULL;
 static int ownframe_ignore_x_error(Display *d, XErrorEvent *e) {
- (void)d; (void)e;
- ownframe_x_error = 1;
+ if (d == ownframe_active_display || ownframe_active_display == NULL) {
+  return 0;
+ }
+ if (ownframe_prev_handler != NULL) {
+  return ownframe_prev_handler(d, e);
+ }
  return 0;
 }
-static Window ownframe_client_in(Display *d, Window start) {
- ownframe_x_error = 0;
- XErrorHandler prev = XSetErrorHandler(ownframe_ignore_x_error);
- Window found = ownframe_find_window(d,start,XInternAtom(d,"_NET_WM_PID",False),2);
- XSync(d,False);
+static XErrorHandler ownframe_x_begin(Display *d) {
+ pthread_mutex_lock(&ownframe_x_mu);
+ ownframe_active_display = d;
+ ownframe_prev_handler = XSetErrorHandler(ownframe_ignore_x_error);
+ return ownframe_prev_handler;
+}
+static void ownframe_x_end(Display *d, XErrorHandler prev) {
+ if (d) XSync(d, False);
  XSetErrorHandler(prev);
- return ownframe_x_error ? 0 : found;
+ ownframe_prev_handler = NULL;
+ ownframe_active_display = NULL;
+ pthread_mutex_unlock(&ownframe_x_mu);
+}
+static Window ownframe_client_in(Display *d, Window start) {
+ XErrorHandler prev = ownframe_x_begin(d);
+ Window found = ownframe_find_window(d,start,XInternAtom(d,"_NET_WM_PID",False),2);
+ ownframe_x_end(d, prev);
+ return found;
 }
 static Window ownframe_client(Display *d, Window root) {
  return ownframe_client_in(d,root);
 }
 static int ownframe_geometry(Display *d, Window w, Window root, int *x, int *y, int *width, int *height) {
+ XErrorHandler prev = ownframe_x_begin(d);
  Window child; XWindowAttributes attrs;
- if (!XTranslateCoordinates(d,w,root,0,0,x,y,&child) || !XGetWindowAttributes(d,w,&attrs)) return 0;
+ int ok = XTranslateCoordinates(d,w,root,0,0,x,y,&child) && XGetWindowAttributes(d,w,&attrs);
+ ownframe_x_end(d, prev);
+ if (!ok) return 0;
  *width=attrs.width; *height=attrs.height;
  return 1;
 }
 static char *ownframe_title(Display *d,Window w) {
+ XErrorHandler prev = ownframe_x_begin(d);
  Atom actual;int format;unsigned long count,after;unsigned char *data=NULL;
  Atom name=XInternAtom(d,"_NET_WM_NAME",False);
  Atom utf8=XInternAtom(d,"UTF8_STRING",False);
- if(XGetWindowProperty(d,w,name,0,4096,False,utf8,&actual,&format,&count,&after,&data)==Success && format==8 && count>0) return (char*)data;
- if(data) XFree(data);
- return NULL;
+ char *res = NULL;
+ if(XGetWindowProperty(d,w,name,0,4096,False,utf8,&actual,&format,&count,&after,&data)==Success && format==8 && count>0) {
+  res = (char*)data;
+ } else if(data) {
+  XFree(data);
+ }
+ ownframe_x_end(d, prev);
+ return res;
 }
 static void ownframe_free_name(char *name) {XFree(name);}
 static int ownframe_frame_geometry(Display *d,Window w,Window root,int *x,int *y,int *width,int *height) {
+ XErrorHandler prev = ownframe_x_begin(d);
  Window parent,r,*children=NULL;unsigned int n;
- if(!XQueryTree(d,w,&r,&parent,&children,&n)) return 0;
+ int q = XQueryTree(d,w,&r,&parent,&children,&n);
  if(children) XFree(children);
+ ownframe_x_end(d, prev);
+ if(!q) return 0;
  return ownframe_geometry(d,parent==root?w:parent,root,x,y,width,height);
 }
 static Window ownframe_root(Display *d) { return DefaultRootWindow(d); }
 
 static int ownframe_move(Display *d, Window root, Window w) {
+ XErrorHandler prev = ownframe_x_begin(d);
  Window rr,child; int rx,ry,wx,wy; unsigned int mask;
- if (!XQueryPointer(d,root,&rr,&child,&rx,&ry,&wx,&wy,&mask)) return 0;
+ if (!XQueryPointer(d,root,&rr,&child,&rx,&ry,&wx,&wy,&mask)) {
+  ownframe_x_end(d, prev);
+  return 0;
+ }
  XEvent event = {0};
  event.xclient.type=ClientMessage;
  event.xclient.window=w;
@@ -81,8 +116,21 @@ static int ownframe_move(Display *d, Window root, Window w) {
  event.xclient.data.l[0]=rx; event.xclient.data.l[1]=ry;
  event.xclient.data.l[2]=8; event.xclient.data.l[3]=1; event.xclient.data.l[4]=1;
  int sent=XSendEvent(d,root,False,SubstructureRedirectMask|SubstructureNotifyMask,&event);
- XFlush(d);
+ ownframe_x_end(d, prev);
  return sent;
+}
+static void ownframe_set_rect(Display *d, Window w, int x, int y, unsigned int width, unsigned int height) {
+ XErrorHandler prev = ownframe_x_begin(d);
+ XResizeWindow(d, w, width, height);
+ XMoveWindow(d, w, x, y);
+ ownframe_x_end(d, prev);
+}
+static int ownframe_query_pointer(Display *d, Window w, int *x, int *y) {
+ XErrorHandler prev = ownframe_x_begin(d);
+ Window root, child; int rx, ry; unsigned int mask;
+ int ok = XQueryPointer(d, w, &root, &child, &rx, &ry, x, y, &mask);
+ ownframe_x_end(d, prev);
+ return ok;
 }
 */
 import "C"
@@ -156,9 +204,7 @@ func setNativeWindowRect(x, y, w, h int) bool {
 	}
 	for _, m := range layout {
 		if m.name == "XWAYLAND0" {
-			C.XResizeWindow(d.display, d.window, C.uint(w), C.uint(h))
-			C.XMoveWindow(d.display, d.window, C.int(x+m.x), C.int(y+m.y))
-			C.XSync(d.display, C.False)
+			C.ownframe_set_rect(d.display, d.window, C.int(x+m.x), C.int(y+m.y), C.uint(w), C.uint(h))
 			return true
 		}
 	}
@@ -213,10 +259,8 @@ func (d *nativeWindowDrag) cursor() (int, int, bool) {
 	if d.display == nil {
 		return 0, 0, false
 	}
-	var root, child C.Window
-	var rx, ry, x, y C.int
-	var mask C.uint
-	ok := C.XQueryPointer(d.display, d.window, &root, &child, &rx, &ry, &x, &y, &mask)
+	var x, y C.int
+	ok := C.ownframe_query_pointer(d.display, d.window, &x, &y)
 	return int(x), int(y), ok != 0
 }
 
@@ -238,7 +282,8 @@ func nativeWindowTarget() (hostWindowTarget, bool) {
 	title := C.GoString(name)
 	C.ownframe_free_name(name)
 	var x, y, w, h, cx, cy, cw, ch C.int
-	if C.ownframe_frame_geometry(d.display, d.window, d.root, &x, &y, &w, &h) == 0 || C.ownframe_geometry(d.display, d.window, d.root, &cx, &cy, &cw, &ch) == 0 {
+	if C.ownframe_frame_geometry(d.display, d.window, d.root, &x, &y, &w, &h) == 0 ||
+		C.ownframe_geometry(d.display, d.window, d.root, &cx, &cy, &cw, &ch) == 0 {
 		return hostWindowTarget{}, false
 	}
 	return hostWindowTarget{Title: title, Client: desktopRect{X: client.x, Y: client.y, W: client.w, H: client.h}, Frame: desktopRect{X: client.x + int(x-cx), Y: client.y + int(y-cy), W: int(w), H: int(h)}}, true
