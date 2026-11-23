@@ -12,8 +12,6 @@ The headline is that every target native host now has a screen-reader bridge or 
 - Previous release: v0.0.3
 - Range: `085ba7ea..012b39c9`
 
-> **TODO (before tagging):** `go.mod` and `examples/go.mod` at `012b39c9` pin the pseudo-version `github.com/chinmay-sawant/blinkless v0.1.6-0.20261123091437-658f99356cf1`, which is blinkless pull request #49. Once blinkless `v0.1.6` is tagged, bump both files to `v0.1.6` (`go get github.com/chinmay-sawant/blinkless@v0.1.6` in each module, then `go mod tidy`), keep the two pins equal, and rerun `make test` and `make graphics-check`. This line, and the version table entry above it, are the only text that depends on that bump. Delete this block when it is done.
-
 `go get github.com/chinmay-sawant/ownframe@v0.0.3` does not contain anything described here.
 
 ### Highlights
