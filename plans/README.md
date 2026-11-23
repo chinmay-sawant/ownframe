@@ -46,6 +46,7 @@ This ledger does not award a perfect rating. Dependency pins are checked against
 | Path | Status | Purpose |
 |---|---|---|
 | [plans/README.md](README.md) | **Active** | Authoritative maintenance ledger checked by `make plans-check` |
+| [plans/v0.0.4/go-review-hardening/](v0.0.4/go-review-hardening/README.md) | **Active** | Cross-checked Go review P0–P2 safety, security, concurrency, perf, and CI hardening plan |
 | [plans/v0.0.4/chore-improvements/](v0.0.4/chore-improvements/README.md) | **Active** | Phase-wise structural cleanup, footprint, doc truth, API, motion, cohesion, and binary/platform plan |
 | [plans/v0.0.3/](v0.0.3/README.md) | **Current cycle** | v0.0.3 release notes, PR records, and completed performance/animation/example plans |
 | [plans/v0.0.4/](v0.0.4/README.md) | **Completed** | Interaction, Linux a11y actions, component interactions, and CSS conformance tracks |
