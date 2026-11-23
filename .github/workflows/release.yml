@@ -34,6 +34,8 @@ jobs:
         with:
           go-version: "1.26.11"
           cache: false
+      - name: Install native compile dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - name: Validate examples release boundary
         env:
           RELEASE_TAG: ${{ github.ref_name }}
