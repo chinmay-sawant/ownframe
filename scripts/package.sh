@@ -184,7 +184,8 @@ esac
 need python3 "wasm"
 wasm_stage="$staging/wasm"
 mkdir -p "$wasm_stage"
-env GOOS=js GOARCH=wasm \
+# js/wasm has no cgo; the job-level CGO_ENABLED=1 would break os/user.
+env GOOS=js GOARCH=wasm CGO_ENABLED=0 \
 	go build -C "$root" -trimpath -ldflags "-s -w" -o "$wasm_stage/ownframe.wasm" "./examples/$example"
 
 goroot=$(go env GOROOT)

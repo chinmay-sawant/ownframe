@@ -424,7 +424,8 @@ func TestPlacementRoundTrip(t *testing.T) {
 		t.Fatalf("stat placement file = %v", err)
 	}
 
-	if info.Mode().Perm() != placementFileMode {
+	// Windows reports 0666 for any writable file; POSIX modes do not apply.
+	if runtime.GOOS != "windows" && info.Mode().Perm() != placementFileMode {
 		t.Fatalf("placement mode = %o, want %o", info.Mode().Perm(), placementFileMode)
 	}
 }
