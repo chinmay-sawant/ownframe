@@ -28,9 +28,6 @@ func (c *Cache) Relayout(
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	engineMu.Lock()
-	defer engineMu.Unlock()
-
 	styled, err := css.Relayout(ctx, c.styled, width, height, state.Focus, state.Hover, state.Active)
 	if err != nil {
 		return nil, fmt.Errorf("render: relayout: %w", err)

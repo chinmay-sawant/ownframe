@@ -177,3 +177,30 @@ func TestReplaceCurrentRejectsExecutionFailure(t *testing.T) {
 		t.Fatal("failed replacement changed form")
 	}
 }
+
+// TestNilAndCanceledInputsShareOneContract pins HYG-API-01: View.Update
+// rejects a nil tree with ErrNilElement (Render(nil) is an empty fragment), and a canceled context returns its own
+// error without rendering.
+func TestNilAndCanceledInputsShareOneContract(t *testing.T) {
+	t.Parallel()
+	if got, err := ui.Render(nil); err != nil || got != "" {
+		t.Fatalf("ui.Render(nil) = %q, %v, want an empty fragment", got, err)
+	}
+
+	view, err := ui.Mount(ownframe.Config{Width: 480, Height: 320}, ui.Div().Text("a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := view.Update(context.Background(), nil); !errors.Is(err, ui.ErrNilElement) {
+		t.Fatalf("Update(nil) err = %v, want ui.ErrNilElement", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	before := view.Page.HTML()
+	if err := view.Update(ctx, ui.Div().Text("b")); !errors.Is(err, context.Canceled) {
+		t.Fatalf("Update(canceled) err = %v, want context.Canceled", err)
+	}
+	if view.Page.HTML() != before {
+		t.Fatal("canceled Update changed the page")
+	}
+}

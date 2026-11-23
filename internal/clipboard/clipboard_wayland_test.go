@@ -188,3 +188,16 @@ func TestWaylandMissingTools(t *testing.T) {
 		t.Fatalf("Read() err = %v, want ErrWaylandToolsMissing", err)
 	}
 }
+
+func TestOutWLCapsOutput(t *testing.T) {
+	dir := t.TempDir()
+	writeTool(t, dir, "wl-paste", "#!/bin/sh\nprintf '%s' 0123456789012345678901234567890123456789\n")
+	t.Setenv("PATH", dir)
+
+	if got, ok := outWLMax(context.Background(), "wl-paste", nil, 1024); !ok || len(got) != 40 {
+		t.Fatalf("under cap: %q %v", got, ok)
+	}
+	if got, ok := outWLMax(context.Background(), "wl-paste", nil, 16); ok || got != "" {
+		t.Fatalf("over cap: %q %v", got, ok)
+	}
+}

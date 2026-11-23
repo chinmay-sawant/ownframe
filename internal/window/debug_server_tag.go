@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -19,8 +20,14 @@ const (
 	debugReadHeaderTimeout = 5 * time.Second
 	debugReadTimeout       = 15 * time.Second
 	debugWriteTimeout      = 15 * time.Second
-	debugIdleTimeout       = 60 * time.Second
-	debugMaxHeaderBytes    = 1 << 16
+	debugShutdownTimeout   = 3 * time.Second
+	// debugProfileSlack is added to a profile's requested duration so the
+	// response can still be written after the capture ends.
+	debugProfileSlack   = 30 * time.Second
+	debugProfileDefault = 30 * time.Second
+	debugProfileMax     = 10 * time.Minute
+	debugIdleTimeout    = 60 * time.Second
+	debugMaxHeaderBytes = 1 << 16
 )
 
 // startDebugServer listens on a loopback address and serves the window's
@@ -43,14 +50,14 @@ func startDebugServer(ctx context.Context, game *shell, addr string) (string, fu
 		return "", nil, err
 	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /debug/state", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("GET /debug/state", withDebugWriteDeadline(func(w http.ResponseWriter, _ *http.Request) {
 		serveWindowDebugState(game, w)
-	})
-	mux.HandleFunc("GET /debug/pprof/", pprof.Index)
-	mux.HandleFunc("GET /debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandleFunc("GET /debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("GET /debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("GET /debug/pprof/trace", pprof.Trace)
+	}))
+	mux.HandleFunc("GET /debug/pprof/", withDebugWriteDeadline(pprof.Index))
+	mux.HandleFunc("GET /debug/pprof/cmdline", withDebugWriteDeadline(pprof.Cmdline))
+	mux.HandleFunc("GET /debug/pprof/profile", withDebugWriteDeadline(pprof.Profile))
+	mux.HandleFunc("GET /debug/pprof/symbol", withDebugWriteDeadline(pprof.Symbol))
+	mux.HandleFunc("GET /debug/pprof/trace", withDebugWriteDeadline(pprof.Trace))
 	ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", addr)
 	if err != nil {
 		return "", nil, err
@@ -62,21 +69,56 @@ func startDebugServer(ctx context.Context, game *shell, addr string) (string, fu
 		Handler:           handler,
 		ReadHeaderTimeout: debugReadHeaderTimeout,
 		ReadTimeout:       debugReadTimeout,
-		WriteTimeout:      debugWriteTimeout,
-		IdleTimeout:       debugIdleTimeout,
-		MaxHeaderBytes:    debugMaxHeaderBytes,
+		// WriteTimeout stays zero: it would cut a 30 s CPU profile mid-capture.
+		// withDebugWriteDeadline sets a per-route deadline instead.
+		IdleTimeout:    debugIdleTimeout,
+		MaxHeaderBytes: debugMaxHeaderBytes,
 	}
 	go func() {
 		if err := hs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("window debug serve: %s", sanitizeDebugLine(err.Error()))
 		}
 	}()
-	stop := context.AfterFunc(ctx, func() { _ = hs.Shutdown(context.Background()) })
+	shutdown := func() {
+		shutCtx, cancel := context.WithTimeout(context.Background(), debugShutdownTimeout)
+		defer cancel()
+		if err := hs.Shutdown(shutCtx); err != nil {
+			// A request still running past the grace period must not block exit.
+			_ = hs.Close()
+		}
+	}
+	stop := context.AfterFunc(ctx, shutdown)
 	log.Printf("window: debug listening on http://%s/debug/state", bound)
 	return bound, func() {
 		stop()
-		_ = hs.Shutdown(context.Background())
+		shutdown()
 	}, nil
+}
+
+// debugWriteDeadline is how long a debug route may take to finish writing.
+// pprof profile and trace capture for ?seconds=N (default 30) before they
+// write, so their deadline is that duration plus slack; everything else is
+// short.
+func debugWriteDeadline(r *http.Request) time.Duration {
+	path := r.URL.Path
+	if path != "/debug/pprof/profile" && path != "/debug/pprof/trace" {
+		return debugWriteTimeout
+	}
+	capture := debugProfileDefault
+	if n, err := strconv.Atoi(r.URL.Query().Get("seconds")); err == nil && n > 0 {
+		capture = time.Duration(n) * time.Second
+	}
+	capture = min(capture, debugProfileMax)
+
+	return capture + debugProfileSlack
+}
+
+func withDebugWriteDeadline(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Unsupported writers (tests) just keep no deadline.
+		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(debugWriteDeadline(r)))
+		next(w, r)
+	}
 }
 
 // serveWindowDebugState answers one snapshot the game thread published. It

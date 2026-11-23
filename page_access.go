@@ -15,7 +15,7 @@ func (p *Page) Access() Access { return Access{page: p} }
 func (a Access) AccessibilityTree() (AccessibilityTree, error) {
 	p := innerPage(a.page)
 	if p == nil {
-		return AccessibilityTree{}, nil
+		return AccessibilityTree{}, ErrNilPage
 	}
 
 	return p.AccessibilityTree()
@@ -26,7 +26,7 @@ func (a Access) AccessibilityTree() (AccessibilityTree, error) {
 func (a Access) AccessibilityPerform(ctx context.Context, request AccessibilityRequest) error {
 	p := innerPage(a.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.AccessibilityPerform(ctx, request)

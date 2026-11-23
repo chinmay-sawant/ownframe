@@ -31,7 +31,10 @@ func (o Overrides) Stylesheet() (string, error) {
 		return "", err
 	}
 	names := make([]string, 0, len(o))
-	for name := range o {
+	for name, value := range o {
+		if strings.Contains(name, "</") || strings.Contains(value, "</") {
+			return "", fmt.Errorf("theme: closing tag sequence in override %q", name)
+		}
 		names = append(names, name)
 	}
 	sort.Strings(names)

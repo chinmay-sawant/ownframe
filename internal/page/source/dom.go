@@ -44,8 +44,28 @@ func CheckDOM(s string, maxDepth, maxNodes int) error {
 		if depth > maxDepth {
 			return ErrDOMTooDeep
 		}
+		// <script> and <style> hold raw text: a '<' inside is not a tag.
+		if foldEqual(s, from, to, "script") {
+			i = rawTextEnd(s, i, "script")
+		} else if foldEqual(s, from, to, "style") {
+			i = rawTextEnd(s, i, "style")
+		}
 	}
 	return nil
+}
+
+// rawTextEnd returns the index of the "</name" that closes the raw-text
+// element whose body starts at from, or len(s) when it never closes. The
+// closing tag itself is left for the caller's loop to count. It allocates
+// nothing.
+func rawTextEnd(s string, from int, name string) int {
+	const closeOpen = len("</")
+	for k := from; k+closeOpen+len(name) <= len(s); k++ {
+		if s[k] == '<' && s[k+1] == '/' && foldEqual(s, k+closeOpen, k+closeOpen+len(name), name) {
+			return k
+		}
+	}
+	return len(s)
 }
 
 // SkipMeta skips a comment or a <! / <? declaration at s[i] == '<'.

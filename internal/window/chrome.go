@@ -95,10 +95,22 @@ func isWSLVersion(version string) bool {
 	return strings.Contains(strings.ToLower(version), "microsoft")
 }
 
+// readProcVersion reads the kernel version string. Tests replace it to count
+// filesystem reads.
+var readProcVersion = os.ReadFile
+
+// isWSLOnce memoizes WSL detection: the environment and kernel never change
+// while the process runs, and isWSL sits on the per-frame update path.
+var isWSLOnce = sync.OnceValue(detectWSL)
+
 // isWSL reports whether the process runs inside Windows Subsystem for
 // Linux. Only Linux can be WSL; anything else answers false without
-// touching the filesystem.
+// touching the filesystem. The answer is computed once per process.
 func isWSL() bool {
+	return isWSLOnce()
+}
+
+func detectWSL() bool {
 	if runtime.GOOS != "linux" {
 		return false
 	}
@@ -111,7 +123,7 @@ func isWSL() bool {
 		return true
 	}
 
-	version, err := os.ReadFile("/proc/version")
+	version, err := readProcVersion("/proc/version")
 	if err != nil {
 		return false
 	}

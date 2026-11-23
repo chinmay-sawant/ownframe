@@ -344,7 +344,8 @@ func previewHeadExtra(doc, theme, boot string) string {
 	var b strings.Builder
 	if theme != "" {
 		b.WriteString(`<style id="of-theme">`)
-		b.WriteString(theme)
+		// "</" would end the element early; "<\/" is the same CSS escape.
+		b.WriteString(strings.ReplaceAll(theme, "</", `<\/`))
 		b.WriteString("</style>")
 	}
 	if boot != "" && !hasBoot(doc) {

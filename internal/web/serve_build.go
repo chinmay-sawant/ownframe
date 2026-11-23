@@ -30,10 +30,8 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 		return ErrNilApp
 	}
 	if opts.Listener != nil {
-		if addr == "" || strings.HasSuffix(addr, ":0") {
-			if laddr := opts.Listener.Addr(); laddr != nil {
-				addr = laddr.String()
-			}
+		if laddr := opts.Listener.Addr(); laddr != nil && (addr == "" || strings.HasSuffix(addr, ":0")) {
+			addr = laddr.String()
 		}
 	}
 	if err := checkBindAddr(addr, opts); err != nil {
@@ -43,7 +41,7 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	if err != nil {
 		return err
 	}
-	srv := &server{app: app, shell: t, perf: effectivePprof(opts), debugEnabled: effectiveDebug(opts), subs: map[chan []byte]struct{}{}}
+	srv := &server{app: app, shell: t, perf: effectivePprof(opts), debugEnabled: effectiveDebug(opts), redactPasswords: opts.InsecureAllowRemoteBind, subs: map[chan []byte]struct{}{}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", srv.page)
 	mux.HandleFunc("GET /frame.png", srv.frame)
@@ -82,7 +80,7 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	}
 	stopTick := srv.startTick(ctx)
 	defer stopTick()
-	fmt.Println("http://" + addr + "/")
+	fmt.Println("http://" + ln.Addr().String() + "/")
 	// WriteTimeout stays zero so the long-lived GET /events stream is not
 	// cut mid-connection. The service binds loopback only and serves small
 	// JSON/PNG bodies; slow-loris protection comes from the read timeouts.

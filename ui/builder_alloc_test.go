@@ -527,3 +527,24 @@ func TestControlIDStability(t *testing.T) {
 		t.Fatalf("conditional sibling changed Export id %s -> %s", before, after)
 	}
 }
+
+// TestPutRendererBoundsRetainedScratch pins the GPU-LIFE-02 pool bound: a
+// renderer that grew past the retention limits returns without that scratch,
+// and the visit stack never keeps an Element alive.
+func TestPutRendererBoundsRetainedScratch(t *testing.T) {
+	r := newRenderer()
+	r.stack = append(r.stack, &Element{})
+	r.keys = make([]string, 0, maxPooledSlots+1)
+	r.scratch = make([]byte, 0, maxPooledScratchBytes+1)
+	for i := range maxPooledSlots + 1 {
+		r.identities[string(rune('a'+i%26))+string(rune(i))] = i
+	}
+	backing := r.stack[:1]
+	putRenderer(r)
+	if backing[0] != nil {
+		t.Fatal("pooled renderer still references an Element")
+	}
+	if r.keys != nil || r.scratch != nil || len(r.identities) > maxPooledSlots {
+		t.Fatalf("oversized scratch kept: keys cap %d scratch cap %d identities %d", cap(r.keys), cap(r.scratch), len(r.identities))
+	}
+}

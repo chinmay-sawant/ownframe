@@ -157,7 +157,7 @@ func serveSnapshots(ctx context.Context, addr string, hub *snapshotHub) error {
 	}
 
 	if ip := net.ParseIP(host); host != "localhost" && (ip == nil || !ip.IsLoopback()) {
-		return fmt.Errorf("snapshot address %q: only loopback addresses are served", addr) //nolint:err113 // one-off
+		return fmt.Errorf("snapshot address %q: only loopback addresses are served", addr) // one-off
 	}
 
 	mux := http.NewServeMux()

@@ -282,7 +282,7 @@ func readPropJSONL[T any](path string) ([]T, error) {
 	return rows, scanner.Err()
 }
 
-// writeBenchscoreTxt emits the refined measurements for cmd/benchscore. A
+// writeBenchscoreTxt emits the refined measurements for scripts/cmd/benchscore. A
 // sweep row is one sample and its noise exceeds the gate's budget, so only
 // rows refined at opts.Iters (HighPrecision) are written, with the real
 // iteration count of each phase. A clamped or non-positive result is skipped

@@ -10,8 +10,7 @@ func (m mat6) write(op *page.DisplayOp) {
 	if op == nil {
 		return
 	}
-	var zero layout.DisplayOp
-	x := zero.Transform()
+	x := layout.IdentityMatrix()
 	x.A, x.B, x.C, x.D, x.E, x.F = m[0], m[1], m[2], m[3], m[4], m[5]
 	op.SetXform(x)
 }

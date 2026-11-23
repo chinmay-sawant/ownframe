@@ -6,7 +6,7 @@ This document records the empirical performance metrics, memory allocation reduc
 
 ## 1. Editor Virtualization, Windowing & Highlighting Benchmarks
 
-*Measured using `test/editor_virtualization_test.go` and `examples/code-view/perf_editor_bench_test.go` on a 13th Gen Intel(R) Core(TM) i7-13700HX (24 threads) under Go 1.24 linux/amd64.*
+*Measured using `test/editor_virtualization_test.go` and `examples/code-view/perf_editor_bench_test.go` on a 13th Gen Intel(R) Core(TM) i7-13700HX (24 threads) under Go 1.24 linux/amd64 (toolchain at measurement time; the repo now builds with Go 1.26.11 and these numbers have not been re-measured).*
 
 | Benchmark Target | Baseline Latency | Round 1 Latency | Current Latency (Round 2) | Current Allocs | Total Speedup vs Baseline | Improvement vs Round 1 |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |

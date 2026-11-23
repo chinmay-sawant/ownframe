@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"strings"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/host"
@@ -146,6 +147,10 @@ func (p *Page) Copy(ctx context.Context) (string, bool, error) {
 	}
 
 	if c, ok := focusedEditable(p); ok {
+		if strings.EqualFold(c.Type, "password") {
+			return "", false, nil
+		}
+
 		return gesture.Selected(c.Value, formState(p).Anchor, formState(p).Caret), true, nil
 	}
 
@@ -167,6 +172,10 @@ func (p *Page) Cut(ctx context.Context) (string, bool, error) {
 	}
 
 	if c, ok := focusedEditable(p); ok {
+		if strings.EqualFold(c.Type, "password") {
+			return "", false, nil
+		}
+
 		id := formState(p).FocusID
 		if err := beforeEdit(p, ctx, id); err != nil {
 			return "", false, err

@@ -324,3 +324,29 @@ func encodeBigEndianStringBody(s string) []byte {
 	body.WriteByte(0)
 	return body.Bytes()
 }
+
+// TestReadMessageTruncatedFieldStopsParsing feeds a header whose first string
+// field claims more bytes than the header holds, followed by bytes that look
+// like a valid member field. The parser must stop at the bad field instead of
+// reading the trailing bytes as another field.
+func TestReadMessageTruncatedFieldStopsParsing(t *testing.T) {
+	fields := []byte{
+		dbusHeaderPath, 1, 's', 0, // code, signature
+		0xe8, 0x03, 0, 0, // claims 1000 bytes
+		dbusHeaderMember, 1, 's', 0, // would be a valid member field
+		4, 0, 0, 0, 'e', 'v', 'i', 'l', 0,
+	}
+	var buf bytes.Buffer
+	buf.Write([]byte{'l', 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0})
+	buf.Write([]byte{byte(len(fields)), 0, 0, 0}) //nolint:gosec // reason: test fields are well under 256 bytes.
+	buf.Write(fields)
+	buf.Write(make([]byte, (8-(16+len(fields))%8)%8))
+
+	msg, err := readMessage(&buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if msg.member != "" || msg.path != "" {
+		t.Fatalf("parsed past a truncated field: member %q path %q", msg.member, msg.path)
+	}
+}

@@ -49,7 +49,7 @@ func (c *chunkStore) get(key chunkKey, sig uint64, box image.Rectangle,
 	bake(img)
 
 	if old == nil {
-		c.order = append(c.order, key)
+		c.order.add(key)
 	} else {
 		c.touch(key)
 	}
@@ -96,7 +96,7 @@ type chunkEntry struct {
 type chunkStore struct {
 	mu      sync.Mutex
 	entries map[chunkKey]*chunkEntry
-	order   []chunkKey
+	order   lruOrder[chunkKey]
 	pixels  int
 }
 
@@ -127,7 +127,7 @@ func countBlit() {
 // painted this frame, and the next paint only needs the chunks of the region
 // it draws.
 func (c *chunkStore) touch(key chunkKey) {
-	c.order = lruTouch(c.order, key)
+	c.order.touch(key)
 }
 
 // evict drops the oldest slots while the store is over either bound. protected
@@ -135,7 +135,7 @@ func (c *chunkStore) touch(key chunkKey) {
 // that is itself larger than the pixel budget cannot be disposed and then
 // returned to its caller.
 func (c *chunkStore) evict(protected chunkKey) {
-	c.order, c.pixels = lruEvict(c.order, len(c.entries), chunkMaxEntries, c.pixels, chunkMaxPixels, protected, func(victim chunkKey) int {
+	c.pixels = c.order.evict(len(c.entries), chunkMaxEntries, c.pixels, chunkMaxPixels, protected, func(victim chunkKey) int {
 		e := c.entries[victim]
 		if e == nil {
 			return 0

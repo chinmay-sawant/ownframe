@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/chinmay-sawant/ownframe/internal/a11yqueue"
 	"github.com/chinmay-sawant/ownframe/internal/atspi"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page"
@@ -312,7 +313,7 @@ func TestA11yActionsUsePageLoopAndRejectRemovedTargets(t *testing.T) {
 	t.Cleanup(s.closeA11y)
 	wake := make(chan struct{}, 1)
 	s.a11y.actions.Close()
-	s.a11y.actions = atspi.NewActions(ctx, func() { wake <- struct{}{} })
+	s.a11y.actions = a11yqueue.NewActions(ctx, func() { wake <- struct{}{} })
 	enqueue := func(id host.AccessibilityNodeID, kind host.AccessibilityActionKind) <-chan error {
 		tree, err := p.AccessibilityTree()
 		if err != nil {
@@ -477,5 +478,33 @@ func (g *a11yWakeGame) Draw(screen *ebiten.Image) {
 			return
 		}
 		g.done = true
+	}
+}
+
+// TestLinuxA11yBurstKeepsNewestSnapshot queues three generations while the
+// worker is busy and expects the newest to be the one left in the queue.
+func TestLinuxA11yBurstKeepsNewestSnapshot(t *testing.T) {
+	app := &accessibleFakeScreen{fakeScreen: fakeScreen{width: 10, height: 10}}
+	s := newShell(context.Background(), app)
+	// Mark a worker as running so publishA11y only queues.
+	s.a11y.mu.Lock()
+	s.a11y.running = true
+	s.a11y.mu.Unlock()
+
+	for gen := uint64(1); gen <= 3; gen++ {
+		app.redraws = int(gen)
+		s.publishA11y()
+	}
+
+	select {
+	case job := <-s.a11y.jobs:
+		if job.gen != 3 {
+			t.Fatalf("queued generation = %d, want 3", job.gen)
+		}
+	default:
+		t.Fatal("no snapshot queued")
+	}
+	if s.a11y.queued != 1 {
+		t.Fatalf("queued = %d, want 1", s.a11y.queued)
 	}
 }

@@ -10,18 +10,8 @@ import (
 )
 
 const (
-	maxSourceSize = source.MaxBytes
-
-	MaxSourceSize      = maxSourceSize
-	MaxSourceBytes     = maxSourceSize
-	MaxSourceFileSize  = maxSourceSize
-	MaxSourceFileBytes = maxSourceSize
-	SourceSizeLimit    = maxSourceSize
-	SourceSizeMax      = maxSourceSize
-	MaxSourceLength    = maxSourceSize
-	MaxTemplateSize    = maxSourceSize
-	MaxTemplateBytes   = maxSourceSize
-	MaxSource          = maxSourceSize
+	// MaxSourceSize caps a page source in bytes.
+	MaxSourceSize = source.MaxBytes
 
 	// MaxDOMDepth caps parse-time nesting (GEN-29): layout recursion past
 	// it is a fatal stack overflow that recover cannot catch.
@@ -58,7 +48,7 @@ func sourceHTML(cfg Config) (string, os.FileInfo, error) {
 	return source.Load(srcFiles, source.Text{
 		File:      cfg.File,
 		Inline:    cfg.HTML,
-		Limit:     maxSourceSize,
+		Limit:     MaxSourceSize,
 		BadSource: ErrBadSource,
 	})
 }
@@ -69,7 +59,7 @@ func sourceTheme(cfg Config) (string, os.FileInfo, error) {
 	return source.Load(srcFiles, source.Text{
 		File:      cfg.ThemeFile,
 		Inline:    cfg.Theme,
-		Limit:     maxSourceSize,
+		Limit:     MaxSourceSize,
 		BadSource: ErrBadSource,
 	})
 }
@@ -77,7 +67,7 @@ func sourceTheme(cfg Config) (string, os.FileInfo, error) {
 // sourceTooLarge builds the wrapped oversize error. It wraps both
 // ErrBadSource and ErrSourceTooLarge so errors.Is matches either.
 func sourceTooLarge(path string, size int64) error {
-	return source.Oversize(path, size, maxSourceSize, ErrBadSource)
+	return source.Oversize(path, size, MaxSourceSize, ErrBadSource)
 }
 
 func checkDOMLimits(html string) error {
@@ -185,15 +175,12 @@ func (p *Page) PlaceCaret(id string, caret int) {
 	if fs == nil || fs.FocusID != id {
 		return
 	}
-	if _, ok := focusedEditable(p); !ok {
+	c, ok := focusedEditable(p)
+	if !ok {
 		return
 	}
 	p.tickMutated.Store(true)
-	n := 0
-	if c, ok := focusedEditable(p); ok {
-		n = runeLen(c.Value)
-	}
-	fs.SetCaret(caret, n, false)
+	fs.SetCaret(caret, runeLen(c.Value), false)
 }
 
 // SelectControls returns the option lists of the live select controls, keyed
@@ -298,6 +285,14 @@ func bindRead(p *Page, c Control) (Control, bool) {
 // bindWrite copies c into the bound field and reports whether c is bound.
 // An unchecked radio writes nothing.
 func bindWrite(p *Page, c Control) bool {
+	// dataMu guards p.data, which bindTarget reads and the setters mutate,
+	// and the formDirty flag set below. No caller holds it.
+	if p == nil {
+		return false
+	}
+	p.dataMu.Lock()
+	defer p.dataMu.Unlock()
+
 	f, ok := bindTarget(p, c.Bind)
 	if !ok {
 		return false

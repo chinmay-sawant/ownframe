@@ -24,13 +24,19 @@ func lookup(p *ownframe.Page, match func(ownframe.Box) bool) (ownframe.Box, bool
 	if p == nil {
 		return ownframe.Box{}, false
 	}
-	display := p.Probe().Display()
-	if display == nil {
-		return ownframe.Box{}, false
-	}
 	var found ownframe.Box
 	ok := false
-	for _, b := range display.Boxes {
+	if display := p.Probe().Display(); display != nil {
+		for _, b := range display.Boxes {
+			if match(b) {
+				found = b
+				ok = true
+			}
+		}
+		return found, ok
+	}
+	// A bitmap-fallback page has no retained display; Boxes still answers.
+	for _, b := range p.Boxes() {
 		if match(b) {
 			found = b
 			ok = true

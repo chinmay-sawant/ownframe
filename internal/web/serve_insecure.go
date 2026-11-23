@@ -32,8 +32,17 @@ func effectiveDebug(o Options) bool {
 // a non-loopback host needs InsecureAllowRemoteBind. Unresolvable names
 // fail safe the same way.
 func checkBindAddr(addr string, o Options) error {
+	// A pre-bound listener is judged by the address it actually holds, not
+	// by the addr string the caller passed alongside it.
 	if o.Listener != nil {
-		return nil
+		laddr := o.Listener.Addr()
+		if laddr == nil {
+			return errRemoteBind
+		}
+		if n := laddr.Network(); n == "unix" || n == "unixpacket" {
+			return nil // a local socket cannot be reached over the network
+		}
+		addr = laddr.String()
 	}
 	if err := validateBindAddr(addr); err != nil {
 		return err

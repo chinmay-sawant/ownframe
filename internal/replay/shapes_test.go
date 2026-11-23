@@ -647,14 +647,17 @@ func TestRasterCacheTouchOnHit(t *testing.T) {
 	c.raster(k1, image.Pt(10, 10), func(img *ebiten.Image) {})
 	c.raster(k2, image.Pt(20, 20), func(img *ebiten.Image) {})
 
-	if len(c.order) != 2 || c.order[0] != k1 || c.order[1] != k2 {
-		t.Fatalf("order = %v, want [%v, %v]", c.order, k1, k2)
+	if c.order.length() != 2 {
+		t.Fatalf("order length = %d, want 2", c.order.length())
+	}
+	if oldest, _ := c.order.oldest(rasterKey{}); oldest != k1 {
+		t.Fatalf("oldest = %v, want %v", oldest, k1)
 	}
 
-	// Hit k1: must move to the back of order.
+	// Hit k1: it becomes the most recent, so k2 is now the oldest.
 	c.raster(k1, image.Pt(10, 10), func(img *ebiten.Image) {})
-	if len(c.order) != 2 || c.order[0] != k2 || c.order[1] != k1 {
-		t.Fatalf("order after hit = %v, want [%v, %v]", c.order, k2, k1)
+	if oldest, _ := c.order.oldest(rasterKey{}); oldest != k2 {
+		t.Fatalf("oldest after hit = %v, want %v", oldest, k2)
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/chinmay-sawant/ownframe/internal/page"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -475,5 +476,28 @@ func TestPollReloadThemeErrorKeepsOld(t *testing.T) {
 
 	if p.Generation() != gen {
 		t.Fatal("a broken theme redrew the page")
+	}
+}
+
+// TestPollReloadValidatesGoTemplate pins HYG-REL-01: a hot-reloaded Go
+// template goes through the same DOM limits as New, so a deeply nested edit
+// is refused and the last good picture stays.
+func TestPollReloadValidatesGoTemplate(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	path := writeSource(t, "index.html", `<p id="p">{{.}}</p>`)
+	p := watchedPage(t, path)
+	gen := p.Generation()
+
+	deep := strings.Repeat("<div>", 300) + "x" + strings.Repeat("</div>", 300) + `{{.}}`
+	rewriteSource(t, path, deep)
+
+	changed, err := p.PollReload(ctx)
+	if changed || err == nil {
+		t.Fatalf("deep template poll = %v, %v, want a rejection", changed, err)
+	}
+	if p.Generation() != gen {
+		t.Fatal("a rejected template replaced the picture")
 	}
 }

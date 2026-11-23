@@ -92,7 +92,7 @@ func (a *App) addWatchTree(watcher *fsnotify.Watcher, root string) error {
 
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
-			return nil //nolint:nilerr // an unreadable subdirectory must not stop the walk
+			return nil // an unreadable subdirectory must not stop the walk
 		}
 
 		if !entry.IsDir() {

@@ -5,6 +5,7 @@ package clipboard
 import (
 	"context"
 	"runtime"
+	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -53,9 +54,33 @@ func getMem(src, n uintptr, dst []uint16) {
 	runtime.KeepAlive(dst)
 }
 
+const (
+	openAttempts = 4
+	openBackoff  = 5 * time.Millisecond
+)
+
+// openClipboard opens the clipboard for the calling OS thread, retrying a
+// few times because another process may hold it briefly. The caller must
+// have called runtime.LockOSThread: Win32 binds clipboard ownership to the
+// thread, so CloseClipboard has to run on the same one.
+func openClipboard() bool {
+	for i := range openAttempts {
+		if opened, _, _ := openClip.Call(0); opened != 0 {
+			return true
+		}
+		if i < openAttempts-1 {
+			time.Sleep(openBackoff << i)
+		}
+	}
+
+	return false
+}
+
 func writeOS(_ context.Context, text string) bool {
-	opened, _, _ := openClip.Call(0)
-	if opened == 0 {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if !openClipboard() {
 		return false
 	}
 
@@ -90,8 +115,10 @@ func writeOS(_ context.Context, text string) bool {
 
 // clearOS empties the desktop clipboard.
 func clearOS() {
-	opened, _, _ := openClip.Call(0)
-	if opened == 0 {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if !openClipboard() {
 		return
 	}
 

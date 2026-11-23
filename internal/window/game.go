@@ -254,7 +254,10 @@ func (s *shell) built() bool {
 
 func (s *shell) setDisplay(display *layout.Display) {
 	s.viewportSticky = layout.HasViewportSticky(display)
-	if s.display != nil && s.display != display {
+	// Evict even when the pointer repeats: a recycled *layout.Display with the
+	// same op and box counts keeps the same plan fingerprint, so a plan built
+	// for the previous generation would otherwise hit stale masks and colors.
+	if s.display != nil {
 		s.renderer.EvictDisplay(s.display)
 	}
 	s.disposeImage()
@@ -271,6 +274,24 @@ func (s *shell) markRedrawOffset() {
 	if observer, ok := s.app.(host.ScrollObserver); ok {
 		s.redrawX, s.redrawY = observer.ScrollOffset()
 	}
+}
+
+// disposeSurfaces releases every GPU buffer the shell owns once the run loop
+// ends: the title bar canvas, tile grid, viewport buffers, scale buffer, the
+// retained image, and the bitmap fallback view. It is idempotent.
+func (s *shell) disposeSurfaces() {
+	if s.titlebar.canvas != nil {
+		s.titlebar.canvas.Deallocate()
+		s.titlebar.canvas = nil
+	}
+	s.dropTiles()
+	s.disposeViewport()
+	s.dropScaleBuf()
+	s.disposeImage()
+	if s.bitmapView.img != nil {
+		s.bitmapView.img.Deallocate()
+	}
+	s.bitmapView = bitmapView{}
 }
 
 func (s *shell) disposeImage() {

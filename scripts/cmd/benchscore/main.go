@@ -9,7 +9,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/chinmay-sawant/ownframe/internal/benchscore"
+	"github.com/chinmay-sawant/ownframe/scripts/internal/benchscore"
 )
 
 func main() {

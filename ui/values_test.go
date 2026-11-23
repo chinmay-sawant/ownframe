@@ -326,3 +326,17 @@ func TestTypedThemeAndLayoutValues(t *testing.T) {
 		}
 	}
 }
+
+func TestSecThemeStyleBreakout(t *testing.T) {
+	t.Parallel()
+
+	for _, v := range []string{
+		`"</style><script>alert(1)</script>"`,
+		`'</STYLE><script>'`,
+		`url(</style>)`,
+	} {
+		if err := validateCSSValue(v); err == nil {
+			t.Fatalf("validateCSSValue(%q) accepted a closing tag", v)
+		}
+	}
+}

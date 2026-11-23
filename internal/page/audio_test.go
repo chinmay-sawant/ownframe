@@ -2,6 +2,8 @@ package page
 
 import (
 	"bytes"
+	"encoding/json"
+	"math"
 	"testing"
 )
 
@@ -106,5 +108,23 @@ func TestAudioNilPage(t *testing.T) {
 	data, contentType, gen, ok := p.Audio()
 	if ok || gen != 0 || data != nil || contentType != "" {
 		t.Fatalf("nil page = %q %q gen=%d ok=%v", data, contentType, gen, ok)
+	}
+}
+
+func TestAudioPlaybackNonFinite(t *testing.T) {
+	t.Parallel()
+
+	p := &Page{}
+	for _, c := range []struct {
+		in, want float64
+	}{{math.NaN(), 0}, {math.Inf(1), 1}, {math.Inf(-1), 0}} {
+		p.SetAudioPlayback(true, c.in)
+		_, volume := p.AudioPlayback()
+		if volume != c.want {
+			t.Fatalf("volume(%v) = %v, want %v", c.in, volume, c.want)
+		}
+		if _, err := json.Marshal(volume); err != nil {
+			t.Fatalf("stored volume does not marshal: %v", err)
+		}
 	}
 }

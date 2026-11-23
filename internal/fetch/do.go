@@ -39,7 +39,7 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 		req.Header.Set(key, value)
 	}
 
-	resp, err := client.Do(req)
+	resp, err := clientFor(ctx).Do(req)
 	if err != nil {
 		if errors.Is(err, ErrCredentialsInURL) {
 			return Response{}, ErrCredentialsInURL
@@ -50,7 +50,13 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 		if errors.Is(err, ErrTooManyRedirects) {
 			return Response{}, ErrTooManyRedirects
 		}
-		if strings.Contains(err.Error(), "response headers exceeded") {
+		if errors.Is(err, ErrPrivateAddress) {
+			return Response{}, ErrPrivateAddress
+		}
+		if errors.Is(err, ErrDowngrade) {
+			return Response{}, ErrDowngrade
+		}
+		if headersTooLarge(err) {
 			return Response{}, ErrHeadersTooLarge
 		}
 
@@ -78,4 +84,12 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 	}
 
 	return Response{Status: resp.StatusCode, Header: flat(resp.Header), Body: out}, nil
+}
+
+// headersTooLarge reports net/http's oversized-header abort. The standard
+// library returns it as an untyped error whose text begins "http: server
+// response headers exceeded", so the text is the only handle; the check lives
+// here and security_test.go keeps it honest against the real transport.
+func headersTooLarge(err error) bool {
+	return strings.Contains(err.Error(), "response headers exceeded")
 }

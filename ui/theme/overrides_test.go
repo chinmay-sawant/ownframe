@@ -51,3 +51,12 @@ func TestOverrideDeclarationBoundaries(t *testing.T) {
 		t.Fatal("invalid component override accepted")
 	}
 }
+
+func TestSecThemeStyleBreakout(t *testing.T) {
+	t.Parallel()
+
+	o := theme.Overrides{"--x": `"</style><script>alert(1)</script>"`}
+	if sheet, err := o.Stylesheet(); err == nil {
+		t.Fatalf("Stylesheet accepted breakout: %q", sheet)
+	}
+}

@@ -27,7 +27,7 @@ func ClickAction(ctx context.Context, p *ownframe.Page, action string) error {
 // Type appends text to the focused field.
 func Type(ctx context.Context, p *ownframe.Page, text string) error {
 	if p == nil {
-		return ErrNoBox
+		return ErrNilPage
 	}
 	return p.Edit().Type(ctx, text)
 }

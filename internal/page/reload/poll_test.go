@@ -159,9 +159,47 @@ func TestReloadThemeAndHTML(t *testing.T) {
 		t.Fatalf("mixed applied %v err %v tpl %d theme %d", applied, err, got.templates, got.themes)
 	}
 	fs.reads = 0
+	templates := got.templates
 	applied, err = s.Poll(hooks)
-	if applied || err == nil || fs.reads == 0 {
-		t.Fatalf("html retried applied %v err %v reads %d", applied, err, fs.reads)
+	if applied || err == nil || fs.reads != 0 || got.templates != templates {
+		t.Fatalf("broken html re-read or re-parsed: applied %v err %v reads %d", applied, err, fs.reads)
+	}
+}
+
+// TestReloadThemeNotStarvedByBrokenHTML pins HYG-REL-01: a theme edit lands
+// while an HTML syntax error is still pending.
+func TestReloadThemeNotStarvedByBrokenHTML(t *testing.T) {
+	t.Parallel()
+
+	fs := newFake()
+	fs.put("a.html", []byte("<p>one</p>"), 1)
+	fs.put("t.css", []byte("a"), 1)
+	hi, _ := fs.Stat("a.html")
+	ti, _ := fs.Stat("t.css")
+	s := Open(Spec{
+		File: "a.html", ThemeFile: "t.css", Hot: true,
+		HTML: []byte("<p>one</p>"), HTMLInfo: hi,
+		CSS: []byte("a"), CSSInfo: ti,
+	})
+	hooks, got := fs.hooks(8)
+
+	fs.put("a.html", []byte("{{"), 2)
+	if applied, err := s.Poll(hooks); applied || err == nil {
+		t.Fatalf("broken html poll applied %v err %v", applied, err)
+	}
+
+	fs.put("t.css", []byte("b"), 2)
+	applied, err := s.Poll(hooks)
+	if !applied || got.themes != 1 || got.css != "b" {
+		t.Fatalf("theme starved by broken html: applied %v themes %d css %q err %v", applied, got.themes, got.css, err)
+	}
+	if err == nil {
+		t.Fatal("the pending html error vanished while the theme reloaded")
+	}
+
+	fs.put("a.html", []byte("<p>k</p>"), 3)
+	if applied, err := s.Poll(hooks); !applied || err != nil || got.src != "<p>k</p>" {
+		t.Fatalf("fixed html applied %v err %v src %q", applied, err, got.src)
 	}
 }
 

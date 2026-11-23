@@ -122,3 +122,55 @@ func fetchDebugStatus(client *http.Client, url string) int {
 	_, _ = io.Copy(io.Discard, resp.Body)
 	return resp.StatusCode
 }
+
+func TestDebugWriteDeadlineCoversProfileCapture(t *testing.T) {
+	req := func(target string) *http.Request {
+		r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1"+target, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+	if d := debugWriteDeadline(req("/debug/pprof/profile")); d <= 30*time.Second {
+		t.Fatalf("default profile deadline %v does not outlast the 30 s capture", d)
+	}
+	if d := debugWriteDeadline(req("/debug/pprof/profile?seconds=60")); d <= 60*time.Second {
+		t.Fatalf("seconds=60 deadline %v", d)
+	}
+	if d := debugWriteDeadline(req("/debug/pprof/trace?seconds=1000000")); d > debugProfileMax+debugProfileSlack {
+		t.Fatalf("deadline %v is not capped", d)
+	}
+	if d := debugWriteDeadline(req("/debug/state")); d != debugWriteTimeout {
+		t.Fatalf("state deadline %v", d)
+	}
+}
+
+// TestDebugServerShutdownBoundedByOpenRequest starts a profile that would run
+// for 20 s and expects stop to return within the shutdown grace period.
+func TestDebugServerShutdownBoundedByOpenRequest(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	game := newDevShell(newDevScreen())
+	bound, stop, err := startDebugServer(ctx, game, "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	reqCtx, reqCancel := context.WithCancel(ctx)
+	defer reqCancel()
+	go func() {
+		r, rerr := http.NewRequestWithContext(reqCtx, http.MethodGet, "http://"+bound+"/debug/pprof/profile?seconds=20", nil)
+		if rerr != nil {
+			return
+		}
+		if resp, derr := http.DefaultClient.Do(r); derr == nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	time.Sleep(300 * time.Millisecond)
+
+	start := time.Now()
+	stop()
+	if elapsed := time.Since(start); elapsed > debugShutdownTimeout+2*time.Second {
+		t.Fatalf("stop took %v with an open request", elapsed)
+	}
+}

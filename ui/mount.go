@@ -105,9 +105,16 @@ func (v *View) Handle(handlers ownframe.Handlers) {
 // rendering the snapshot or walking the rebuilt tree.
 func (v *View) Update(ctx context.Context, root *Element) error {
 	if root == nil {
-		return fmt.Errorf("ui: a non-nil component tree is required")
+		return ErrNilElement
 	}
-	if v.last != nil && ctx != nil && ctx.Err() == nil && v.Page.HTML() == v.html {
+	if ctx != nil {
+		// A canceled context returns its own error before any render work,
+		// instead of burning a full render or a ReplaceCurrent fallback.
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+	}
+	if v.last != nil && ctx != nil && v.Page.HTML() == v.html {
 		d := diffTree(v.last, root)
 		switch {
 		case d.ok && len(d.patches) == 0:
@@ -155,14 +162,21 @@ func (v *View) patch(ctx context.Context, root *Element, patches []ownframe.Elem
 	}
 	fresh := r.actions
 	previous := v.actions
-	if err := v.Page.PatchElements(ctx, patches); err == nil {
-		if err := v.Page.Load(ctx, html, ownframe.LoadOptions{AdoptTree: true, StaticHTML: true}); err == nil {
+	patchErr := v.Page.PatchElements(ctx, patches)
+	if patchErr == nil {
+		patchErr = v.Page.Load(ctx, html, ownframe.LoadOptions{AdoptTree: true, StaticHTML: true})
+		if patchErr == nil {
 			v.actions = fresh
 			r.actions = previous
 			putRenderer(r)
 			v.last, v.html = root, html
 			return nil
 		}
+	}
+	if ctx != nil && ctx.Err() != nil {
+		// The caller gave up; do not start a full ReplaceCurrent load.
+		putRenderer(r)
+		return patchErr
 	}
 	v.actions = fresh
 	if err := v.Page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true, StaticHTML: true}); err != nil {
@@ -216,7 +230,7 @@ func renderDocument(title string, root *Element) (*renderer, string, error) {
 // buffer still grows once while the estimate walk is skipped.
 func renderDocumentHinted(title string, root *Element, hint int) (*renderer, string, error) {
 	if root == nil {
-		return nil, "", fmt.Errorf("ui: a non-nil component tree is required")
+		return nil, "", ErrNilElement
 	}
 	if hint < 0 {
 		hint = 0

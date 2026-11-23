@@ -52,7 +52,7 @@ type cornerMaskKey struct {
 type cornerCache struct {
 	mu      sync.Mutex
 	entries map[cornerMaskKey]*ebiten.Image
-	order   []cornerMaskKey
+	order   lruOrder[cornerMaskKey]
 	pixels  int
 }
 
@@ -84,10 +84,10 @@ func (c *cornerCache) get(key cornerMaskKey, bake func() []byte) *ebiten.Image {
 	img.WritePixels(bake())
 
 	c.entries[key] = img
-	c.order = append(c.order, key)
+	c.order.add(key)
 	c.pixels += w * h
 
-	c.order, c.pixels = lruEvict(c.order, len(c.order), cornerCacheMaxItems, c.pixels, cornerCacheMaxPix, key, func(victim cornerMaskKey) int {
+	c.pixels = c.order.evict(c.order.length(), cornerCacheMaxItems, c.pixels, cornerCacheMaxPix, key, func(victim cornerMaskKey) int {
 		evicted := c.entries[victim]
 		delete(c.entries, victim)
 		px := evicted.Bounds().Dx() * evicted.Bounds().Dy()
@@ -99,7 +99,7 @@ func (c *cornerCache) get(key cornerMaskKey, bake func() []byte) *ebiten.Image {
 }
 
 func (c *cornerCache) touch(key cornerMaskKey) {
-	c.order = lruTouch(c.order, key)
+	c.order.touch(key)
 }
 
 func (c *cornerCache) close() {
@@ -110,7 +110,7 @@ func (c *cornerCache) close() {
 		img.Deallocate()
 	}
 	clear(c.entries)
-	c.order = nil
+	c.order.reset()
 	c.pixels = 0
 }
 
@@ -122,7 +122,7 @@ func (c *cornerCache) releaseIdle() {
 		img.Deallocate()
 	}
 	c.entries = nil
-	c.order = nil
+	c.order.reset()
 	c.pixels = 0
 }
 
@@ -133,9 +133,7 @@ func (c *cornerCache) warmIdle(n int) {
 	if c.entries == nil {
 		c.entries = make(map[cornerMaskKey]*ebiten.Image, n)
 	}
-	if c.order == nil {
-		c.order = make([]cornerMaskKey, 0, n)
-	}
+	c.order.reserve(n)
 }
 
 // fillCornerAnalytical blits a cached analytical quarter-circle fill mask for

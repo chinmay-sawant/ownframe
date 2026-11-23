@@ -4,6 +4,8 @@ This suite measures the **actual end-to-end application cost** of OwnFrame and i
 
 It evaluates 10 real-world application views ranging from low complexity (50-row flat list) to extreme complexity (1,000 rich application rows with gradients, badges, progress bars, and over 22,000 DOM boxes).
 
+> **Note:** since v0.0.4 `ownframe` rejects rendered output with more than `MaxDOMNodes` (20,000) elements, so scenario `10-extreme-app-1000` renders **800** rows (the ID is kept so baselines still match). The 1,000-row figures in the tables below were measured before that cap and have not been re-measured.
+
 All CSS properties used strictly adhere to the supported catalogue documented in [`documentation/compatibility-matrix.md`](../../documentation/compatibility-matrix.md).
 
 ---

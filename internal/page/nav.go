@@ -83,7 +83,9 @@ func ReplaceHTML(ctx context.Context, p *Page, html string, static bool) error {
 	}
 	previous, previousSource := p.tpl, p.nav.Current()
 	previousFrame, previousBoxes := p.draw, p.boxes
+	p.dataMu.RLock()
 	previousBody, previousSynced := p.source, p.lastSyncBody
+	p.dataMu.RUnlock()
 	previousForm := formState(p)
 	previousRequest, previousHasRequest := p.ff.requestFocus, p.ff.hasFocusRequest
 	if previousForm != nil {
@@ -96,7 +98,9 @@ func ReplaceHTML(ctx context.Context, p *Page, html string, static bool) error {
 	if err := p.Redraw(ctx); err != nil {
 		p.tpl = previous
 		p.draw, p.boxes = previousFrame, previousBoxes
+		p.dataMu.Lock()
 		p.source, p.lastSyncBody = previousBody, previousSynced
+		p.dataMu.Unlock()
 		p.nav.Retarget(previousSource)
 		setFormState(p, previousForm)
 		p.ff.requestFocus, p.ff.hasFocusRequest = previousRequest, previousHasRequest

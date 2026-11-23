@@ -35,7 +35,7 @@ bench-gate:
 		echo "usage: make bench-gate BENCH_REF=<reference.txt> BENCH_CAND=<candidate.txt> [BENCH_MANIFEST=<classes.json>]"; \
 		exit 1; \
 	fi
-	$(GO) run ./cmd/benchscore -ref "$(BENCH_REF)" -cand "$(BENCH_CAND)" $(if $(BENCH_MANIFEST),-manifest "$(BENCH_MANIFEST)")
+	@cd scripts && GOWORK=off $(GO) run ./cmd/benchscore -ref "$(abspath $(BENCH_REF))" -cand "$(abspath $(BENCH_CAND))" $(if $(BENCH_MANIFEST),-manifest "$(abspath $(BENCH_MANIFEST))")
 
 # `go build ./...` links an executable for every example on each run, takes
 # about a minute, and leaves the binaries in this directory. `go vet` compiles
@@ -96,12 +96,14 @@ clean-local:
 internal-import-check:
 	bash scripts/check-example-internal.sh
 
-# Vulnerability scan via the pinned tool directive in go.mod
-# (golang.org/x/vuln/cmd/govulncheck). Runs against both modules through
-# the workspace. Usage: make vuln
+# Vulnerability scan via the pinned tool directive in scripts/go.mod
+# (golang.org/x/vuln/cmd/govulncheck), so consumers of the library module
+# never inherit x/vuln, x/tools, or x/telemetry. govulncheck has no workspace
+# mode, so each module is scanned with -C. Usage: make vuln
 .PHONY: vuln
 vuln:
-	go tool govulncheck ./...
+	@cd scripts && GOWORK=off $(GO) tool govulncheck -C .. ./...
+	@cd scripts && GOWORK=off $(GO) tool govulncheck -C ../examples ./...
 
 # Every folder under examples/ that `make open` can walk.
 EXAMPLES := $(patsubst examples/%/,%,$(wildcard examples/*/))

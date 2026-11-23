@@ -31,21 +31,21 @@ type State struct {
 	enabled bool
 	html    watched
 	theme   watched
-	pending *edit
+	// pending keeps, per kind, the stat of a file whose install failed and the
+	// error it produced, so unchanged broken bytes are not parsed again.
+	pending [2]*edit
 }
 
 type watched struct {
 	path    string
 	info    os.FileInfo
-	data    []byte
 	sum     [sha256.Size]byte
 	statErr string
 }
 
 type edit struct {
-	kind Kind
-	data []byte
 	info os.FileInfo
+	err  error
 }
 
 // Open builds a watch. It returns nil when neither path is set.
@@ -91,7 +91,6 @@ func (s *State) at(kind Kind) *watched {
 }
 
 func (w *watched) accept(data []byte, info os.FileInfo) {
-	w.data = data
 	w.sum = sha256.Sum256(data)
 	w.info = info
 }

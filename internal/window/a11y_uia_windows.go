@@ -5,7 +5,7 @@ package window
 import (
 	"sync"
 
-	"github.com/chinmay-sawant/ownframe/internal/atspi"
+	"github.com/chinmay-sawant/ownframe/internal/a11yqueue"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/uia"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -20,22 +20,44 @@ const uiaRetryFrames = 30
 // uia.Provider from their own threads, and actions come back through
 // actions.Drain on the loop.
 type a11yHost struct {
-	actions *atspi.Actions
+	actions *a11yqueue.Actions
 	prov    *uia.Provider
 	host    *uia.Host
 
 	gen       uint64
 	published bool
 	skip      int
+	place     geometryThrottle
 	closeOnce sync.Once
+
+	// mu guards host assignment and closed: the context watcher closes the
+	// host from its own goroutine while the render loop may be attaching.
+	mu     sync.Mutex
+	closed bool
+	done   chan struct{}
 }
 
 func (s *shell) initA11y() {
-	s.a11y.actions = atspi.NewActions(s.ctx, func() {
+	s.a11y.actions = a11yqueue.NewActions(s.ctx, func() {
 		//nolint:staticcheck // reason: concurrent-safe wake for a UIA request while the desktop is parked in WaitEvents.
 		ebiten.ScheduleFrame()
 	})
 	s.a11y.prov = uia.NewProvider(s.a11y.actions.Request)
+	s.a11y.done = make(chan struct{})
+	if s.ctxDone != nil {
+		go s.watchA11y(s.ctxDone)
+	}
+}
+
+// watchA11y detaches UIA when the shell context ends, which covers NewGame
+// hosts that never call runWindow. It also exits when closeA11y runs on its
+// own, so window tests do not leak it. It mirrors the AT-SPI watcher.
+func (s *shell) watchA11y(ctxDone <-chan struct{}) {
+	select {
+	case <-ctxDone:
+		s.closeA11y()
+	case <-s.a11y.done:
+	}
 }
 
 func (s *shell) runA11yActions() {
@@ -89,7 +111,15 @@ func (s *shell) attachUIA(acc host.Accessible, gen uint64) bool {
 	if err != nil {
 		return false
 	}
-	a.host, a.gen, a.published = h, gen, true
+	a.mu.Lock()
+	if a.closed {
+		a.mu.Unlock()
+		h.Close()
+		return false
+	}
+	a.host = h
+	a.mu.Unlock()
+	a.gen, a.published = gen, true
 	return true
 }
 
@@ -97,11 +127,22 @@ func (s *shell) attachUIA(acc host.Accessible, gen uint64) bool {
 // area comes from the native window in physical pixels; the built-in title
 // bar, drawn inside it, shifts the page down.
 func (s *shell) placeUIA() {
-	g, ok := s.a11y.host.ClientGeometry()
-	if !ok {
+	x, y := ebiten.WindowPosition()
+	w, h := ebiten.WindowSize()
+	scale := 1.0
+	if m := ebiten.Monitor(); m != nil {
+		scale = m.DeviceScaleFactor()
+	}
+	sig := geometrySig{x: x, y: y, w: w, h: h, scale: scale, inset: s.titlebarInset()}
+	if !s.a11y.place.due(sig) {
 		return
 	}
-	inset := float64(s.titlebarInset()) * g.Scale
+	g, ok := s.a11y.host.ClientGeometry()
+	if !ok {
+		s.a11y.place.forget()
+		return
+	}
+	inset := float64(sig.inset) * g.Scale
 	g.OriginY += inset
 	g.Height = max(0, g.Height-inset)
 	s.a11y.prov.SetGeometry(g)
@@ -116,8 +157,15 @@ func (s *shell) closeA11y() {
 		if a.prov != nil {
 			a.prov.Stop()
 		}
-		if a.host != nil {
-			a.host.Close()
+		a.mu.Lock()
+		a.closed = true
+		h := a.host
+		a.mu.Unlock()
+		if a.done != nil {
+			close(a.done)
+		}
+		if h != nil {
+			h.Close()
 		}
 	})
 }

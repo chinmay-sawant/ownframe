@@ -87,6 +87,9 @@ func WithPerf(on bool) Option {
 // NewWithOptions parses the page like New after applying every option.
 func NewWithOptions(cfg Config, opts ...Option) (*Page, error) {
 	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
 		opt(&cfg)
 	}
 

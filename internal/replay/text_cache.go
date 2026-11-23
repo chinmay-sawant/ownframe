@@ -205,7 +205,7 @@ func (e textRasterEntry) pixels() int {
 type textRasterCache struct {
 	mu      sync.Mutex
 	entries map[textRasterKey]textRasterEntry
-	order   []textRasterKey
+	order   lruOrder[textRasterKey]
 	pixels  int
 }
 
@@ -251,7 +251,7 @@ func (c *textRasterCache) lookup(key textRasterKey) (textRasterEntry, bool) {
 
 // touch moves key to the back of the eviction order. The caller holds mu.
 func (c *textRasterCache) touch(key textRasterKey) {
-	c.order = lruTouch(c.order, key)
+	c.order.touch(key)
 }
 
 // raster returns the entry for key, running bake once while the key is new.
@@ -272,12 +272,12 @@ func (c *textRasterCache) raster(key textRasterKey, bake func() (textRasterEntry
 
 	entry, ok := bake()
 	c.entries[key] = entry
-	c.order = append(c.order, key)
+	c.order.add(key)
 	if ok {
 		c.pixels += entry.pixels()
 	}
 
-	c.order, c.pixels = lruEvict(c.order, len(c.order), textRunMaxEntries, c.pixels, textRunMaxPixels, key, func(victim textRasterKey) int {
+	c.pixels = c.order.evict(c.order.length(), textRunMaxEntries, c.pixels, textRunMaxPixels, key, func(victim textRasterKey) int {
 		evicted, exists := c.entries[victim]
 		if !exists {
 			return 0
@@ -306,6 +306,6 @@ func (c *textRasterCache) flush() {
 	}
 
 	c.entries = nil
-	c.order = nil
+	c.order.reset()
 	c.pixels = 0
 }

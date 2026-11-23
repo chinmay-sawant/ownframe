@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // ErrUnavailable reports a failed OS clipboard read outside
@@ -62,6 +64,9 @@ func Write(text string) { _ = WriteContext(context.Background(), text) }
 
 // WriteContext reports when the clipboard backend cannot store text.
 func WriteContext(ctx context.Context, text string) error {
+	if ctx == nil {
+		return host.ErrNilContext
+	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -89,6 +94,9 @@ func Read() (string, error) { return ReadContext(context.Background()) }
 
 // ReadContext reads the clipboard with the caller's deadline.
 func ReadContext(ctx context.Context) (string, error) {
+	if ctx == nil {
+		return "", host.ErrNilContext
+	}
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}

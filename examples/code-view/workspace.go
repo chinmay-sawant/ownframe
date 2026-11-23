@@ -108,7 +108,7 @@ func loadSampleWorkspace() (*workspace, error) {
 
 		info, err := entry.Info()
 		if err != nil {
-			return nil //nolint:nilerr // one unreadable entry must not hide the workspace
+			return nil // one unreadable entry must not hide the workspace
 		}
 
 		w.addFile(path, name, info.Size())
@@ -254,7 +254,7 @@ func loadDiskWorkspaceWithLimit(root string, limit int) (*workspace, error) {
 				return fs.SkipDir
 			}
 
-			return nil //nolint:nilerr // keep scanning around one unreadable entry
+			return nil // keep scanning around one unreadable entry
 		}
 
 		if path == abs {
@@ -263,7 +263,7 @@ func loadDiskWorkspaceWithLimit(root string, limit int) (*workspace, error) {
 
 		rel, err := filepath.Rel(abs, path)
 		if err != nil {
-			return nil //nolint:nilerr // a path outside the root is not listed
+			return nil // a path outside the root is not listed
 		}
 
 		rel = filepath.ToSlash(rel)
@@ -291,7 +291,7 @@ func loadDiskWorkspaceWithLimit(root string, limit int) (*workspace, error) {
 
 		info, err := entry.Info()
 		if err != nil {
-			return nil //nolint:nilerr // one unreadable entry must not hide the workspace
+			return nil // one unreadable entry must not hide the workspace
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 {
@@ -420,7 +420,7 @@ func (w *workspace) walkIgnoredDir(root, dir string) {
 				return fs.SkipDir
 			}
 
-			return nil //nolint:nilerr // keep scanning around one unreadable entry
+			return nil // keep scanning around one unreadable entry
 		}
 
 		if path == base {
@@ -429,7 +429,7 @@ func (w *workspace) walkIgnoredDir(root, dir string) {
 
 		rel, err := filepath.Rel(root, path)
 		if err != nil {
-			return nil //nolint:nilerr // a path outside the root is not listed
+			return nil // a path outside the root is not listed
 		}
 
 		rel = filepath.ToSlash(rel)
@@ -458,7 +458,7 @@ func (w *workspace) walkIgnoredDir(root, dir string) {
 
 		info, err := entry.Info()
 		if err != nil {
-			return nil //nolint:nilerr // one unreadable entry must not hide the workspace
+			return nil // one unreadable entry must not hide the workspace
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 {

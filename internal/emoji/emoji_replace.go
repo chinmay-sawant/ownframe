@@ -13,7 +13,7 @@ const (
 
 // Replace swaps supported emoji sequences in the text nodes of html for
 // image tags and reports whether anything changed. Tags, comments, and
-// script and style content pass through untouched, so attribute values
+// script, style, textarea, and title content pass through untouched, so attribute values
 // such as value="😂" are never rewritten.
 func Replace(html string) (string, bool) {
 	if !maybeHasEmoji(html) {
@@ -33,7 +33,11 @@ func Replace(html string) (string, bool) {
 		case c == '<' && strings.HasPrefix(html[i:], "<!--"):
 			end := strings.Index(html[i:], "-->")
 			if end < 0 {
-				end = len(html) - i - len("<!--")
+				// An unclosed comment runs to the end of the input.
+				b.WriteString(html[i:])
+				i = len(html)
+
+				continue
 			}
 
 			b.WriteString(html[i : i+end+len("-->")])
@@ -44,7 +48,7 @@ func Replace(html string) (string, bool) {
 			b.WriteString(html[i:end])
 			i = end
 
-			if open && (name == "script" || name == "style") {
+			if open && rawTextTag(name) {
 				rest, ok := rawText(html, i, name)
 				b.WriteString(rest)
 

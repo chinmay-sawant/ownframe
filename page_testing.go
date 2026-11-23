@@ -16,7 +16,7 @@ func (p *Page) Testing() Testing { return Testing{page: p} }
 func (t Testing) Tick(ctx context.Context) error {
 	p := innerPage(t.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Tick(ctx)
@@ -26,7 +26,7 @@ func (t Testing) Tick(ctx context.Context) error {
 func (t Testing) DispatchDeepLink(ctx context.Context, target string) error {
 	p := innerPage(t.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.DispatchDeepLink(ctx, target)
@@ -36,7 +36,7 @@ func (t Testing) DispatchDeepLink(ctx context.Context, target string) error {
 func (t Testing) PrepareMobile(ctx context.Context) error {
 	p := innerPage(t.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.PrepareMobile(ctx)
@@ -65,7 +65,7 @@ func (t Testing) SetPicker(pick func(ctx context.Context, title string) (string,
 func (t Testing) LongPress(ctx context.Context, x, y float64) (bool, error) {
 	p := innerPage(t.page)
 	if p == nil {
-		return false, nil
+		return false, ErrNilPage
 	}
 
 	return p.LongPress(ctx, x, y)
@@ -75,7 +75,7 @@ func (t Testing) LongPress(ctx context.Context, x, y float64) (bool, error) {
 func (t Testing) Swipe(ctx context.Context, dx, dy float64) error {
 	p := innerPage(t.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Swipe(ctx, dx, dy)
@@ -85,7 +85,7 @@ func (t Testing) Swipe(ctx context.Context, dx, dy float64) error {
 func (t Testing) BeginDrag(ctx context.Context, x, y float64) (bool, error) {
 	p := innerPage(t.page)
 	if p == nil {
-		return false, nil
+		return false, ErrNilPage
 	}
 
 	return p.BeginDrag(ctx, x, y)
@@ -95,7 +95,7 @@ func (t Testing) BeginDrag(ctx context.Context, x, y float64) (bool, error) {
 func (t Testing) MoveDrag(ctx context.Context, x, y float64) error {
 	p := innerPage(t.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.MoveDrag(ctx, x, y)
@@ -105,7 +105,7 @@ func (t Testing) MoveDrag(ctx context.Context, x, y float64) error {
 func (t Testing) EndDrag(ctx context.Context) error {
 	p := innerPage(t.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.EndDrag(ctx)
@@ -115,7 +115,7 @@ func (t Testing) EndDrag(ctx context.Context) error {
 func (t Testing) IMEReplace(ctx context.Context, start, end int, insert string, caret int) error {
 	p := innerPage(t.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.IMEReplace(ctx, start, end, insert, caret)
@@ -135,7 +135,7 @@ func (t Testing) IMEContext() (Box, int, string, string, bool) {
 func (t Testing) SelectAt(ctx context.Context, x, y float64) error {
 	p := innerPage(t.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.SelectAt(ctx, x, y)

@@ -38,7 +38,7 @@ var (
 	errNoPerformer   = errors.New("no page is attached")
 )
 
-// Performer runs one request on the page loop. atspi.Actions.Request has this
+// Performer runs one request on the page loop. a11yqueue.Actions.Request has this
 // shape.
 type Performer func(context.Context, host.AccessibilityRequest) error
 

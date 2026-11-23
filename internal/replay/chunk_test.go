@@ -76,7 +76,7 @@ func flushChunks() {
 	}
 
 	chunks.entries = nil
-	chunks.order = nil
+	chunks.order.reset()
 	chunks.pixels = 0
 }
 

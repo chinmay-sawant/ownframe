@@ -3,6 +3,7 @@ package ipc
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 // ErrHandlerPanicked is returned by Request when the registered handler
@@ -44,7 +45,7 @@ func Request(ctx context.Context, channel, payload string) (string, error) {
 		defer func() {
 			if r := recover(); r != nil {
 				reply = ""
-				err = ErrHandlerPanicked
+				err = fmt.Errorf("%w: %v", ErrHandlerPanicked, r)
 			}
 		}()
 		return item.fn(ctx, payload)

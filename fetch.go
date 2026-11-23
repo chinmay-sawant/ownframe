@@ -19,6 +19,24 @@ var ErrPrivateAddress = fetch.ErrPrivateAddress
 // ErrDowngrade means a redirect stepped from https down to http.
 var ErrDowngrade = fetch.ErrDowngrade
 
+// ErrBodyTooLarge means a response body exceeded the 10 MiB cap.
+var ErrBodyTooLarge = fetch.ErrBodyTooLarge
+
+// ErrHeadersTooLarge means response headers exceeded the 1 MiB cap.
+var ErrHeadersTooLarge = fetch.ErrHeadersTooLarge
+
+// ErrTooManyRedirects means the client stopped after 10 redirects.
+var ErrTooManyRedirects = fetch.ErrTooManyRedirects
+
+// ErrCredentialsInURL means a URL contained userinfo, which is not allowed.
+var ErrCredentialsInURL = fetch.ErrCredentialsInURL
+
+// ErrMethod means the fetch method is not on the allowlist.
+var ErrMethod = fetch.ErrMethod
+
+// ErrBlockedHeader means a caller set a sensitive fetch header.
+var ErrBlockedHeader = fetch.ErrBlockedHeader
+
 // AllowPrivate returns a context that skips the private-address block, for
 // tests and trusted local tooling. Scheme and userinfo checks still apply.
 func AllowPrivate(ctx context.Context) context.Context {

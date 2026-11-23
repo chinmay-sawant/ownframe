@@ -12,7 +12,7 @@ func (p *Page) Edit() Edit { return Edit{page: p} }
 func (e Edit) Copy(ctx context.Context) (string, bool, error) {
 	p := innerPage(e.page)
 	if p == nil {
-		return "", false, nil
+		return "", false, ErrNilPage
 	}
 
 	return p.Copy(ctx)
@@ -22,7 +22,7 @@ func (e Edit) Copy(ctx context.Context) (string, bool, error) {
 func (e Edit) Cut(ctx context.Context) (string, bool, error) {
 	p := innerPage(e.page)
 	if p == nil {
-		return "", false, nil
+		return "", false, ErrNilPage
 	}
 
 	return p.Cut(ctx)
@@ -32,7 +32,7 @@ func (e Edit) Cut(ctx context.Context) (string, bool, error) {
 func (e Edit) Paste(ctx context.Context, text string) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Paste(ctx, text)
@@ -42,7 +42,7 @@ func (e Edit) Paste(ctx context.Context, text string) error {
 func (e Edit) SelectAll(ctx context.Context) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.SelectAll(ctx)
@@ -52,7 +52,7 @@ func (e Edit) SelectAll(ctx context.Context) error {
 func (e Edit) Undo(ctx context.Context) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Undo(ctx)
@@ -62,7 +62,7 @@ func (e Edit) Undo(ctx context.Context) error {
 func (e Edit) Redo(ctx context.Context) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Redo(ctx)
@@ -72,7 +72,7 @@ func (e Edit) Redo(ctx context.Context) error {
 func (e Edit) Type(ctx context.Context, text string) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Type(ctx, text)
@@ -82,7 +82,7 @@ func (e Edit) Type(ctx context.Context, text string) error {
 func (e Edit) Backspace(ctx context.Context) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Backspace(ctx)
@@ -92,7 +92,7 @@ func (e Edit) Backspace(ctx context.Context) error {
 func (e Edit) DeleteWord(ctx context.Context) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.DeleteWord(ctx)
@@ -102,7 +102,7 @@ func (e Edit) DeleteWord(ctx context.Context) error {
 func (e Edit) Submit(ctx context.Context) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Submit(ctx)
@@ -112,7 +112,7 @@ func (e Edit) Submit(ctx context.Context) error {
 func (e Edit) KeyDown(ctx context.Context, key string) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.KeyDown(ctx, key)
@@ -122,7 +122,7 @@ func (e Edit) KeyDown(ctx context.Context, key string) error {
 func (e Edit) KeyUp(ctx context.Context, key string) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.KeyUp(ctx, key)
@@ -132,7 +132,7 @@ func (e Edit) KeyUp(ctx context.Context, key string) error {
 func (e Edit) Hover(ctx context.Context, x, y float64) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Hover(ctx, x, y)
@@ -142,7 +142,7 @@ func (e Edit) Hover(ctx context.Context, x, y float64) error {
 func (e Edit) Press(ctx context.Context, x, y float64) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Press(ctx, x, y)
@@ -152,7 +152,7 @@ func (e Edit) Press(ctx context.Context, x, y float64) error {
 func (e Edit) Release(ctx context.Context) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Release(ctx)
@@ -162,7 +162,7 @@ func (e Edit) Release(ctx context.Context) error {
 func (e Edit) Drop(ctx context.Context, files []Drop) error {
 	p := innerPage(e.page)
 	if p == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.Drop(ctx, files)

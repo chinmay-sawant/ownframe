@@ -3,6 +3,7 @@
 package window
 
 import (
+	"github.com/chinmay-sawant/ownframe/internal/a11yqueue"
 	"github.com/chinmay-sawant/ownframe/internal/atspi"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -13,7 +14,7 @@ import (
 // changed tree and hands it to one worker, so a slow D-Bus call never
 // stalls Update.
 type a11yHost struct {
-	actions   *atspi.Actions
+	actions   *a11yqueue.Actions
 	pub       *atspi.Publisher
 	gen       uint64
 	published bool
@@ -36,7 +37,7 @@ type a11yJob struct {
 }
 
 func (s *shell) initA11y() {
-	s.a11y.actions = atspi.NewActions(s.ctx, func() {
+	s.a11y.actions = a11yqueue.NewActions(s.ctx, func() {
 		//nolint:staticcheck // reason: concurrent-safe wake for an AT request while the desktop is parked in WaitEvents.
 		ebiten.ScheduleFrame()
 	})
@@ -141,12 +142,20 @@ func (s *shell) publishA11y() {
 	if a.closed {
 		return
 	}
+	// The queue holds one slot and the newest tree must win: drop a stale
+	// queued snapshot, then queue this one. a.mu serializes producers, so
+	// the send cannot block after the drain.
+	select {
+	case <-a.jobs:
+		if a.queued > 0 {
+			a.queued--
+		}
+	default:
+	}
 	select {
 	case a.jobs <- job:
 		a.queued++
 	default:
-		// The previous frame is still being published; that snapshot
-		// already carries a tree at least as new as the one replaced.
 		return
 	}
 	if !a.running {

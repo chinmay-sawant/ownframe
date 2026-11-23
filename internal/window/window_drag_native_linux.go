@@ -25,8 +25,27 @@ static Window ownframe_find_window(Display *d, Window w, Atom pid_atom, int dept
  if (children) XFree(children);
  return found;
 }
+// Xlib's default error handler exits the process. A window that closes while
+// the tree is walked raises BadWindow, so the walk runs under a handler that
+// only records the error. The handler is process wide in Xlib; it is
+// installed for the walk only and the previous one is restored after XSync
+// has flushed this connection's pending errors.
+static volatile int ownframe_x_error = 0;
+static int ownframe_ignore_x_error(Display *d, XErrorEvent *e) {
+ (void)d; (void)e;
+ ownframe_x_error = 1;
+ return 0;
+}
+static Window ownframe_client_in(Display *d, Window start) {
+ ownframe_x_error = 0;
+ XErrorHandler prev = XSetErrorHandler(ownframe_ignore_x_error);
+ Window found = ownframe_find_window(d,start,XInternAtom(d,"_NET_WM_PID",False),2);
+ XSync(d,False);
+ XSetErrorHandler(prev);
+ return ownframe_x_error ? 0 : found;
+}
 static Window ownframe_client(Display *d, Window root) {
- return ownframe_find_window(d,root,XInternAtom(d,"_NET_WM_PID",False),2);
+ return ownframe_client_in(d,root);
 }
 static int ownframe_geometry(Display *d, Window w, Window root, int *x, int *y, int *width, int *height) {
  Window child; XWindowAttributes attrs;
@@ -118,6 +137,10 @@ func (d *nativeWindowDrag) move() (bool, error) {
 }
 
 func setNativeWindowRect(x, y, w, h int) bool {
+	// XResizeWindow with a zero dimension raises a fatal BadValue.
+	if w <= 0 || h <= 0 {
+		return false
+	}
 	if !isWSLg() {
 		return false
 	}
@@ -140,6 +163,19 @@ func setNativeWindowRect(x, y, w, h int) bool {
 		}
 	}
 	return false
+}
+
+// nativeClientFrom walks the window tree below start for this process's
+// client window. An invalid start window yields 0 instead of ending the
+// process. It exists so the error-handler guard can be exercised directly.
+func nativeClientFrom(start uint64) (uint64, bool) {
+	display := C.XOpenDisplay(nil)
+	if display == nil {
+		return 0, false
+	}
+	defer C.XCloseDisplay(display)
+
+	return uint64(C.ownframe_client_in(display, C.Window(start))), true
 }
 
 func nativeWindowGeometry() (workarea, bool) {

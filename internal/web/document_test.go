@@ -321,3 +321,12 @@ func optionByValue(t *testing.T, doc, value string) string {
 
 	return doc[start : start+end]
 }
+
+func TestSecThemeStyleBreakout(t *testing.T) {
+	t.Parallel()
+
+	got := previewHeadExtra("<html></html>", `a{content:"</style><script>alert(1)</script>"}`, "")
+	if strings.Contains(strings.ToLower(got), "</style><script>") || strings.Count(got, "</style>") != 1 {
+		t.Fatalf("theme breaks out of the style element: %q", got)
+	}
+}

@@ -1,3 +1,3 @@
 module github.com/chinmay-sawant/ownframe/plans
 
-go 1.26.4
+go 1.26.11

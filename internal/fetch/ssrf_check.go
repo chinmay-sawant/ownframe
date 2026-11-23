@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 )
 
@@ -38,11 +39,19 @@ func checkHost(ctx context.Context, host string) error {
 	if allowPrivate(ctx) {
 		return nil
 	}
-	if ip := net.ParseIP(host); ip != nil {
-		if blockedIP(ip) {
+	if addr, err := netip.ParseAddr(host); err == nil {
+		if blockedAddr(addr) {
 			return ErrPrivateAddress
 		}
 
+		return nil
+	}
+	if !useSystemProxy.Load() {
+		// Without a proxy the connection is made by dialValidated, which
+		// resolves the name once and refuses blocked answers. Resolving
+		// here as well would only double the lookups. A redirect hop is
+		// pinned the same way. Behind a proxy the proxy resolves, so the
+		// lookup below stays as the guard.
 		return nil
 	}
 	addrs, err := net.DefaultResolver.LookupIPAddr(ctx, host)

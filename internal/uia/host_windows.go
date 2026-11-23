@@ -5,7 +5,9 @@ package uia
 import (
 	"errors"
 	"os"
+	"runtime"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"unsafe"
 
@@ -26,7 +28,9 @@ var (
 type Host struct {
 	hwnd uintptr
 	prov *Provider
-	orig uintptr
+	// orig is the window procedure this host replaced. wndProc reads it from
+	// the window thread while AttachWindow and Close write it, so it is atomic.
+	orig atomic.Uintptr
 
 	rootObj *comObj
 
@@ -75,9 +79,19 @@ func AttachWindow(hwnd uintptr, prov *Provider) (*Host, error) {
 		done:  make(chan struct{}),
 	}
 	h.rootObj = newObj(h, "", true)
+	// Read the current procedure before the host becomes visible to wndProc,
+	// so a message that arrives between SetWindowLongPtrW and the final
+	// store still forwards to a real procedure instead of null.
+	cur, _, err := procGetWindowLong.Call(hwnd, uintptr(gwlpWndProcValue))
+	if cur == 0 {
+		h.rootObj.release()
+		return nil, errors.New("uia: read window procedure: " + err.Error())
+	}
+	h.orig.Store(cur)
 	hosts.Lock()
 	if _, dup := hosts.m[hwnd]; dup {
 		hosts.Unlock()
+		h.rootObj.release()
 		return nil, errors.New("uia: window already has a provider")
 	}
 	hosts.m[hwnd] = h
@@ -88,9 +102,10 @@ func AttachWindow(hwnd uintptr, prov *Provider) (*Host, error) {
 		hosts.Lock()
 		delete(hosts.m, hwnd)
 		hosts.Unlock()
+		h.rootObj.release()
 		return nil, errors.New("uia: subclass window: " + err.Error())
 	}
-	h.orig = old
+	h.orig.Store(old)
 	h.wg.Add(1)
 	go h.eventLoop()
 	return h, nil
@@ -128,29 +143,54 @@ func (h *Host) Publish(tree host.AccessibilityTree) {
 	h.queue(ch)
 }
 
-// objFor returns the object for id. The caller owns a reference only after
-// give; objFor itself does not add one.
+// objFor returns the object for id with a reference owned by the caller,
+// who must release it (after give, which adds the client's own reference).
+// The reference is taken under h.mu, so Publish and Close cannot drop the
+// object's last reference and unregister it between lookup and use. It
+// returns nil for an unknown id, a released object, or a closed host.
 func (h *Host) objFor(id host.AccessibilityNodeID) *comObj {
 	if id == "" {
 		return nil
-	}
-	if id == h.prov.Root() {
-		return h.rootObj
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.closed {
 		return nil
 	}
+	if id == h.prov.Root() {
+		return h.rootLocked()
+	}
 	if o, ok := h.elems[id]; ok {
-		return o
+		if o.tryAddRef() {
+			return o
+		}
+		delete(h.elems, id)
 	}
 	if _, err := h.prov.Element(id); err != nil {
 		return nil
 	}
 	o := newObj(h, id, false)
 	h.elems[id] = o
+	o.addRef() // the caller's reference; newObj's belongs to the cache
 	return o
+}
+
+// acquireRoot returns the root object with a reference owned by the caller,
+// or nil once the host is closed.
+func (h *Host) acquireRoot() *comObj {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.closed {
+		return nil
+	}
+	return h.rootLocked()
+}
+
+func (h *Host) rootLocked() *comObj {
+	if h.rootObj.tryAddRef() {
+		return h.rootObj
+	}
+	return nil
 }
 
 func (h *Host) queue(ch Change) {
@@ -195,9 +235,14 @@ func (h *Host) raise(ch Change) {
 	if r, _, _ := procClientsListen.Call(); r == 0 {
 		return
 	}
-	root := h.rootObj.slotAddr(slotSimple)
 	if ch.Structure || len(ch.Props) > maxPropEvents {
-		procRaiseStructure.Call(root, structChildInv, 0, 0)
+		// The owning reference and KeepAlive hold the object across the
+		// syscall: the slot address is a bare uintptr the GC cannot see.
+		if root := h.acquireRoot(); root != nil {
+			procRaiseStructure.Call(root.slotAddr(slotSimple), structChildInv, 0, 0)
+			runtime.KeepAlive(root)
+			root.release()
+		}
 	} else {
 		for _, p := range ch.Props {
 			h.raiseProperty(p)
@@ -206,6 +251,8 @@ func (h *Host) raise(ch Change) {
 	if ch.Focus != "" {
 		if o := h.objFor(ch.Focus); o != nil {
 			procRaiseEvent.Call(o.slotAddr(slotSimple), eventFocusChanged)
+			runtime.KeepAlive(o)
+			o.release()
 			// Clients that follow the focus through WinEvents, such as
 			// System.Windows.Automation and NVDA's MSAA path, then ask the
 			// window for it.
@@ -217,7 +264,11 @@ func (h *Host) raise(ch Change) {
 func (h *Host) raiseProperty(p PropertyChange) {
 	e, err := h.prov.Element(p.ID)
 	o := h.objFor(p.ID)
-	if err != nil || o == nil {
+	if o == nil {
+		return
+	}
+	defer o.release()
+	if err != nil {
 		return
 	}
 	var id uintptr
@@ -243,6 +294,7 @@ func (h *Host) raiseProperty(p PropertyChange) {
 	// two values by reference to a caller-made copy.
 	old := variant{}
 	procRaiseProperty.Call(o.slotAddr(slotSimple), id, uintptr(unsafe.Pointer(&old)), uintptr(unsafe.Pointer(&next)))
+	runtime.KeepAlive(o)
 	if next.vt == vtBstr {
 		freeBSTR(next.val)
 	}
@@ -302,15 +354,17 @@ func (h *Host) Close() {
 	h.wg.Wait()
 	h.prov.Stop()
 	procDisconnect.Call(h.rootObj.slotAddr(slotSimple))
+	runtime.KeepAlive(h.rootObj)
 	for _, o := range elems {
 		procDisconnect.Call(o.slotAddr(slotSimple))
+		runtime.KeepAlive(o)
 		o.release()
 	}
 	h.rootObj.release()
 
 	cur, _, _ := procGetWindowLong.Call(h.hwnd, uintptr(gwlpWndProcValue))
 	if cur == wndProcCallback {
-		procSetWindowLong.Call(h.hwnd, uintptr(gwlpWndProcValue), h.orig)
+		procSetWindowLong.Call(h.hwnd, uintptr(gwlpWndProcValue), h.orig.Load())
 		hosts.Lock()
 		delete(hosts.m, h.hwnd)
 		hosts.Unlock()
@@ -343,10 +397,14 @@ func wndProc(hwnd, msg, wparam, lparam uintptr) (ret uintptr) {
 				ret = 0
 			}
 		}()
-		r, _, _ := procReturnRaw.Call(hwnd, wparam, lparam, h.rootObj.slotAddr(slotSimple))
-		return r
+		if root := h.acquireRoot(); root != nil {
+			r, _, _ := procReturnRaw.Call(hwnd, wparam, lparam, root.slotAddr(slotSimple))
+			runtime.KeepAlive(root)
+			root.release()
+			return r
+		}
 	}
-	ret, _, _ = procCallWindowProc.Call(h.orig, hwnd, msg, wparam, lparam)
+	ret, _, _ = procCallWindowProc.Call(h.orig.Load(), hwnd, msg, wparam, lparam)
 	if msg == wmNCDestroy {
 		hosts.Lock()
 		delete(hosts.m, hwnd)

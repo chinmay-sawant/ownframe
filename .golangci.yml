@@ -203,7 +203,7 @@ linters:
       # the page patch pool and source registry, the replay raster caches,
       # and the precomputed window palette and scrollbar art.
       - linters: [gochecknoglobals]
-        path: "internal/(fetch/scheme\\.go|filepick/pick_linux\\.go|page/(patch|source)\\.go|replay/(blend|chunk_cache|group_shader|raster_cache|text_cache)\\.go|window/(context_menu|devtools_paint|draw|scrollbar)\\.go)"
+        path: "internal/(fetch/(scheme|ssrf)\\.go|motion/easing\\.go|filepick/pick_linux\\.go|page/(patch|source)\\.go|replay/(blend|chunk_cache|group_shader|raster_cache|text_cache)\\.go|window/(context_menu|devtools_paint|draw|scrollbar)\\.go)"
       # Intentional process clients: the desktop-cat media poster keeps one
       # hardened client (own timeouts, TLS 1.2 minimum), like fetch/scheme.go.
       - linters: [gochecknoglobals]
@@ -225,7 +225,7 @@ linters:
       # test-only reflection helper. Anything else importing unsafe fails
       # the gate.
       - linters: [depguard]
-        path: "internal/(clipboard/clipboard_(darwin|windows)\\.go|filepick/pick_windows\\.go|replay/image_test\\.go|window/(perf_rss_windows|window_drag_native_windows|window_drag_native_linux)\\.go|web/debug_runtime_windows\\.go)"
+        path: "internal/(clipboard/clipboard_(darwin|windows)\\.go|filepick/pick_windows\\.go|replay/(image_test|images)\\.go|window/(perf_rss_windows|window_drag_native_windows|window_drag_native_linux)\\.go|web/debug_runtime_windows\\.go)"
         text: "import 'unsafe' is not allowed"
       # GEN-19 depguard: math/rand/v2 is the sanctioned replacement
       # (seeded PCG, no global lock), so only v1 is banned outside the

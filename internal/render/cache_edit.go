@@ -52,9 +52,6 @@ func (c *Cache) RelayoutFor(ctx context.Context, width, height int, state State)
 		return nil, errors.New("render: no styled document")
 	}
 
-	engineMu.Lock()
-	defer engineMu.Unlock()
-
 	styled, err := css.Relayout(ctx, c.styled, width, height, state.Focus, state.Hover, state.Active)
 	if err != nil {
 		return nil, err

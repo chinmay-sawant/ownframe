@@ -131,8 +131,9 @@ func TestPasswordCopyAndDeleteWord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !ok || text != "secret" {
-		t.Fatalf("password copy = %q ok=%v", text, ok)
+	// Copy on a password field must not put the secret on the clipboard.
+	if ok || text != "" {
+		t.Fatalf("password copy = %q ok=%v, want empty and not ok", text, ok)
 	}
 
 	if err := app.Page().Edit().DeleteWord(ctx); err != nil {

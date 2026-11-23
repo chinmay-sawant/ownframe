@@ -2,6 +2,7 @@ package pagetest_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -38,5 +39,31 @@ func TestBoxByActionIndexed(t *testing.T) {
 	}
 	if _, ok := pagetest.BoxByAction(p, ""); ok {
 		t.Fatal("the empty action must not resolve")
+	}
+}
+
+// TestBoxByIDOnBitmapFallbackAndNilPage pins HYG-IPC-01: a page that paints
+// through the bitmap fallback has no retained display, yet BoxByID still
+// finds the box; Type on a nil page reports ErrNilPage.
+func TestBoxByIDOnBitmapFallbackAndNilPage(t *testing.T) {
+	p, err := ownframe.New(ownframe.Config{
+		HTML:   `<style>div { width: 60px; height: 40px; background: #123456; border-radius: 50% / 20%; }</style><div id="ell"></div>`,
+		Width:  320,
+		Height: 400,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if p.Probe().Display() != nil {
+		t.Skip("elliptical fill no longer falls back to the bitmap path")
+	}
+	if _, ok := pagetest.BoxByID(p, "ell"); !ok {
+		t.Fatal("BoxByID missed the box on a bitmap-fallback page")
+	}
+	if err := pagetest.Type(context.Background(), nil, "x"); !errors.Is(err, pagetest.ErrNilPage) {
+		t.Fatalf("Type(nil) = %v, want ErrNilPage", err)
 	}
 }

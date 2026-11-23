@@ -57,7 +57,8 @@ func validateDir(dir string) (string, error) {
 		return "", ErrBadDir
 	}
 
-	if len(clean) == 2 && clean[1] == ':' {
+	// A bare drive ("C:") or a drive root ("C:\\", "C:/") is not a crash folder.
+	if (len(clean) == 2 && clean[1] == ':') || (len(clean) == 3 && clean[1] == ':' && isSep(rune(clean[2]))) {
 		return "", ErrBadDir
 	}
 

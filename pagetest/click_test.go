@@ -59,7 +59,7 @@ func TestTypeEditsFocusedField(t *testing.T) {
 	if got := p.Form().FormValue("name"); got != "Ada" {
 		t.Fatalf("typed value = %q", got)
 	}
-	if err := pagetest.Type(ctx, nil, "x"); !errors.Is(err, pagetest.ErrNoBox) {
+	if err := pagetest.Type(ctx, nil, "x"); !errors.Is(err, pagetest.ErrNilPage) {
 		t.Fatalf("nil page = %v", err)
 	}
 }

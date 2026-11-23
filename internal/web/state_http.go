@@ -1,8 +1,6 @@
 package web
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
 )
 
@@ -41,16 +39,10 @@ func (s *server) state(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	s.reload(r.Context())
-	state := s.frameSnapshotLocked()
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "no-store")
-	if err := json.NewEncoder(w).Encode(state); err != nil {
-		log.Printf("write state: %s", sanitizeLine(err.Error()))
-	}
+	rp := jsonReply("application/json", s.frameSnapshotLocked(), "state")
+	s.mu.Unlock()
+	rp.send(w, "state")
 }
 
 // frameSnapshotLocked builds the state while the caller holds s.mu.

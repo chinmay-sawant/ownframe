@@ -25,7 +25,7 @@ func (p *Page) ContextMenuFor(id string) []MenuItem {
 // MenuAction runs one custom right-click row.
 func (p *Page) MenuAction(ctx context.Context, id string) error {
 	if p == nil || p.inner == nil {
-		return nil
+		return ErrNilPage
 	}
 
 	return p.inner.MenuAction(ctx, id)

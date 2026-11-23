@@ -4,12 +4,15 @@ package clipboard
 
 import (
 	"context"
+	"runtime"
 	"unicode/utf16"
 )
 
 func readOS(context.Context) (string, bool) {
-	opened, _, _ := openClip.Call(0)
-	if opened == 0 {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if !openClipboard() {
 		return "", false
 	}
 

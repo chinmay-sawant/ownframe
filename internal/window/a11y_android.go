@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/chinmay-sawant/ownframe/internal/a11ybridge"
-	"github.com/chinmay-sawant/ownframe/internal/atspi"
+	"github.com/chinmay-sawant/ownframe/internal/a11yqueue"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
@@ -15,7 +15,7 @@ import (
 // its own threads; the actions come back through the queue and run here, on
 // the page loop, as they do for AT-SPI and UI Automation.
 type a11yHost struct {
-	actions   *atspi.Actions
+	actions   *a11yqueue.Actions
 	gen       uint64
 	published bool
 	closeOnce sync.Once
@@ -24,7 +24,7 @@ type a11yHost struct {
 func (s *shell) initA11y() {
 	// A phone loop runs every frame while the activity is visible, so a queued
 	// action needs no wake-up call.
-	s.a11y.actions = atspi.NewActions(s.ctx, func() {})
+	s.a11y.actions = a11yqueue.NewActions(s.ctx, func() {})
 	a11ybridge.SetPerformer(s.a11y.actions.Request)
 }
 

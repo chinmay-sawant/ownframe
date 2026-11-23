@@ -535,9 +535,8 @@ func deferredLayoutProperty(property string) bool {
 		strings.HasPrefix(property, "rule-inset")
 }
 
-// layoutGrammar maps a property to its value grammar and maximum arity.
-//
-//nolint:cyclop,funlen // the tier is one flat property table
+// layoutGrammar maps a property to its value grammar and maximum arity. The
+// tier is one flat property table.
 func layoutGrammar(property string) (layoutKind, layoutArity, bool) {
 	switch property {
 	case "width", "height", "inline-size", "block-size":

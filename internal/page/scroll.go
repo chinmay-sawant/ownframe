@@ -62,7 +62,7 @@ func (p *Page) SetScrollOffset(x, y int) {
 	if p.hasViewportSticky && p.stickyViewport == nil {
 		refreshStickyBoxes(p, float64(x), float64(y), float64(p.width), float64(p.height))
 	}
-	p.formDirty = true
+	markFormDirty(p)
 }
 
 // SetScrollWindow installs a row-window callback. It returns true after
@@ -74,7 +74,7 @@ func (p *Page) SetScrollWindow(fn func(offsetY, viewH int) bool) { p.scroll.SetF
 // executes. A nil callback, or a page that opted out, draws unchanged.
 func applyScrollWindow(p *Page) {
 	if p.scroll.Apply(p.height) {
-		p.formDirty = true
+		markFormDirty(p)
 	}
 }
 

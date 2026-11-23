@@ -59,8 +59,12 @@ func (s *shell) fullReplay() bool {
 	return !ok
 }
 
+// orderCache is keyed on the display pointer, the page generation, and the
+// viewport pin z: a recycled display address or a changed pin must rescan.
 type orderCache struct {
 	display  *layout.Display
+	seq      uint64
+	pinZ     int
 	safe     bool
 	viewport bool
 }
@@ -86,11 +90,12 @@ func (s *shell) hasViewportOps() bool {
 // scanOrder fills the order cache once per display. It records both facts in
 // one pass so a partial frame pays for neither separately.
 func (s *shell) scanOrder() {
-	if s.orderCache.display == s.display {
+	pinZ := s.viewportPinZ()
+	if s.orderCache.display == s.display && s.orderCache.seq == s.seq && s.orderCache.pinZ == pinZ {
 		return
 	}
 
-	s.orderCache = orderCache{display: s.display, safe: true}
+	s.orderCache = orderCache{display: s.display, seq: s.seq, pinZ: pinZ, safe: true}
 	viewportSeen := false
 
 	for _, i := range s.display.Order {
@@ -103,7 +108,7 @@ func (s *shell) scanOrder() {
 			continue
 		}
 
-		viewport := op.Fixed || s.viewportPinZ() > 0 && op.ZIndexSet && op.ZIndex >= s.viewportPinZ()
+		viewport := op.Fixed || pinZ > 0 && op.ZIndexSet && op.ZIndex >= pinZ
 		s.orderCache.viewport = s.orderCache.viewport || viewport
 
 		if !viewport && viewportSeen {

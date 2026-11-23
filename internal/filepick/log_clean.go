@@ -2,7 +2,10 @@ package filepick
 
 import (
 	"fmt"
+	"os"
 	"strings"
+
+	"github.com/chinmay-sawant/ownframe/internal/debugtag"
 )
 
 // cleanLog strips CR and LF so failure text cannot forge log lines.
@@ -29,4 +32,18 @@ func cleanArgs(args []any) []any {
 		}
 	}
 	return args
+}
+
+// debugf writes to stderr when OWNFRAME_FILEPICK_DEBUG is not empty and the
+// debug tag is built in. Values are sanitized to one line. Keep this flag off
+// in shipped builds.
+func debugf(format string, args ...any) {
+	if !debugtag.Enabled {
+		return
+	}
+	if os.Getenv("OWNFRAME_FILEPICK_DEBUG") == "" {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "filepick: "+format+"\n", cleanArgs(args)...)
 }

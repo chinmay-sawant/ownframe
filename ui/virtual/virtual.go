@@ -21,17 +21,24 @@ type Range struct {
 // CSS pixels, totalRows is the full item count, and overscan is the number of
 // extra rows to render above and below the viewport.
 func Window(scrollY, viewportH, rowH float64, totalRows, overscan int) Range {
-	if totalRows <= 0 || rowH <= 0 {
+	if totalRows <= 0 || !(rowH > 0) || math.IsInf(rowH, 0) {
 		return Range{}
 	}
 	if overscan < 0 {
 		overscan = 0
 	}
-	if viewportH < 0 {
+	// NaN fails every comparison, so reject it explicitly before clamping.
+	if math.IsNaN(viewportH) || viewportH < 0 {
 		viewportH = 0
+	}
+	if math.IsNaN(scrollY) {
+		scrollY = 0
 	}
 
 	totalH := float64(totalRows) * rowH
+	if viewportH > totalH {
+		viewportH = totalH
+	}
 	maxScroll := math.Max(0, totalH-viewportH)
 	if scrollY < 0 {
 		scrollY = 0
@@ -39,10 +46,14 @@ func Window(scrollY, viewportH, rowH float64, totalRows, overscan int) Range {
 		scrollY = maxScroll
 	}
 
-	first := int(math.Floor(scrollY / rowH))
+	// Clamp as floats first: a tiny rowH makes the quotient exceed int.
+	rows := float64(totalRows)
+	firstF := math.Min(math.Max(math.Floor(scrollY/rowH), 0), rows)
+	first := int(firstF)
 	visible := 0
 	if viewportH > 0 {
-		visible = int(math.Ceil((scrollY+viewportH)/rowH)) - first
+		lastF := math.Min(math.Max(math.Ceil((scrollY+viewportH)/rowH), 0), rows)
+		visible = int(lastF) - first
 	}
 
 	start := first - overscan

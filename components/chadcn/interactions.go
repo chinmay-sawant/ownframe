@@ -86,7 +86,7 @@ func (i *Interactions) Mount(ctx context.Context, cfg ownframe.Config, build fun
 		return nil, err
 	}
 	i.view, i.active = view, frame
-	i.Handle(ownframe.Handlers{})
+	i.Handle(i.handlers)
 	if frame.dialog != nil {
 		if err := view.Page.Redraw(ctx); err != nil {
 			return nil, err
@@ -149,6 +149,10 @@ func (i *Interactions) Update(ctx context.Context, build func() *ui.Element) err
 // dispatch. Components consume only the inputs they own; other inputs reach h.
 func (i *Interactions) Handle(h ownframe.Handlers) {
 	i.handlers = h
+	if i.view == nil {
+		// Before Mount the callbacks are only remembered; Mount installs them.
+		return
+	}
 	wrapped := h
 	wrapped.KeyDown = i.keyDown
 	wrapped.Press = i.press
@@ -173,6 +177,10 @@ func (i *Interactions) Close(ctx context.Context) error {
 	i.closed = true
 	i.drag = nil
 	i.active = &interactionFrame{}
+	if i.view != nil {
+		// Hand the application's own callbacks back to the page.
+		i.view.Handle(i.handlers)
+	}
 	if i.modal.active {
 		i.modal.Deactivate(i.view.Page)
 		i.modalID = ""

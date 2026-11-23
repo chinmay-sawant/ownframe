@@ -6,8 +6,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"hash/fnv"
 	"image"
-	"reflect"
 	"sync"
+	"unsafe"
 )
 
 // drawImage draws one decoded image op into its layout rectangle. The payload
@@ -89,12 +89,12 @@ type imageKeyEntry struct {
 }
 
 // imageCache keeps decoded images by payload key, least recently used first.
-// Hits take the write lock to refresh recency; decode runs lock-free and only
+// Hits take the read lock and stamp an atomic access tick; decode runs lock-free and only
 // the GPU upload plus insert hold the write lock, with a second hit check.
 type imageCache struct {
 	mu      sync.RWMutex
 	entries map[uint64]*ebiten.Image
-	order   []uint64
+	order   lruOrder[uint64]
 	sizes   map[uint64]int
 	total   int
 	keyRing [imageKeyRingSize]imageKeyEntry
@@ -113,7 +113,10 @@ func (c *imageCache) keyFor(op *layout.DisplayOp) uint64 {
 		return imageBytesKey(op)
 	}
 
-	ptr := reflect.ValueOf(data).Pointer()
+	// The address only keys the ring; the head/mid/tail samples below guard
+	// against a reused backing array, and the pointer is never dereferenced.
+	//nolint:gosec // reason: G103, address used as an opaque cache key and never dereferenced (reviewed, PERF-IMG-01).
+	ptr := uintptr(unsafe.Pointer(unsafe.SliceData(data)))
 	n := len(data)
 	midStart := n/halfDiv - imageKeySampleBytes/halfDiv
 	var head, mid, tail [imageKeySampleBytes]byte
@@ -146,8 +149,8 @@ func (c *imageCache) keyFor(op *layout.DisplayOp) uint64 {
 }
 
 func (c *imageCache) get(key uint64) *ebiten.Image {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	img := c.entries[key]
 	if img == nil {
 		return nil
@@ -156,10 +159,10 @@ func (c *imageCache) get(key uint64) *ebiten.Image {
 	return img
 }
 
-// touch moves a hit key to the back of the order, so eviction drops the
-// least recently used entry first. The caller holds the write lock.
+// touch stamps a hit key with a fresh access tick, so eviction drops the
+// least recently used entry first. The caller holds at least the read lock.
 func (c *imageCache) touch(key uint64) {
-	c.order = lruTouch(c.order, key)
+	c.order.touch(key)
 }
 
 func (c *imageCache) put(key uint64, src image.Image, px int) *ebiten.Image {
@@ -174,10 +177,10 @@ func (c *imageCache) put(key uint64, src image.Image, px int) *ebiten.Image {
 		c.sizes = make(map[uint64]int)
 	}
 	c.entries[key] = img
-	c.order = append(c.order, key)
+	c.order.add(key)
 	c.sizes[key] = px
 	c.total += px
-	c.order, c.total = lruEvict(c.order, len(c.order), imageCacheLimit, c.total, maxImageCachePixels, key, func(old uint64) int {
+	c.total = c.order.evict(c.order.length(), imageCacheLimit, c.total, maxImageCachePixels, key, func(old uint64) int {
 		if e := c.entries[old]; e != nil {
 			e.Deallocate()
 		}

@@ -8,6 +8,7 @@ package filepick
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
@@ -26,8 +27,15 @@ func requireCtx(ctx context.Context) error {
 		return ErrNilContext
 	}
 	if err := ctx.Err(); err != nil {
-		return ErrCanceled
+		return ctxCanceled(err)
 	}
 
 	return nil
+}
+
+// ctxCanceled reports an ended context as ErrCanceled that also wraps the
+// context error, so callers match either errors.Is(err, ErrCanceled) or
+// errors.Is(err, context.Canceled) / context.DeadlineExceeded.
+func ctxCanceled(ctxErr error) error {
+	return fmt.Errorf("%w: %w", ErrCanceled, ctxErr)
 }

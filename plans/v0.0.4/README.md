@@ -22,6 +22,7 @@ Creating these plans does not implement their checklist rows.
 | 3 | Component interactions | **Applications install standard behavior without repeating its mechanics** | [03](03-component-interactions.md) |
 | 4 | Engine CSS conformance | **Height queries and sticky behavior pass geometry and integration checks** | [04](04-css-conformance-and-engine-adoption.md) |
 | 5 | Chore improvements | **Structural cleanup, footprint, doc truth, API, motion, cohesion, and binary/platform readiness** | [chore-improvements/](chore-improvements/README.md) |
+| 6 | Go review hardening | **Cross-checked P0–P2 safety, security, concurrency, hot-path perf, and CI/module fixes** | [go-review-hardening/](go-review-hardening/README.md) |
 
 The linked files own their task rows. This index carries no duplicate task
 checklist. Start the documentation correction and baseline capture first.
