@@ -1085,17 +1085,19 @@ body { margin: 0 }
 }
 
 // TestVisibilityTransitionHidesTheRemainingFill checks the presence path at the
-// page seam: a leaving element keeps the fill it still owns visible for the run
-// and hides it at the end.
+// page seam: a leaving content-visibility element keeps the container fill it
+// still owns visible for the run and hides it at the end, while visibility:
+// hidden (which omits box chrome in blinkless v0.1.8+) reports a blocked
+// presence exit rather than claiming a transition bound.
 func TestVisibilityTransitionHidesTheRemainingFill(t *testing.T) {
 	t.Parallel()
 
 	source := `<style>
 body { margin: 0 }
 #target { width: 40px; height: 20px; background-color: rgb(20,40,60);
-	transition-property: visibility; transition-duration: 400ms;
+	transition-property: content-visibility; transition-duration: 400ms;
 	transition-behavior: allow-discrete; transition-timing-function: linear; }
-#target.on { visibility: hidden; }
+#target.on { content-visibility: hidden; }
 </style><div id="target" class="{{.Class}}">hidden words</div>`
 	data := &transitionClassData{}
 	p := newTransitionLayoutPage(t, source, data)
@@ -1111,10 +1113,10 @@ body { margin: 0 }
 		t.Fatalf("alpha at the bind = %v, want the visible 1", op.Alpha)
 	}
 	setMotionView(p)
-	p.motion.Step(p.draw.Display, start.Add(200*time.Millisecond))
+	p.motion.Step(p.draw.Display, start.Add(100*time.Millisecond))
 	op = transitionWireOp(t, p)
 	if op.Alpha != 1 {
-		t.Fatalf("alpha mid-run = %v, want the visible 1", op.Alpha)
+		t.Fatalf("alpha before midpoint = %v, want the visible 1", op.Alpha)
 	}
 
 	p.motion.Step(p.draw.Display, start.Add(600*time.Millisecond))
@@ -1122,6 +1124,23 @@ body { margin: 0 }
 	if op.Alpha > 0.01 {
 		t.Fatalf("alpha at the end = %v, want the hidden endpoint; stats %+v",
 			op.Alpha, p.Motion())
+	}
+
+	visSource := `<style>
+body { margin: 0 }
+#target { width: 40px; height: 20px; background-color: rgb(20,40,60);
+	transition-property: visibility; transition-duration: 400ms;
+	transition-behavior: allow-discrete; transition-timing-function: linear; }
+#target.on { visibility: hidden; }
+</style><div id="target" class="{{.Class}}">hidden words</div>`
+	visData := &transitionClassData{}
+	visPage := newTransitionLayoutPage(t, visSource, visData)
+	redrawClass(t, visPage, visData, "on")
+	if got := boxByID(visPage, "target"); len(got.OperationIDs) != 0 {
+		t.Fatalf("visibility:hidden kept %d ops, want 0", len(got.OperationIDs))
+	}
+	if stats := visPage.Motion(); stats.TransitionsBlocked == 0 {
+		t.Fatalf("visibility:hidden exit blocked = 0, want >= 1; stats %+v", stats)
 	}
 }
 
