@@ -139,3 +139,92 @@ The cold benchmark changes template output and reports one parse per operation.
 
 These are local descriptive samples. Runtime checks overlapped the capture,
 so use a fresh isolated run for controlled release comparisons.
+
+## v0.0.6 sequential baseline (2026-11-25)
+
+Measured sequentially (`-p 1`, one suite at a time) on `ownframe` `master` commit `b65065a2` (`v0.0.6`) with `blinkless` `master` commit `787ca05` (`v0.1.8`) via `go.work`, machine Chinmay (`13th Gen Intel(R) Core(TM) i7-13700HX`, Linux `amd64`, Go `1.26.11`).
+
+These are display-free Go CPU benchmarks. They measure template execution, HTML parsing, CSS application, layout, display-list construction, and in-place patching without GPU rasterization, software GL drivers (such as WSL2 Mesa), or Ebiten's 60 Hz vsync/TPS frame pacing.
+
+Commands run sequentially:
+
+```sh
+sh scripts/perf-baseline.sh --count 3 --benchtime 500ms --out perf-baseline.txt
+sh scripts/perf-baseline.sh --suite list --conditions "sequential isolated run" --count 3 --benchtime 500ms --out perf-list.txt
+go test -p 1 -run '^$' -bench '^BenchmarkFrame_' -benchmem -benchtime 300ms ./test
+go test -p 1 -run '^$' -bench . -benchmem -benchtime 300ms ./internal/motion ./internal/frame ./internal/textrun ./internal/page/patch
+go test -p 1 -run '^$' -bench '^(BenchmarkScaleStages|BenchmarkLayoutModels)$' -benchmem -benchtime 500ms ./internal/page
+go test -p 1 -run '^$' -bench '^BenchmarkListPatchVsRebuild$' -benchmem -count 3 -benchtime 500ms ./examples/perf-benchmarks
+```
+
+### Core pipeline and page (`scripts/perf-baseline.sh`, median of 3)
+
+| Benchmark | Median time | Bytes/op | Allocs/op | What it measures |
+|---|---:|---:|---:|---|
+| `BenchmarkFlappyTick` | **57.2 ns** | 0 B | 0 | Per-frame game/tick loop |
+| `BenchmarkDrawRectScan/dirty` | **177 ns** | 0 B | 0 | Display-list op culling scan (dirty) |
+| `BenchmarkDrawRectScan/full` | **175 ns** | 0 B | 0 | Display-list op culling scan (full) |
+| `BenchmarkRedrawWarm` | **485 ns** | 0 B | 0 | Unchanged warm frame check |
+| `BenchmarkRedrawHeavyWarm` | **487 ns** | 0 B | 0 | Heavy unchanged warm frame check |
+| `BenchmarkNormalRedraw` | **527 ns** | 0 B | 0 | Normal UI warm redraw |
+| `BenchmarkRedrawStages/TemplateExecute` | **179 ns** | 560 B | 5 | Go `html/template` execution |
+| `BenchmarkRedrawStages/HTMLParse` | **4.97 µs** | 27.9 KB | 16 | Blinkless HTML parse |
+| `BenchmarkRedrawStages/CSSApply` | **2.25 µs** | 3.17 KB | 37 | Blinkless CSS selector match/apply |
+| `BenchmarkRedrawStages/DisplayList` | **39.5 µs** | 34.1 KB | 115 | Layout, text measure, and display-list emit |
+| `BenchmarkRedrawCold` | **72.2 µs** | 64.9 KB | 208 | Full cold parse, style, and layout (`1.000 parses/op`) |
+| `BenchmarkClickCount` | **221 µs** | 118 KB | 536 | Click handler plus full redraw (`examples/platform`) |
+| `BenchmarkLargeRedraw` | **21.6 ms** | 3.10 MB | 22,068 | Large unwindowed full rebuild |
+
+### 1,000-row list workloads (`--suite list`, median of 3)
+
+| Workload | PerfOff median | PerfOn median | PerfOff Bytes/op | PerfOff Allocs/op |
+|---|---:|---:|---:|---:|
+| `ScrollOffset` | **21.9 ns** | 21.9 ns | 0 B | 0 |
+| `Unchanged` | **497 ns** | 542 ns | 0 B | 0 |
+| `WindowedScroll` (overscan 4) | **588 µs** | 595 µs | 186 KB | 1,537 |
+| `Resize` (all 1,000 rows) | **14.6 ms** | 14.6 ms | 3.15 MB | 19,277 |
+| `TextUpdate` (all 1,000 rows) | **19.1 ms** | 18.9 ms | 6.42 MB | 50,293 |
+
+### In-place patching vs. full rebuild (`BenchmarkListPatchVsRebuild`, 1,000 rows, median of 3)
+
+| Benchmark | Median time | Bytes/op | Allocs/op | vs. `FullRebuild1Row` |
+|---|---:|---:|---:|---|
+| `FullRebuild1Row` | **18.97 ms** | 6.71 MB | 62,258 | 1.0× |
+| `PatchElement1Row` | **599 µs** | 207 KB | 101 | **31.7× faster**, **616× fewer allocs** |
+| `PatchElements10Rows` | **807 µs** | 271 KB | 614 | **23.5× faster**, **101× fewer allocs** |
+
+### Pipeline stage scaling (`BenchmarkScaleStages`)
+
+| Stage | 50 rows (ns/row) | 200 rows (ns/row) | 1,000 rows total | 1,000 rows Bytes/op | 1,000 rows Allocs/op | Share of 1,000-row rebuild |
+|---|---:|---:|---:|---:|---:|---:|
+| `TemplateExecute` | 2,386 | 2,375 | **2.41 ms** | 521 KB | 26,730 | 13.5% |
+| `HTMLParse` | 1,391 | 1,316 | **1.32 ms** | 1.64 MB | 6,123 | 7.4% |
+| `CSSApply` | 144.0 | 66.2 | **45.1 µs** | 6.66 KB | 75 | 0.3% |
+| `CSSRelayout` | 26.4 | 20.7 | **19.7 µs** | 752 B | 7 | 0.1% |
+| `DisplayList` | 15,046 | 13,883 | **14.05 ms** | 5.90 MB | 18,312 | **78.8%** |
+
+### Layout model overhead (`BenchmarkLayoutModels`, 200 rows × 3 columns)
+
+| Layout model | Total time | ns/row | Bytes/op | Allocs/op | vs. Block |
+|---|---:|---:|---:|---:|---:|
+| `Block` | **2.45 ms** | 12,237 | 1.05 MB | 2,588 | 1.00× |
+| `Flex` | **2.68 ms** | 13,379 | 1.09 MB | 2,815 | 1.09× |
+| `Grid` | **2.98 ms** | 14,891 | 1.77 MB | 7,204 | 1.22× |
+
+### Frame and internal microbenchmarks
+
+| Benchmark | Time/op | Bytes/op | Allocs/op | Package |
+|---|---:|---:|---:|---|
+| `BenchmarkPatchOpsPoolRentFree` | **11.2 ns** | 0 B | 0 | `internal/page/patch` |
+| `BenchmarkAnimCardPatched` | **94.7 ns** | 4 B | 0 | `internal/frame` |
+| `BenchmarkAnimCardRedraw` | **63.4 µs** | 66.8 KB | 202 | `internal/frame` |
+| `BenchmarkFrame_Dirty_InvalidateAndRedraw` | **146 ns** | 0 B | 0 | `test` |
+| `BenchmarkSampleTransform` | **158 ns** | 63 B | 1 | `internal/motion` |
+| `BenchmarkFrame_Tick_Idle` | **234 ns** | 0 B | 0 | `test` |
+| `BenchmarkSampleOneEffect` | **382 ns** | 0 B | 0 | `internal/motion` |
+| `BenchmarkSampleTenEffects` | **2.76 µs** | 0 B | 0 | `internal/motion` |
+| `BenchmarkCaretLongRun/offsetIn` | **495 ns** | 1.79 KB | 1 | `internal/textrun` |
+| `BenchmarkCaretLongRun/lineText` | **1.59 µs** | 10.2 KB | 5 | `internal/textrun` |
+| `BenchmarkFrame_WarmRedraw_Card` | **499 ns** | 0 B | 0 | `test` |
+| `BenchmarkFrame_WarmRedraw_Dashboard` | **512 ns** | 0 B | 0 | `test` |
+| `BenchmarkFrame_Click_Dispatch` | **2.19 µs** | 496 B | 5 | `test` |
