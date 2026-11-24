@@ -74,3 +74,33 @@ func boxFor(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
 
 	return ownframe.Box{}, false
 }
+
+// TestRebindSkipsCellsWithoutTextOp ensures rebind and step do not panic when
+// a cell box has no matching text op in the display (for example under
+// differing host font metrics or omitted empty glyph ops).
+func TestRebindSkipsCellsWithoutTextOp(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	app, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	empty := &ownframe.Display{
+		Width:          app.Page().Probe().Display().Width,
+		Height:         app.Page().Probe().Display().Height,
+		PointsPerPixel: app.Page().Probe().Display().PointsPerPixel,
+	}
+
+	var f flipper
+	f.rebind(empty, app.Page().Boxes(), app.view.Rows)
+
+	if got := f.step(); len(got) != 0 {
+		t.Fatalf("step() changed %d cells on empty display, want 0", len(got))
+	}
+}

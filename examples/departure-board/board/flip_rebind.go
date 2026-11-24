@@ -40,6 +40,9 @@ func (f *flipper) rebind(d *ownframe.Display, boxes []ownframe.Box, rows []Row) 
 			}
 
 			op := cellOp(d, b)
+			if op == nil {
+				continue
+			}
 
 			fl := f.cells[c.ID]
 			if fl != nil && fl.want == c.Ch {
@@ -47,7 +50,7 @@ func (f *flipper) rebind(d *ownframe.Display, boxes []ownframe.Box, rows []Row) 
 				fl.box = flapRect(b)
 			} else {
 				cur := op.Text
-				if fl != nil {
+				if fl != nil && fl.op != nil {
 					cur = fl.op.Text
 				}
 

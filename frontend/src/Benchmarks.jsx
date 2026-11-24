@@ -58,6 +58,26 @@ const microRows = [
   ['Frame_Click_Dispatch', '2.19 µs', '496 B', '5', 'Pointer hit-test and click dispatch'],
 ];
 
+const windowsGpuAppRows = [
+  ['animations.exe (534 ops, active CSS)', '325.3 FPS', '2.92 ms', '4.32 / 4.83 ms', '20.8 MB', '0 long frames (>25 ms), 1140×900'],
+  ['wispr-flow-dashboard.exe (398 ops)', '442.3 FPS', '0.75 ms', '1.12 / 7.45 ms', '21.4 MB', '0 long frames, 1638×950'],
+  ['spotify-player.exe (169 ops, 46 images)', '68.2 FPS', '3.57 ms', '5.35 / 9.59 ms', '22.0 MB', '0 long frames, timer-paced, 1440×960'],
+  ['departure-board.exe (628 ops, idle)', '2.1 FPS', '1.14 ms', '1.48 / 12.19 ms', '17.7 MB', 'Idle-parked at 4.1% CPU, 1000×640'],
+];
+
+const windowsReplayRows = [
+  ['ChunkCardDamage (direct → chunked)', '4.22 → 2.00 µs', '849 B', '8', '2.1× faster (1 blit vs. 5 ops)'],
+  ['BlitRaster', '406 ns', '581 B', '4', 'Cached raster blit'],
+  ['CachedRoundedFill (warm / cold)', '668 ns / 5.36 µs', '596 B / 5.97 KB', '4 / 43', '8.0× faster warm'],
+  ['CachedStroke (warm / cold)', '605 ns / 3.45 µs', '588 B / 4.33 KB', '4 / 31', '5.7× faster warm'],
+  ['Text_NoSpacing (warm / direct)', '612 ns / 18.5 µs', '623 B / 18.9 KB', '4 / 91', '30× faster warm vs. direct'],
+  ['Text_LetterSpacing (warm / direct)', '902 ns / 40.7 µs', '540 B / 29.6 KB', '4 / 215', '45× faster warm vs. direct'],
+  ['CompositeLayer (normal / multiply / screen)', '463 ns / 1.93 / 1.82 µs', '536 B / 2.1–2.5 KB', '3 / 18', 'Kage mix-blend shader'],
+  ['LayerDrawLayers (100 / 500 / 1,000 ops)', '1.99 / 3.95 / 4.84 µs', '2.14 KB', '12', 'Retained layer compositing'],
+  ['TextDamageRedraw (warm / scroll / miss)', '37.4 / 48.6 µs / 1.44 ms', '27.3 KB / 1.14 MB', '200 / 5,162', 'Text damage cache hit vs. miss'],
+  ['LayerRotatedCard', '8.56 µs', '2.04 KB', '11', '1 blit/frame after 40-op bake'],
+];
+
 export default function Benchmarks() {
   return <div className="p-page">
     <section id="compare" className="container p-head" aria-labelledby="compare-title">
@@ -166,6 +186,45 @@ export default function Benchmarks() {
                 <td className="p-num">{bytes}</td>
                 <td className="p-num">{allocs}</td>
                 <td>{desc}</td>
+              </tr>)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="p-bench-group">
+        <h2 className="p-bench-title">Native Windows GPU window benchmarks</h2>
+        <p className="p-bench-desc">Pure-Go (<code>CGO_ENABLED=0</code>) Windows binaries measured sequentially for 8 s each via <code>-tags ownframe_debug -perf -debug-addr</code> on NVIDIA GeForce RTX 4060 Laptop GPU (143 Hz) + Intel Core i7-13700HX.</p>
+        <div className="p-table-wrap" role="region" aria-label="Native Windows GPU window benchmarks" tabIndex="0">
+          <table className="p-table">
+            <thead><tr><th scope="col">App</th><th scope="col" className="p-col-hl">Present FPS</th><th scope="col">Avg frame</th><th scope="col">p95 / p99</th><th scope="col">Go heap</th><th scope="col">Notes</th></tr></thead>
+            <tbody>
+              {windowsGpuAppRows.map(([app, fps, avg, pct, heap, notes]) => <tr key={app}>
+                <th scope="row">{app}</th>
+                <td className="p-col-hl p-num"><strong>{fps}</strong></td>
+                <td className="p-num">{avg}</td>
+                <td className="p-num">{pct}</td>
+                <td className="p-num">{heap}</td>
+                <td>{notes}</td>
+              </tr>)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="p-bench-group">
+        <h2 className="p-bench-title">Native Windows Ebiten replay benchmarks</h2>
+        <p className="p-bench-desc">Sequential run of <code>replay.test.exe</code> (<code>internal/replay</code>) on native Windows (<code>goos: windows</code>, <code>goarch: amd64</code>).</p>
+        <div className="p-table-wrap" role="region" aria-label="Native Windows Ebiten replay benchmarks" tabIndex="0">
+          <table className="p-table">
+            <thead><tr><th scope="col">Benchmark</th><th scope="col" className="p-col-hl">Time/op</th><th scope="col">Bytes/op</th><th scope="col">Allocs/op</th><th scope="col">Notes</th></tr></thead>
+            <tbody>
+              {windowsReplayRows.map(([name, time, bytes, allocs, notes]) => <tr key={name}>
+                <th scope="row">{name}</th>
+                <td className="p-col-hl p-num"><strong>{time}</strong></td>
+                <td className="p-num">{bytes}</td>
+                <td className="p-num">{allocs}</td>
+                <td>{notes}</td>
               </tr>)}
             </tbody>
           </table>
