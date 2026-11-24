@@ -56,7 +56,7 @@ func drawTabbedString(d *font.Drawer, s string, spacing, gap, runW float64) {
 	runWFixed := fixed.Int26_6(math.Round(runW * fixedPointScale))
 	var tabW fixed.Int26_6
 	if runWFixed > totalSegW {
-		tabW = (runWFixed - totalSegW) / fixed.Int26_6(tabCount)
+		tabW = fixed.Int26_6(float64(runWFixed-totalSegW) / float64(tabCount))
 	}
 
 	for i, seg := range parts {

@@ -37,14 +37,20 @@ type maskAxisPos struct {
 	hasOff  bool
 }
 
+const (
+	maskPosPairTokens     = 2
+	maskPosMinMultiTokens = 3
+	maskPosMaxMultiTokens = 4
+)
+
 func maskPosition(value string) (maskAxisPos, maskAxisPos, error) {
 	parts := strings.Fields(strings.TrimSpace(value))
 	switch len(parts) {
 	case 1:
 		return parseMaskPosPair(parts[0], "50%")
-	case 2:
+	case maskPosPairTokens:
 		return parseMaskPosPair(parts[0], parts[1])
-	case 3, 4:
+	case maskPosMinMultiTokens, maskPosMaxMultiTokens:
 		return parseMaskPosMulti(parts)
 	default:
 		return maskAxisPos{}, maskAxisPos{}, fmt.Errorf("expected one to four position tokens")
@@ -112,13 +118,14 @@ func parseMaskPosMulti(parts []string) (maskAxisPos, maskAxisPos, error) {
 				i++
 			}
 		case "center":
-			if !xSet {
+			switch {
+			case !xSet:
 				xSet = true
 				xAxis = maskAxisPos{edge: "center", value: centerPosition, percent: true}
-			} else if !ySet {
+			case !ySet:
 				ySet = true
 				yAxis = maskAxisPos{edge: "center", value: centerPosition, percent: true}
-			} else {
+			default:
 				return maskAxisPos{}, maskAxisPos{}, fmt.Errorf("unexpected center token")
 			}
 			i++

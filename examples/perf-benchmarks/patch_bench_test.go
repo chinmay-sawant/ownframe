@@ -1,6 +1,7 @@
 package perfbench_test
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"testing"
@@ -37,7 +38,7 @@ func makePatchRows(n int) []patchRow {
 	return rows
 }
 
-func newPatchPage(b *testing.B, rows []patchRow) *ownframe.Page {
+func newPatchPage(ctx context.Context, b *testing.B, rows []patchRow) *ownframe.Page {
 	b.Helper()
 	p, err := ownframe.New(ownframe.Config{
 		Title:       "Patch benchmark",
@@ -50,7 +51,7 @@ func newPatchPage(b *testing.B, rows []patchRow) *ownframe.Page {
 		b.Fatal(err)
 	}
 	p.SetData(rows)
-	if err := p.Redraw(b.Context()); err != nil {
+	if err := p.Redraw(ctx); err != nil {
 		b.Fatal(err)
 	}
 
@@ -66,7 +67,7 @@ func BenchmarkListPatchVsRebuild(b *testing.B) {
 
 	b.Run("FullRebuild1Row", func(b *testing.B) {
 		rows := makePatchRows(rowCount)
-		p := newPatchPage(b, rows)
+		p := newPatchPage(ctx, b, rows)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -84,7 +85,7 @@ func BenchmarkListPatchVsRebuild(b *testing.B) {
 
 	b.Run("PatchElement1Row", func(b *testing.B) {
 		rows := makePatchRows(rowCount)
-		p := newPatchPage(b, rows)
+		p := newPatchPage(ctx, b, rows)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -100,7 +101,7 @@ func BenchmarkListPatchVsRebuild(b *testing.B) {
 
 	b.Run("PatchElements10Rows", func(b *testing.B) {
 		rows := makePatchRows(rowCount)
-		p := newPatchPage(b, rows)
+		p := newPatchPage(ctx, b, rows)
 		patchesA := make([]ownframe.ElementPatch, 10)
 		patchesB := make([]ownframe.ElementPatch, 10)
 		for j := range 10 {

@@ -66,6 +66,8 @@ func ParseFontFeatures(list string) []FontFeature {
 // collide with unrelated BCP 47 codes when passed directly to language.Make
 // (for example "SRB" is Sora rather than Serbian, "TRK" is Turkic collection,
 // and "ROM" is Romany rather than Romanian).
+//
+//nolint:gochecknoglobals // read-only OpenType-to-BCP47 language tag lookup table
 var otLanguageTags = map[string]string{
 	"TRK": "tr", // Turkish
 	"SRB": "sr", // Serbian
