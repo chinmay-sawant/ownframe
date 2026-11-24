@@ -140,15 +140,15 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="width:280px;height:80px;background:#e8e4d8;"><div id="{{ID}}-1" style="top:20px;left:30px;width:60px;height:24px;background:#c96;{{STYLE}}"></div></div>`,
 			"The box shifts 30px right and 20px down once it is relatively positioned; without it the offsets are ignored.", true), true
 	case n == "z-index":
-		return lay(`<div id="{{ID}}" style="position:relative;width:280px;height:60px;background:#e8e4d8;"><div id="{{ID}}-1" style="position:absolute;left:10px;top:10px;width:80px;height:40px;background:#c96;{{STYLE}}"></div><div id="{{ID}}-2" style="position:absolute;left:50px;top:20px;width:80px;height:30px;background:#69c;"></div></div>`,
-			"The inherited value is auto, so the blue box stays on top of the orange one and nothing changes.", false), true
+		return lay(`<div id="{{ID}}" style="position:relative;width:280px;height:60px;background:#e8e4d8;"><div id="{{ID}}-1" style="position:absolute;left:10px;top:10px;width:80px;height:40px;background:#c96;{{STYLE}}"></div><div id="{{ID}}-2" style="position:absolute;left:50px;top:20px;width:80px;height:30px;background:#69c;z-index:1;"></div></div>`,
+			"With z-index: 5 the orange box paints on top of the z-index: 1 blue box instead of behind it.", true), true
 	case in(n, "overflow", "overflow-x", "overflow-y", "overflow-block", "overflow-inline"):
 		return lay(overflowDemo("{{STYLE}}"), "The tall orange content is cut at the 40px frame instead of spilling out below it.", true), true
 	case strings.HasPrefix(n, "overflow-clip-margin"):
 		return lay(overflowAll("overflow:clip;{{STYLE}}"), clipMarginLook(n), true), true
 	case n == "overflow-wrap":
-		return lay(`<div id="{{ID}}" style="width:100px;background:#e8e4d8;font-size:12px;{{STYLE}}">Zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</div>`,
-			"Accepted; the engine already breaks an unbreakable word at the 100px frame edge, so the control and the demo wrap the same way and nothing changes.", false), true
+		return lay(`<div id="{{ID}}" style="width:60px;background:#e8e4d8;font-size:12px;{{STYLE}}">Hi Supercalifragilisticexpialidocious</div>`,
+			"With break-word the long word breaks across lines to fit the 60 px box instead of overflowing.", true), true
 	case n == "column-gap":
 		return lay(colKids("column-count:2;{{STYLE}}"), "The two columns sit 3px apart instead of the 12px default gap (normal is 1em, and the font is 12px), so each column grows wider and the blue box starts further left.", true), true
 	case n == "column-width":
@@ -172,9 +172,18 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "container" || n == "container-type":
 		return lay(`<div id="{{ID}}" style="width:280px;height:60px;background:#e8e4d8;"><div id="{{ID}}-1" style="display:inline-block;min-width:100px;background:#c96;font-size:12px;{{STYLE}}">content that sizes the box</div></div>`,
 			"Inline-size containment removes the text from the box's width, so the orange box narrows from its text width to its 100px minimum and the text wraps.", true), true
-	case n == "container-name" || n == "anchor-scope":
+	case n == "container-name":
+		return lay(`<style>@container box (min-width: 100px){#{{ID}}-1{background:#c0392b !important;}}</style><div id="{{ID}}" style="width:200px;container-type:inline-size;{{STYLE}}"><div id="{{ID}}-1" style="height:24px;background:#69c;">inside</div></div>`,
+			"Naming the container `box` matches the `@container box (min-width: 100px)` rule, turning the inner bar red.", true), true
+	case n == "anchor-scope":
 		return lay(`<div id="{{ID}}" style="width:200px;padding:6px;background:#c96;font-size:12px;{{STYLE}}">named, but nothing queries it</div>`,
 			"Only a name for later queries or anchors is declared, so nothing visible changes.", false), true
+	case n == "continue":
+		return lay(`<div id="{{ID}}" style="width:200px;height:20px;background:#e8e4d8;font-size:12px;{{STYLE}}">Long text that overflows the box height</div>`,
+			"With `continue: discard` the overflowing content is discarded instead of spilling past the 20 px box.", true), true
+	case n == "flow-from" || n == "flow-into":
+		return lay(`<div id="{{ID}}" style="width:200px;height:40px;background:#c96;font-size:12px;{{STYLE}}">box</div>`,
+			"Assigning the box to the named flow `main` removes it from normal flow painting.", true), true
 	case n == "anchor-name":
 		return lay(anchorDemo("{{STYLE}}", "position-anchor:--a;"), "The engine does not resolve anchor positioning for a name alone, so the blue label stays at the top-left; the name is accepted.", false), true
 	case n == "position-anchor":

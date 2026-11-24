@@ -11,6 +11,7 @@ const (
 	halfTurnDeg         = 180
 	threeQuarterTurnDeg = 270
 	fullTurnDeg         = 360
+	fakeObliqueShear    = -0.2
 )
 
 // TextMatrix returns the map a text or bullet run paints through when it has
@@ -39,6 +40,11 @@ func TextMatrix(op *layout.DisplayOp) (layout.Matrix2D, bool) {
 			return layout.Matrix2D{}, false
 		}
 	} else if !projected {
+		if !op.FakeOblique {
+			return layout.Matrix2D{}, false
+		}
+		m = layout.Matrix2D{A: 1, B: 0, C: fakeObliqueShear, D: 1}
+	} else if op.FakeOblique {
 		return layout.Matrix2D{}, false
 	}
 	m.E = op.X - m.A*op.X - m.C*op.Y

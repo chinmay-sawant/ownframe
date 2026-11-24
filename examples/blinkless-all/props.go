@@ -146,15 +146,19 @@ type DemoSpec struct {
 // properties; anything unclaimed gets a plain box.
 func specFor(r genProp) DemoSpec {
 	if strings.HasPrefix(r.Name, "-webkit-text-stroke") {
+		base := "font-size:30px;font-weight:bold;color:#2c3e50;padding:4px 8px;margin:8px 0;"
 		look := "Look for an outline drawn around each glyph of the word."
+		visible := false
 		if r.Name == "-webkit-text-stroke-color" {
-			look = "The stroke width stays 0, so a stroke colour alone draws nothing: the picture matches the control."
+			base += "-webkit-text-stroke-width:2px;"
+			look = "The 2 px glyph outline turns red instead of inheriting the dark slate text colour."
+			visible = true
 		}
 
 		return DemoSpec{
-			HTML:    `<div id="{{ID}}" style="font-size:30px;font-weight:bold;color:#2c3e50;padding:4px 8px;margin:8px 0;{{STYLE}}">Stroke</div>`,
+			HTML:    `<div id="{{ID}}" style="` + base + `{{STYLE}}">Stroke</div>`,
 			Look:    look,
-			Visible: false,
+			Visible: visible,
 		}
 	}
 

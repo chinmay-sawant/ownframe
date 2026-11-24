@@ -113,10 +113,7 @@ var vizReadoutBlind = map[string]bool{
 // from the control.
 //
 //nolint:gochecknoglobals // read-only property lookup table
-var vizLook = map[string]string{
-	"background-color": "The inner box looks the same as the control: the parent's amber shows through the transparent control and the inherited amber alike.",
-	"mask-mode":        "The masked box looks the same as the control: alpha is already how a gradient mask is read.",
-}
+var vizLook = map[string]string{}
 
 func spec(html, look string) (DemoSpec, bool) {
 	return DemoSpec{HTML: html, Look: look, Visible: true}, true
@@ -361,7 +358,7 @@ func borderImageSpec(r genProp) (DemoSpec, bool) {
 func cornerSpec(r genProp) (DemoSpec, bool) {
 	if strings.HasSuffix(r.Name, "shape") {
 		if r.Sample == "bevel" {
-			return spec(vizBox("border:2px solid #2c3e50;border-radius:20px;", ""), "All four rounded corners become straight diagonal cuts (bevel) instead of curves.")
+			return spec(vizBox("border:2px solid #2c3e50;border-radius:20px;", ""), "The matching rounded corner (or corners) become straight diagonal cuts (bevel) instead of curves.")
 		}
 
 		return specNo(vizBox("border:2px solid #2c3e50;border-radius:20px;", ""), "The corner looks the same as the control: a superellipse exponent of "+r.Sample+" is the ordinary round curve the box already has.")
@@ -388,8 +385,8 @@ func paintSpec(r genProp) (DemoSpec, bool) {
 
 	switch n {
 	case "clip":
-		return specNo(`<div id="{{ID}}" style="width:200px;height:60px;background:#dfe9f3;"><div id="{{ID}}-1" style="position:relative;width:140px;height:50px;background:#e8b04a;{{STYLE}}"></div></div>`,
-			"The child stays the same: clip: inherit takes the parent's initial auto, so nothing is clipped.")
+		return spec(`<div id="{{ID}}" style="position:relative;width:200px;height:60px;background:#dfe9f3;"><div id="{{ID}}-1" style="position:absolute;width:140px;height:50px;background:#e8b04a;{{STYLE}}"></div></div>`,
+			"The absolutely positioned amber box is clipped to the 70x30 rectangle (10px to 80px horizontally, 10px to 40px vertically).")
 	case "clip-path":
 		return spec(vizBox("background:"+vizGrad+";", ""), "The gradient is cut to a circle covering 40% of the box; the pale box background behind it stays square.")
 	case "clip-rule":
@@ -418,8 +415,7 @@ func backgroundSpec(r genProp) (DemoSpec, bool) {
 	case n == "background":
 		return spec(vizPlain("border:1px solid #888;", ""), "A solid red background fills the box (the missing x.png adds nothing).")
 	case n == "background-color":
-		return spec(`<div id="{{ID}}" style="width:200px;padding:8px;background:#e8b04a"><div id="{{ID}}-1" style="width:140px;height:60px;border:1px solid #888;{{STYLE}}"></div></div>`,
-			"The inner box takes the parent's amber background through inherit; the control is transparent.")
+		return spec(vizPlain("border:1px solid #888;", ""), "The box fills with #c0392b red instead of staying transparent.")
 	case n == "background-image":
 		return spec(vizPlain("border:1px solid #888;", ""), "A red to blue gradient fills the box.")
 	case n == "background-attachment":
@@ -451,8 +447,10 @@ func maskSpec(r genProp) (DemoSpec, bool) {
 	}
 
 	switch n {
-	case "mask", "mask-image", "mask-border", "mask-border-source":
-		return specNo(body(""), "The striped box is unmasked: the sample is none, which is the initial value.")
+	case "mask", "mask-image":
+		return spec(body(""), "A top-to-bottom black-to-transparent gradient mask fades the striped box toward the bottom.")
+	case "mask-border", "mask-border-source":
+		return spec(`<div style="margin:22px 14px">`+body("border:10px solid #2c3e50;mask-border-slice:6;mask-border-width:16px;")+`</div>`, "The sample border mask frames the striped box using the 20x20 sample image.")
 	case "mask-type":
 		return specNo(body(""), "The striped box is unchanged; mask-type applies to SVG mask elements, not to a box.")
 	case "mask-composite":
@@ -463,7 +461,7 @@ func maskSpec(r genProp) (DemoSpec, bool) {
 
 		return spec(body("mask-image:linear-gradient(#000,#000),linear-gradient(90deg,#000,transparent);"), look)
 	case "mask-mode":
-		return spec(body(maskBase), "The mask is read as alpha, so the box fades toward the bottom.")
+		return spec(body("mask-image:linear-gradient(#000,#fff);"), "Reading the black-to-white gradient mask by luminance instead of alpha fades the top to transparent and keeps the bottom opaque.")
 	case "mask-clip":
 		return spec(body("padding:12px;border:8px solid #2c3e50;mask-image:linear-gradient(#000,#000);"), "Clipping the mask to the padding-box hides the 8 px dark border while keeping the inner stripes visible.")
 	case "mask-origin":
@@ -508,6 +506,10 @@ func shapeSpec(r genProp) (DemoSpec, bool) {
 		return spec(vizFloat("shape-outside:circle(50%);border-radius:50%;"), "The control's text hugs the circular disc. With shape-margin the text keeps 12 px more distance from it, so each line starts further right and clears the disc.")
 	case "shape-image-threshold":
 		return spec(vizFloatBg(vizGrad, "shape-outside:"+vizGrad+";"), "The gradient used as the shape is fully opaque, so at a 0.5 threshold the shape is the whole 80 px square: the text stays beside the box in both pictures.")
+	case "shape-inside":
+		return spec(`<div id="{{ID}}" style="width:160px;height:100px;font-size:12px;line-height:16px;background:#dfe9f3;{{STYLE}}">The quick brown fox jumps over the lazy dog and keeps running.</div>`, "Text inside the box wraps within the circle(40%) interior shape instead of filling the full rectangle.")
+	case "shape-padding":
+		return spec(`<div id="{{ID}}" style="width:160px;height:100px;font-size:12px;line-height:16px;background:#dfe9f3;shape-inside:circle(50%);{{STYLE}}">The quick brown fox jumps over the lazy dog and keeps running.</div>`, "Padding of 12 px insets the text further inside the circular interior shape.")
 	}
 
 	return specNo(vizFloat("shape-outside:circle(50%);"), "The text wraps around the circular disc float the same way as in the control; "+r.Name+" is accepted but not used for layout.")
@@ -520,10 +522,10 @@ func listSpec(r genProp) (DemoSpec, bool) {
 	case "list-style":
 		return spec(vizList(""), "The round discs of the control become small squares. The list also sets inside, so each marker sits at the start of its line, and the text is indented 16 px so the marker stays clear of the first letter.")
 	case "list-style-position":
-		return specNo(vizList(""), "The markers stay outside the text: outside is the initial value.")
+		return spec(vizList(""), "The round disc markers move inside the indented text line instead of sitting in the outer gutter.")
 	}
 
-	return specNo(`<div style="list-style-image:url(`+vizPNG+`)">`+vizList("list-style-image:none;")+`</div>`, "The markers look the same as the control: both show plain discs, because the engine does not apply an explicit list-style-image: inherit from the wrapper's sample image.")
+	return spec(vizList(""), "The sample green square image replaces the default round disc markers.")
 }
 
 func objectSpec(r genProp) (DemoSpec, bool) {

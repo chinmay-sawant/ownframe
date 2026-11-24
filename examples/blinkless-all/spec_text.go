@@ -47,28 +47,46 @@ func textHTML(name string) string {
 			`<line x1="0" y1="40" x2="120" y2="40" stroke="#c0392b" stroke-width="1"/>` + target + `</svg></div>`
 	case "vertical-align":
 		return tbox("padding-top:22px;", `Text<span id="{{ID}}-1" style="{{STYLE}}">raised</span> and more inline text.`)
-	case "ruby-align", "ruby-merge", "ruby-overhang", "ruby-position":
+	case "ruby-align":
+		return tbox("padding:14px 4px;", `A <ruby id="{{ID}}-1" style="{{STYLE}}">longbaseword<rt>rt</rt></ruby> end.`)
+	case "ruby-merge":
+		return tbox("padding:14px 4px;", `A <ruby id="{{ID}}-1" style="{{STYLE}}">a<rt>1</rt>b<rt>2</rt></ruby> end.`)
+	case "ruby-overhang":
+		return tbox("padding:14px 4px;", `A <ruby id="{{ID}}-1" style="{{STYLE}}">b<rt>verylongrubytext</rt></ruby> end.`)
+	case "ruby-position":
 		return tbox("padding:14px 4px;", `A <ruby id="{{ID}}-1" style="{{STYLE}}">base<rt>top</rt></ruby> word <ruby>two<rt>x</rt></ruby>.`)
 	case "font-variant-east-asian":
 		return tbox("font-family:'Blinkless OT';font-size:22px;", "あいう")
-	case "text-combine-upright", "text-orientation":
-		return tbox("", `Year 2026 upright digits`)
+	case "text-combine-upright":
+		return `<div id="{{ID}}" style="writing-mode:vertical-rl;height:120px;font-size:14px;background:#f1efe7;">年<span id="{{ID}}-1" style="{{STYLE}}">26</span>日</div>`
+	case "text-orientation":
+		return `<div id="{{ID}}" style="writing-mode:vertical-rl;height:120px;font-size:14px;background:#f1efe7;{{STYLE}}">Year 2026</div>`
 	case "initial-letter":
 		// the first word is sized to two lines; the box is tall enough to hold it.
 		return tbox("height:46px;padding-top:14px;", `Drop`)
 	case "initial-letter-align", "initial-letter-wrap":
-		return tbox("", `Drop cap paragraph that wraps around the first letter of the text.`)
+		return tbox("height:46px;padding-top:14px;", `<span style="initial-letter:2;{{STYLE}}">D</span>rop cap paragraph`)
 	case "hyphens", "hyphenate-character", "hyphenate-limit-chars", "hyphenate-limit-last", "hyphenate-limit-lines", "hyphenate-limit-zone":
 		return `<div id="{{ID}}" lang="en" style="width:90px;font-size:13px;background:#f1efe7;padding:4px;hyphens:auto;{{STYLE}}">` +
-			`Extraordinarily internationalization of uncharacteristically long words.</div>`
+			`Extra&shy;ordinarily inter&shy;nationalization</div>`
 	case "line-clamp":
 		return tbox("overflow:hidden;", textBody+` `+textBody+` `+textBody)
 	case "block-ellipsis":
 		return tbox("overflow:hidden;line-clamp:2;", textBody+` `+textBody+` `+textBody)
 	case "text-overflow":
 		return tbox("white-space:nowrap;overflow:hidden;", `One very long line of text that does not fit the box.`)
-	case "white-space", "white-space-collapse", "white-space-trim":
+	case "white-space", "white-space-collapse":
 		return tbox("", "Spaced     words\n   and a new line\nthird line   ")
+	case "white-space-trim":
+		return tbox("white-space:pre;", "   leading spaces")
+	case "hanging-punctuation":
+		return tbox("text-align:left;", `“Quoted text that starts with a quote mark.”`)
+	case "text-group-align":
+		return tbox("", "short\nlonger line")
+	case "text-spacing", "text-spacing-trim":
+		return tbox("", "「日本語」の（括弧）")
+	case "word-space-transform":
+		return tbox("", "word\u200Bword")
 	case "tab-size":
 		// real tab characters (U+0009) under white-space:pre, so tab-size moves the columns.
 		return tbox("white-space:pre;", "a&#9;b&#9;c\n&#9;d&#9;e")
@@ -107,20 +125,30 @@ func textHTML(name string) string {
 		return counterHTML("counter-reset:k;", "{{STYLE}}")
 	case "text-decoration-color", "text-decoration-thickness", "text-decoration-style", "text-decoration-inset",
 		"text-underline-offset", "text-underline-position", "text-decoration-skip", "text-decoration-skip-box",
-		"text-decoration-skip-ink", "text-decoration-skip-self", "text-decoration-skip-spaces", "text-decoration-line":
+		"text-decoration-skip-ink", "text-decoration-skip-self", "text-decoration-skip-spaces":
 		return tbox("text-decoration:underline;line-height:3.4;padding:4px 4px 24px;", `Underlined gypsy jumping quickly over lazy dogs.`)
-	case "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-skip", "text-emphasis-style":
+	case "text-decoration-line":
+		return tbox("line-height:2;", `Decorated text here.`)
+	case "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-style":
 		return tbox("text-emphasis:filled #1f2937;padding:24px 4px 30px;line-height:3;", `Emphasis marks over words`)
+	case "text-emphasis-skip":
+		return tbox("text-emphasis:filled #1f2937;text-emphasis-skip:none;padding:24px 4px 30px;line-height:3;", `a b c d`)
 	case "font-synthesis":
 		return tbox("font-variant-caps:small-caps;font-size:16px;", `Synthesised small caps`)
 	case "font-synthesis-weight":
 		return tbox("font-family:'Blinkless OT';font-weight:700;font-size:20px;", `Bold text`)
-	case "font-synthesis-position", "font-synthesis-small-caps", "font-synthesis-style":
-		return tbox("font-weight:700;font-style:italic;", `Synthesised bold italic text`)
+	case "font-synthesis-position":
+		return tbox("font-variant-position:super;font-size:18px;", `x2 + y3`)
+	case "font-synthesis-small-caps":
+		return tbox("font-variant-caps:small-caps;font-size:18px;", `Small Caps`)
+	case "font-synthesis-style":
+		return tbox("font-family:'Blinkless OT';font-style:italic;font-size:20px;", `Italic text`)
 	case "font-variant-numeric":
 		return tbox("font-family:'Blinkless OT';font-size:20px;", "1111<br>8888")
-	case "text-box", "text-box-edge", "text-box-trim":
+	case "text-box", "text-box-trim":
 		return `<div id="{{ID}}" style="width:160px;font-size:20px;line-height:2;padding:8px 0;background:#cfe3f7;{{STYLE}}">Trimmed Hxg</div>`
+	case "text-box-edge":
+		return `<div id="{{ID}}" style="width:160px;font-size:20px;line-height:2;padding:8px 0;background:#cfe3f7;text-box-trim:trim-both;{{STYLE}}">Trimmed Hxg</div>`
 	case "font-size-adjust":
 		// aspect 2 scales the glyphs about four times: start from a 5px face.
 		return tbox("font-size:5px;line-height:30px;height:30px;overflow:hidden;", `Sphinx`)
@@ -274,31 +302,50 @@ var textVisible = map[string]bool{
 	"content-visibility":          true,
 	"counter-increment":           true,
 	"counter-reset":               true,
+	"counter-set":                 true,
 	"direction":                   true,
+	"font":                        true,
 	"font-family":                 true,
 	"font-size":                   true,
 	"font-size-adjust":            true,
 	"font-style":                  true,
+	"font-synthesis-position":     true,
+	"font-synthesis-small-caps":   true,
+	"font-synthesis-style":        true,
 	"font-variant":                true,
 	"font-variant-caps":           true,
 	"font-variant-position":       true,
 	"font-weight":                 true,
+	"hanging-punctuation":         true,
+	"hyphenate-character":         true,
+	"hyphenate-limit-chars":       true,
+	"hyphenate-limit-lines":       true,
+	"hyphenate-limit-zone":        true,
+	"hyphens":                     true,
 	"initial-letter":              true,
+	"initial-letter-align":        true,
+	"initial-letter-wrap":         true,
 	"letter-spacing":              true,
 	"line-clamp":                  true,
 	"line-height":                 true,
 	"line-padding":                true,
 	"offset-anchor":               true,
+	"ruby-align":                  true,
+	"ruby-merge":                  true,
+	"ruby-overhang":               true,
 	"ruby-position":               true,
 	"text-align":                  true,
 	"text-align-all":              true,
 	"text-align-last":             true,
 	"text-autospace":              true,
 	"text-box":                    true,
+	"text-box-edge":               true,
 	"text-box-trim":               true,
+	"text-combine-upright":        true,
 	"text-decoration":             true,
 	"text-decoration-color":       true,
 	"text-decoration-inset":       true,
+	"text-decoration-line":        true,
 	"text-decoration-skip":        true,
 	"text-decoration-skip-ink":    true,
 	"text-decoration-skip-self":   true,
@@ -308,8 +355,14 @@ var textVisible = map[string]bool{
 	"text-emphasis":               true,
 	"text-emphasis-color":         true,
 	"text-emphasis-position":      true,
+	"text-emphasis-skip":          true,
+	"text-group-align":            true,
 	"text-indent":                 true,
+	"text-justify":                true,
+	"text-orientation":            true,
 	"text-shadow":                 true,
+	"text-spacing":                true,
+	"text-spacing-trim":           true,
 	"text-transform":              true,
 	"text-underline-offset":       true,
 	"text-underline-position":     true,
@@ -318,7 +371,10 @@ var textVisible = map[string]bool{
 	"unicode-bidi":                true,
 	"vertical-align":              true,
 	"white-space":                 true,
+	"white-space-collapse":        true,
+	"white-space-trim":            true,
 	"word-break":                  true,
+	"word-space-transform":        true,
 	"word-spacing":                true,
 	"writing-mode":                true,
 }
@@ -387,9 +443,16 @@ var textLookOf = map[string]string{
 	"text-underline-offset":       "The underline of the demo drops 12px below the text instead of the default offset, so each line's rule sits lower, closer to the next line; the lines are spaced wide and the box has bottom padding so the last rule stays inside.",
 	"vertical-align":              "The word `raised` in the demo is lifted 12px above the baseline. The engine moves the whole line with the raised word, so the other words rise too. The markup has no literal space before the span, because the engine already draws one gap there; the box has top padding so the raised line stays inside.",
 	"text-emphasis-style":         "The emphasis marks above each character change from filled dots to the custom string `x`.",
-	"text-decoration-line":        "The control is already underlined and the engine draws `spelling-error` like the plain underline, so the picture stays the same as the control.",
+	"text-decoration-line":        "A horizontal line-through strike is drawn across the middle of the text instead of plain undecorated text.",
 	"text-box":                    "The demo box trims to the cap height and alphabetic baseline of its text, so the blue box is shorter than the control's; the glyphs touch or cross its edges, and the 8px padding keeps the box from collapsing.",
+	"text-box-edge":               "With `text-box-trim: trim-both` active, `cap alphabetic` trims the box tighter to the cap height and baseline.",
 	"text-box-trim":               "The demo box loses the half-leading at its start edge, so it is shorter than the control's box.",
+	"text-emphasis-skip":          "With `spaces` instead of `none`, emphasis marks are skipped over spaces between words.",
+	"text-combine-upright":        "In vertical-rl text, the two digits `26` combine horizontally into one upright character cell.",
+	"text-orientation":            "In vertical-rl text, `upright` turns Latin letters and digits upright instead of sideways.",
+	"font-synthesis-position":     "With `font-variant-position: super`, `none` disables synthetic superscript scaling so the text stays full size.",
+	"font-synthesis-small-caps":   "With `font-variant-caps: small-caps`, `none` disables synthetic small caps so lowercase letters stay lowercase.",
+	"font-synthesis-style":        "In regular-only Blinkless OT, `font-style: italic` draws synthetic oblique in the control; `none` disables it so the glyphs stay upright.",
 	"writing-mode":                "The demo is laid out vertically (the readout shows a different size) and the glyphs are quarter-turned: `vertical-rl` and `vertical-lr` replay on the display list like horizontal text. A rotation that is not a whole quarter turn, or a rotated run that is also skewed or projected, still falls back to the software painter.",
 	"text-emphasis":               "The demo marks are red dots instead of the control's dark filled marks, drawn above each word; line-height 3 and padding leave room for the marks.",
 	"text-emphasis-color":         "The demo marks turn red; the control marks are dark. Line-height 3 and padding leave room for the marks.",
