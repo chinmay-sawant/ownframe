@@ -79,3 +79,50 @@ func TestSoftwarePainterReproducesAutospaceGap(t *testing.T) {
 		t.Fatalf("latin-only run changed under autospace: %v vs %v", a, b)
 	}
 }
+
+// TestSoftwarePainterExpandsTabsWithoutTofu: literal tab characters under
+// white-space:pre must advance by tab-size without drawing missing-glyph boxes
+// in the gap between columns.
+func TestSoftwarePainterExpandsTabsWithoutTofu(t *testing.T) {
+	t.Parallel()
+	const html = `<body style="margin:0;background:#fff"><div style="position:absolute;left:10px;top:10px;color:#000;font-size:18px;white-space:pre;tab-size:8">A` + "\t" + `B</div></body>`
+	d, err := render.DisplayList(context.Background(), html, 300, 60)
+	if err != nil {
+		t.Fatal(err)
+	}
+	img, err := bitmap.Paint(d)
+	if err != nil {
+		t.Fatalf("software painter: %v", err)
+	}
+	// Find horizontal spans of ink. A and B must be separated by a clean blank
+	// gap (no missing-glyph tofu box between them).
+	var spans [][2]int
+	inSpan := false
+	start := 0
+	for x := 0; x < 300; x++ {
+		hasInk := false
+		for y := 0; y < 60; y++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			if r < 0xfa00 || g < 0xfa00 || b < 0xfa00 {
+				hasInk = true
+				break
+			}
+		}
+		if hasInk && !inSpan {
+			start = x
+			inSpan = true
+		} else if !hasInk && inSpan {
+			spans = append(spans, [2]int{start, x})
+			inSpan = false
+		}
+	}
+	if inSpan {
+		spans = append(spans, [2]int{start, 300})
+	}
+	if len(spans) != 2 {
+		t.Fatalf("expected 2 ink spans (A and B) with clean gap, got %d spans: %v", len(spans), spans)
+	}
+	if gap := spans[1][0] - spans[0][1]; gap < 20 {
+		t.Fatalf("expected tab gap >= 20px for tab-size:8, got %dpx (spans %v)", gap, spans)
+	}
+}

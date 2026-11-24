@@ -40,7 +40,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 			kid(1, "width:50px;height:30px;background:#c96;")+kid(2, "width:50px;height:30px;background:#6a9;")+kid(3, "width:50px;height:30px;background:#69c;")+`</div>`, //nolint:mnd // child index
 			"The boxes stack in a column and wrap into a second column when the container height runs out.", true), true
 	case n == "gap":
-		return lay(gridDemo("grid-template-columns:1fr 1fr;{{STYLE}}", "", ""), "Accepted; the engine does not apply the two-value gap shorthand, so the grid keeps its spacing (row-gap and column-gap are shown on their own rows).", false), true
+		return lay(gridDemo("grid-template-columns:1fr 1fr;{{STYLE}}", "", ""), "An 8 px row gap and 16 px column gap open between the grid cells.", true), true
 	case n == "row-gap":
 		return lay(flexWrapDemo("flex-wrap:wrap;{{STYLE}}"), "Space opens between the two wrapped lines of boxes.", true), true
 	case in(n, "justify-items", "justify-self", "place-items", "place-self"):
@@ -63,13 +63,13 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "grid-auto-rows":
 		return lay(gridDemo("{{STYLE}}", "", ""), "Every implicit row is 40px tall.", true), true
 	case n == "grid-auto-columns":
-		return lay(gridDemo("grid-auto-flow:column;{{STYLE}}", "", ""), "Accepted; the engine lays implicit columns out the same, so the widths do not change.", false), true
+		return lay(gridDemo("grid-auto-flow:column;{{STYLE}}", "", ""), "Each implicit column narrows to 40 px instead of splitting the 280 px width evenly.", true), true
 	case n == "grid-auto-flow":
-		return lay(gridDemo("grid-template-rows:20px 20px;{{STYLE}}", "", ""), "Accepted; the engine keeps filling row by row, so the boxes do not move.", false), true
+		return lay(gridDemo("grid-template-rows:20px 20px;{{STYLE}}", "", ""), "The six boxes fill column by column across three columns instead of stacking in one column.", true), true
 	case n == "grid-template-areas":
-		return lay(gridDemo("{{STYLE}}", "", ""), "The container declares a one-cell named area, but the boxes name no area, so they keep the grid's layout; nothing visible moves.", false), true
+		return lay(gridDemo("grid-template-columns:1fr 1fr;grid-template-areas:'. x';{{STYLE}}", "grid-area:x;", ""), "The first box moves from column 2 (area `. x`) to column 1 (area `x`).", true), true
 	case n == "grid-row-start" || n == "grid-row-end":
-		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "Accepted; the engine places the first box in the same cell, so nothing moves (grid-row shows the placement).", false), true
+		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first (orange) box moves to row 2 while boxes 2 to 4 fill row 1.", true), true
 	case n == "grid-row":
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box occupies rows 1 and 2 of the first column, so its 16px box leaves an empty cell under it, box 4 moves over and box 6 drops to a third row.", true), true
 	case n == "grid-column-end":
@@ -124,7 +124,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="width:280px;background:#e8e4d8;"><span id="{{ID}}-1" style="background:#c96;{{STYLE}}">a span</span></div>`,
 			"The orange span stretches to the full frame width as a block instead of hugging its text.", true), true
 	case n == "visibility":
-		return lay(blockDemo("width:150px;height:30px;background:#c96;{{STYLE}}", ""), "Accepted and exported, but the window still paints the orange box; it does not hide it yet.", false), true
+		return lay(blockDemo("width:150px;height:30px;background:#c96;{{STYLE}}", ""), "The orange box disappears while its 30 px height remains reserved inside the frame.", true), true
 	case n == "float":
 		return lay(`<div id="{{ID}}" style="width:280px;height:40px;background:#e8e4d8;"><div id="{{ID}}-1" style="width:80px;height:30px;background:#c96;{{STYLE}}"></div></div>`,
 			"The orange box moves to the right edge of the frame.", true), true
@@ -180,9 +180,13 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "position-anchor":
 		return lay(anchorDemo("anchor-name:--a;", "{{STYLE}}"), "The engine does not attach the blue label to the named anchor, so it stays at the top-left; the name is accepted.", false), true
 	case n == "position-area":
-		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The engine only moves the blue label down 24px, from the control's y 0 to y 24, still at the left edge and left of the orange anchor. It does not place the label above the anchor. Each row names its own anchor, so the picture and the readout agree.", false), true
-	case in(n, "position-try", "position-try-fallbacks", "position-try-order", "position-visibility"):
-		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows. Control and demo both carry position-area:top, which the engine does not resolve, so the blue label stays at the left edge of the frame (x 0, y 24), left of the orange anchor, in both pictures and nothing changes.", false), true
+		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The blue label centres directly above the orange anchor instead of sitting at the top-left.", true), true
+	case in(n, "position-try", "position-try-fallbacks"):
+		return lay(anchorDemo("top:4px;anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;{{STYLE}}"), "The anchor sits near the top edge so `position-area: top` overflows; `flip-block` flips the blue label below the orange anchor.", true), true
+	case n == "position-try-order":
+		return lay(anchorDemo("left:70px;anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:left;position-try-fallbacks:right;{{STYLE}}"), "The right side of the anchor has more room than the left, so `most-width` moves the blue label from left of the anchor to right of it.", true), true
+	case n == "position-visibility":
+		return lay(anchorDemo("top:4px;anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;position-visibility:no-overflow;{{STYLE}}"), "In the control `no-overflow` hides the overflowing blue label; `anchor-valid` keeps it visible.", true), true
 	case n == "table-layout":
 		return lay(`<table id="{{ID}}" style="width:200px;border-collapse:collapse;font-size:12px;{{STYLE}}"><tr><td id="{{ID}}-1" style="border:1px solid #888;background:#c96">a very long first cell text</td><td id="{{ID}}-2" style="border:1px solid #888;background:#69c">b</td></tr></table>`,
 			"The columns split the table width evenly (fixed) instead of following the long first cell.", true), true

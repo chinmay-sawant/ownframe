@@ -6,6 +6,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"hash/fnv"
 	"image"
+	"math"
+	"strings"
 	"sync"
 	"unsafe"
 )
@@ -35,14 +37,81 @@ func (renderer *Renderer) drawImage(dst *ebiten.Image, op *layout.DisplayOp, dx,
 
 	options := &ebiten.DrawImageOptions{
 		GeoM:   imageGeom(op, dx, dy, bounds.Dx(), bounds.Dy()),
-		Filter: ebiten.FilterLinear,
+		Filter: imageFilter(op),
 	}
 
 	if alpha := masking.ImageAlpha(op); alpha < 1 {
 		options.ColorScale.ScaleAlpha(float32(alpha))
 	}
 
+	if mode := op.BlendModeName(); !normalMode(mode) {
+		drawBlendedImage(dst, src, options, bounds.Dx(), bounds.Dy(), mode)
+
+		return
+	}
+
 	dst.DrawImage(src, options)
+}
+
+// drawBlendedImage rasterizes src through options into a tight axis-aligned
+// layer covering its destination bounds, then composites that layer onto dst
+// with the CSS separable blend shader. Rasterizing first lets scaled or
+// rotated background images (such as 1 px linear gradients) blend pixel-for-
+// pixel against dst through compositeLayer.
+func drawBlendedImage(dst, src *ebiten.Image, options *ebiten.DrawImageOptions, w, h int, mode string) {
+	if dst == nil || src == nil || w <= 0 || h <= 0 {
+		return
+	}
+
+	destRect := imageGeomBounds(options.GeoM, w, h).Intersect(dst.Bounds())
+	if destRect.Empty() {
+		return
+	}
+
+	layer := ebiten.NewImage(destRect.Dx(), destRect.Dy())
+	defer layer.Deallocate()
+
+	layerOpts := *options
+	layerOpts.GeoM.Translate(-float64(destRect.Min.X), -float64(destRect.Min.Y))
+	layer.DrawImage(src, &layerOpts)
+
+	compositeLayer(dst, layer, destRect.Min, mode)
+}
+
+// imageGeomBounds returns the integer pixel bounding rectangle of a w by h
+// source image mapped through geo.
+func imageGeomBounds(geo ebiten.GeoM, w, h int) image.Rectangle {
+	if w <= 0 || h <= 0 {
+		return image.Rectangle{}
+	}
+
+	fw, fh := float64(w), float64(h)
+	x0, y0 := geo.Apply(0, 0)
+	x1, y1 := geo.Apply(fw, 0)
+	x2, y2 := geo.Apply(0, fh)
+	x3, y3 := geo.Apply(fw, fh)
+
+	minX := min(x0, x1, x2, x3)
+	minY := min(y0, y1, y2, y3)
+	maxX := max(x0, x1, x2, x3)
+	maxY := max(y0, y1, y2, y3)
+
+	const eps = 1e-9
+	return image.Rect(
+		int(math.Floor(minX+eps)),
+		int(math.Floor(minY+eps)),
+		int(math.Ceil(maxX-eps)),
+		int(math.Ceil(maxY-eps)),
+	)
+}
+
+func imageFilter(op *layout.DisplayOp) ebiten.Filter {
+	switch strings.ToLower(strings.TrimSpace(op.ImageRendering())) {
+	case "pixelated", "crisp-edges", "optimizespeed":
+		return ebiten.FilterNearest
+	default:
+		return ebiten.FilterLinear
+	}
 }
 
 // decodedImage decodes op's payload once and caches the Ebiten image.

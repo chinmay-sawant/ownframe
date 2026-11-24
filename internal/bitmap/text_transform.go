@@ -6,12 +6,14 @@ import (
 	"image/color"
 	"image/draw"
 	"math"
+	"strings"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/masking"
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/f64"
+	"golang.org/x/image/math/fixed"
 )
 
 const (
@@ -21,14 +23,71 @@ const (
 	nrgbaAlphaOffset        = 3
 )
 
-// drawString draws s with letter spacing and the text-autospace gap. The gap
-// is the extra advance layout put at each ideograph and Latin boundary, in
-// pixels. x/image's face does no OpenType shaping, so this painter draws a run
-// without its font features (small caps, tabular numerals, ligature control):
-// the glyphs keep their default forms and advances. That is the degraded
-// picture a fallback page shows instead of failing; the display-list replay
-// applies the features.
-func drawString(d *font.Drawer, s string, spacing, gap float64) {
+// drawString draws s with letter spacing, text-autospace gap, and tab-stop
+// expansion. The gap is the extra advance layout put at each ideograph and
+// Latin boundary, in pixels. runW is the run's laid-out width in pixels, used
+// to advance across literal tab characters without drawing missing-glyph boxes.
+// x/image's face does no OpenType shaping, so this painter draws a run without
+// its font features (small caps, tabular numerals, ligature control): the
+// glyphs keep their default forms and advances. That is the degraded picture a
+// fallback page shows instead of failing; the display-list replay applies the
+// features.
+func drawString(d *font.Drawer, s string, spacing, gap, runW float64) {
+	if strings.ContainsRune(s, '\t') {
+		drawTabbedString(d, s, spacing, gap, runW)
+		return
+	}
+	drawSegment(d, s, spacing, gap)
+}
+
+func drawTabbedString(d *font.Drawer, s string, spacing, gap, runW float64) {
+	parts := strings.Split(s, "\t")
+	tabCount := len(parts) - 1
+	if tabCount <= 0 {
+		drawSegment(d, s, spacing, gap)
+		return
+	}
+
+	var totalSegW fixed.Int26_6
+	for _, seg := range parts {
+		totalSegW += measureSegment(d, seg, spacing, gap)
+	}
+
+	runWFixed := fixed.Int26_6(math.Round(runW * fixedPointScale))
+	var tabW fixed.Int26_6
+	if runWFixed > totalSegW {
+		tabW = (runWFixed - totalSegW) / fixed.Int26_6(tabCount)
+	}
+
+	for i, seg := range parts {
+		if seg != "" {
+			drawSegment(d, seg, spacing, gap)
+		}
+		if i < tabCount {
+			d.Dot.X += tabW
+		}
+	}
+}
+
+func measureSegment(d *font.Drawer, s string, spacing, gap float64) fixed.Int26_6 {
+	if s == "" {
+		return 0
+	}
+	if spacing == 0 && gap == 0 {
+		return d.MeasureString(s)
+	}
+	var total fixed.Int26_6
+	var prev rune
+	for _, r := range s {
+		total += fixedSpacing(masking.AutospaceGapBetween(prev, r, gap))
+		total += d.MeasureString(string(r))
+		total += fixedSpacing(spacing)
+		prev = r
+	}
+	return total
+}
+
+func drawSegment(d *font.Drawer, s string, spacing, gap float64) {
 	if spacing == 0 && gap == 0 {
 		d.DrawString(s)
 		return

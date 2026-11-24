@@ -9,6 +9,7 @@ import (
 	"golang.org/x/image/font/sfnt"
 	"image"
 	"math"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -46,7 +47,7 @@ func (renderer *Renderer) drawText(dst *ebiten.Image, op *layout.DisplayOp, dx, 
 
 	renderer.drawTextStroke(dst, face, content, x, y, op)
 
-	if renderer.cachedTextRun(dst, op, face, content, x, y) {
+	if !strings.ContainsRune(content, '\t') && renderer.cachedTextRun(dst, op, face, content, x, y) {
 		return
 	}
 
@@ -58,6 +59,12 @@ func (renderer *Renderer) drawText(dst *ebiten.Image, op *layout.DisplayOp, dx, 
 // has already moved up by the face ascent. A letter-spaced run is drawn glyph
 // by glyph with the extra advance.
 func (renderer *Renderer) drawTextRun(dst *ebiten.Image, face *text.GoTextFace, content string, x, y float64, op *layout.DisplayOp) {
+	if strings.ContainsRune(content, '\t') {
+		renderer.drawTabbedTextRun(dst, face, content, x, y, op)
+
+		return
+	}
+
 	spacing, gap := op.LetterSpacing*pxPerPt, op.TextAutospaceGap()*pxPerPt
 	if spacing == 0 && gap == 0 {
 		renderer.drawRun(dst, content, face, x, y, op)
@@ -68,6 +75,49 @@ func (renderer *Renderer) drawTextRun(dst *ebiten.Image, face *text.GoTextFace, 
 	walkRun(face, content, spacing, gap, func(piece string, offset float64) {
 		renderer.drawRun(dst, piece, face, x+offset, y, op)
 	})
+}
+
+func (renderer *Renderer) drawTabbedTextRun(dst *ebiten.Image, face *text.GoTextFace, content string, x, y float64, op *layout.DisplayOp) {
+	parts := strings.Split(content, "\t")
+	tabCount := len(parts) - 1
+	if tabCount <= 0 {
+		renderer.drawRun(dst, content, face, x, y, op)
+
+		return
+	}
+
+	widths := make([]float64, len(parts))
+	totalSegW := 0.0
+	for i, seg := range parts {
+		if seg != "" {
+			w, _ := text.Measure(seg, face, 0)
+			widths[i] = w
+			totalSegW += w
+		}
+	}
+
+	tabW := (op.W*pxPerPt - totalSegW) / float64(tabCount)
+	if tabW < 0 {
+		tabW = 0
+	}
+
+	spacing, gap := op.LetterSpacing*pxPerPt, op.TextAutospaceGap()*pxPerPt
+	pen := 0.0
+	for i, seg := range parts {
+		if seg != "" {
+			if spacing == 0 && gap == 0 {
+				renderer.drawRun(dst, seg, face, x+pen, y, op)
+			} else {
+				walkRun(face, seg, spacing, gap, func(piece string, offset float64) {
+					renderer.drawRun(dst, piece, face, x+pen+offset, y, op)
+				})
+			}
+			pen += widths[i]
+		}
+		if i < tabCount {
+			pen += tabW
+		}
+	}
 }
 
 // walkRun calls draw with each piece of a spaced run and its pen offset from

@@ -50,7 +50,7 @@ func textHTML(name string) string {
 	case "ruby-align", "ruby-merge", "ruby-overhang", "ruby-position":
 		return tbox("padding:14px 4px;", `A <ruby id="{{ID}}-1" style="{{STYLE}}">base<rt>top</rt></ruby> word <ruby>two<rt>x</rt></ruby>.`)
 	case "font-variant-east-asian":
-		return tbox("", `<ruby>base<rt>top</rt></ruby> ruby text 123`)
+		return tbox("font-family:'Blinkless OT';font-size:22px;", "あいう")
 	case "text-combine-upright", "text-orientation":
 		return tbox("", `Year 2026 upright digits`)
 	case "initial-letter":
@@ -111,8 +111,14 @@ func textHTML(name string) string {
 		return tbox("text-decoration:underline;line-height:3.4;padding:4px 4px 24px;", `Underlined gypsy jumping quickly over lazy dogs.`)
 	case "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-skip", "text-emphasis-style":
 		return tbox("text-emphasis:filled #1f2937;padding:24px 4px 30px;line-height:3;", `Emphasis marks over words`)
-	case "font-synthesis", "font-synthesis-position", "font-synthesis-small-caps", "font-synthesis-style", "font-synthesis-weight":
+	case "font-synthesis":
+		return tbox("font-variant-caps:small-caps;font-size:16px;", `Synthesised small caps`)
+	case "font-synthesis-weight":
+		return tbox("font-family:'Blinkless OT';font-weight:700;font-size:20px;", `Bold text`)
+	case "font-synthesis-position", "font-synthesis-small-caps", "font-synthesis-style":
 		return tbox("font-weight:700;font-style:italic;", `Synthesised bold italic text`)
+	case "font-variant-numeric":
+		return tbox("font-family:'Blinkless OT';font-size:20px;", "1111<br>8888")
 	case "text-box", "text-box-edge", "text-box-trim":
 		return `<div id="{{ID}}" style="width:160px;font-size:20px;line-height:2;padding:8px 0;background:#cfe3f7;{{STYLE}}">Trimmed Hxg</div>`
 	case "font-size-adjust":
@@ -123,7 +129,13 @@ func textHTML(name string) string {
 	case "text-indent":
 		return tbox("", textBody+` `+textBody)
 	case "font-variant-emoji":
-		return tbox("", "Emoji ❤ ☺ ★ text")
+		return tbox("font-variant-emoji:emoji;", "Emoji ❤ ☺ ★ text")
+	case "font-feature-settings", "font-variant-ligatures":
+		return tbox("font-family:'DejaVu Sans';font-size:20px;", "fi fl ffi ffl")
+	case "font-language-override":
+		return tbox("font-family:'DejaVu Sans';font-size:24px;", "б бб")
+	case "font-variant-alternates":
+		return tbox("font-family:'DejaVu Sans';font-size:20px;", "I J a l")
 	case "text-autospace":
 		return tbox("", "日本語abc 123 漢字xyz")
 	default:
@@ -183,8 +195,10 @@ func svgHTML(name string) string {
 		return wrap("{{STYLE}}", `<path id="{{ID}}-1" d="M10 40 L110 40" fill="none" stroke="#1f2937" stroke-width="6"`+map[bool]string{true: ` stroke-dasharray="8 4"`}[name == "stroke-dashoffset"]+`/>`)
 	case "stroke-linecap":
 		return wrap("{{STYLE}}", `<path id="{{ID}}-1" d="M20 40 L100 40" fill="none" stroke="#1f2937" stroke-width="12"/>`)
-	case "stroke-linejoin", "stroke-miterlimit":
-		return wrap("{{STYLE}}", `<path id="{{ID}}-1" d="M15 70 L60 12 L105 70" fill="none" stroke="#1f2937" stroke-width="10" stroke-linejoin="miter"/>`)
+	case "stroke-linejoin":
+		return wrap("{{STYLE}}", `<path id="{{ID}}-1" d="M15 70 L60 12 L105 70" fill="none" stroke="#1f2937" stroke-width="10"/>`)
+	case "stroke-miterlimit":
+		return wrap("{{STYLE}}", `<path id="{{ID}}-1" d="M42 70 L60 10 L78 70" fill="none" stroke="#1f2937" stroke-width="10"/>`)
 	case "paint-order":
 		return wrap("{{STYLE}}", path(`fill="#c0392b" stroke="#1f2937" stroke-width="12"`))
 	case "path-length":
@@ -211,7 +225,7 @@ func svgHTML(name string) string {
 		return wrap("", `<defs><linearGradient id="{{ID}}-g" x1="0" y1="0" x2="1" y2="0" style="{{STYLE}}"><stop offset="0" stop-color="#c0392b"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>`+
 			`<rect id="{{ID}}-1" x="10" y="10" width="100" height="60" fill="url(#{{ID}}-g)" style="{{STYLE}}"/>`)
 	case "color-interpolation-filters":
-		return wrap("", filter(`<feGaussianBlur stdDeviation="6" style="{{STYLE}}"/>`, ``))
+		return wrap("", filter(`<feDiffuseLighting in="SourceGraphic" color-interpolation-filters="sRGB" style="{{STYLE}}"><feDistantLight azimuth="45" elevation="45"/></feDiffuseLighting>`, ``))
 	case "flood-color", "flood-opacity":
 		return wrap("", filter(`<feFlood style="{{STYLE}}"/>`, ``))
 	case "lighting-color":
@@ -314,18 +328,18 @@ var textVisible = map[string]bool{
 //nolint:gochecknoglobals // read-only property lookup table
 var textLookOf = map[string]string{
 	"text-transform":              "The demo text turns upper case, so the glyphs are wider and the box wraps onto more lines; the control keeps the mixed case.",
-	"text-overflow":               "The one-line text is wider than the 160px box and runs past its right edge in both pictures: the painter draws no ellipsis or custom string, so the demo matches the control. The picture matches the control; judge this row by the picture.",
+	"text-overflow":               "The one-line text truncates at the 160 px box edge and ends with the custom `x` string instead of running past the edge.",
 	"text-wrap":                   "The control wraps the text inside the 160px box; with `nowrap` the demo keeps one line, which is wider than the box and runs past its right edge.",
 	"text-wrap-mode":              "The control wraps the text inside the 160px box; with `nowrap` the demo keeps one line, which is wider than the box and runs past its right edge.",
 	"text-autospace":              "The painter replays text-autospace natively, opening extra spacing at ideograph and Latin boundaries.",
-	"font-variant-numeric":        "The bundled face has no alternate numeral forms, so the digits draw as in the control. The picture matches the control; judge this row by the picture.",
-	"font-variant-ligatures":      "The painter forwards the OpenType feature to the face, but the bundled face has no ligatures, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
-	"font-variant-east-asian":     "The text has no East Asian glyphs, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
-	"font-variant-alternates":     "The bundled face has no alternate glyph sets, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
-	"font-synthesis-weight":       "The bundled face already carries the weight, so nothing is synthesised and the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
-	"font-synthesis":              "The bundled face already carries the weight and style, so nothing is synthesised and the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
-	"font-feature-settings":       "The bundled face has no matching OpenType feature, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
-	"font-language-override":      "The bundled face has no language-specific forms, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
+	"font-variant-numeric":        "In Blinkless OT, `tabular-nums` (`tnum`) widens the narrow `1` digits so `1111` aligns cleanly with `8888`.",
+	"font-variant-ligatures":      "In DejaVu Sans, disabling ligatures breaks the joined `fi`, `fl`, `ffi`, `ffl` glyphs into separate characters.",
+	"font-variant-east-asian":     "In Blinkless OT, `ruby` activates the OpenType `ruby` table to substitute compact ruby glyph forms for `あいう`.",
+	"font-variant-alternates":     "In DejaVu Sans, `stylistic(1)` substitutes alternate glyph forms for `I`, `J`, `a`, and `l`.",
+	"font-synthesis-weight":       "In regular-only Blinkless OT, `font-weight: 700` draws synthetic bold in the control; `font-synthesis-weight: none` disables it so the strokes stay regular.",
+	"font-synthesis":              "In the control, lowercase letters are synthesised into small caps. With `font-synthesis: none`, synthesis is disabled and lowercase letters stay lowercase.",
+	"font-feature-settings":       "In DejaVu Sans, `\"liga\" 0` breaks the joined `fi`, `fl`, `ffi`, `ffl` ligatures into separate characters.",
+	"font-language-override":      "In DejaVu Sans, `\"SRB\"` activates the Serbian `locl` form of Cyrillic `б`.",
 	"fill":                        "The triangle fill changes from the default black to #c0392b red. Judge this row by the picture.",
 	"fill-opacity":                "The red triangle fill becomes half transparent, so the background shows through; the dark outline stays solid. Judge this row by the picture.",
 	"stroke":                      "The control triangle has no outline; the demo draws a 6px red outline around it. Judge this row by the picture.",
@@ -341,30 +355,30 @@ var textLookOf = map[string]string{
 	"path-length":                 "The control line is cut into short 1px dashes. With path-length 2 the engine scales the dash length to the path, so the dashes run together and the demo line is drawn as one unbroken solid line. Judge this row by the picture.",
 	"flood-color":                 "The flood fill of the demo is red; the control floods black. Judge this row by the picture.",
 	"flood-opacity":               "The flood fill of the demo is 40% opaque and looks grey; the control floods solid black. Judge this row by the picture.",
-	"stop-opacity":                "The window painter draws a gradient as one flat fill of its last stop, not as a blend: the control is solid red and the demo is the same red at 40% opacity, so it looks pale. The thin blue sliver at the left edge is the first stop and is not a fade. Judge this row by the picture.",
-	"fill-rule":                   "The star is a self-crossing path. The painter fills it with nonzero in both pictures, so the centre pentagon stays filled and the demo looks the same as the control. Judge this row by the picture.",
-	"marker":                      "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
-	"marker-start":                "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
-	"marker-mid":                  "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
-	"marker-end":                  "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
-	"paint-order":                 "The painter draws fill then stroke in both pictures, so the demo matches the control. Judge this row by the picture.",
-	"stroke-linejoin":             "The painter keeps mitred joins for both, so the peak stays pointed and the demo matches the control. Judge this row by the picture.",
-	"stroke-miterlimit":           "The peak is drawn the same in both pictures, so the demo matches the control. Judge this row by the picture.",
-	"stop-color":                  "The window painter draws a gradient as one flat fill of its last stop and does not apply the stop colour from a style declaration, so both boxes show the same flat dark fill with a thin blue sliver at the left edge (the first stop); the demo does not turn red. Judge this row by the picture.",
-	"color-interpolation":         "The control and the demo draw the same picture: the painter does not apply this declaration to the SVG shape, so judge the row by the picture and expect no difference.",
-	"color-interpolation-filters": "The control and the demo draw the same picture: the painter does not apply this declaration to the SVG shape, so judge the row by the picture and expect no difference.",
-	"cx":                          "The circle stays at the same centre in both pictures, so the demo matches the control. Judge this row by the picture.",
-	"cy":                          "The circle stays at the same centre in both pictures, so the demo matches the control. Judge this row by the picture.",
-	"r":                           "The circle keeps the same radius in both pictures, so the demo matches the control. Judge this row by the picture.",
-	"x":                           "The rectangle stays at the same position in both pictures, so the demo matches the control. Judge this row by the picture.",
-	"y":                           "The rectangle stays at the same position in both pictures, so the demo matches the control. Judge this row by the picture.",
+	"stop-opacity":                "The blue-to-red gradient fades to 40% opacity at its red right stop instead of staying solid red.",
+	"fill-rule":                   "The centre pentagon of the five-point star becomes hollow under evenodd instead of staying filled.",
+	"marker":                      "The control draws red dots at the path start, middle and end. With `none` all three red dots disappear.",
+	"marker-start":                "The control draws red dots at the path start, middle and end. With `none` the start dot disappears while the middle and end dots remain.",
+	"marker-mid":                  "The control draws red dots at the path start, middle and end. With `none` the middle dot disappears while the start and end dots remain.",
+	"marker-end":                  "The control draws red dots at the path start, middle and end. With `none` the end dot disappears while the start and middle dots remain.",
+	"paint-order":                 "The stroke paints beneath the red fill instead of over it, so the red triangle appears wider.",
+	"stroke-linejoin":             "The peak of the V-shape rounds off instead of staying a pointed miter.",
+	"stroke-miterlimit":           "The sharp peak exceeds miter limit 2 and clips to a flat bevel instead of extending to a point.",
+	"stop-color":                  "The right stop of the horizontal gradient changes from dark slate to red.",
+	"color-interpolation":         "The red-to-blue gradient interpolates in linearRGB instead of sRGB, brightening the mid-blend.",
+	"color-interpolation-filters": "The diffuse lighting filter interpolates in linearRGB instead of sRGB, shifting the lit shading.",
+	"cx":                          "The blue circle shifts left so its centre moves from x=60 to x=12.",
+	"cy":                          "The blue circle shifts up so its centre moves from y=40 to y=12.",
+	"r":                           "The blue circle shrinks from radius 25 to radius 12.",
+	"x":                           "The blue rectangle shifts right from x=5 to x=12.",
+	"y":                           "The blue rectangle shifts down from y=5 to y=12.",
 	"font-size-adjust":            "The control is 5px text; aspect 2 scales the glyphs to about four times that, so the demo word is far larger than the control word inside its fixed-height box.",
 	"initial-letter":              "The demo word is drawn about three times larger than the control's word; the engine sizes the whole first word, not just a letter, and does not wrap later text around it, so the box holds this one word.",
-	"font-width":                  "The engine records a different font width in the demo's paint operations (the readout differs), but the bundled face has no condensed cut, so the text looks the same as the control.",
+	"font-width":                  "The glyphs condense horizontally under ultra-condensed so the lines become narrower.",
 	"font-style":                  "The demo text turns italic, so the glyph shapes and widths change; compare the two boxes.",
 	"text-align-all":              "In this engine `end` right-aligns every line except the last: the first two lines of the demo sit flush to the right edge and the last line stays at the left edge. The standard says the last line moves too, so this is an engine deviation. `text-align: right` moves all lines.",
 	"text-align-last":             "The control is right-aligned. With `start` the first line stays on the right and the last line moves to the left edge.",
-	"tab-size":                    "The demo text holds real tab characters under `white-space: pre`. The engine records a different paint operation list, but the painter draws each tab as the same narrow missing-glyph box as in the control, so the columns do not move and the picture matches the control. The property is exported to the host.",
+	"tab-size":                    "The demo text holds real tab characters under `white-space: pre`. Setting `tab-size: 12px` narrows the tab stops from the default 8 spaces to 12 px, pulling columns `b`, `c`, `d`, and `e` sharply left.",
 	"text-anchor":                 "The declaration is set on the SVG text at x=60; with middle the word shifts left so it is horizontally centred on x=60 instead of starting there.",
 	"word-spacing":                "The control has 6px of word spacing and the demo inherits the parent's 0, so the word gaps narrow and the text re-wraps.",
 	"letter-spacing":              "The control has 2px of letter spacing and the demo inherits the parent's 0, so the glyphs sit closer and the text re-wraps.",
@@ -372,7 +386,7 @@ var textLookOf = map[string]string{
 	"text-shadow":                 "The demo text gains a hard 2px offset dark shadow (zero blur) behind the bold 28px word. The box keeps the same size as the control, because a shadow does not change layout; the readout sizes match.",
 	"text-underline-offset":       "The underline of the demo drops 12px below the text instead of the default offset, so each line's rule sits lower, closer to the next line; the lines are spaced wide and the box has bottom padding so the last rule stays inside.",
 	"vertical-align":              "The word `raised` in the demo is lifted 12px above the baseline. The engine moves the whole line with the raised word, so the other words rise too. The markup has no literal space before the span, because the engine already draws one gap there; the box has top padding so the raised line stays inside.",
-	"text-emphasis-style":         "The control already has filled marks and the engine draws the string mark the same way, so the picture stays the same as the control.",
+	"text-emphasis-style":         "The emphasis marks above each character change from filled dots to the custom string `x`.",
 	"text-decoration-line":        "The control is already underlined and the engine draws `spelling-error` like the plain underline, so the picture stays the same as the control.",
 	"text-box":                    "The demo box trims to the cap height and alphabetic baseline of its text, so the blue box is shorter than the control's; the glyphs touch or cross its edges, and the 8px padding keeps the box from collapsing.",
 	"text-box-trim":               "The demo box loses the half-leading at its start edge, so it is shorter than the control's box.",

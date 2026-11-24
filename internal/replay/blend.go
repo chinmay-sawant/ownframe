@@ -26,12 +26,14 @@ type groupNode struct {
 	backdropMark   *layout.DisplayOp
 	backdrop       backdropFilter
 	backdropRadius float64
+	filterBlurPx   float64
 	maskTex        *ebiten.Image
 	maskMu         sync.Mutex
 	known          bool
 	hasMask        bool
 	hasBackdropBox bool
 	hasBackdrop    bool
+	hasFilterBlur  bool
 	unbounded      bool
 }
 
@@ -202,6 +204,9 @@ func attachNode(root *groupNode, nodes map[*layout.DisplayGroup]*groupNode, g *l
 	}
 
 	node := &groupNode{group: g}
+	if g.Filter != "" {
+		node.filterBlurPx, node.hasFilterBlur = parseFilterBlur(g.Filter)
+	}
 	nodes[g] = node
 
 	parent := attachNode(root, nodes, g.Parent)
@@ -403,6 +408,9 @@ func nodeBox(n *groupNode, ppt float64) (image.Rectangle, bool) {
 
 			n.box = n.box.Union(box)
 		}
+		if n.hasFilterBlur && !n.box.Empty() && !n.unbounded {
+			n.box = n.box.Inset(-filterBlurPad(n.filterBlurPx))
+		}
 	}
 
 	return n.box, !n.unbounded
@@ -429,6 +437,9 @@ func (renderer *Renderer) paintGroup(dst *ebiten.Image, d *layout.Display, n *gr
 	}
 
 	renderer.paintItems(layer, d, n, inner, true)
+	if n.hasFilterBlur {
+		renderer.applyGroupFilterBlur(layer, n.filterBlurPx)
+	}
 	if n.group.Mask != nil {
 		mask := groupMaskTexture(n)
 		if mask == nil {
@@ -513,10 +524,42 @@ func (renderer *Renderer) paintDisplay(dst *ebiten.Image, d *layout.Display, pic
 	renderer.paintNode(dst, d, renderer.planFor(d), groupPick, false)
 }
 
+// needsLayer reports whether this group must buffer its members into an
+// offscreen layer before compositing. An isolation: isolate group only needs a
+// layer when a descendant blends with a non-normal mode; otherwise compositing
+// normal ops onto a transparent layer is identical to painting directly.
+func (n *groupNode) needsLayer() bool {
+	if n == nil || n.group == nil {
+		return false
+	}
+	if !normalMode(n.group.Mode) || n.group.Mask != nil || n.group.BackdropFilter != "" || n.hasFilterBlur {
+		return true
+	}
+
+	return n.group.Isolate && n.hasBlendedDescendant()
+}
+
+func (n *groupNode) hasBlendedDescendant() bool {
+	for i := range n.items {
+		child := n.items[i].child
+		if child == nil {
+			continue
+		}
+		if child.group != nil && !normalMode(child.group.Mode) {
+			return true
+		}
+		if child.hasBlendedDescendant() {
+			return true
+		}
+	}
+
+	return false
+}
+
 // paintNode paints one node: a non-normal group buffers its members into a
 // layer and composites once; every other node paints item by item.
 func (renderer *Renderer) paintNode(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker, local bool) {
-	if n.group != nil && (!normalMode(n.group.Mode) || n.group.Mask != nil || n.group.BackdropFilter != "") {
+	if n.needsLayer() {
 		renderer.paintGroup(dst, d, n, pick)
 
 		return
@@ -560,6 +603,9 @@ func groupWindow(dst *ebiten.Image, d *layout.Display, n *groupNode,
 	box, bounded := nodeBox(n, d.PointsPerPixel)
 	if n.group != nil && n.group.Mask != nil && n.hasMask {
 		box, bounded = n.maskBox, true
+		if n.hasFilterBlur && !box.Empty() {
+			box = box.Inset(-filterBlurPad(n.filterBlurPx))
+		}
 	}
 	if bounded && box.Empty() && n.hasBackdropBox {
 		box, bounded = n.backdropBox, true

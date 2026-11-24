@@ -185,7 +185,7 @@ func chunkBoxContains(box, inner image.Rectangle) bool {
 // transparent image and compositing that image can round a channel one step
 // away from a direct draw, so parity would not be byte-exact.
 func chunkBoxFor(d *layout.Display, op *layout.DisplayOp, p *chunkPlan) (int, image.Rectangle, bool) {
-	if op.Fixed || op.ZIndexSet || op.Opacity() < 1 {
+	if op.Fixed || op.ZIndexSet || op.Opacity() < 1 || !normalMode(op.BlendModeName()) {
 		return -1, image.Rectangle{}, false
 	}
 

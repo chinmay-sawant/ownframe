@@ -10,9 +10,13 @@ import (
 func maskSize(value string) (string, string, error) {
 	parts := strings.Fields(strings.TrimSpace(value))
 	if len(parts) == 0 || len(parts) > 2 {
-		return "", "", fmt.Errorf("expected auto or one or two lengths")
+		return "", "", fmt.Errorf("expected auto, cover, contain, or one or two lengths")
 	}
 	if len(parts) == 1 {
+		low := strings.ToLower(parts[0])
+		if low == "cover" || low == "contain" {
+			return low, "", nil
+		}
 		parts = append(parts, "auto")
 	}
 	for _, part := range parts {
@@ -26,21 +30,113 @@ func maskSize(value string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func maskPosition(value string) (string, string, error) {
+type maskAxisPos struct {
+	edge    string // "left", "right", "top", "bottom", "center", or ""
+	value   float64
+	percent bool
+	hasOff  bool
+}
+
+func maskPosition(value string) (maskAxisPos, maskAxisPos, error) {
 	parts := strings.Fields(strings.TrimSpace(value))
-	if len(parts) == 0 || len(parts) > 2 {
-		return "", "", fmt.Errorf("expected one or two positions")
+	switch len(parts) {
+	case 1:
+		return parseMaskPosPair(parts[0], "50%")
+	case 2:
+		return parseMaskPosPair(parts[0], parts[1])
+	case 3, 4:
+		return parseMaskPosMulti(parts)
+	default:
+		return maskAxisPos{}, maskAxisPos{}, fmt.Errorf("expected one to four position tokens")
 	}
-	if len(parts) == 1 {
-		parts = append(parts, "50%")
+}
+
+func parseMaskPosPair(xTok, yTok string) (maskAxisPos, maskAxisPos, error) {
+	xv, xp, err := cssPosition(xTok)
+	if err != nil {
+		return maskAxisPos{}, maskAxisPos{}, err
 	}
-	if _, _, err := cssPosition(parts[0]); err != nil {
-		return "", "", err
+	yv, yp, err := cssPosition(yTok)
+	if err != nil {
+		return maskAxisPos{}, maskAxisPos{}, err
 	}
-	if _, _, err := cssPosition(parts[1]); err != nil {
-		return "", "", err
+	return maskAxisPos{value: xv, percent: xp}, maskAxisPos{value: yv, percent: yp}, nil
+}
+
+func parseMaskPosMulti(parts []string) (maskAxisPos, maskAxisPos, error) {
+	xAxis := maskAxisPos{value: centerPosition, percent: true}
+	yAxis := maskAxisPos{value: centerPosition, percent: true}
+	xSet, ySet := false, false
+
+	for i := 0; i < len(parts); {
+		tok := strings.ToLower(parts[i])
+		switch tok {
+		case "left", "right":
+			if xSet {
+				return maskAxisPos{}, maskAxisPos{}, fmt.Errorf("duplicate horizontal position %q", tok)
+			}
+			xSet = true
+			xAxis = maskAxisPos{edge: tok}
+			if tok == "right" {
+				xAxis.value, xAxis.percent = 1, true
+			} else {
+				xAxis.value, xAxis.percent = 0, true
+			}
+			i++
+			if i < len(parts) && !isPosEdgeKeyword(parts[i]) {
+				v, pct, err := cssLength(parts[i])
+				if err != nil {
+					return maskAxisPos{}, maskAxisPos{}, err
+				}
+				xAxis.value, xAxis.percent, xAxis.hasOff = v, pct, true
+				i++
+			}
+		case "top", "bottom":
+			if ySet {
+				return maskAxisPos{}, maskAxisPos{}, fmt.Errorf("duplicate vertical position %q", tok)
+			}
+			ySet = true
+			yAxis = maskAxisPos{edge: tok}
+			if tok == "bottom" {
+				yAxis.value, yAxis.percent = 1, true
+			} else {
+				yAxis.value, yAxis.percent = 0, true
+			}
+			i++
+			if i < len(parts) && !isPosEdgeKeyword(parts[i]) {
+				v, pct, err := cssLength(parts[i])
+				if err != nil {
+					return maskAxisPos{}, maskAxisPos{}, err
+				}
+				yAxis.value, yAxis.percent, yAxis.hasOff = v, pct, true
+				i++
+			}
+		case "center":
+			if !xSet {
+				xSet = true
+				xAxis = maskAxisPos{edge: "center", value: centerPosition, percent: true}
+			} else if !ySet {
+				ySet = true
+				yAxis = maskAxisPos{edge: "center", value: centerPosition, percent: true}
+			} else {
+				return maskAxisPos{}, maskAxisPos{}, fmt.Errorf("unexpected center token")
+			}
+			i++
+		default:
+			return maskAxisPos{}, maskAxisPos{}, fmt.Errorf("unexpected position token %q", parts[i])
+		}
 	}
-	return parts[0], parts[1], nil
+
+	return xAxis, yAxis, nil
+}
+
+func isPosEdgeKeyword(tok string) bool {
+	switch strings.ToLower(tok) {
+	case "left", "right", "top", "bottom", "center":
+		return true
+	default:
+		return false
+	}
 }
 
 func cssLength(value string) (float64, bool, error) {

@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"golang.org/x/text/language"
 )
 
 // fontTagLen is the byte length of an OpenType feature tag.
@@ -56,6 +58,48 @@ func ParseFontFeatures(list string) []FontFeature {
 	}
 
 	return out
+}
+
+// otLanguageTags maps OpenType language system tags (from CSS
+// font-language-override) to BCP 47 language tags expected by Ebiten's
+// text.GoTextFace.Language and go-text/typesetting. Several raw OpenType tags
+// collide with unrelated BCP 47 codes when passed directly to language.Make
+// (for example "SRB" is Sora rather than Serbian, "TRK" is Turkic collection,
+// and "ROM" is Romany rather than Romanian).
+var otLanguageTags = map[string]string{
+	"TRK": "tr", // Turkish
+	"SRB": "sr", // Serbian
+	"MKD": "mk", // Macedonian
+	"AZE": "az", // Azerbaijani
+	"ROM": "ro", // Romanian
+	"MOL": "mo", // Moldavian
+	"HUN": "hu", // Hungarian
+	"POL": "pl", // Polish (legacy)
+	"PLK": "pl", // Polish
+	"CES": "cs", // Czech (legacy)
+	"CSY": "cs", // Czech
+	"SLV": "sl", // Slovenian
+	"SKY": "sk", // Slovak
+	"CAT": "ca", // Catalan
+	"ESP": "es", // Spanish
+	"GAL": "gl", // Galician
+	"URD": "ur", // Urdu
+	"SND": "sd", // Sindhi
+	"KUR": "ku", // Kurdish
+}
+
+// ShapingLanguage converts a CSS font-language-override tag (an OpenType
+// language system tag such as "SRB" or "TRK") into the BCP 47 language.Tag
+// expected by text.GoTextFace. Empty and "normal" return language.Und.
+func ShapingLanguage(tag string) language.Tag {
+	tag = strings.TrimSpace(tag)
+	if tag == "" || strings.EqualFold(tag, "normal") {
+		return language.Und
+	}
+	if bcp47, ok := otLanguageTags[strings.ToUpper(tag)]; ok {
+		return language.Make(bcp47)
+	}
+	return language.Make(tag)
 }
 
 // IdeographAlphaBoundary reports an ideograph next to a Latin letter in

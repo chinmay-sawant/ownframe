@@ -109,3 +109,97 @@ func TestGroupShaderCompiles(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestParseFilterBlur(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		value   string
+		wantPx  float64
+		wantHas bool
+	}{
+		{"blur(2px)", 2, true},
+		{"grayscale(1) blur(4px)", 4, true},
+		{"blur(3px) blur(4px)", 5, true},
+		{"blur(3pt)", 4, true},
+		{"blur(0px)", 0, false},
+		{"blur(0)", 0, false},
+		{"none", 0, false},
+		{"grayscale(1)", 0, false},
+		{"blur(-2px)", 0, false},
+	}
+
+	for _, tc := range tests {
+		got, ok := parseFilterBlur(tc.value)
+		if ok != tc.wantHas || got != tc.wantPx {
+			t.Fatalf("parseFilterBlur(%q) = (%v, %v), want (%v, %v)", tc.value, got, ok, tc.wantPx, tc.wantHas)
+		}
+	}
+}
+
+func TestPlanFilterBlurPadsNodeBoxAndKeepsGroupUnit(t *testing.T) {
+	t.Parallel()
+
+	group := &layout.DisplayGroup{ID: 1, Filter: "blur(2px)", Isolate: true}
+	op := layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 20, Y: 20, W: 10, H: 10}
+	op.SetBlendGroup(group)
+
+	d := &layout.Display{
+		Width: 100, Height: 100, PointsPerPixel: 1, PixelPerPoint: 1,
+		Ops: []layout.DisplayOp{op}, Order: []int{0},
+	}
+	root := buildPlan(d)
+	if len(root.items) != 1 || root.items[0].child == nil {
+		t.Fatalf("expected 1 child group node, got %+v", root.items)
+	}
+	node := root.items[0].child
+	if !node.hasFilterBlur || node.filterBlurPx != 2 {
+		t.Fatalf("node blur = (%v, %v), want (true, 2)", node.hasFilterBlur, node.filterBlurPx)
+	}
+
+	pad := filterBlurPad(2)
+	box, ok := nodeBox(node, 1)
+	wantBox := image.Rect(20-1-pad, 20-1-pad, 30+1+pad, 30+1+pad)
+	if !ok || box != wantBox {
+		t.Fatalf("blurred nodeBox = (%v, %v), want (%v, true)", box, ok, wantBox)
+	}
+
+	chunks := buildChunks(d, root)
+	if len(chunks.items) != 1 || chunks.items[0].group != node {
+		t.Fatalf("expected blurred group to stay a single chunk unit, got %+v", chunks.items)
+	}
+
+	// A rect inside the blur bleed outside the unblurred op must still touch.
+	bleedRect := image.Rect(20-pad, 20, 20-1, 30)
+	if !opTouches(&d.Ops[0], 1, bleedRect) {
+		t.Fatalf("opTouches(%v) = false, want true for blur bleed", bleedRect)
+	}
+}
+
+func TestIsolationGroupNeedsLayerOnlyWithBlendedDescendant(t *testing.T) {
+	t.Parallel()
+
+	iso := &layout.DisplayGroup{ID: 1, Isolate: true}
+	child := &layout.DisplayGroup{ID: 2, Mode: "multiply", Isolate: true, Parent: iso}
+
+	op := layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 10, Y: 10, W: 20, H: 20}
+	op.SetBlendGroup(child)
+
+	d := &layout.Display{
+		Width: 100, Height: 100, PointsPerPixel: 1, PixelPerPoint: 1,
+		Ops: []layout.DisplayOp{op}, Order: []int{0},
+	}
+	root := buildPlan(d)
+	if len(root.items) != 1 || root.items[0].child == nil {
+		t.Fatalf("expected 1 isolation group node, got %+v", root.items)
+	}
+	isoNode := root.items[0].child
+	if !isoNode.needsLayer() {
+		t.Fatalf("isolation:isolate wrapping mix-blend-mode:multiply child must buffer a layer")
+	}
+
+	chunks := buildChunks(d, root)
+	if len(chunks.items) != 1 || chunks.items[0].group != isoNode {
+		t.Fatalf("expected isolation group with blended child to stay a single chunk unit, got %+v", chunks.items)
+	}
+}

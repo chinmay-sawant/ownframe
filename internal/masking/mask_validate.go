@@ -20,7 +20,8 @@ func Validate(mask *layout.MaskDescriptor) error {
 		if !maskToken(layer.Mode, "", "alpha", "luminance", "match-source") ||
 			!maskToken(layer.Composite, "", "add", "subtract", "intersect", "exclude") ||
 			!maskToken(layer.Repeat, "", "no-repeat", "repeat", "repeat-x", "repeat-y") ||
-			!maskToken(layer.Origin, "", "border-box") || !maskToken(layer.Clip, "", "border-box") {
+			!maskToken(layer.Origin, "", "border-box", "padding-box", "content-box") ||
+			!maskToken(layer.Clip, "", "border-box", "padding-box", "content-box") {
 			return fmt.Errorf("mask: unsupported layer %d values", i)
 		}
 		if _, _, err := maskSize(layer.Size); err != nil {

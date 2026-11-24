@@ -55,7 +55,7 @@ func paintTextStroke(dst *image.NRGBA, op *layout.DisplayOp, face font.Face, con
 					Y: fixed.Int26_6(math.Round((y*pxPerPt + ring*math.Sin(angle)) * fixedPointScale)),
 				},
 			}
-			drawString(&draw, content, op.LetterSpacing*pxPerPt, op.TextAutospaceGap()*pxPerPt)
+			drawString(&draw, content, op.LetterSpacing*pxPerPt, op.TextAutospaceGap()*pxPerPt, op.W*pxPerPt)
 		}
 	}
 }

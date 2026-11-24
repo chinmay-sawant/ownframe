@@ -6,6 +6,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/masking"
 	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/hajimehoshi/ebiten/v2"
 	"image"
 	"image/color"
 	"image/png"
@@ -314,5 +315,62 @@ func TestImageCacheKeyForRingHitAllocsZero(t *testing.T) {
 	c.keyFor(&op)
 	if allocs := testing.AllocsPerRun(100, func() { c.keyFor(&op) }); allocs != 0 {
 		t.Fatalf("keyFor ring hit allocs/op = %v, want 0", allocs)
+	}
+}
+
+func TestImageGeomBounds(t *testing.T) {
+	t.Parallel()
+
+	// 1x60 linear gradient stretched to 140x60 at (10, 20).
+	var stretch ebiten.GeoM
+	stretch.Scale(140, 1)
+	stretch.Translate(10, 20)
+	if got, want := imageGeomBounds(stretch, 1, 60), image.Rect(10, 20, 150, 80); got != want {
+		t.Fatalf("stretch bounds = %v, want %v", got, want)
+	}
+
+	// 90-degree rotation around origin moves (0..10, 0..20) to (-20..0, 0..10).
+	var rot ebiten.GeoM
+	rot.Rotate(math.Pi / 2)
+	rot.Translate(30, 5)
+	if got, want := imageGeomBounds(rot, 10, 20), image.Rect(10, 5, 30, 15); got != want {
+		t.Fatalf("rotated bounds = %v, want %v", got, want)
+	}
+
+	if got := imageGeomBounds(stretch, 0, 10); !got.Empty() {
+		t.Fatalf("empty source bounds = %v, want empty", got)
+	}
+}
+
+func TestBackgroundBlendModeNotChunked(t *testing.T) {
+	t.Parallel()
+
+	src := `<body style="margin:0"><div style="width:140px;height:60px;` +
+		`background-color:#f1c40f;background-image:linear-gradient(#c0392b,#2980b9);` +
+		`background-blend-mode:multiply"></div></body>`
+	d, err := render.DisplayList(context.Background(), src, 200, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !render.Replayable(d) {
+		t.Fatal("background-blend-mode:multiply display should be replayable")
+	}
+
+	p := buildChunks(d, buildPlan(d))
+	foundDirect := false
+	for _, it := range p.items {
+		if it.run != nil {
+			for _, op := range it.run.ops {
+				if op.BlendModeName() == "multiply" {
+					t.Fatal("blended background image was folded into a chunk run")
+				}
+			}
+		}
+		if it.op != nil && it.op.Kind == layout.DisplayOpImage && it.op.BlendModeName() == "multiply" {
+			foundDirect = true
+		}
+	}
+	if !foundDirect {
+		t.Fatal("expected direct DisplayOpImage with blend mode multiply in chunk plan")
 	}
 }

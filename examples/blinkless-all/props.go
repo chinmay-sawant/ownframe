@@ -21,8 +21,8 @@ type genProp struct {
 }
 
 // genPageRows caps the rows on one generated tab, so a tab's picture stays
-// under the bitmap limit.
-const genPageRows = 20
+// under the bitmap limit even when a tab holds nested blend/isolation groups.
+const genPageRows = 16
 
 // genGroups lists the generated tabs in order. Their ids start with "all-".
 //
@@ -493,7 +493,4 @@ func (g *genSet) demo(r genProp) string {
 // leaves the declaration out and the readout still comes from the layout.
 //
 //nolint:gochecknoglobals // read-only property lookup table
-var noPaint = map[string]bool{
-	"mask-clip": true, "mask-origin": true, "mask-position": true, "mask-size": true,
-	"-webkit-mask-clip": true, "-webkit-mask-origin": true, "-webkit-mask-position": true, "-webkit-mask-size": true,
-}
+var noPaint = map[string]bool{}
