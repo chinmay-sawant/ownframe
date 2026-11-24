@@ -37,6 +37,10 @@
 .p-table thead .p-col-hl { color: var(--accent); }
 .p-table td.p-col-hl { color: var(--text); }
 .p-table td.p-col-hl strong { font-weight: 600; }
+.p-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.p-bench-group { display: grid; gap: 14px; min-width: 0; }
+.p-bench-title { font-size: 1.25rem; letter-spacing: -0.02em; color: var(--text); }
+.p-bench-desc { color: var(--muted); font-size: 14px; max-width: 72ch; }
 .p-links { color: var(--muted); font-size: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* team */
