@@ -81,6 +81,65 @@ func TestFontFeaturesReachTheFace(t *testing.T) {
 	}
 }
 
+func glyphIDs(content string, face *text.GoTextFace) []uint32 {
+	glyphs := text.AppendLazyGlyphs(nil, content, face, nil)
+	ids := make([]uint32, len(glyphs))
+	for i, g := range glyphs {
+		ids[i] = g.GID
+	}
+	return ids
+}
+
+// TestFontLanguageOverrideReachesTheFace verifies that OpenType language tags
+// from CSS font-language-override (such as "SRB") are mapped to BCP 47 before
+// reaching Ebiten's GoTextFace so HarfBuzz applies the font's locl table.
+func TestFontLanguageOverrideReachesTheFace(t *testing.T) {
+	t.Parallel()
+	var r Renderer
+	plain := shapedOp(t, "font-family:'DejaVu Sans'", "б")
+	srb := shapedOp(t, "font-family:'DejaVu Sans';font-language-override:'SRB'", "б")
+	if srb.TextLanguage() != "SRB" {
+		t.Fatalf("TextLanguage = %q, want SRB", srb.TextLanguage())
+	}
+	pf, sf := r.textFace(plain), r.textFace(srb)
+	if sf.Language.String() != "sr" {
+		t.Fatalf("GoTextFace.Language = %q, want sr", sf.Language.String())
+	}
+	pg, sg := glyphIDs(plain.Text, pf), glyphIDs(srb.Text, sf)
+	if reflect.DeepEqual(pg, sg) {
+		t.Fatalf("SRB locl did not change glyph IDs for DejaVu Sans 'б': plain=%v srb=%v", pg, sg)
+	}
+}
+
+// TestFontLigaturesAndAlternatesReachTheFace verifies that DejaVu Sans's GSUB
+// liga and salt tables visibly change shaped glyph output through replay.
+func TestFontLigaturesAndAlternatesReachTheFace(t *testing.T) {
+	t.Parallel()
+	var r Renderer
+
+	ligPlain := shapedOp(t, "font-family:'DejaVu Sans'", "fi fl")
+	ligOffFeat := shapedOp(t, "font-family:'DejaVu Sans';font-feature-settings:'liga' 0", "fi fl")
+	ligOffVar := shapedOp(t, "font-family:'DejaVu Sans';font-variant-ligatures:none", "fi fl")
+
+	pg := glyphIDs(ligPlain.Text, r.textFace(ligPlain))
+	fg := glyphIDs(ligOffFeat.Text, r.textFace(ligOffFeat))
+	vg := glyphIDs(ligOffVar.Text, r.textFace(ligOffVar))
+	if len(pg) >= len(fg) {
+		t.Fatalf("font-feature-settings:\"liga\" 0 did not break ligatures: plain=%v off=%v", pg, fg)
+	}
+	if len(pg) >= len(vg) {
+		t.Fatalf("font-variant-ligatures:none did not break ligatures: plain=%v off=%v", pg, vg)
+	}
+
+	altPlain := shapedOp(t, "font-family:'DejaVu Sans'", "I a l")
+	altSalt := shapedOp(t, "font-family:'DejaVu Sans';font-variant-alternates:stylistic(1)", "I a l")
+	apg := glyphIDs(altPlain.Text, r.textFace(altPlain))
+	asg := glyphIDs(altSalt.Text, r.textFace(altSalt))
+	if reflect.DeepEqual(apg, asg) {
+		t.Fatalf("font-variant-alternates:stylistic(1) did not change glyph IDs: plain=%v salt=%v", apg, asg)
+	}
+}
+
 // TestRasterKeyCarriesShapingOptions keeps one baked run from being reused for
 // a run that differs only in features or autospace gap.
 func TestRasterKeyCarriesShapingOptions(t *testing.T) {
@@ -138,5 +197,38 @@ func TestWalkRun(t *testing.T) {
 	wa, _ := text.Measure("a", face, 0)
 	if want := wg + 1 + gap + wa + 1; math.Abs(spaced[2].off-want) > 1e-9 {
 		t.Fatalf("second glyph at %.2f, want %.2f (no gap inside Latin text)", spaced[2].off, want)
+	}
+}
+
+func TestBlinklessOTFontSynthesisNumericAndRuby(t *testing.T) {
+	t.Parallel()
+	var r Renderer
+
+	// 1. font-synthesis-weight: none disables fake bold on regular-only Blinkless OT.
+	boldAuto := shapedOp(t, "font-family:'Blinkless OT';font-weight:700", "Bold text")
+	boldNone := shapedOp(t, "font-family:'Blinkless OT';font-weight:700;font-synthesis-weight:none", "Bold text")
+	if !layout.DisplayFakeBold(boldAuto) {
+		t.Fatal("expected FakeBold=true on regular-only Blinkless OT with font-weight:700")
+	}
+	if layout.DisplayFakeBold(boldNone) {
+		t.Fatal("expected FakeBold=false with font-synthesis-weight:none")
+	}
+
+	// 2. font-variant-numeric: tabular-nums widens narrow '1' to tabular width.
+	numProp := shapedOp(t, "font-family:'Blinkless OT'", "1111")
+	numTab := shapedOp(t, "font-family:'Blinkless OT';font-variant-numeric:tabular-nums", "1111")
+	wProp, _ := text.Measure(numProp.Text, r.textFace(numProp), 0)
+	wTab, _ := text.Measure(numTab.Text, r.textFace(numTab), 0)
+	if wTab <= wProp*1.5 {
+		t.Fatalf("tabular-nums width %.2f should be much wider than proportional %.2f", wTab, wProp)
+	}
+
+	// 3. font-variant-east-asian: ruby substitutes compact .ruby glyphs.
+	eaPlain := shapedOp(t, "font-family:'Blinkless OT'", "あいう")
+	eaRuby := shapedOp(t, "font-family:'Blinkless OT';font-variant-east-asian:ruby", "あいう")
+	gp := glyphIDs(eaPlain.Text, r.textFace(eaPlain))
+	gr := glyphIDs(eaRuby.Text, r.textFace(eaRuby))
+	if reflect.DeepEqual(gp, gr) {
+		t.Fatalf("ruby feature did not change glyph IDs: plain=%v ruby=%v", gp, gr)
 	}
 }

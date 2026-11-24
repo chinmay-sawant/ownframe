@@ -61,6 +61,9 @@ func replayableOp(op *layout.DisplayOp, ppp float64) bool {
 		// Top, right, bottom, and left are the only defined mask bits.
 		return op.StrokeMask&^0x0F == 0
 	case layout.DisplayOpImage:
+		if mode := op.BlendModeName(); !masking.BlendNormal(mode) && !masking.BlendSeparable(mode) {
+			return false
+		}
 		data, _, _ := op.ImageBytes()
 
 		return data != nil

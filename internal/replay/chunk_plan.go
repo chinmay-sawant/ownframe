@@ -388,7 +388,7 @@ func (g *chunkGrid) find(content image.Rectangle, boxes []chunkBox, core image.R
 // current run when it lands in the same element box and the caps still hold;
 // anything else flushes the run first.
 func flattenNode(d *layout.Display, n *groupNode, p *chunkPlan, next *int) {
-	if n.group != nil && (!normalMode(n.group.Mode) || n.group.Mask != nil || n.group.BackdropFilter != "") {
+	if n.needsLayer() {
 		p.items = append(p.items, chunkPaint{group: n})
 
 		return
@@ -813,6 +813,7 @@ func sigOp(h uint64, op *layout.DisplayOp) uint64 {
 	h = mixStr(h, op.TextTransformValue())
 	h = mixStr(h, op.TextLanguage())
 	h = mixStr(h, op.FontFeatures())
+	h = mixStr(h, op.BlendModeName())
 	h = mixF(h, op.TextAutospaceGap())
 	h = mix64(h, ptrBits(op.Font))
 	h = sigGroup(h, op)
@@ -832,6 +833,8 @@ func sigGroup(h uint64, op *layout.DisplayOp) uint64 {
 
 	h = mixF(h, float64(group.ID))
 	h = mixStr(h, group.Mode)
+	h = mixStr(h, group.Filter)
+	h = mixStr(h, group.BackdropFilter)
 	h = mix64(h, bit(group.Isolate))
 
 	if parent := group.Parent; parent != nil {

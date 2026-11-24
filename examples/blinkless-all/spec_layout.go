@@ -40,7 +40,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 			kid(1, "width:50px;height:30px;background:#c96;")+kid(2, "width:50px;height:30px;background:#6a9;")+kid(3, "width:50px;height:30px;background:#69c;")+`</div>`, //nolint:mnd // child index
 			"The boxes stack in a column and wrap into a second column when the container height runs out.", true), true
 	case n == "gap":
-		return lay(gridDemo("grid-template-columns:1fr 1fr;{{STYLE}}", "", ""), "Accepted; the engine does not apply the two-value gap shorthand, so the grid keeps its spacing (row-gap and column-gap are shown on their own rows).", false), true
+		return lay(gridDemo("grid-template-columns:1fr 1fr;{{STYLE}}", "", ""), "An 8 px row gap and 16 px column gap open between the grid cells.", true), true
 	case n == "row-gap":
 		return lay(flexWrapDemo("flex-wrap:wrap;{{STYLE}}"), "Space opens between the two wrapped lines of boxes.", true), true
 	case in(n, "justify-items", "justify-self", "place-items", "place-self"):
@@ -63,13 +63,13 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "grid-auto-rows":
 		return lay(gridDemo("{{STYLE}}", "", ""), "Every implicit row is 40px tall.", true), true
 	case n == "grid-auto-columns":
-		return lay(gridDemo("grid-auto-flow:column;{{STYLE}}", "", ""), "Accepted; the engine lays implicit columns out the same, so the widths do not change.", false), true
+		return lay(gridDemo("grid-auto-flow:column;{{STYLE}}", "", ""), "Each implicit column narrows to 40 px instead of splitting the 280 px width evenly.", true), true
 	case n == "grid-auto-flow":
-		return lay(gridDemo("grid-template-rows:20px 20px;{{STYLE}}", "", ""), "Accepted; the engine keeps filling row by row, so the boxes do not move.", false), true
+		return lay(gridDemo("grid-template-rows:20px 20px;{{STYLE}}", "", ""), "The six boxes fill column by column across three columns instead of stacking in one column.", true), true
 	case n == "grid-template-areas":
-		return lay(gridDemo("{{STYLE}}", "", ""), "The container declares a one-cell named area, but the boxes name no area, so they keep the grid's layout; nothing visible moves.", false), true
+		return lay(gridDemo("grid-template-columns:1fr 1fr;grid-template-areas:'. x';{{STYLE}}", "grid-area:x;", ""), "The first box moves from column 2 (area `. x`) to column 1 (area `x`).", true), true
 	case n == "grid-row-start" || n == "grid-row-end":
-		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "Accepted; the engine places the first box in the same cell, so nothing moves (grid-row shows the placement).", false), true
+		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first (orange) box moves to row 2 while boxes 2 to 4 fill row 1.", true), true
 	case n == "grid-row":
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box occupies rows 1 and 2 of the first column, so its 16px box leaves an empty cell under it, box 4 moves over and box 6 drops to a third row.", true), true
 	case n == "grid-column-end":
@@ -120,18 +120,24 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="width:280px;border:1px solid #888;background:#e8e4d8;{{STYLE}}">`+
 			kid(1, "height:20px;margin:12px;background:#c96;")+kid(2, "height:20px;margin:12px;background:#69c;")+`</div>`, //nolint:mnd // child index
 			"The container trims the first child's block-start margin and the last child's block-end margin, so the frame shortens.", true), true
+	case n == "margin-break":
+		return lay(`<div id="{{ID}}" style="column-count:2;column-gap:16px;column-fill:auto;height:40px;width:200px;background:#e8e4d8;font-size:11px;"><div id="{{ID}}-1" style="height:30px;background:#6a9">col 1</div><div id="{{ID}}-2" style="height:20px;margin-top:12px;background:#c96;{{STYLE}}">col 2</div></div>`,
+			"In the control (`auto`) the 12 px top margin is discarded at the column break; with `keep` the orange box in column 2 shifts down by 12 px.", true), true
 	case n == "display":
 		return lay(`<div id="{{ID}}" style="width:280px;background:#e8e4d8;"><span id="{{ID}}-1" style="background:#c96;{{STYLE}}">a span</span></div>`,
 			"The orange span stretches to the full frame width as a block instead of hugging its text.", true), true
 	case n == "visibility":
-		return lay(blockDemo("width:150px;height:30px;background:#c96;{{STYLE}}", ""), "Accepted and exported, but the window still paints the orange box; it does not hide it yet.", false), true
+		return lay(blockDemo("width:150px;height:30px;background:#c96;{{STYLE}}", ""), "The orange box disappears while its 30 px height remains reserved inside the frame.", true), true
 	case n == "float":
 		return lay(`<div id="{{ID}}" style="width:280px;height:40px;background:#e8e4d8;"><div id="{{ID}}-1" style="width:80px;height:30px;background:#c96;{{STYLE}}"></div></div>`,
 			"The orange box moves to the right edge of the frame.", true), true
 	case n == "clear":
 		return lay(`<div id="{{ID}}" style="width:280px;background:#e8e4d8;overflow:hidden"><div style="float:left;width:80px;height:40px;background:#6a9"></div><div id="{{ID}}-1" style="height:20px;background:#c96;{{STYLE}}">cleared</div></div>`,
 			"The orange bar drops below the left float instead of sitting beside it.", true), true
-	case in(n, "float-offset", "float-defer", "float-reference"):
+	case n == "float-reference":
+		return lay(`<div id="{{ID}}" style="width:160px;height:40px;background:#e8e4d8;"><div id="{{ID}}-1" style="float:right;width:50px;height:20px;background:#c96;{{STYLE}}"></div></div>`,
+			"With `float-reference: page` the right float snaps to the right edge of the 300 px cell instead of the 160 px container.", true), true
+	case in(n, "float-offset", "float-defer"):
 		return lay(`<div id="{{ID}}" style="width:280px;height:40px;background:#e8e4d8;"><div id="{{ID}}-1" style="float:right;width:80px;height:30px;background:#c96;{{STYLE}}"></div></div>`,
 			floatLook(n), n == "float-offset"), true
 	case in(n, "top", "left", "right", "bottom", "inset", "inset-block", "inset-block-start", "inset-block-end", "inset-inline", "inset-inline-start", "inset-inline-end"):
@@ -140,15 +146,15 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="width:280px;height:80px;background:#e8e4d8;"><div id="{{ID}}-1" style="top:20px;left:30px;width:60px;height:24px;background:#c96;{{STYLE}}"></div></div>`,
 			"The box shifts 30px right and 20px down once it is relatively positioned; without it the offsets are ignored.", true), true
 	case n == "z-index":
-		return lay(`<div id="{{ID}}" style="position:relative;width:280px;height:60px;background:#e8e4d8;"><div id="{{ID}}-1" style="position:absolute;left:10px;top:10px;width:80px;height:40px;background:#c96;{{STYLE}}"></div><div id="{{ID}}-2" style="position:absolute;left:50px;top:20px;width:80px;height:30px;background:#69c;"></div></div>`,
-			"The inherited value is auto, so the blue box stays on top of the orange one and nothing changes.", false), true
+		return lay(`<div id="{{ID}}" style="position:relative;width:280px;height:60px;background:#e8e4d8;"><div id="{{ID}}-1" style="position:absolute;left:10px;top:10px;width:80px;height:40px;background:#c96;{{STYLE}}"></div><div id="{{ID}}-2" style="position:absolute;left:50px;top:20px;width:80px;height:30px;background:#69c;z-index:1;"></div></div>`,
+			"With z-index: 5 the orange box paints on top of the z-index: 1 blue box instead of behind it.", true), true
 	case in(n, "overflow", "overflow-x", "overflow-y", "overflow-block", "overflow-inline"):
 		return lay(overflowDemo("{{STYLE}}"), "The tall orange content is cut at the 40px frame instead of spilling out below it.", true), true
 	case strings.HasPrefix(n, "overflow-clip-margin"):
 		return lay(overflowAll("overflow:clip;{{STYLE}}"), clipMarginLook(n), true), true
 	case n == "overflow-wrap":
-		return lay(`<div id="{{ID}}" style="width:100px;background:#e8e4d8;font-size:12px;{{STYLE}}">Zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</div>`,
-			"Accepted; the engine already breaks an unbreakable word at the 100px frame edge, so the control and the demo wrap the same way and nothing changes.", false), true
+		return lay(`<div id="{{ID}}" style="width:60px;background:#e8e4d8;font-size:12px;{{STYLE}}">Hi Supercalifragilisticexpialidocious</div>`,
+			"With break-word the long word breaks across lines to fit the 60 px box instead of overflowing.", true), true
 	case n == "column-gap":
 		return lay(colKids("column-count:2;{{STYLE}}"), "The two columns sit 3px apart instead of the 12px default gap (normal is 1em, and the font is 12px), so each column grows wider and the blue box starts further left.", true), true
 	case n == "column-width":
@@ -156,11 +162,13 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case in(n, "columns", "column-count"):
 		return lay(colDemo("{{STYLE}}"), "The paragraph splits into two side-by-side columns instead of one full-width paragraph.", true), true
 	case n == "column-fill":
-		return lay(colKids("column-fill:auto;height:60px;{{STYLE}}"), "Accepted; the engine lays the two boxes out the same with or without balancing, so nothing moves.", false), true
+		return lay(`<div id="{{ID}}" style="column-count:2;column-fill:auto;height:90px;width:280px;background:#e8e4d8;font-size:12px;{{STYLE}}"><p style="margin:0 0 6px">Alpha beta.</p><p style="margin:0 0 6px">Gamma delta.</p><p style="margin:0 0 6px">Epsilon zeta.</p><p style="margin:0">Eta theta.</p></div>`,
+			"With `column-fill: balance` the four paragraphs split evenly across both columns instead of stacking in the first column.", true), true
 	case n == "column-height":
 		return lay(colDemo("column-count:2;{{STYLE}}"), "Draft property: columns get a fixed 12px height, so the box shrinks to one line of the first column and the rest of the text is not shown.", true), true
 	case n == "column-wrap":
-		return lay(colDemo("column-count:2;{{STYLE}}"), "Draft property: the value is the default, so the columns stay as they are.", false), true
+		return lay(`<div id="{{ID}}" style="column-count:2;column-gap:8px;column-height:24px;column-fill:auto;width:200px;background:#e8e4d8;font-size:10px;{{STYLE}}"><p style="margin:0 0 2px">Alpha one.</p><p style="margin:0 0 2px">Bravo two.</p><p style="margin:0 0 2px">Charlie three.</p><p style="margin:0 0 2px">Delta four.</p><p style="margin:0 0 2px">Echo five.</p><p style="margin:0 0 2px">Foxtrot six.</p><p style="margin:0 0 2px">Golf seven.</p><p style="margin:0">Hotel eight.</p></div>`,
+			"In the control (`auto`) overflowing columns wrap onto a second row; `nowrap` keeps everything in one 24 px row.", true), true
 	case n == "column-span":
 		return lay(`<div id="{{ID}}" style="column-count:2;width:280px;background:#e8e4d8;font-size:12px;"><p style="margin:0">Alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu.</p>`+
 			`<div id="{{ID}}-1" style="background:#c96;{{STYLE}}">Heading</div><p style="margin:0">Nu xi omicron pi rho sigma tau upsilon phi chi psi omega.</p></div>`,
@@ -172,17 +180,55 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "container" || n == "container-type":
 		return lay(`<div id="{{ID}}" style="width:280px;height:60px;background:#e8e4d8;"><div id="{{ID}}-1" style="display:inline-block;min-width:100px;background:#c96;font-size:12px;{{STYLE}}">content that sizes the box</div></div>`,
 			"Inline-size containment removes the text from the box's width, so the orange box narrows from its text width to its 100px minimum and the text wraps.", true), true
-	case n == "container-name" || n == "anchor-scope":
-		return lay(`<div id="{{ID}}" style="width:200px;padding:6px;background:#c96;font-size:12px;{{STYLE}}">named, but nothing queries it</div>`,
-			"Only a name for later queries or anchors is declared, so nothing visible changes.", false), true
+	case n == "container-name":
+		return lay(`<style>@container box (min-width: 100px){#{{ID}}-1{background:#c0392b !important;}}</style><div id="{{ID}}" style="width:200px;container-type:inline-size;{{STYLE}}"><div id="{{ID}}-1" style="height:24px;background:#69c;">inside</div></div>`,
+			"Naming the container `box` matches the `@container box (min-width: 100px)` rule, turning the inner bar red.", true), true
+	case n == "anchor-scope":
+		return lay(`<div id="{{ID}}" style="position:relative;width:280px;height:80px;background:#e8e4d8;"><div style="{{STYLE}}"><div id="{{ID}}-1" style="position:absolute;left:100px;top:44px;width:80px;height:24px;background:#c96;anchor-name:--a;">anchor</div></div><div id="{{ID}}-2" style="position:absolute;width:60px;height:20px;background:#69c;position-anchor:--a;position-area:top;">label</div></div>`,
+			"Scoping `--a` inside the wrapper hides it from the outer blue label, so the label drops back to the top-left instead of sitting above the orange anchor.", true), true
+	case n == "continue":
+		return lay(`<div id="{{ID}}" style="width:200px;height:20px;background:#e8e4d8;font-size:12px;{{STYLE}}">Long text that overflows the box height</div>`,
+			"With `continue: discard` the overflowing content is discarded instead of spilling past the 20 px box.", true), true
+	case n == "flow-from" || n == "flow-into":
+		return lay(`<div id="{{ID}}" style="width:200px;height:40px;background:#c96;font-size:12px;{{STYLE}}">box</div>`,
+			"Assigning the box to the named flow `main` removes it from normal flow painting.", true), true
+	case n == "flow-tolerance":
+		return lay(`<div id="{{ID}}" style="display:grid;grid-template-rows:masonry;grid-template-columns:100px 100px;column-gap:10px;width:210px;background:#e8e4d8;font-size:11px;flow-tolerance:infinite;{{STYLE}}"><div id="{{ID}}-1" style="height:20px;background:#c96">item a</div><div id="{{ID}}-2" style="height:60px;background:#69c">item b</div></div>`,
+			"In the control (`infinite`) item b goes into column 2; `0px` tolerance places it in column 1 below item a.", true), true
+	case n == "region-fragment":
+		return lay(`<div id="{{ID}}" style="width:200px;font-family:monospace;font-size:10px;"><div style="flow-into:rf{{ID}} content"><p style="margin:0;{{STYLE}}">alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima mike november oscar papa quebec romeo sierra tango uniform victor</p></div><div id="{{ID}}-1" style="flow-from:rf{{ID}};height:20px;border:1px solid #888;background:#e8e4d8;margin-bottom:4px"></div><div id="{{ID}}-2" style="flow-from:rf{{ID}};min-height:20px;border:1px solid #888;background:#dfe9f3"></div></div>`,
+			"In the control (`auto`) the paragraph splits across both regions; with `break` the whole paragraph moves into the second region.", true), true
+	case n == "wrap-flow":
+		return lay(`<div id="{{ID}}" style="width:200px;font-size:11px;line-height:14px;background:#e8e4d8;"><div id="{{ID}}-1" style="width:60px;height:30px;background:#c96;{{STYLE}}"></div><p id="{{ID}}-2" style="margin:0">alpha bravo charlie delta echo foxtrot golf hotel</p></div>`,
+			"With `wrap-flow: both` the orange box acts as an exclusion and pushes the following paragraph text past its right edge.", true), true
+	case n == "wrap-through":
+		return lay(`<div id="{{ID}}" style="width:200px;font-size:11px;line-height:14px;background:#e8e4d8;"><div id="{{ID}}-1" style="wrap-flow:end;width:60px;height:30px;background:#c96;"></div><p id="{{ID}}-2" style="margin:0;{{STYLE}}">alpha bravo charlie delta echo foxtrot golf</p></div>`,
+			"In the control the text wraps around the orange exclusion; `wrap-through: none` ignores the exclusion and starts at the left edge.", true), true
+	case n == "wrap-before" || n == "wrap-after":
+		return lay(`<div id="{{ID}}" style="width:200px;font-size:11px;line-height:14px;background:#e8e4d8;"><p id="{{ID}}-1" style="margin:0">one two <span style="background:#c96;{{STYLE}}">alpha</span> three</p></div>`,
+			"Forces a line break immediately before or after the highlighted `alpha` span.", true), true
+	case n == "wrap-inside":
+		return lay(`<div id="{{ID}}" style="width:200px;font-family:monospace;font-size:10px;line-height:14px;background:#e8e4d8;"><p id="{{ID}}-1" style="margin:0">aaaa aaaa aaaa <span style="background:#c96;{{STYLE}}">bbbbbb cccccc dddddd</span></p></div>`,
+			"With `wrap-inside: avoid` the highlighted `bbbbbb cccccc dddddd` phrase moves whole onto the next line instead of splitting.", true), true
+	case n == "inline-sizing":
+		return lay(`<div id="{{ID}}" style="width:160px;font-size:16px;line-height:32px;background:#e8e4d8;"><span id="{{ID}}-1" style="background:#c96;line-height:normal;{{STYLE}}">Stretch</span></div>`,
+			"With `inline-sizing: stretch` the orange inline background stretches to fill the full 32 px line height.", true), true
+	case n == "link-parameters":
+		return lay(`<div id="{{ID}}" style="width:160px;padding:6px;background:#e8e4d8;"><img id="{{ID}}-1" src="swatch.svg" style="width:64px;height:40px;{{STYLE}}"></div>`,
+			"Passes `param(--color: #c0392b)` into `swatch.svg`, recoloring the blue SVG square to red.", true), true
 	case n == "anchor-name":
-		return lay(anchorDemo("{{STYLE}}", "position-anchor:--a;"), "The engine does not resolve anchor positioning for a name alone, so the blue label stays at the top-left; the name is accepted.", false), true
+		return lay(anchorDemo("{{STYLE}}", "position-anchor:--a;position-area:top;"), "Naming the orange box `--a` lets the blue label attach directly above it via `position-anchor: --a; position-area: top`.", true), true
 	case n == "position-anchor":
-		return lay(anchorDemo("anchor-name:--a;", "{{STYLE}}"), "The engine does not attach the blue label to the named anchor, so it stays at the top-left; the name is accepted.", false), true
+		return lay(`<div id="{{ID}}" style="position:relative;width:280px;height:80px;background:#e8e4d8;"><div id="{{ID}}-1" style="position:absolute;left:20px;top:44px;width:70px;height:24px;background:#6a9;anchor-name:--b;">anchor b</div><div id="{{ID}}-2" style="position:absolute;left:150px;top:44px;width:70px;height:24px;background:#c96;anchor-name:--a;">anchor a</div><div id="{{ID}}-3" style="position:absolute;width:60px;height:20px;background:#69c;position-anchor:--b;position-area:top;{{STYLE}}">label</div></div>`,
+			"Setting `position-anchor: --a` moves the blue label from above green `anchor b` to above orange `anchor a`.", true), true
 	case n == "position-area":
-		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The engine only moves the blue label down 24px, from the control's y 0 to y 24, still at the left edge and left of the orange anchor. It does not place the label above the anchor. Each row names its own anchor, so the picture and the readout agree.", false), true
-	case in(n, "position-try", "position-try-fallbacks", "position-try-order", "position-visibility"):
-		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows. Control and demo both carry position-area:top, which the engine does not resolve, so the blue label stays at the left edge of the frame (x 0, y 24), left of the orange anchor, in both pictures and nothing changes.", false), true
+		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The blue label centres directly above the orange anchor instead of sitting at the top-left.", true), true
+	case in(n, "position-try", "position-try-fallbacks"):
+		return lay(anchorDemo("top:4px;anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;{{STYLE}}"), "The anchor sits near the top edge so `position-area: top` overflows; `flip-block` flips the blue label below the orange anchor.", true), true
+	case n == "position-try-order":
+		return lay(anchorDemo("left:70px;anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:left;position-try-fallbacks:right;{{STYLE}}"), "The right side of the anchor has more room than the left, so `most-width` moves the blue label from left of the anchor to right of it.", true), true
+	case n == "position-visibility":
+		return lay(anchorDemo("top:4px;anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;position-visibility:no-overflow;{{STYLE}}"), "In the control `no-overflow` hides the overflowing blue label; `anchor-valid` keeps it visible.", true), true
 	case n == "table-layout":
 		return lay(`<table id="{{ID}}" style="width:200px;border-collapse:collapse;font-size:12px;{{STYLE}}"><tr><td id="{{ID}}-1" style="border:1px solid #888;background:#c96">a very long first cell text</td><td id="{{ID}}-2" style="border:1px solid #888;background:#69c">b</td></tr></table>`,
 			"The columns split the table width evenly (fixed) instead of following the long first cell.", true), true

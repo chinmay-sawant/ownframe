@@ -9,36 +9,14 @@ import "strings"
 // implemented badge.
 //
 //nolint:gochecknoglobals // read-only property lookup table
-var painterDeclines = map[string]bool{
-	"visibility": true, "gap": true, "filter": true, "scale": true, "backdrop-filter": true,
-	"color-scheme": true, "transform-box": true, "grid-auto-columns": true, "grid-auto-flow": true,
-	"position-area": true, "outline-color": true, "clip-rule": true,
-	"border-image": true, "border-image-source": true, "border-image-slice": true, "border-image-width": true,
-	"mask-border-mode": true, "mask-border-outset": true, "mask-border-repeat": true, "mask-border-slice": true,
-	"mask-border-width": true, "grid-row-start": true, "grid-row-end": true, "grid-template-areas": true,
-	"marker": true, "marker-start": true, "marker-mid": true, "marker-end": true, "paint-order": true,
-	"fill-rule": true, "stroke-linejoin": true, "stroke-miterlimit": true,
-	"-webkit-mask-box-image-outset": true, "-webkit-mask-box-image-repeat": true,
-	"-webkit-mask-box-image-slice": true, "-webkit-mask-box-image-width": true,
-	"border-bottom-color": true, "border-left-color": true, "border-right-color": true, "border-top-color": true,
-	"rule-break": true, "position-try": true, "position-try-fallbacks": true, "position-try-order": true, "position-visibility": true,
-	"cx": true, "cy": true, "r": true, "x": true, "y": true,
-	"color-interpolation": true, "color-interpolation-filters": true, "stop-color": true, "stop-opacity": true,
-	"font-variant-emoji": true, "text-emphasis-style": true, "text-overflow": true,
-}
+var painterDeclines = map[string]bool{}
 
 // opOnly lists the properties that change the engine's operation list while
 // the window picture stays the same as the control, so the readout says
 // "differs" for a picture that does not.
 //
 //nolint:gochecknoglobals // read-only property lookup table
-var opOnly = map[string]bool{
-	"font-language-override": true, "font-feature-settings": true, "font-synthesis": true,
-	"font-synthesis-weight": true, "font-variant-alternates": true, "font-variant-east-asian": true,
-	"font-variant-ligatures": true, "font-variant-numeric": true, "tab-size": true,
-	"background-blend-mode": true, "image-rendering": true,
-	"isolation": true, "font-width": true, "rule-overlap": true,
-}
+var opOnly = map[string]bool{}
 
 // rowStatus is the badge of a row: the catalog status, lowered to partial when
 // the window painter does not draw the property.

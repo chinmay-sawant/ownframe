@@ -32,7 +32,29 @@ func TestNativelyReplayedPropertiesNotDeclined(t *testing.T) {
 		byName[r.Name] = r
 	}
 
-	for _, name := range []string{"writing-mode", "text-autospace", "object-fit", "object-view-box"} {
+	for _, name := range []string{
+		"writing-mode", "text-autospace", "object-fit", "object-view-box",
+		"border-image", "border-image-source", "border-image-slice", "border-image-width",
+		"visibility", "gap", "scale",
+		"border-top-color", "border-right-color", "border-bottom-color", "border-left-color", "outline-color",
+		"grid-auto-columns", "grid-auto-flow", "grid-row-start", "grid-row-end",
+		"cx", "cy", "r", "x", "y",
+		"marker", "marker-start", "marker-mid", "marker-end",
+		"text-overflow", "text-emphasis-style",
+		"image-rendering", "tab-size",
+		"mask-position", "-webkit-mask-position", "mask-size", "-webkit-mask-size",
+		"background-blend-mode",
+		"position-area", "position-try", "position-try-fallbacks", "position-try-order",
+		"paint-order", "stop-color", "stop-opacity", "stroke-linejoin", "stroke-miterlimit",
+		"color-interpolation", "color-interpolation-filters",
+		"filter", "mask-clip", "mask-origin", "-webkit-mask-clip", "-webkit-mask-origin",
+		"mask-border-mode", "mask-border-outset", "mask-border-repeat", "mask-border-slice", "mask-border-width",
+		"-webkit-mask-box-image-outset", "-webkit-mask-box-image-repeat", "-webkit-mask-box-image-slice", "-webkit-mask-box-image-width",
+		"fill-rule", "clip-rule", "font-width", "font-variant-emoji", "rule-overlap",
+		"backdrop-filter", "color-scheme", "transform-box", "grid-template-areas", "rule-break", "position-visibility", "isolation",
+		"font-feature-settings", "font-variant-ligatures", "font-language-override", "font-variant-alternates",
+		"font-synthesis", "font-synthesis-weight", "font-variant-numeric", "font-variant-east-asian",
+	} {
 		if noPaint[name] || painterDeclines[name] || opOnly[name] {
 			t.Errorf("%q should not be in noPaint/painterDeclines/opOnly", name)
 		}

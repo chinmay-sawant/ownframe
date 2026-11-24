@@ -22,12 +22,12 @@ func Image(bounds image.Rectangle, desc *layout.MaskDescriptor) (*image.NRGBA, e
 	if bounds.Empty() {
 		return img, nil
 	}
-	alpha, err := maskLayerPixels(bounds, desc.Layers[len(desc.Layers)-1])
+	alpha, err := maskLayerPixels(bounds, desc.Layers[len(desc.Layers)-1], desc)
 	if err != nil {
 		return nil, err
 	}
 	for i := len(desc.Layers) - topLayerOffset; i >= 0; i-- {
-		layer, err := maskLayerPixels(bounds, desc.Layers[i])
+		layer, err := maskLayerPixels(bounds, desc.Layers[i], desc)
 		if err != nil {
 			return nil, err
 		}

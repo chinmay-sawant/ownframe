@@ -161,8 +161,14 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 // replaced display, and refreshes accessibility for the patched subtrees.
 func commitPatchedDisplay(p *Page, d *Display, roots []string, refreshA11y func()) {
 	p.commitRoots = append([]string{}, roots...)
+	// RelayoutElements only reuses prev.Boxes in place on a paint-only batch
+	// (no geometry, sticky, animation, or transition declaration changes).
+	paintOnly := p.draw.Display != nil && d != nil && sameBoxList(p.draw.Display.Boxes, d.Boxes)
+	if paintOnly {
+		carryDisplayDeclarations(p, p.draw.Display, d)
+	}
 	captures := captureTransitions(p, p.draw.Display, d)
-	prev := adoptSpliced(p, d)
+	prev := adoptSplicedPatch(p, d, paintOnly)
 	bindMotion(p, prev, d)
 	bindTransitions(p, captures)
 	if prev != nil && prev != d {
@@ -192,9 +198,20 @@ func finishPatchedCommit(p *Page, state render.State) {
 // moved sibling is outside the patched element's own box, so the display diff
 // is the damage source, not ElementPatch.Old and New alone.
 func adoptSpliced(p *Page, d *Display) *Display {
+	return adoptSplicedPatch(p, d, false)
+}
+
+func adoptSplicedPatch(p *Page, d *Display, paintOnly bool) *Display {
 	p.tickMutated.Store(true)
 	prev := p.draw.SwapList(d)
-	setDisplayBoxes(p, d)
+	if paintOnly && p.contentOK && p.contentW == d.Width && p.contentH == d.Height && !p.hasViewportSticky && len(p.hits) == 0 {
+		// Paint-only splice reused prev.Boxes in place with identical geometry
+		// and no sticky/fixed boxes: p.boxes, p.index, p.content, and
+		// p.hasViewportSticky are already current.
+		p.boxes = d.Boxes
+	} else {
+		setDisplayBoxes(p, d)
+	}
 	dirtyFromDisplay(p, prev, d)
 	p.generation++
 	p.layerGen++

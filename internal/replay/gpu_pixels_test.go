@@ -872,7 +872,54 @@ func checkGroupComposite() error {
 	if err := checkGroupMask(); err != nil {
 		return err
 	}
+	if err := checkBackgroundBlendMode(); err != nil {
+		return err
+	}
 	return checkPhotoMaskGPU()
+}
+
+func checkBackgroundBlendMode() error {
+	mk := func(mode string) (*layout.Display, error) {
+		src := `<body style="margin:0;height:100px;background:#ffffff">` +
+			`<div style="width:140px;height:60px;background-color:#f1c40f;` +
+			`background-image:linear-gradient(#c0392b,#2980b9);` +
+			`background-blend-mode:` + mode + `"></div></body>`
+		return render.DisplayList(context.Background(), src, 160, 80)
+	}
+
+	normalD, err := mk("normal")
+	if err != nil {
+		return err
+	}
+	multD, err := mk("multiply")
+	if err != nil {
+		return err
+	}
+	if !render.Replayable(multD) {
+		return fmt.Errorf("background-blend-mode multiply should replay")
+	}
+
+	normalImg, multImg := newParityImage(160, 80), newParityImage(160, 80)
+	defer normalImg.Deallocate()
+	defer multImg.Deallocate()
+	Draw(normalImg, normalD, 0, 0)
+	Draw(multImg, multD, 0, 0)
+
+	normalPx, multPx := make([]byte, 160*80*4), make([]byte, 160*80*4)
+	normalImg.ReadPixels(normalPx)
+	multImg.ReadPixels(multPx)
+
+	// Center pixel (70, 30): multiply over #f1c40f must darken blue channel
+	// relative to normal source-over.
+	at := (30*160 + 70) * 4
+	if bytes.Equal(normalPx[at:at+4], multPx[at:at+4]) {
+		return fmt.Errorf("background-blend-mode multiply matched normal pixel %v", multPx[at:at+4])
+	}
+	if multPx[at+2] >= normalPx[at+2] {
+		return fmt.Errorf("background-blend-mode multiply did not darken blue channel: mult=%v normal=%v",
+			multPx[at:at+4], normalPx[at:at+4])
+	}
+	return nil
 }
 
 func checkGroupMode(mode string) error {

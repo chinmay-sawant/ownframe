@@ -43,3 +43,39 @@ func TestReplayRejectsGroupBandCrossings(t *testing.T) {
 		t.Fatal("a fixed member should not replay")
 	}
 }
+
+func TestReplayBackgroundBlendModeSeparability(t *testing.T) {
+	t.Parallel()
+
+	for _, mode := range []string{"normal", "multiply", "screen", "overlay", "darken", "lighten"} {
+		display := acceptDisplay(t, `<div style="width:80px;height:60px;background-color:#f1c40f;`+
+			`background-image:linear-gradient(#c0392b,#2980b9);background-blend-mode:`+mode+`"></div>`)
+		if !render.Replayable(display) {
+			t.Fatalf("background-blend-mode %q should replay", mode)
+		}
+	}
+
+	for _, mode := range []string{"hue", "saturation", "color", "luminosity"} {
+		display := acceptDisplay(t, `<div style="width:80px;height:60px;background-color:#f1c40f;`+
+			`background-image:linear-gradient(#c0392b,#2980b9);background-blend-mode:`+mode+`"></div>`)
+		if render.Replayable(display) {
+			t.Fatalf("non-separable background-blend-mode %q should not replay", mode)
+		}
+	}
+}
+
+func TestReplayAcceptsFilterBlurAndMaskOriginClip(t *testing.T) {
+	t.Parallel()
+
+	blurDisplay := acceptDisplay(t, `<div style="width:80px;height:40px;background:#369;filter:blur(2px)">hello</div>`)
+	if !render.Replayable(blurDisplay) {
+		t.Fatal("filter:blur(2px) should replay")
+	}
+
+	maskDisplay := acceptDisplay(t, `<div style="width:80px;height:60px;border:6px solid #000;padding:8px;`+
+		`background:#369;mask-image:linear-gradient(#000,transparent);`+
+		`mask-origin:padding-box;mask-clip:content-box"></div>`)
+	if !render.Replayable(maskDisplay) {
+		t.Fatal("mask-origin:padding-box + mask-clip:content-box should replay")
+	}
+}

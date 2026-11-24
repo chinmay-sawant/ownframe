@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"image"
 	"math"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -290,4 +292,119 @@ func translatedBackdropBox(box image.Rectangle, base [2]float64) image.Rectangle
 		int(math.Ceil(float64(box.Max.X)+base[0])),
 		int(math.Ceil(float64(box.Max.Y)+base[1])),
 	)
+}
+
+const (
+	// filterBlurSigmaScale maps a CSS blur() standard deviation (sigma) to the
+	// 3-sigma tap support radius expected by backdrop_blur.kage.
+	filterBlurSigmaScale = 3
+	// maxFilterBlurRadius caps the shader tap radius in CSS pixels.
+	maxFilterBlurRadius = 64
+	// ptToPx converts CSS points to CSS pixels at 96 DPI.
+	ptToPx = 96.0 / 72.0
+)
+
+// parseFilterBlur extracts the blur(<length>) radius in CSS pixels from a CSS
+// filter function list. Returns (0, false) when no positive blur is present.
+func parseFilterBlur(value string) (float64, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" || strings.EqualFold(value, "none") {
+		return 0, false
+	}
+
+	var radius float64
+	for value != "" {
+		value = strings.TrimSpace(value)
+		open := strings.IndexByte(value, '(')
+		if open <= 0 {
+			break
+		}
+		closeIdx := strings.IndexByte(value[open+1:], ')')
+		if closeIdx < 0 {
+			break
+		}
+		closeIdx += open + 1
+		name := strings.ToLower(strings.TrimSpace(value[:open]))
+		arg := strings.TrimSpace(value[open+1 : closeIdx])
+		if name == "blur" {
+			if px, ok := parseFilterBlurLength(arg); ok && px > 0 {
+				radius = math.Hypot(radius, px)
+			}
+		}
+		value = value[closeIdx+1:]
+	}
+
+	if radius <= 0 {
+		return 0, false
+	}
+	return math.Min(radius, maxFilterBlurRadius), true
+}
+
+func parseFilterBlurLength(arg string) (float64, bool) {
+	arg = strings.TrimSpace(strings.ToLower(arg))
+	if arg == "" || arg == "0" {
+		return 0, true
+	}
+	scale := 1.0
+	switch {
+	case strings.HasSuffix(arg, "px"):
+		arg = strings.TrimSpace(strings.TrimSuffix(arg, "px"))
+	case strings.HasSuffix(arg, "pt"):
+		arg = strings.TrimSpace(strings.TrimSuffix(arg, "pt"))
+		scale = ptToPx
+	default:
+		return 0, false
+	}
+	n, err := strconv.ParseFloat(arg, 64)
+	if err != nil || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 {
+		return 0, false
+	}
+	return n * scale, true
+}
+
+func filterBlurShaderRadius(blurPx float64) float64 {
+	return math.Min(blurPx*filterBlurSigmaScale, maxFilterBlurRadius)
+}
+
+func filterBlurPad(blurPx float64) int {
+	return int(math.Ceil(filterBlurShaderRadius(blurPx))) + 1
+}
+
+// applyGroupFilterBlur runs the 2-pass Gaussian blur shader on layer in place.
+func (renderer *Renderer) applyGroupFilterBlur(layer *ebiten.Image, blurPx float64) {
+	if layer == nil || blurPx <= 0 {
+		return
+	}
+	shader, err := renderer.backdropFilterShader()
+	if err != nil || shader == nil {
+		return
+	}
+	w, h := layer.Bounds().Dx(), layer.Bounds().Dy()
+	if w <= 0 || h <= 0 {
+		return
+	}
+	_, horizontal, filtered, ok := renderer.backdrop.acquireScratch(w, h)
+	if !ok {
+		return
+	}
+
+	shaderRadius := float32(filterBlurShaderRadius(blurPx))
+	boxW, boxH := float32(w), float32(h)
+
+	horizontalOptions := &ebiten.DrawRectShaderOptions{}
+	horizontalOptions.Images[0] = layer
+	horizontalOptions.Blend = ebiten.BlendCopy
+	horizontalOptions.Uniforms = renderer.backdrop.blurUniforms(&renderer.backdrop.horizontalUniforms,
+		shaderRadius, 0, 1, 0, 0, 0, boxW, boxH, 0)
+	horizontal.DrawRectShader(w, h, shader, horizontalOptions)
+
+	verticalOptions := &ebiten.DrawRectShaderOptions{}
+	verticalOptions.Images[0] = horizontal
+	verticalOptions.Images[1] = layer
+	verticalOptions.Blend = ebiten.BlendCopy
+	verticalOptions.Uniforms = renderer.backdrop.blurUniforms(&renderer.backdrop.verticalUniforms,
+		shaderRadius, 1, 1, 0, 0, 0, boxW, boxH, 0)
+	filtered.DrawRectShader(w, h, shader, verticalOptions)
+
+	layer.DrawImage(filtered, &ebiten.DrawImageOptions{Blend: ebiten.BlendCopy})
 }

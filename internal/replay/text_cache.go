@@ -6,7 +6,6 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/masking"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	"golang.org/x/text/language"
 	"image"
 	"math"
 	"sync"
@@ -80,7 +79,7 @@ func (renderer *Renderer) textFace(op *layout.DisplayOp) *text.GoTextFace {
 		renderer.fonts.sources[op.Font] = source
 	}
 
-	face := &text.GoTextFace{Source: source, Size: size, Language: language.Make(key.language)}
+	face := &text.GoTextFace{Source: source, Size: size, Language: masking.ShapingLanguage(key.language)}
 	for _, feature := range masking.ParseFontFeatures(key.features) {
 		if tag, err := text.ParseTag(feature.Tag); err == nil {
 			face.SetFeature(tag, feature.Value)

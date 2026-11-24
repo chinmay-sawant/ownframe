@@ -21,8 +21,8 @@ type genProp struct {
 }
 
 // genPageRows caps the rows on one generated tab, so a tab's picture stays
-// under the bitmap limit.
-const genPageRows = 20
+// under the bitmap limit even when a tab holds nested blend/isolation groups.
+const genPageRows = 16
 
 // genGroups lists the generated tabs in order. Their ids start with "all-".
 //
@@ -146,15 +146,19 @@ type DemoSpec struct {
 // properties; anything unclaimed gets a plain box.
 func specFor(r genProp) DemoSpec {
 	if strings.HasPrefix(r.Name, "-webkit-text-stroke") {
+		base := "font-size:30px;font-weight:bold;color:#2c3e50;padding:4px 8px;margin:8px 0;"
 		look := "Look for an outline drawn around each glyph of the word."
+		visible := false
 		if r.Name == "-webkit-text-stroke-color" {
-			look = "The stroke width stays 0, so a stroke colour alone draws nothing: the picture matches the control."
+			base += "-webkit-text-stroke-width:2px;"
+			look = "The 2 px glyph outline turns red instead of inheriting the dark slate text colour."
+			visible = true
 		}
 
 		return DemoSpec{
-			HTML:    `<div id="{{ID}}" style="font-size:30px;font-weight:bold;color:#2c3e50;padding:4px 8px;margin:8px 0;{{STYLE}}">Stroke</div>`,
+			HTML:    `<div id="{{ID}}" style="` + base + `{{STYLE}}">Stroke</div>`,
 			Look:    look,
-			Visible: false,
+			Visible: visible,
 		}
 	}
 
@@ -198,7 +202,7 @@ func (s DemoSpec) expand(r genProp, id string, withStyle bool) string {
 		style = r.Name + ":" + r.Sample + ";"
 	}
 
-	return strings.NewReplacer("{{ID}}", id, "{{STYLE}}", html.EscapeString(style),
+	return strings.NewReplacer("{{ID}}", id, "{{STYLE}}", html.EscapeString(style), "{{RAWSTYLE}}", style,
 		"{{NAME}}", html.EscapeString(r.Name), "{{VALUE}}", html.EscapeString(r.Sample)).Replace(s.HTML)
 }
 
@@ -493,7 +497,4 @@ func (g *genSet) demo(r genProp) string {
 // leaves the declaration out and the readout still comes from the layout.
 //
 //nolint:gochecknoglobals // read-only property lookup table
-var noPaint = map[string]bool{
-	"mask-clip": true, "mask-origin": true, "mask-position": true, "mask-size": true,
-	"-webkit-mask-clip": true, "-webkit-mask-origin": true, "-webkit-mask-position": true, "-webkit-mask-size": true,
-}
+var noPaint = map[string]bool{}

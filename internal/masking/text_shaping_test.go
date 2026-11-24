@@ -3,6 +3,8 @@ package masking
 import (
 	"reflect"
 	"testing"
+
+	"golang.org/x/text/language"
 )
 
 func TestParseFontFeatures(t *testing.T) {
@@ -52,5 +54,28 @@ func TestAutospaceGapBetween(t *testing.T) {
 	}
 	if got := AutospaceGapBetween('語', 'a', 0); got != 0 {
 		t.Errorf("a zero gap must stay zero, got %v", got)
+	}
+}
+
+func TestShapingLanguage(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		in   string
+		want language.Tag
+	}{
+		{"", language.Und},
+		{"normal", language.Und},
+		{"NoRmAl", language.Und},
+		{"SRB", language.Make("sr")},
+		{"srb", language.Make("sr")},
+		{"TRK", language.Make("tr")},
+		{"ROM", language.Make("ro")},
+		{"MKD", language.Make("mk")},
+		{"en", language.Make("en")},
+	}
+	for _, c := range cases {
+		if got := ShapingLanguage(c.in); got != c.want {
+			t.Errorf("ShapingLanguage(%q) = %v, want %v", c.in, got, c.want)
+		}
 	}
 }

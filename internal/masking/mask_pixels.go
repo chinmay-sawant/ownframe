@@ -9,18 +9,20 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-func paintMaskPixels(dst []uint8, bw, bh int, src *image.NRGBA,
+func paintMaskPixels(dst []uint8, bw, bh int, clip image.Rectangle, src *image.NRGBA,
 	px, py float64, layer layout.MaskLayer) []uint8 {
 	w, h := src.Bounds().Dx(), src.Bounds().Dy()
 	rx, ry := maskRepeat(layer.Repeat)
-	for y := 0; y < bh; y++ {
+	y0, y1 := max(0, clip.Min.Y), min(bh, clip.Max.Y)
+	x0, x1 := max(0, clip.Min.X), min(bw, clip.Max.X)
+	for y := y0; y < y1; y++ {
 		sy := float64(y) - py
 		if ry {
 			sy = positiveMod(sy, float64(h))
 		} else if sy < 0 || sy >= float64(h) {
 			continue
 		}
-		for x := 0; x < bw; x++ {
+		for x := x0; x < x1; x++ {
 			sx := float64(x) - px
 			if rx {
 				sx = positiveMod(sx, float64(w))

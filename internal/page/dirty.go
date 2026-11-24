@@ -529,18 +529,28 @@ type displayDecls struct {
 func setBoxes(p *Page, boxes []Box) {
 	old := p.boxes
 	w, h := canvasSize(p)
-	// Delta the content rect before the index is rebuilt in place: p.index
-	// still describes old here, and Index clears it.
-	content, ok := extendContent(p, p.index, boxes, w, h)
 	sameIDs := hit.SameIDs(old, boxes)
-	p.boxes = boxes
-	if sameIDs {
-		p.index = hit.Repoint(p.index, boxes)
+	sameBacking := sameIDs && sameBoxList(old, boxes)
+	var content image.Rectangle
+	var ok bool
+	if sameIDs && !sameBacking {
+		content, ok = extendContentSameIDs(p, old, boxes, w, h)
 	} else {
+		// Delta the content rect before the index is rebuilt in place: p.index
+		// still describes old here, and Index clears it.
+		content, ok = extendContent(p, p.index, boxes, w, h)
+	}
+	p.boxes = boxes
+	switch {
+	case sameBacking:
+		// Same backing array and ID order: p.index already points to &boxes[i].
+	case sameIDs:
+		p.index = hit.Repoint(p.index, boxes)
+	default:
 		p.index = hit.Index(p.index, boxes)
 	}
 	p.hits = nil
-	finishContent(p, old, content, ok, w, h)
+	finishContent(p, old, content, ok, sameIDs, w, h)
 	noteBoxes(p, old, boxes, sameIDs)
 }
 
@@ -559,13 +569,44 @@ func canvasSize(p *Page) (int, int) {
 // resized canvas, a shrink, a move, or a missing old index. A pure
 // grow stays incremental: the old rect sits inside the new one, so
 // unioning the new rect keeps the union exact.
+// extendContentSameIDs updates the cached content rect by comparing old and
+// boxes at matching indices without map lookups. Callers must ensure old and
+// boxes have the same length, matching IDs, and distinct backing arrays.
+func extendContentSameIDs(p *Page, old, boxes []Box, w, h int) (image.Rectangle, bool) {
+	if !p.contentOK || p.contentW != w || p.contentH != h {
+		return image.Rectangle{}, false
+	}
+	content := p.content
+	for i := range boxes {
+		o, b := &old[i], &boxes[i]
+		if o.X == b.X && o.Y == b.Y && o.W == b.W && o.H == b.H {
+			continue
+		}
+		or, r := boxRect(*o), boxRect(*b)
+		if r == or {
+			continue
+		}
+		if !or.In(r) {
+			// If the old rect was strictly inside the cached content rect,
+			// shrinking or moving it cannot shrink the union's outer edges.
+			if or.Min.X <= p.content.Min.X || or.Min.Y <= p.content.Min.Y ||
+				or.Max.X >= p.content.Max.X || or.Max.Y >= p.content.Max.Y {
+				return content, false
+			}
+		}
+		content = content.Union(r)
+	}
+	return content, true
+}
+
 func extendContent(p *Page, oldIndex map[string]*Box, boxes []Box, w, h int) (image.Rectangle, bool) {
 	if !p.contentOK || oldIndex == nil || p.contentW != w || p.contentH != h {
 		return image.Rectangle{}, false
 	}
 	content := p.content
-	for _, b := range boxes {
-		r := boxRect(b)
+	for i := range boxes {
+		b := &boxes[i]
+		r := boxRect(*b)
 		ob, found := oldIndex[b.ID]
 		if !found {
 			content = content.Union(r)
@@ -588,8 +629,8 @@ func extendContent(p *Page, oldIndex map[string]*Box, boxes []Box, w, h int) (im
 // boxes. Duplicate ids that lose one copy keep the survivor's rect
 // covered: the union over-covers rather than recomputes, which
 // repaints more, never less.
-func finishContent(p *Page, old []Box, content image.Rectangle, ok bool, w, h int) {
-	if ok {
+func finishContent(p *Page, old []Box, content image.Rectangle, ok, sameIDs bool, w, h int) {
+	if ok && !sameIDs {
 		for i := range old {
 			if _, found := p.index[old[i].ID]; !found {
 				ok = false
@@ -606,8 +647,8 @@ func finishContent(p *Page, old []Box, content image.Rectangle, ok bool, w, h in
 // unionBoxes returns the union of every box rect.
 func unionBoxes(boxes []Box) image.Rectangle {
 	r := image.Rectangle{}
-	for _, b := range boxes {
-		r = r.Union(boxRect(b))
+	for i := range boxes {
+		r = r.Union(boxRect(boxes[i]))
 	}
 	return r
 }
@@ -696,6 +737,19 @@ func kidRect(p *Page, id string) (image.Rectangle, bool) {
 // same display is asked about: a publish captures transitions against the
 // display it is about to install and then binds animations to it, so the pair
 // costs one scan instead of two.
+// carryDisplayDeclarations transfers the cached animation/transition verdict
+// from prev to next when a paint-only splice reused prev.Boxes in place.
+func carryDisplayDeclarations(p *Page, prev, next *Display) {
+	if prev == nil || next == nil {
+		return
+	}
+	e := lockedBoxes(p, false)
+	defer p.boxCache.mu.Unlock()
+	if e != nil && e.decls.display == prev {
+		e.decls.display = next
+	}
+}
+
 func displayDeclarations(p *Page, d *Display) (animations, transitions bool) {
 	if d == nil {
 		return false, false
