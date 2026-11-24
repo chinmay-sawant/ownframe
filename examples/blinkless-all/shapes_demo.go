@@ -292,9 +292,42 @@ func shapesLayout(ctx context.Context, markup string) (*layout.Display, error) {
 	return layout.DisplayListOptions(ctx, styled, layout.Options{Images: shapesMask})
 }
 
-// shapesMask answers the url(mask) source with a 20 by 20 PNG: the left half
-// is opaque and the right half has alpha 0.3.
-func shapesMask(string) ([]byte, error) {
+// shapesMask answers virtual demo assets: url(mask) returns a 20x20 PNG (opaque
+// left half, alpha 0.3 right half), mask-wide returns a 32x16 PNG for
+// image-orientation, mask-luminance.svg returns an SVG <mask> for mask-type,
+// and swatch.svg returns an env(--color) SVG for link-parameters.
+func shapesMask(name string) ([]byte, error) {
+	if strings.HasPrefix(name, "mask-luminance.svg") {
+		return []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="8" height="2" viewBox="0 0 8 2"><defs><mask id="shape" mask-type="luminance"><rect width="4" height="2" fill="black"/><rect x="4" width="4" height="2" fill="white"/></mask></defs></svg>`), nil
+	}
+
+	if strings.HasPrefix(name, "swatch.svg") {
+		return []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="env(--color, #3498db)"/></svg>`), nil
+	}
+
+	if name == "mask-wide" {
+		const wideW, wideH = 32, 16
+		img := image.NewNRGBA(image.Rect(0, 0, wideW, wideH))
+
+		for y := range wideH {
+			for x := range wideW {
+				c := color.NRGBA{R: 0, G: 128, B: 0, A: opaqueAlpha} //nolint:mnd // green left half
+				if x >= wideW/2 {
+					c = color.NRGBA{R: 41, G: 128, B: 185, A: opaqueAlpha} //nolint:mnd // blue right half
+				}
+
+				img.SetNRGBA(x, y, c)
+			}
+		}
+
+		var buf bytes.Buffer
+		if err := png.Encode(&buf, img); err != nil {
+			return nil, err
+		}
+
+		return buf.Bytes(), nil
+	}
+
 	img := image.NewNRGBA(image.Rect(0, 0, maskSizePx, maskSizePx))
 
 	for y := range 20 {

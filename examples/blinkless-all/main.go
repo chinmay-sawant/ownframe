@@ -155,10 +155,12 @@ func (a *App) NewPage(ctx context.Context, tab string, width, height int) (*ownf
 		return nil, err
 	}
 
-	// The shape-image-threshold demo names url(mask); the readout layout
-	// answers it through shapesMask, so the painted page must answer it too.
-	if mask, maskErr := shapesMask("mask"); maskErr == nil {
-		page.SetImage("mask", mask)
+	// The demos name virtual assets answered through shapesMask during readout
+	// layout, so the painted page must answer them too.
+	for _, asset := range []string{"mask", "mask-wide", "mask-luminance.svg", "mask-luminance.svg#shape", "swatch.svg"} {
+		if data, assetErr := shapesMask(asset); assetErr == nil {
+			page.SetImage(asset, data)
+		}
 	}
 
 	page.AddHandlers(ownframe.Handlers{

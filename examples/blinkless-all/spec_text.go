@@ -164,8 +164,10 @@ func textHTML(name string) string {
 	case "font-size-adjust":
 		// aspect 2 scales the glyphs about four times: start from a 5px face.
 		return tbox("font-size:5px;line-height:30px;height:30px;overflow:hidden;", `Sphinx`)
-	case "font-size", "line-height", "line-padding", "line-fit-edge":
+	case "font-size", "line-height", "line-padding":
 		return tbox("", textBody)
+	case "line-fit-edge":
+		return `<div id="{{ID}}" style="width:160px;font-size:16px;background:#f1efe7;"><span id="{{ID}}-1" style="padding:8px;background:#dfe9f3;{{STYLE}}">Ag</span></div>`
 	case "text-indent":
 		return tbox("", textBody+` `+textBody)
 	case "font-variant-emoji":
@@ -345,6 +347,7 @@ var textVisible = map[string]bool{
 	"letter-spacing":              true,
 	"line-break":                  true,
 	"line-clamp":                  true,
+	"line-fit-edge":               true,
 	"line-height":                 true,
 	"line-padding":                true,
 	"offset-anchor":               true,
@@ -416,6 +419,7 @@ var textLookOf = map[string]string{
 	"quotes":                      "Custom `«` and `»` quote marks wrap `hello` via `open-quote`/`close-quote` instead of the default double quotes.",
 	"text-decoration-skip-box":    "With `all` the continuous underline breaks across the padded `cd` inline span into separate segments.",
 	"line-break":                  "With `anywhere` the unbreakable `W...` token wraps across multiple lines inside the 120 px box even under `word-break: keep-all`.",
+	"line-fit-edge":               "With `text` the inline span drops its vertical padding from the line box height, shrinking the line from 34 px to 18 px.",
 	"hyphenate-limit-last":        "With `always` the last line avoids hyphenating the long word at the soft hyphen.",
 	"text-autospace":              "The painter replays text-autospace natively, opening extra spacing at ideograph and Latin boundaries.",
 	"font-variant-numeric":        "In Blinkless OT, `tabular-nums` (`tnum`) widens the narrow `1` digits so `1111` aligns cleanly with `8888`.",

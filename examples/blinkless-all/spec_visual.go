@@ -395,7 +395,7 @@ func paintSpec(r genProp) (DemoSpec, bool) {
 	case "image-animation":
 		return specNo(vizImg(""), "The image shows the same still frame; a static PNG has no animation to pause.")
 	case "image-orientation":
-		return specNo(vizImg(""), "The image shows the same picture; image-orientation none keeps the stored orientation, which a PNG already has.")
+		return spec(`<div id="{{ID}}" style="width:160px"><img id="{{ID}}-1" src="mask-wide" style="background:#dfe9f3;{{STYLE}}"></div>`, "Rotating the 32x16 image by 90 degrees swaps its orientation to a 16x32 vertical strip.")
 	case "image-rendering":
 		return spec(`<div id="{{ID}}" style="width:160px"><img id="{{ID}}-1" src="`+vizPNG+`" style="width:140px;height:60px;{{STYLE}}"></div>`, "The 20x20 sample image scales up with hard pixel edges instead of a smooth blend.")
 	case "image-resolution":
@@ -452,7 +452,7 @@ func maskSpec(r genProp) (DemoSpec, bool) {
 	case "mask-border", "mask-border-source":
 		return spec(`<div style="margin:22px 14px">`+body("border:10px solid #2c3e50;mask-border-slice:6;mask-border-width:16px;")+`</div>`, "The sample border mask frames the striped box using the 20x20 sample image.")
 	case "mask-type":
-		return specNo(body(""), "The striped box is unchanged; mask-type applies to SVG mask elements, not to a box.")
+		return spec(body("mask-image:url(mask-luminance.svg#shape);mask-mode:match-source;"), "The SVG mask defaults to luminance (hiding the black left half); setting `mask-type: alpha` reads both opaque halves equally.")
 	case "mask-composite":
 		look := "Subtracting the fading layer from the solid layer changes the box's opacity along its width; the picture differs from the control's fully opaque stripes."
 		if strings.Contains(r.Sample, "source-out") {

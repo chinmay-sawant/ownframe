@@ -131,7 +131,10 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "clear":
 		return lay(`<div id="{{ID}}" style="width:280px;background:#e8e4d8;overflow:hidden"><div style="float:left;width:80px;height:40px;background:#6a9"></div><div id="{{ID}}-1" style="height:20px;background:#c96;{{STYLE}}">cleared</div></div>`,
 			"The orange bar drops below the left float instead of sitting beside it.", true), true
-	case in(n, "float-offset", "float-defer", "float-reference"):
+	case n == "float-reference":
+		return lay(`<div id="{{ID}}" style="width:160px;height:40px;background:#e8e4d8;"><div id="{{ID}}-1" style="float:right;width:50px;height:20px;background:#c96;{{STYLE}}"></div></div>`,
+			"With `float-reference: page` the right float snaps to the right edge of the 300 px cell instead of the 160 px container.", true), true
+	case in(n, "float-offset", "float-defer"):
 		return lay(`<div id="{{ID}}" style="width:280px;height:40px;background:#e8e4d8;"><div id="{{ID}}-1" style="float:right;width:80px;height:30px;background:#c96;{{STYLE}}"></div></div>`,
 			floatLook(n), n == "float-offset"), true
 	case in(n, "top", "left", "right", "bottom", "inset", "inset-block", "inset-block-start", "inset-block-end", "inset-inline", "inset-inline-start", "inset-inline-end"):
@@ -186,6 +189,30 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "flow-from" || n == "flow-into":
 		return lay(`<div id="{{ID}}" style="width:200px;height:40px;background:#c96;font-size:12px;{{STYLE}}">box</div>`,
 			"Assigning the box to the named flow `main` removes it from normal flow painting.", true), true
+	case n == "flow-tolerance":
+		return lay(`<div id="{{ID}}" style="display:grid;grid-template-rows:masonry;grid-template-columns:100px 100px;column-gap:10px;width:210px;background:#e8e4d8;font-size:11px;flow-tolerance:infinite;{{STYLE}}"><div id="{{ID}}-1" style="height:20px;background:#c96">item a</div><div id="{{ID}}-2" style="height:60px;background:#69c">item b</div></div>`,
+			"In the control (`infinite`) item b goes into column 2; `0px` tolerance places it in column 1 below item a.", true), true
+	case n == "region-fragment":
+		return lay(`<div id="{{ID}}" style="width:200px;font-family:monospace;font-size:10px;"><div style="flow-into:rf{{ID}} content"><p style="margin:0;{{STYLE}}">alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima mike november oscar papa quebec romeo sierra tango uniform victor</p></div><div id="{{ID}}-1" style="flow-from:rf{{ID}};height:20px;border:1px solid #888;background:#e8e4d8;margin-bottom:4px"></div><div id="{{ID}}-2" style="flow-from:rf{{ID}};min-height:20px;border:1px solid #888;background:#dfe9f3"></div></div>`,
+			"In the control (`auto`) the paragraph splits across both regions; with `break` the whole paragraph moves into the second region.", true), true
+	case n == "wrap-flow":
+		return lay(`<div id="{{ID}}" style="width:200px;font-size:11px;line-height:14px;background:#e8e4d8;"><div id="{{ID}}-1" style="width:60px;height:30px;background:#c96;{{STYLE}}"></div><p id="{{ID}}-2" style="margin:0">alpha bravo charlie delta echo foxtrot golf hotel</p></div>`,
+			"With `wrap-flow: both` the orange box acts as an exclusion and pushes the following paragraph text past its right edge.", true), true
+	case n == "wrap-through":
+		return lay(`<div id="{{ID}}" style="width:200px;font-size:11px;line-height:14px;background:#e8e4d8;"><div id="{{ID}}-1" style="wrap-flow:end;width:60px;height:30px;background:#c96;"></div><p id="{{ID}}-2" style="margin:0;{{STYLE}}">alpha bravo charlie delta echo foxtrot golf</p></div>`,
+			"In the control the text wraps around the orange exclusion; `wrap-through: none` ignores the exclusion and starts at the left edge.", true), true
+	case n == "wrap-before" || n == "wrap-after":
+		return lay(`<div id="{{ID}}" style="width:200px;font-size:11px;line-height:14px;background:#e8e4d8;"><p id="{{ID}}-1" style="margin:0">one two <span style="background:#c96;{{STYLE}}">alpha</span> three</p></div>`,
+			"Forces a line break immediately before or after the highlighted `alpha` span.", true), true
+	case n == "wrap-inside":
+		return lay(`<div id="{{ID}}" style="width:200px;font-family:monospace;font-size:10px;line-height:14px;background:#e8e4d8;"><p id="{{ID}}-1" style="margin:0">aaaa aaaa aaaa <span style="background:#c96;{{STYLE}}">bbbbbb cccccc dddddd</span></p></div>`,
+			"With `wrap-inside: avoid` the highlighted `bbbbbb cccccc dddddd` phrase moves whole onto the next line instead of splitting.", true), true
+	case n == "inline-sizing":
+		return lay(`<div id="{{ID}}" style="width:160px;font-size:16px;line-height:32px;background:#e8e4d8;"><span id="{{ID}}-1" style="background:#c96;line-height:normal;{{STYLE}}">Stretch</span></div>`,
+			"With `inline-sizing: stretch` the orange inline background stretches to fill the full 32 px line height.", true), true
+	case n == "link-parameters":
+		return lay(`<div id="{{ID}}" style="width:160px;padding:6px;background:#e8e4d8;"><img id="{{ID}}-1" src="swatch.svg" style="width:64px;height:40px;{{STYLE}}"></div>`,
+			"Passes `param(--color: #c0392b)` into `swatch.svg`, recoloring the blue SVG square to red.", true), true
 	case n == "anchor-name":
 		return lay(anchorDemo("{{STYLE}}", "position-anchor:--a;position-area:top;"), "Naming the orange box `--a` lets the blue label attach directly above it via `position-anchor: --a; position-area: top`.", true), true
 	case n == "position-anchor":
