@@ -37,7 +37,11 @@ func tbox(base, body string) string {
 
 func textHTML(name string) string {
 	switch name {
-	case "alignment-baseline", "dominant-baseline", "baseline-shift", "text-anchor", "glyph-orientation-vertical":
+	case "alignment-baseline", "dominant-baseline":
+		return `<div id="{{ID}}" style="width:120px;height:50px;background:#f1efe7;padding:12px 8px;"><p id="{{ID}}-1" style="margin:0;font-size:16px;color:#1f2937;{{STYLE}}">Hag</p></div>`
+	case "baseline-source":
+		return `<div id="{{ID}}" style="width:160px;font-size:13px;background:#f1efe7;padding:4px;">Before <span id="{{ID}}-1" style="display:inline-block;width:54px;background:#dfe9f3;{{STYLE}}">line1 line2 line3</span> after</div>`
+	case "baseline-shift", "text-anchor", "glyph-orientation-vertical":
 		target := `<text id="{{ID}}-1" x="60" y="40" font-size="16" fill="#1f2937" style="{{STYLE}}">Hag<tspan>ij</tspan></text>`
 		if name == "baseline-shift" {
 			target = `<text id="{{ID}}-1" x="20" y="40" font-size="16" fill="#1f2937">Hag<tspan id="{{ID}}-2" style="{{STYLE}}">ij</tspan>k</text>`
@@ -66,9 +70,13 @@ func textHTML(name string) string {
 		return tbox("height:46px;padding-top:14px;", `Drop`)
 	case "initial-letter-align", "initial-letter-wrap":
 		return tbox("height:46px;padding-top:14px;", `<span style="initial-letter:2;{{STYLE}}">D</span>rop cap paragraph`)
-	case "hyphens", "hyphenate-character", "hyphenate-limit-chars", "hyphenate-limit-last", "hyphenate-limit-lines", "hyphenate-limit-zone":
+	case "hyphens", "hyphenate-character", "hyphenate-limit-chars", "hyphenate-limit-lines", "hyphenate-limit-zone":
 		return `<div id="{{ID}}" lang="en" style="width:90px;font-size:13px;background:#f1efe7;padding:4px;hyphens:auto;{{STYLE}}">` +
 			`Extra&shy;ordinarily inter&shy;nationalization</div>`
+	case "hyphenate-limit-last":
+		return `<div id="{{ID}}" lang="en" style="width:110px;font-size:13px;background:#f1efe7;padding:4px;hyphens:auto;{{STYLE}}">See extra&shy;ordinarily</div>`
+	case "line-break":
+		return `<div id="{{ID}}" style="width:120px;font-size:13px;background:#f1efe7;padding:4px;word-break:keep-all;{{STYLE}}">WWWWWWWWWWWWWWWWWWWWWW</div>`
 	case "line-clamp":
 		return tbox("overflow:hidden;", textBody+` `+textBody+` `+textBody)
 	case "block-ellipsis":
@@ -94,8 +102,10 @@ func textHTML(name string) string {
 		return tbox("font-size:28px;font-weight:700;padding:10px 12px;", `Shadow`)
 	case "text-transform":
 		return tbox("", `Mixed case words wrap over two lines here.`)
-	case "text-wrap", "text-wrap-mode", "text-wrap-style":
+	case "text-wrap", "text-wrap-mode":
 		return tbox("", `Wrapping text that fills a narrow box with several short words here.`)
+	case "text-wrap-style":
+		return `<div id="{{ID}}" style="width:220px;font-size:13px;line-height:1.3;background:#f1efe7;padding:4px;{{STYLE}}">The quick brown fox jumps over the lazy dog</div>`
 	case "text-align":
 		return tbox("", `Aligned text across two lines of this box.`)
 	case "text-align-all":
@@ -114,9 +124,9 @@ func textHTML(name string) string {
 	case "text-decoration":
 		return `<div style="text-decoration:none">` + tbox("text-decoration:underline;", textBody) + `</div>`
 	case "quotes":
-		return tbox("", `Say <q id="{{ID}}-1">hello <q>nested</q></q> now.`)
+		return `<style>#{{ID}}-1::before{content:open-quote}#{{ID}}-1::after{content:close-quote}</style>` + tbox("", `Say <q id="{{ID}}-1" style="{{STYLE}}">hello</q> now.`)
 	case "content":
-		return tbox("", `<span id="{{ID}}-1" style="{{STYLE}}">original</span> text`)
+		return `<style>#{{ID}}-1::before{ {{RAWSTYLE}} }</style>` + tbox("", `<span id="{{ID}}-1">original</span> text`)
 	case "bookmark-label", "bookmark-level", "bookmark-state", "copy-into", "footnote-display", "footnote-policy":
 		return tbox("", `Heading text<span id="{{ID}}-1" style="display:block">and a second child</span>`)
 	case "counter-reset":
@@ -124,9 +134,11 @@ func textHTML(name string) string {
 	case "counter-increment", "counter-set":
 		return counterHTML("counter-reset:k;", "{{STYLE}}")
 	case "text-decoration-color", "text-decoration-thickness", "text-decoration-style", "text-decoration-inset",
-		"text-underline-offset", "text-underline-position", "text-decoration-skip", "text-decoration-skip-box",
+		"text-underline-offset", "text-underline-position", "text-decoration-skip",
 		"text-decoration-skip-ink", "text-decoration-skip-self", "text-decoration-skip-spaces":
 		return tbox("text-decoration:underline;line-height:3.4;padding:4px 4px 24px;", `Underlined gypsy jumping quickly over lazy dogs.`)
+	case "text-decoration-skip-box":
+		return `<div id="{{ID}}" style="width:160px;font-size:14px;background:#f1efe7;padding:8px 4px;"><span style="text-decoration:underline">ab</span><span id="{{ID}}-1" style="text-decoration:underline;padding:0 6px;{{STYLE}}">cd</span><span style="text-decoration:underline">ef</span></div>`
 	case "text-decoration-line":
 		return tbox("line-height:2;", `Decorated text here.`)
 	case "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-style":
@@ -299,11 +311,15 @@ func animHTML(name string) string {
 //
 //nolint:gochecknoglobals // read-only property lookup table
 var textVisible = map[string]bool{
+	"alignment-baseline":          true,
+	"baseline-source":             true,
+	"content":                     true,
 	"content-visibility":          true,
 	"counter-increment":           true,
 	"counter-reset":               true,
 	"counter-set":                 true,
 	"direction":                   true,
+	"dominant-baseline":           true,
 	"font":                        true,
 	"font-family":                 true,
 	"font-size":                   true,
@@ -319,6 +335,7 @@ var textVisible = map[string]bool{
 	"hanging-punctuation":         true,
 	"hyphenate-character":         true,
 	"hyphenate-limit-chars":       true,
+	"hyphenate-limit-last":        true,
 	"hyphenate-limit-lines":       true,
 	"hyphenate-limit-zone":        true,
 	"hyphens":                     true,
@@ -326,10 +343,12 @@ var textVisible = map[string]bool{
 	"initial-letter-align":        true,
 	"initial-letter-wrap":         true,
 	"letter-spacing":              true,
+	"line-break":                  true,
 	"line-clamp":                  true,
 	"line-height":                 true,
 	"line-padding":                true,
 	"offset-anchor":               true,
+	"quotes":                      true,
 	"ruby-align":                  true,
 	"ruby-merge":                  true,
 	"ruby-overhang":               true,
@@ -347,6 +366,7 @@ var textVisible = map[string]bool{
 	"text-decoration-inset":       true,
 	"text-decoration-line":        true,
 	"text-decoration-skip":        true,
+	"text-decoration-skip-box":    true,
 	"text-decoration-skip-ink":    true,
 	"text-decoration-skip-self":   true,
 	"text-decoration-skip-spaces": true,
@@ -368,6 +388,7 @@ var textVisible = map[string]bool{
 	"text-underline-position":     true,
 	"text-wrap":                   true,
 	"text-wrap-mode":              true,
+	"text-wrap-style":             true,
 	"unicode-bidi":                true,
 	"vertical-align":              true,
 	"white-space":                 true,
@@ -387,6 +408,15 @@ var textLookOf = map[string]string{
 	"text-overflow":               "The one-line text truncates at the 160 px box edge and ends with the custom `x` string instead of running past the edge.",
 	"text-wrap":                   "The control wraps the text inside the 160px box; with `nowrap` the demo keeps one line, which is wider than the box and runs past its right edge.",
 	"text-wrap-mode":              "The control wraps the text inside the 160px box; with `nowrap` the demo keeps one line, which is wider than the box and runs past its right edge.",
+	"text-wrap-style":             "With `balance` the two lines split more evenly (`The quick brown fox` / `jumps over the lazy dog`) instead of filling the first line greedily.",
+	"alignment-baseline":          "With `middle` the text baseline shifts upward relative to the default alphabetic baseline.",
+	"dominant-baseline":           "With `hanging` the text shifts upward to align its hanging baseline.",
+	"baseline-source":             "With `first` the multi-line inline-block aligns to the surrounding text on its first line instead of its last line.",
+	"content":                     "The `::before` pseudo-element inserts the generated string `x` immediately before `original`.",
+	"quotes":                      "Custom `«` and `»` quote marks wrap `hello` via `open-quote`/`close-quote` instead of the default double quotes.",
+	"text-decoration-skip-box":    "With `all` the continuous underline breaks across the padded `cd` inline span into separate segments.",
+	"line-break":                  "With `anywhere` the unbreakable `W...` token wraps across multiple lines inside the 120 px box even under `word-break: keep-all`.",
+	"hyphenate-limit-last":        "With `always` the last line avoids hyphenating the long word at the soft hyphen.",
 	"text-autospace":              "The painter replays text-autospace natively, opening extra spacing at ideograph and Latin boundaries.",
 	"font-variant-numeric":        "In Blinkless OT, `tabular-nums` (`tnum`) widens the narrow `1` digits so `1111` aligns cleanly with `8888`.",
 	"font-variant-ligatures":      "In DejaVu Sans, disabling ligatures breaks the joined `fi`, `fl`, `ffi`, `ffl` glyphs into separate characters.",

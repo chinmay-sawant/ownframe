@@ -202,7 +202,7 @@ func (s DemoSpec) expand(r genProp, id string, withStyle bool) string {
 		style = r.Name + ":" + r.Sample + ";"
 	}
 
-	return strings.NewReplacer("{{ID}}", id, "{{STYLE}}", html.EscapeString(style),
+	return strings.NewReplacer("{{ID}}", id, "{{STYLE}}", html.EscapeString(style), "{{RAWSTYLE}}", style,
 		"{{NAME}}", html.EscapeString(r.Name), "{{VALUE}}", html.EscapeString(r.Sample)).Replace(s.HTML)
 }
 

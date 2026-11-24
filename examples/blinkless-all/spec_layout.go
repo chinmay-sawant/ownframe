@@ -156,11 +156,13 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case in(n, "columns", "column-count"):
 		return lay(colDemo("{{STYLE}}"), "The paragraph splits into two side-by-side columns instead of one full-width paragraph.", true), true
 	case n == "column-fill":
-		return lay(colKids("column-fill:auto;height:60px;{{STYLE}}"), "Accepted; the engine lays the two boxes out the same with or without balancing, so nothing moves.", false), true
+		return lay(`<div id="{{ID}}" style="column-count:2;column-fill:auto;height:90px;width:280px;background:#e8e4d8;font-size:12px;{{STYLE}}"><p style="margin:0 0 6px">Alpha beta.</p><p style="margin:0 0 6px">Gamma delta.</p><p style="margin:0 0 6px">Epsilon zeta.</p><p style="margin:0">Eta theta.</p></div>`,
+			"With `column-fill: balance` the four paragraphs split evenly across both columns instead of stacking in the first column.", true), true
 	case n == "column-height":
 		return lay(colDemo("column-count:2;{{STYLE}}"), "Draft property: columns get a fixed 12px height, so the box shrinks to one line of the first column and the rest of the text is not shown.", true), true
 	case n == "column-wrap":
-		return lay(colDemo("column-count:2;{{STYLE}}"), "Draft property: the value is the default, so the columns stay as they are.", false), true
+		return lay(`<div id="{{ID}}" style="column-count:2;column-gap:8px;column-height:24px;column-fill:auto;width:200px;background:#e8e4d8;font-size:10px;{{STYLE}}"><p style="margin:0 0 2px">Alpha one.</p><p style="margin:0 0 2px">Bravo two.</p><p style="margin:0 0 2px">Charlie three.</p><p style="margin:0 0 2px">Delta four.</p><p style="margin:0 0 2px">Echo five.</p><p style="margin:0 0 2px">Foxtrot six.</p><p style="margin:0 0 2px">Golf seven.</p><p style="margin:0">Hotel eight.</p></div>`,
+			"In the control (`auto`) overflowing columns wrap onto a second row; `nowrap` keeps everything in one 24 px row.", true), true
 	case n == "column-span":
 		return lay(`<div id="{{ID}}" style="column-count:2;width:280px;background:#e8e4d8;font-size:12px;"><p style="margin:0">Alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu.</p>`+
 			`<div id="{{ID}}-1" style="background:#c96;{{STYLE}}">Heading</div><p style="margin:0">Nu xi omicron pi rho sigma tau upsilon phi chi psi omega.</p></div>`,
@@ -176,8 +178,8 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<style>@container box (min-width: 100px){#{{ID}}-1{background:#c0392b !important;}}</style><div id="{{ID}}" style="width:200px;container-type:inline-size;{{STYLE}}"><div id="{{ID}}-1" style="height:24px;background:#69c;">inside</div></div>`,
 			"Naming the container `box` matches the `@container box (min-width: 100px)` rule, turning the inner bar red.", true), true
 	case n == "anchor-scope":
-		return lay(`<div id="{{ID}}" style="width:200px;padding:6px;background:#c96;font-size:12px;{{STYLE}}">named, but nothing queries it</div>`,
-			"Only a name for later queries or anchors is declared, so nothing visible changes.", false), true
+		return lay(`<div id="{{ID}}" style="position:relative;width:280px;height:80px;background:#e8e4d8;"><div style="{{STYLE}}"><div id="{{ID}}-1" style="position:absolute;left:100px;top:44px;width:80px;height:24px;background:#c96;anchor-name:--a;">anchor</div></div><div id="{{ID}}-2" style="position:absolute;width:60px;height:20px;background:#69c;position-anchor:--a;position-area:top;">label</div></div>`,
+			"Scoping `--a` inside the wrapper hides it from the outer blue label, so the label drops back to the top-left instead of sitting above the orange anchor.", true), true
 	case n == "continue":
 		return lay(`<div id="{{ID}}" style="width:200px;height:20px;background:#e8e4d8;font-size:12px;{{STYLE}}">Long text that overflows the box height</div>`,
 			"With `continue: discard` the overflowing content is discarded instead of spilling past the 20 px box.", true), true
@@ -185,9 +187,10 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="width:200px;height:40px;background:#c96;font-size:12px;{{STYLE}}">box</div>`,
 			"Assigning the box to the named flow `main` removes it from normal flow painting.", true), true
 	case n == "anchor-name":
-		return lay(anchorDemo("{{STYLE}}", "position-anchor:--a;"), "The engine does not resolve anchor positioning for a name alone, so the blue label stays at the top-left; the name is accepted.", false), true
+		return lay(anchorDemo("{{STYLE}}", "position-anchor:--a;position-area:top;"), "Naming the orange box `--a` lets the blue label attach directly above it via `position-anchor: --a; position-area: top`.", true), true
 	case n == "position-anchor":
-		return lay(anchorDemo("anchor-name:--a;", "{{STYLE}}"), "The engine does not attach the blue label to the named anchor, so it stays at the top-left; the name is accepted.", false), true
+		return lay(`<div id="{{ID}}" style="position:relative;width:280px;height:80px;background:#e8e4d8;"><div id="{{ID}}-1" style="position:absolute;left:20px;top:44px;width:70px;height:24px;background:#6a9;anchor-name:--b;">anchor b</div><div id="{{ID}}-2" style="position:absolute;left:150px;top:44px;width:70px;height:24px;background:#c96;anchor-name:--a;">anchor a</div><div id="{{ID}}-3" style="position:absolute;width:60px;height:20px;background:#69c;position-anchor:--b;position-area:top;{{STYLE}}">label</div></div>`,
+			"Setting `position-anchor: --a` moves the blue label from above green `anchor b` to above orange `anchor a`.", true), true
 	case n == "position-area":
 		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The blue label centres directly above the orange anchor instead of sitting at the top-left.", true), true
 	case in(n, "position-try", "position-try-fallbacks"):
