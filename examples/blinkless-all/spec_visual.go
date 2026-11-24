@@ -401,7 +401,7 @@ func paintSpec(r genProp) (DemoSpec, bool) {
 	case "image-resolution":
 		return spec(`<div id="{{ID}}" style="width:160px"><img id="{{ID}}-1" src="`+vizPNG+`" style="{{STYLE}}"></div>`, "The unsized 20x20 image gets smaller: at 2 dppx its natural size halves from 20 px to 10 px.")
 	case "shape-rendering":
-		return specNo(vizSVG("", `<circle cx="70" cy="35" r="26" fill="#c0392b" style="{{STYLE}}"/>`), "A red circle with crispEdges rendering; the painter anti-aliases both, so the picture is the same.")
+		return spec(vizSVG("", `<circle cx="70.4" cy="35.4" r="26.3" fill="#c0392b" style="{{STYLE}}"/>`), "With `crispEdges` the fractional circle coordinates snap to whole device pixels.")
 	}
 
 	return specNo(vizBox("", ""), "A plain box: "+n+" has no demo here.")

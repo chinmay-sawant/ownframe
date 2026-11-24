@@ -157,6 +157,12 @@ func textHTML(name string) string {
 		return tbox("font-family:'Blinkless OT';font-style:italic;font-size:20px;", `Italic text`)
 	case "font-variant-numeric":
 		return tbox("font-family:'Blinkless OT';font-size:20px;", "1111<br>8888")
+	case "font-optical-sizing":
+		return tbox("font-family:'Blinkless Var';font-size:48px;", "AAAA")
+	case "font-variation-settings":
+		return tbox("font-family:'Blinkless Var';font-size:28px;", "AAAA")
+	case "font-palette":
+		return tbox("font-family:'Blinkless Palette';font-size:24px;color:#111111;", "Ag")
 	case "text-box", "text-box-trim":
 		return `<div id="{{ID}}" style="width:160px;font-size:20px;line-height:2;padding:8px 0;background:#cfe3f7;{{STYLE}}">Trimmed Hxg</div>`
 	case "text-box-edge":
@@ -324,6 +330,8 @@ var textVisible = map[string]bool{
 	"dominant-baseline":           true,
 	"font":                        true,
 	"font-family":                 true,
+	"font-optical-sizing":         true,
+	"font-palette":                true,
 	"font-size":                   true,
 	"font-size-adjust":            true,
 	"font-style":                  true,
@@ -333,6 +341,7 @@ var textVisible = map[string]bool{
 	"font-variant":                true,
 	"font-variant-caps":           true,
 	"font-variant-position":       true,
+	"font-variation-settings":     true,
 	"font-weight":                 true,
 	"hanging-punctuation":         true,
 	"hyphenate-character":         true,
@@ -429,6 +438,9 @@ var textLookOf = map[string]string{
 	"font-synthesis-weight":       "In regular-only Blinkless OT, `font-weight: 700` draws synthetic bold in the control; `font-synthesis-weight: none` disables it so the strokes stay regular.",
 	"font-synthesis":              "In the control, lowercase letters are synthesised into small caps. With `font-synthesis: none`, synthesis is disabled and lowercase letters stay lowercase.",
 	"font-feature-settings":       "In DejaVu Sans, `\"liga\" 0` breaks the joined `fi`, `fl`, `ffi`, `ffl` ligatures into separate characters.",
+	"font-optical-sizing":         "In Blinkless Var at 48 px, `none` disables automatic `opsz` axis instancing so the glyphs keep their default optical proportions.",
+	"font-palette":                "In Blinkless Palette (`COLR`+`CPAL`), `dark` switches the glyphs from the default light palette to the dark orange palette.",
+	"font-variation-settings":     "In Blinkless Var, `\"wght\" 900` instances the variable weight axis to its heavy master, widening the glyphs.",
 	"font-language-override":      "In DejaVu Sans, `\"SRB\"` activates the Serbian `locl` form of Cyrillic `б`.",
 	"fill":                        "The triangle fill changes from the default black to #c0392b red. Judge this row by the picture.",
 	"fill-opacity":                "The red triangle fill becomes half transparent, so the background shows through; the dark outline stays solid. Judge this row by the picture.",

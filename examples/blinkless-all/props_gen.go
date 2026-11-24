@@ -339,7 +339,7 @@ func genProps() []genProp {
 		{"font-variant-ligatures", "normal | none | [ <common-lig-values> || <discretionary-lig-values> || <historical-lig-values> || <contextual-alt-values> ]", "none", "text"},
 		{"font-variant-numeric", "normal | [ <numeric-figure-values> || <numeric-spacing-values> || <numeric-fraction-values> || ordinal || slashed-zero ]", "tabular-nums", "text"},
 		{"font-variant-position", "normal | sub | super", "sub", "text"},
-		{"font-variation-settings", "normal | [ <opentype-tag> <number> ]#", "2", "text"},
+		{"font-variation-settings", "normal | [ <opentype-tag> <number> ]#", "\"wght\" 900", "text"},
 		{"font-weight", "normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | inherit", "700", "text"},
 		{"font-width", "normal | <percentage [0,∞]> | ultra-condensed | extra-condensed | condensed | semi-condensed | semi-expanded | expanded | extra-expanded | ultra-expanded", "ultra-condensed", "text"},
 		{"footnote-display", "block | inline | compact", "inline", "text"},

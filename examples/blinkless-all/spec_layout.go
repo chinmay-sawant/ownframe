@@ -120,6 +120,9 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="width:280px;border:1px solid #888;background:#e8e4d8;{{STYLE}}">`+
 			kid(1, "height:20px;margin:12px;background:#c96;")+kid(2, "height:20px;margin:12px;background:#69c;")+`</div>`, //nolint:mnd // child index
 			"The container trims the first child's block-start margin and the last child's block-end margin, so the frame shortens.", true), true
+	case n == "margin-break":
+		return lay(`<div id="{{ID}}" style="column-count:2;column-gap:16px;column-fill:auto;height:40px;width:200px;background:#e8e4d8;font-size:11px;"><div id="{{ID}}-1" style="height:30px;background:#6a9">col 1</div><div id="{{ID}}-2" style="height:20px;margin-top:12px;background:#c96;{{STYLE}}">col 2</div></div>`,
+			"In the control (`auto`) the 12 px top margin is discarded at the column break; with `keep` the orange box in column 2 shifts down by 12 px.", true), true
 	case n == "display":
 		return lay(`<div id="{{ID}}" style="width:280px;background:#e8e4d8;"><span id="{{ID}}-1" style="background:#c96;{{STYLE}}">a span</span></div>`,
 			"The orange span stretches to the full frame width as a block instead of hugging its text.", true), true

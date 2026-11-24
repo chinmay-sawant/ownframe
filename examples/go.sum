@@ -34,6 +34,8 @@ github.com/chinmay-sawant/blinkless v0.1.8-0.20261124043610-733eb4a9cc10 h1:e8Qf
 github.com/chinmay-sawant/blinkless v0.1.8-0.20261124043610-733eb4a9cc10/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
 github.com/chinmay-sawant/blinkless v0.1.8-0.20261124144527-e2e7619e9f8c h1:vtfAH9KPGu6fJWJEmoX8up4eFYraPtmMk+t2Pn3Vvi4=
 github.com/chinmay-sawant/blinkless v0.1.8-0.20261124144527-e2e7619e9f8c/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
+github.com/chinmay-sawant/blinkless v0.1.8-0.20261124182322-32f6ebbce4d0 h1:lVoPr9cr6W4a9zEy/jIhlS3daGPKBKJBZDaoefidN8I=
+github.com/chinmay-sawant/blinkless v0.1.8-0.20261124182322-32f6ebbce4d0/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
 github.com/chinmay-sawant/ownframe v0.0.5 h1:1TnG3IZE15Vyoxc4GWQw+v/734ZUKcl9lqtV1WOYxds=
 github.com/chinmay-sawant/ownframe v0.0.5/go.mod h1:Ih6GKymUqX9O68tX7m1sBuB9yEBwmczcD0WVna93BNM=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
