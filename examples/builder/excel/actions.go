@@ -698,6 +698,7 @@ func (a *app) chartAction(verb, arg, extra string) {
 	case "select":
 		if id, err := strconv.Atoi(arg); err == nil {
 			a.x.selChart = id
+			a.bringChartToFront(id)
 		}
 	case "del":
 		if id, err := strconv.Atoi(arg); err == nil {

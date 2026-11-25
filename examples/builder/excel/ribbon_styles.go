@@ -25,7 +25,7 @@ const ribbonCSS = `
 .rb-rg-body { display: flex; flex-direction: column; flex: 1; gap: 2px; justify-content: center; }
 .rb-rb-col { display: flex; flex-direction: column; gap: 2px; }
 .rb-rg-name { font-size: 10px; text-align: center; color: var(--xl-cell-muted); height: 12px; }
-.rb-rb-row { display: flex; align-items: center; gap: 2px; }
+.rb-rb-row { display: flex; align-items: center; gap: 4px; }
 .rb-rb {
   display: flex; align-items: center; justify-content: center; box-sizing: border-box; margin: 0; line-height: 1;
   height: 22px; min-height: 22px; min-width: 22px; padding: 0 6px; border: 1px solid transparent; border-radius: 3px;
@@ -41,6 +41,18 @@ const ribbonCSS = `
 .rb-rb-strike { text-decoration: line-through; }
 .rb-rb-size { min-width: 42px; }
 .rb-rb-nf { min-width: 110px; text-align: left; }
+.rb-rb-dd {
+  justify-content: space-between; gap: 8px; padding: 0 6px;
+  border-color: var(--xl-dropdown-border); cursor: pointer;
+}
+.rb-rb-dd:hover, .rb-rb-dd:focus-visible, .rb-rb-dd[aria-expanded="true"] {
+  border-color: var(--xl-brand-strong); background: transparent;
+}
+.rb-dd-label { white-space: nowrap; }
+.rb-dd-arrow {
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 10px; height: 16px; font-size: 12px;
+}
 .rb-rb-lg { flex-direction: column; height: 44px; min-height: 44px; min-width: 44px; }
 .rb-rb-glyph { font-size: 12px; font-weight: 700; }
 .rb-rb-cap { font-size: 10px; }
@@ -92,10 +104,10 @@ const ribbonCSS = `
 .rb-sc-row { display: flex; align-items: center; gap: 12px; height: 24px; font-size: 12px; }
 .rb-chart-layer { z-index: 25; }
 .rb-chart {
-  display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden;
+  z-index: 1; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden;
   background: var(--xl-sheet-bg); border: 1px solid var(--xl-gridline); border-radius: 4px; box-shadow: 0 4px 12px #0000002e;
 }
-.rb-chart-selected { border: 2px solid var(--xl-brand-strong); }
+.rb-chart-selected { border: 2px solid var(--xl-brand-strong); z-index: 10; }
 .rb-chart-head {
   display: flex; align-items: center; justify-content: space-between; height: 26px; padding: 0 8px; flex-shrink: 0;
   background: var(--xl-header-bg); color: var(--xl-header-fg); font-size: 12px; font-weight: 700;

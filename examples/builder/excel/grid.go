@@ -56,10 +56,13 @@ func (a *app) gridView() *ui.Element {
 		canvas.Children(a.gridLines(cols, rows, cw, ch)...)
 	}
 	canvas.Children(a.cellElements(cols, rows)...)
-	canvas.Children(a.selectionOverlays(cols, rows)...)
 	canvas.Children(a.freezeLines(cw, ch)...)
 
-	grid := ui.Div().ID("xl-grid").Class("xl-grid").Children(canvas)
+	overlay := ui.Div().ID("xl-goverlay").Class("xl-goverlay").
+		CSSRaw("left", pxStr(hx)).CSSRaw("top", pxStr(hy)).
+		Children(a.selectionOverlays(cols, rows)...)
+
+	grid := ui.Div().ID("xl-grid").Class("xl-grid").Children(canvas, overlay)
 	if !a.x.hideHeads {
 		grid.Children(a.headers(cols, rows, vw, vh)...)
 	}

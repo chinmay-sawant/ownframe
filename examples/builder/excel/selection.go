@@ -187,8 +187,10 @@ func (a *app) beginEdit(initial string) {
 	a.editOrig = a.sheet().Raw(a.active.Row, a.active.Col)
 	a.refActive = false
 	a.ensureVisible(a.active)
+	if a.page != nil {
+		a.page.Form().RequestFocus("xl-editor")
+	}
 	a.redraw()
-	_ = a.focus("xl-editor")
 }
 
 // beginBarEdit starts an edit from the formula input, which already has
@@ -218,7 +220,9 @@ func (a *app) commitEdit() {
 			a.wb.Edit(a.sheet(), a.active.Row, a.active.Col, raw)
 		}
 	}
-	_ = a.focus("")
+	if a.page != nil {
+		a.page.Form().RequestFocus("")
+	}
 	a.redraw()
 }
 
@@ -228,7 +232,9 @@ func (a *app) cancelEdit() {
 	}
 	a.editing, a.editFromBar, a.refActive = false, false, false
 	a.editBuf = ""
-	_ = a.focus("")
+	if a.page != nil {
+		a.page.Form().RequestFocus("")
+	}
 	a.redraw()
 }
 

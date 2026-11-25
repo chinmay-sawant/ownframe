@@ -200,3 +200,90 @@ func BenchmarkLayoutModels(b *testing.B) {
 		})
 	}
 }
+
+// BenchmarkScaleStagesDenseGrid measures HTMLParse, CSSApply, and DisplayList
+// on a 450-cell positioned grid under both a minimal stylesheet (~10 rules) and
+// a realistic theme-sized stylesheet (~300 rules with :root custom properties),
+// exposing how stylesheet size scales style resolution per element.
+func BenchmarkScaleStagesDenseGrid(b *testing.B) {
+	ctx := context.Background()
+	const rows, cols = 30, 15
+	const totalCells = rows * cols
+	const width, height = 1440, 960
+
+	var heavyCSS bytes.Buffer
+	heavyCSS.WriteString(":root{")
+	for i := range 60 {
+		fmt.Fprintf(&heavyCSS, "--tok-%d:#%02x%02x%02x;", i, (i*37)%255, (i*73)%255, (i*113)%255)
+	}
+	heavyCSS.WriteString("}")
+	for i := range 280 {
+		fmt.Fprintf(&heavyCSS, ".comp-%d{display:flex;padding:4px 8px;color:var(--tok-%d);background:var(--tok-%d);border:1px solid var(--tok-%d)}", i, i%60, (i+1)%60, (i+2)%60)
+	}
+
+	baseCSS := `html,body{margin:0;font-family:sans-serif;font-size:13px}` +
+		`.grid{position:relative;width:1400px;height:800px;overflow:hidden}` +
+		`.cell{position:absolute;box-sizing:border-box;overflow:hidden;white-space:nowrap;padding:0 4px;line-height:22px;color:var(--tok-0,#1f2328);border-right:1px solid var(--tok-1,#d4d4d4);border-bottom:1px solid var(--tok-1,#d4d4d4)}`
+
+	var body bytes.Buffer
+	body.WriteString(`<div class="grid">`)
+	for r := range rows {
+		for c := range cols {
+			fmt.Fprintf(&body, `<div id="c-%d-%d" class="cell" style="left:%dpx;top:%dpx;width:88px;height:24px"><span>%d</span></div>`, r, c, c*88, r*24, r*cols+c)
+		}
+	}
+	body.WriteString(`</div>`)
+
+	variants := []struct {
+		name string
+		css  string
+	}{
+		{"MinimalCSS", baseCSS},
+		{"HeavyThemeCSS", heavyCSS.String() + baseCSS},
+	}
+
+	for _, v := range variants {
+		src := []byte(`<!DOCTYPE html><html><head><style>` + v.css + `</style></head><body>` + body.String() + `</body></html>`)
+		b.Run(v.name, func(b *testing.B) {
+			b.Run("HTMLParse", func(b *testing.B) {
+				b.ReportAllocs()
+				for b.Loop() {
+					if _, err := html.Parse(src); err != nil {
+						b.Fatal(err)
+					}
+				}
+				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*totalCells), "ns/cell")
+			})
+
+			doc, err := html.Parse(src)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			b.Run("CSSApply", func(b *testing.B) {
+				b.ReportAllocs()
+				for b.Loop() {
+					if _, err := css.Apply(ctx, doc, css.Options{WidthPx: width, HeightPx: height, Media: "screen"}); err != nil {
+						b.Fatal(err)
+					}
+				}
+				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*totalCells), "ns/cell")
+			})
+
+			styled, err := css.Apply(ctx, doc, css.Options{WidthPx: width, HeightPx: height, Media: "screen"})
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			b.Run("DisplayList", func(b *testing.B) {
+				b.ReportAllocs()
+				for b.Loop() {
+					if _, err := layout.DisplayListOptions(ctx, styled, layout.Options{RetainState: true}); err != nil {
+						b.Fatal(err)
+					}
+				}
+				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*totalCells), "ns/cell")
+			})
+		})
+	}
+}

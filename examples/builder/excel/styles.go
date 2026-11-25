@@ -33,6 +33,7 @@ const xlLightTokens = `
  --xl-brand:#107c41; --xl-brand-hover:#0c6634; --xl-brand-strong:#107c41; --xl-brand-tint:#e6f4ea;
  --xl-titlebar-bg:#107c41; --xl-titlebar-fg:#ffffff;
  --xl-ribbon-bg:#f3f2f1; --xl-ribbon-group-bg:#ffffff; --xl-ribbon-border:#e1dfdd;
+ --xl-dropdown-border:#b3b1ae;
  --xl-formula-bg:#ffffff; --xl-sheet-bg:#ffffff; --xl-cell-text:#1f2328; --xl-cell-muted:#605e5c;
  --xl-gridline:#d4d4d4; --xl-gridline-frozen:#8a8886;
  --xl-header-bg:#f3f2f1; --xl-header-fg:#323130; --xl-header-active-bg:#d2e8db; --xl-header-active-fg:#107c41;
@@ -56,6 +57,7 @@ const xlDarkTokens = `
  --xl-brand:#185c37; --xl-brand-hover:#217346; --xl-brand-strong:#33c481; --xl-brand-tint:#163826;
  --xl-titlebar-bg:#18181b; --xl-titlebar-fg:#f4f4f5;
  --xl-ribbon-bg:#202024; --xl-ribbon-group-bg:#27272b; --xl-ribbon-border:#35353b;
+ --xl-dropdown-border:#66666f;
  --xl-formula-bg:#18181b; --xl-sheet-bg:#141417; --xl-cell-text:#f4f4f5; --xl-cell-muted:#a1a1aa;
  --xl-gridline:#2d2d33; --xl-gridline-frozen:#71717a;
  --xl-header-bg:#222226; --xl-header-fg:#d4d4d8; --xl-header-active-bg:#1d3b2b; --xl-header-active-fg:#4ade80;
@@ -160,6 +162,7 @@ const appCSS = `
   background: var(--xl-sheet-bg);
 }
 .xl-canvas { position: absolute; left: 40px; top: 24px; right: 0; bottom: 0; overflow: hidden; }
+.xl-goverlay { position: absolute; left: 40px; top: 24px; width: 0; height: 0; overflow: visible; }
 .xl-hline { position: absolute; left: 0; height: 1px; background: var(--xl-gridline); }
 .xl-vline { position: absolute; top: 0; width: 1px; background: var(--xl-gridline); }
 .xl-frozen-v { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--xl-gridline-frozen); }

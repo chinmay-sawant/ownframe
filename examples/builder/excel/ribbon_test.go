@@ -51,7 +51,7 @@ func TestHomeRibbonReflectsActiveStyle(t *testing.T) {
 		!strings.Contains(html, `aria-pressed="true"`) {
 		t.Errorf("bold toggle is not pressed for a bold cell")
 	}
-	if !strings.Contains(html, "Currency v") {
+	if !strings.Contains(html, `class="rb-dd-label">Currency</span>`) {
 		t.Errorf("number format control does not show Currency")
 	}
 }
@@ -874,5 +874,78 @@ func TestStackedAndDonutChartsRender(t *testing.T) {
 		if !strings.Contains(html, want) {
 			t.Errorf("%s chart missing %q in %s", kind, want, html)
 		}
+	}
+}
+
+// TestChartDragTranslatesInPlace verifies that dragging one chart on the
+// multi-chart Charts sheet moves its card and header boxes by the drag delta
+// while leaving sibling charts untouched.
+func TestChartDragTranslatesInPlace(t *testing.T) {
+	a := newTestAppForCharts(t)
+	for i, s := range a.wb.Sheets {
+		if s.Name == "Charts" {
+			a.wb.Active = i
+			break
+		}
+	}
+	a.redraw()
+
+	boxByID := func(id string) ownframe.Box {
+		t.Helper()
+		for _, b := range a.page.Boxes() {
+			if b.ID == id {
+				return b
+			}
+		}
+		t.Fatalf("box %q not found", id)
+		return ownframe.Box{}
+	}
+
+	beforeCard := boxByID("rb-chart-1")
+	beforeHdr := boxByID("rb-chart-hdr-1")
+	beforeSibling := boxByID("rb-chart-2")
+
+	ctx := t.Context()
+	claimed, err := a.handleDragStart(ctx, beforeHdr)
+	if err != nil || !claimed {
+		t.Fatalf("handleDragStart = (%v, %v), want (true, nil)", claimed, err)
+	}
+	const dx, dy = 40.0, 24.0
+	if err := a.handleDragMove(ctx, dx, dy); err != nil {
+		t.Fatalf("handleDragMove: %v", err)
+	}
+	if err := a.handleDragEnd(ctx); err != nil {
+		t.Fatalf("handleDragEnd: %v", err)
+	}
+
+	afterCard := boxByID("rb-chart-1")
+	afterHdr := boxByID("rb-chart-hdr-1")
+	afterSibling := boxByID("rb-chart-2")
+
+	if afterCard.X <= beforeCard.X || afterCard.Y <= beforeCard.Y {
+		t.Fatalf("rb-chart-1 did not move: before=(%.1f,%.1f) after=(%.1f,%.1f)",
+			beforeCard.X, beforeCard.Y, afterCard.X, afterCard.Y)
+	}
+	if afterHdr.X <= beforeHdr.X || afterHdr.Y <= beforeHdr.Y {
+		t.Fatalf("rb-chart-hdr-1 did not move with card: before=(%.1f,%.1f) after=(%.1f,%.1f)",
+			beforeHdr.X, beforeHdr.Y, afterHdr.X, afterHdr.Y)
+	}
+	if afterSibling.X != beforeSibling.X || afterSibling.Y != beforeSibling.Y {
+		t.Fatalf("sibling rb-chart-2 moved unexpectedly: before=(%.1f,%.1f) after=(%.1f,%.1f)",
+			beforeSibling.X, beforeSibling.Y, afterSibling.X, afterSibling.Y)
+	}
+	// The selected/dragged chart (rb-chart-1) must stack above rb-chart-2 in
+	// box order so both paint and hit-testing keep it on top.
+	idx1, idx2 := -1, -1
+	for i, b := range a.page.Boxes() {
+		switch b.ID {
+		case "rb-chart-1":
+			idx1 = i
+		case "rb-chart-2":
+			idx2 = i
+		}
+	}
+	if idx1 <= idx2 {
+		t.Fatalf("selected rb-chart-1 (box %d) is not stacked above rb-chart-2 (box %d)", idx1, idx2)
 	}
 }

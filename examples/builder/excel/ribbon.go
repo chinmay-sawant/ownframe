@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/chinmay-sawant/ownframe/ui"
 )
@@ -20,12 +21,23 @@ func rbBtn(action, label string, pressed bool) *ui.Element {
 	}
 	b := ui.Button(label).Attr("type", "button").Class(cls).
 		Attr("data-action", action).Attr("aria-label", label)
+	if action != "" {
+		b.ID("xl-rb-" + strings.ReplaceAll(action, ":", "-"))
+	}
 	if pressed {
 		b.Attr("aria-pressed", "true")
 	} else {
 		b.Attr("aria-pressed", "false")
 	}
 	return b
+}
+
+func rbDrop(label string) *ui.Element {
+	return ui.Button("").Attr("type", "button").Class("rb-rb rb-rb-dd").
+		Attr("aria-label", label).Children(
+		ui.Span().Class("rb-dd-label").Text(label),
+		ui.Span().Class("rb-dd-arrow").Attr("aria-hidden", "true").Text("▾"),
+	)
 }
 
 // rbTip is rbBtn with a tooltip and a spoken label distinct from the glyph.
@@ -128,11 +140,11 @@ func (a *app) homeTab() []*ui.Element {
 	if size == 0 {
 		size = defaultFontSize
 	}
-	sizeTrig := rbBtn("", strconv.Itoa(size)+" v", false).Class("rb-rb rb-rb-size").Attr("aria-label", "Font size")
-	famTrig := rbBtn("", fontFamilyLabel(st.FontFamily)+" v", false).Class("rb-rb rb-rb-size").Attr("aria-label", "Font family")
-	fillTrig := rbTip("", "Fill v", "Fill Color", false)
-	fontTrig := rbTip("", "A v", "Font Color", false)
-	nfTrig := rbBtn("", numberFormatLabel(st.NumFmt)+" v", false).Class("rb-rb rb-rb-nf").Attr("aria-label", "Number format")
+	sizeTrig := rbDrop(strconv.Itoa(size)).Class("rb-rb rb-rb-dd rb-rb-size").Attr("aria-label", "Font size")
+	famTrig := rbDrop(fontFamilyLabel(st.FontFamily)).Class("rb-rb rb-rb-dd rb-rb-size").Attr("aria-label", "Font family")
+	fillTrig := rbDrop("Fill").Attr("title", "Fill Color").Attr("aria-label", "Fill Color")
+	fontTrig := rbDrop("A").Attr("title", "Font Color").Attr("aria-label", "Font Color")
+	nfTrig := rbDrop(numberFormatLabel(st.NumFmt)).Class("rb-rb rb-rb-dd rb-rb-nf").Attr("aria-label", "Number format")
 	return []*ui.Element{
 		rbGroup("Clipboard",
 			rbRow(rbLarge("xl:paste", "📋", "Paste"),
@@ -152,7 +164,7 @@ func (a *app) homeTab() []*ui.Element {
 				rbTip("xl:italic", "I", "Italic (Ctrl+I)", st.Italic).Class("rb-rb rb-italic"+actClass(st.Italic)),
 				rbTip("xl:underline", "U", "Underline (Ctrl+U)", st.Underline).Class("rb-rb rb-underline"+actClass(st.Underline)),
 				rbTip("xl:strike", "S", "Strikethrough", st.Strike).Class("rb-rb rb-strike"+actClass(st.Strike)),
-				a.dropdown("border", rbTip("", "Border v", "Borders", false), a.borderMenu),
+				a.dropdown("border", rbDrop("Border").Attr("title", "Borders").Attr("aria-label", "Borders"), a.borderMenu),
 				a.dropdown("fill", fillTrig, func() *ui.Element { return a.colorPicker("xl:fillc", "No Fill") }),
 				a.dropdown("fontc", fontTrig, func() *ui.Element { return a.colorPicker("xl:fontc", "Automatic") }),
 			),
@@ -167,7 +179,7 @@ func (a *app) homeTab() []*ui.Element {
 				rbTip("xl:valign:bottom", "Bot", "Align Bottom", st.VAlign == "bottom").Class("rb-rb"+actClass(st.VAlign == "bottom")),
 			),
 			rbRow(rbTip("xl:wrap", "Wrap", "Wrap Text", st.Wrap).Class("rb-rb"+actClass(st.Wrap)),
-				a.dropdown("merge", rbBtn("", "Merge v", false), a.mergeMenu),
+				a.dropdown("merge", rbDrop("Merge"), a.mergeMenu),
 				rbTip("xl:indent:-", "<-", "Decrease Indent", false),
 				rbTip("xl:indent:+", "->", "Increase Indent", false)),
 		),
@@ -182,15 +194,15 @@ func (a *app) homeTab() []*ui.Element {
 			),
 		),
 		rbGroup("Styles",
-			rbRow(a.dropdown("cf", rbBtn("", "Conditional Formatting v", false), a.condFormatMenu)),
-			rbRow(a.dropdown("cstyles", rbBtn("", "Cell Styles v", false), a.cellStylesMenu)),
+			a.dropdown("cf", rbDrop("Conditional Formatting"), a.condFormatMenu),
+			a.dropdown("cstyles", rbDrop("Cell Styles"), a.cellStylesMenu),
 		),
 		rbGroup("Cells",
-			rbRow(a.dropdown("cells", rbBtn("", "Delete / Insert v", false), a.insertMenu)),
+			rbRow(a.dropdown("cells", rbDrop("Delete / Insert"), a.insertMenu)),
 		),
 		rbGroup("Editing",
-			rbRow(rbTip("xl:autosum", "Sum", "AutoSum", false), a.dropdown("clear", rbBtn("", "Clear v", false), a.clearMenu)),
-			rbRow(a.dropdown("sortfilter", rbBtn("", "Sort & Filter v", false), a.sortFilterMenu), rbTip("xl:dlg:find", "Find", "Find & Replace (Ctrl+F)", false)),
+			rbRow(rbTip("xl:autosum", "Sum", "AutoSum", false), a.dropdown("clear", rbDrop("Clear"), a.clearMenu)),
+			rbRow(a.dropdown("sortfilter", rbDrop("Sort & Filter"), a.sortFilterMenu), rbTip("xl:dlg:find", "Find", "Find & Replace (Ctrl+F)", false)),
 		),
 	}
 }
@@ -205,7 +217,7 @@ func actClass(on bool) string {
 func (a *app) insertTab() []*ui.Element {
 	return []*ui.Element{
 		rbGroup("Charts",
-			rbRow(a.dropdown("chart", rbBtn("", "Insert Chart v", false), a.chartMenu)),
+			rbRow(a.dropdown("chart", rbDrop("Insert Chart"), a.chartMenu)),
 			rbRow(rbTip("xl:chart:new:column", "Column", "Column chart from selection", false),
 				rbTip("xl:chart:new:bar", "Bar", "Bar chart from selection", false),
 				rbTip("xl:chart:new:line", "Line", "Line chart from selection", false),
@@ -299,7 +311,7 @@ func (a *app) viewTab() []*ui.Element {
 				rbTip("xl:zoom:sel", "To Selection", "Zoom to selection", false)),
 		),
 		rbGroup("Window",
-			rbRow(a.dropdown("freeze", rbBtn("", "Freeze Panes v", false), a.freezeMenu)),
+			rbRow(a.dropdown("freeze", rbDrop("Freeze Panes"), a.freezeMenu)),
 			rbRow(rbTip("xl:theme", themeLabel(a.dark), "Toggle Light and Dark theme", false)),
 		),
 	}

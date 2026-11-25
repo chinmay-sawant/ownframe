@@ -143,6 +143,20 @@ func (a *app) chartByID(id int) *ChartSpec {
 	return nil
 }
 
+func (a *app) bringChartToFront(id int) {
+	n := len(a.x.charts)
+	if n < 2 || a.x.charts[n-1].ID == id {
+		return
+	}
+	for i, c := range a.x.charts {
+		if c.ID == id {
+			copy(a.x.charts[i:], a.x.charts[i+1:])
+			a.x.charts[n-1] = c
+			return
+		}
+	}
+}
+
 func (a *app) deleteChart(id int) {
 	out := a.x.charts[:0]
 	for _, c := range a.x.charts {
@@ -343,6 +357,7 @@ func (a *app) chartDragStart(box ownframe.Box) bool {
 		return false
 	}
 	a.x.selChart, a.x.dragChart = id, id
+	a.bringChartToFront(id)
 	return true
 }
 

@@ -102,3 +102,43 @@ func BenchmarkExcelRibbonTabSwitch(b *testing.B) {
 		i++
 	}
 }
+
+// BenchmarkExcelChartDrag switches to the Charts sheet (6 seeded charts) and
+// drags a chart by small steps, repainting each frame like live DragMove.
+func BenchmarkExcelChartDrag(b *testing.B) {
+	a := benchApp(b, false)
+	for i, s := range a.wb.Sheets {
+		if s.Name == "Charts" {
+			a.wb.Active = i
+			break
+		}
+	}
+	a.redraw()
+	var target *ChartSpec
+	for _, c := range a.x.charts {
+		if c.Sheet == a.wb.Sheet().Name {
+			target = c
+			break
+		}
+	}
+	if target == nil {
+		target = a.addChart("column")
+		a.redraw()
+	}
+	a.x.selChart, a.x.dragChart = target.ID, target.ID
+	a.redraw()
+	b.ReportAllocs()
+	b.ResetTimer()
+	dx := 4.0
+	for i := 0; b.Loop(); i++ {
+		if i%20 == 19 {
+			dx = -dx
+		}
+		a.chartDragMove(dx, 2.0)
+		a.redraw()
+		if a.lastErr != nil {
+			b.Fatal(a.lastErr)
+		}
+	}
+	a.chartDragEnd()
+}
