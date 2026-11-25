@@ -57,18 +57,29 @@ type overlayState struct {
 
 	// View options, read by the grid and shell.
 	hideGrid, hideHeads, hideFormulaBar, showFormulas bool
-	zoom                                              int // percent, 0 means 100
+	zoom                                              int // percent, 0 means the default for the window width
+
+	// The scaled theme sheet last built and the zoom the page was given.
+	themeCSS      string
+	themeDark     bool
+	themeCachePct int
+	themePct      int
 }
 
 // zoomDefaultPct is the zoom shown when none was set.
 const zoomDefaultPct = 100
 
-// zoomPct returns the zoom percentage.
+// zoomPct returns the zoom percentage: the user's choice, or the default for
+// the window width until one is made.
 func (a *app) zoomPct() int {
-	if a.x.zoom == 0 {
+	if a.x.zoom != 0 {
+		return a.x.zoom
+	}
+	if a.page == nil {
 		return zoomDefaultPct
 	}
-	return a.x.zoom
+	w, _ := a.page.Size()
+	return autoZoomPct(w)
 }
 
 // overlays returns the elements mounted above the page: charts, the open
@@ -155,6 +166,9 @@ func (a *app) shortcut(key string) bool {
 // shortcutCtx is shortcut with the handler context threaded to the action.
 func (a *app) shortcutCtx(ctx context.Context, key string) bool {
 	switch key {
+	case "ctrl+=", "ctrl++", "ctrl+equal", "ctrl+plus", "ctrl+kpadd", "ctrl+shift+=", "ctrl+shift+equal",
+		"ctrl+shift+plus", "ctrl+-", "ctrl+minus", "ctrl+kpsubtract", "ctrl+shift+minus", "ctrl+0", "ctrl+kp0":
+		return a.zoomKey(key)
 	case "ctrl+b":
 		return a.runActionCtx(ctx, "xl:bold")
 	case "ctrl+i":

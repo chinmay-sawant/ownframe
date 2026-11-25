@@ -9,7 +9,12 @@ import (
 )
 
 // findHitLimit caps the hits listed in the find dialog.
-const findHitLimit = 40
+const (
+	findHitLimit = 40
+	dialogWidth  = 540.0 // modal width before zoom
+	vlistDX      = 120.0 // validation list offset from the chart origin
+	vlistDY      = 30.0
+)
 
 // opt reads a dialog option, falling back to def.
 func (a *app) opt(key, def string) string {
@@ -72,7 +77,7 @@ func fieldRow(label string, control ...*ui.Element) *ui.Element {
 func (a *app) modal(id, title, desc string, body []*ui.Element, footer ...*ui.Element) *ui.Element {
 	return chadcn.Dialog(chadcn.DialogOptions{
 		ID: "rb-dlg-" + id, Title: title, Description: desc,
-		CloseAction: "xl:close", Open: true, Footer: footer, Width: ui.Px(540),
+		CloseAction: "xl:close", Open: true, Footer: footer, Width: ui.Px(a.zf(dialogWidth)),
 	}, body...)
 }
 
@@ -116,7 +121,7 @@ func (a *app) validationListMenu() *ui.Element {
 		panel.Children(ddItem("xl:vlist:"+strconv.Itoa(i), it, ""))
 	}
 	return ui.Div().Class("rb-ctx-layer").Attr("data-action", "xl:close").Children(
-		panel.Position(ui.PositionFixed).Left(ui.Px(chartOriginX + 120)).Top(ui.Px(chartOriginY + 30)))
+		panel.Position(ui.PositionFixed).Left(ui.Px(a.zf(chartOriginX + vlistDX))).Top(ui.Px(a.zf(chartOriginY + vlistDY))))
 }
 
 func (a *app) findDialog() *ui.Element {

@@ -32,7 +32,7 @@ func (a *app) fbarH() int {
 	if a.x.hideFormulaBar {
 		return 0
 	}
-	return formulaBarHeight
+	return a.zs(formulaBarHeight)
 }
 
 // refHighlights draws one colored box per reference in the formula being

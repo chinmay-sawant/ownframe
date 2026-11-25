@@ -88,6 +88,8 @@ type app struct {
 	lastPress  time.Time
 	pressSeen  time.Time // last grid Press, so a Click that follows is not handled twice
 	lastCell   CellRef
+	tapEcho    time.Duration // window for dropping the tap echo; tests zero it so scripted clicks may be instant
+	dragEndAt  time.Time     // when the last claimed drag ended, to drop the window's trailing tap Press
 	wheelRow   float64
 	wheelCol   float64
 
@@ -102,6 +104,7 @@ type app struct {
 
 func newApp() (*app, error) {
 	a := &app{
+		tapEcho:   tapEchoGap,
 		bg:        context.Background,
 		wb:        NewWorkbook(),
 		ribbonTab: "Home",
@@ -155,13 +158,6 @@ func newApp() (*app, error) {
 	return a, nil
 }
 
-func (a *app) themeSheet() string {
-	if a.dark {
-		return ExcelDark
-	}
-	return ExcelLight
-}
-
 func (a *app) sheet() *Sheet { return a.wb.Sheet() }
 
 // readMods reads Shift and Ctrl from the Ebiten window. The page handlers
@@ -188,6 +184,7 @@ func (a *app) overlaysOpen() bool { return a.overlay != "" }
 
 // screen composes the full-window tree.
 func (a *app) screen() *ui.Element {
+	a.syncTheme()
 	root := ui.Div().ID("xl-shell").Class("xl-shell").Children(
 		a.titleBar(),
 		ui.Div().ID("xl-ribbon-slot").Class("xl-ribbon-slot").
@@ -232,9 +229,9 @@ func (a *app) setOverlay(id string) {
 
 func (a *app) ribbonHeight() int {
 	if a.ribbonCollapsed {
-		return ribbonHeightMin
+		return a.zs(ribbonHeightMin)
 	}
-	return ribbonHeightFull
+	return a.zs(ribbonHeightFull)
 }
 
 // handleClick routes data-action clicks. Ribbon and overlay actions go to the

@@ -72,7 +72,7 @@ func run(opt options) error {
 			if a.overlaysOpen() {
 				return false
 			}
-			return x >= 0 && y >= 0 && y < titleBarHeight
+			return x >= 0 && y >= 0 && y < a.zs(titleBarHeight)
 		},
 	})
 }

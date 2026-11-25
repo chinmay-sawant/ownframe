@@ -21,6 +21,7 @@ func newTestApp(t *testing.T) (*app, *testMods) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	a.tapEcho = 0
 	m := &testMods{}
 	a.modsFn = func() (bool, bool) { return m.shift, m.ctrl }
 	if err := a.page.Redraw(context.Background()); err != nil {

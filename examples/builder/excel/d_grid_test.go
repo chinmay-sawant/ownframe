@@ -118,8 +118,8 @@ func TestDZoomScalesGrid(t *testing.T) {
 	if a.zs(defaultColWidth) != 126 || a.zs(defaultRowHeight) != 33 {
 		t.Fatalf("zs: %d x %d", a.zs(defaultColWidth), a.zs(defaultRowHeight))
 	}
-	// Headers keep their size.
-	if h := mustBox(t, a, "xl-gch-0"); int(h.H) != colHeaderHeight {
+	// The whole UI scales with the zoom, so the headers grow with it.
+	if h := mustBox(t, a, "xl-gch-0"); int(h.H) != a.zs(colHeaderHeight) {
 		t.Fatalf("column header height %v", h.H)
 	}
 	// Fewer cells fit, and a click on the scaled grid still lands on the right cell.

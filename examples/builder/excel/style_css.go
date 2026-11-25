@@ -85,7 +85,7 @@ func wrapLineCount(text string, widthPx, fontSize int) int {
 // not cover: font family, per-edge borders, vertical alignment and indent.
 // cellH is the painted cell height and text the displayed text (used to place
 // wrapped text). The grid calls it for every painted cell.
-func applyStyleExtras(el *ui.Element, st Style, cellW, cellH int, text string) {
+func (a *app) applyStyleExtras(el *ui.Element, st Style, cellW, cellH int, text string) {
 	if f := fontFamilyCSS(st.FontFamily); f != "" {
 		el.CSSRaw("font-family", f)
 	}
@@ -103,11 +103,11 @@ func applyStyleExtras(el *ui.Element, st Style, cellW, cellH int, text string) {
 		el.CSSRaw("border-bottom", v)
 	}
 	if st.Indent > 0 {
-		el.CSSRaw("padding-left", pxStr(cellTextPadPx+st.Indent*indentStepPx))
+		el.CSSRaw("padding-left", pxStr(a.zs(cellTextPadPx+st.Indent*indentStepPx)))
 	}
-	textH := cellLineHeight
+	textH := a.zs(cellLineHeight)
 	if st.Wrap {
-		textH = wrapLineCount(text, cellW-st.Indent*indentStepPx, st.FontSize) * wrapLineHeight
+		textH = a.zs(wrapLineCount(text, a.unz(cellW)-st.Indent*indentStepPx, st.FontSize) * wrapLineHeight)
 	}
 	pad := 0
 	switch st.VAlign {

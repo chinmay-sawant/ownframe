@@ -343,6 +343,11 @@ func (a *app) handleKey(ctx context.Context, key string) error {
 		}
 		return nil
 	}
+	if ctrl && a.zoomKey(joinKey(base, shift, ctrl)) {
+		// Zoom chords work while a cell is being edited too.
+		a.redraw()
+		return nil
+	}
 	if a.editing {
 		a.editKey(base, shift)
 		return nil
@@ -579,7 +584,18 @@ func (a *app) pointer(x, y float64) (lx, ly float64) {
 	return x - gx, y - gy
 }
 
+// tapEchoGap is how soon after a claimed drag ends a further Press is the
+// window's own tap echo. After a mouse press the window ends the claimed
+// gesture and then replays Press, SelectAt and Click for a tap, so one physical
+// click reaches handlePress twice back to back. A person cannot click twice
+// this fast.
+const tapEchoGap = 40 * time.Millisecond
+
 func (a *app) handlePress(_ context.Context, box ownframe.Box, x, y float64) (bool, error) {
+	if a.overlay == "" && isGridID(box.ID) && time.Since(a.dragEndAt) < a.tapEcho {
+		a.pressSeen = time.Now()
+		return true, nil
+	}
 	a.drag = dragNone
 	a.dragMoved = false
 	if box.ID == "xl-fx" && a.overlay == "" {
@@ -888,6 +904,7 @@ func (a *app) handleDragMove(_ context.Context, dx, dy float64) error {
 }
 
 func (a *app) handleDragEnd(_ context.Context) error {
+	a.dragEndAt = time.Now()
 	if a.chartDragEnd() {
 		a.redraw()
 		return nil

@@ -158,7 +158,7 @@ func (a *app) chartLayer() *ui.Element {
 		return nil
 	}
 	layer := ui.Div().Class("rb-chart-layer").Position(ui.PositionFixed).
-		Left(ui.Px(chartOriginX)).Top(ui.Px(chartOriginY)).Width(ui.Px(0)).Height(ui.Px(0))
+		Left(ui.Px(a.zf(chartOriginX))).Top(ui.Px(a.zf(chartOriginY))).Width(ui.Px(0)).Height(ui.Px(0))
 	any := false
 	for _, c := range a.x.charts {
 		if c.Sheet != a.wb.Sheet().Name {
@@ -182,8 +182,8 @@ func (a *app) chartCard(c *ChartSpec) *ui.Element {
 	labels, series := a.chartData(c)
 	card := ui.Div().ID("rb-chart-"+idn).Class(cls).Attr("role", "group").
 		Attr("aria-label", c.Title).Attr("data-action", "xl:chart:select:"+idn).
-		Position(ui.PositionAbsolute).Left(ui.Px(c.X)).Top(ui.Px(c.Y)).
-		Width(ui.Px(c.W)).Height(ui.Px(c.H))
+		Position(ui.PositionAbsolute).Left(ui.Px(a.zf(c.X))).Top(ui.Px(a.zf(c.Y))).
+		Width(ui.Px(a.zf(c.W))).Height(ui.Px(a.zf(c.H)))
 	head := ui.Div().ID("rb-chart-hdr-"+idn).Class("rb-chart-head").Children(
 		ui.Span().Class("rb-chart-title").Text(c.Title),
 		ui.Button("x").Attr("type", "button").Class("rb-chart-close").
@@ -294,8 +294,8 @@ func (a *app) chartDragMove(dx, dy float64) bool {
 	if c == nil {
 		return false
 	}
-	c.X += dx
-	c.Y += dy
+	c.X += a.unzf(dx)
+	c.Y += a.unzf(dy)
 	if c.X < 0 {
 		c.X = 0
 	}

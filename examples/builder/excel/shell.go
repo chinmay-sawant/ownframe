@@ -79,7 +79,7 @@ func (a *app) viewportSize() (int, int) {
 // after the fixed bands.
 func (a *app) gridViewportSize() (int, int) {
 	w, h := a.viewportSize()
-	h -= titleBarHeight + a.ribbonHeight() + a.fbarH() + sheetBarHeight + statusBarHeight
+	h -= a.zs(titleBarHeight) + a.ribbonHeight() + a.fbarH() + a.zs(sheetBarHeight) + a.zs(statusBarHeight)
 	if h < 0 {
 		h = 0
 	}
@@ -94,5 +94,5 @@ func (a *app) gridOrigin() (float64, float64) {
 			return box.X, box.Y
 		}
 	}
-	return 0, float64(titleBarHeight + a.ribbonHeight() + a.fbarH())
+	return 0, float64(a.zs(titleBarHeight) + a.ribbonHeight() + a.fbarH())
 }

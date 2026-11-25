@@ -25,6 +25,7 @@ const (
 	govDropdownWidth = 16 // dropdown arrow button width
 	fillHandleSize   = 6  // fill handle side
 	chevronTop       = 4  // filter chevron top inset in the header
+	noteCornerPx     = 6  // comment marker side
 	tipWidth         = 120
 	tipHeight        = 20
 	thumbInset       = 2 // scrollbar thumb inset from the track edge
@@ -232,7 +233,7 @@ func (a *app) cellElement(sh *Sheet, ref CellRef, x, y, w, h int, raw string, st
 	if st.FontSize > 0 {
 		el.CSSRaw("font-size", pxStr(a.zs(st.FontSize)))
 	}
-	applyStyleExtras(el, st, w-1, h-1, text)
+	a.applyStyleExtras(el, st, w-1, h-1, text)
 	if frac, color, ok := sh.DataBar(ref.Row, ref.Col); ok && frac > 0 {
 		bar := ui.Div().Class("xl-bar").CSSRaw("width", pxStr(int(frac*float64(w-1))))
 		if color != "" {
@@ -245,7 +246,7 @@ func (a *app) cellElement(sh *Sheet, ref CellRef, x, y, w, h int, raw string, st
 		// The renderer does not draw border triangles, so the corner is a small
 		// filled square.
 		el.Children(ui.Div().Class("xl-note").CSSRaw("border-top", "0").CSSRaw("border-left", "0").
-			CSSRaw("width", "6px").CSSRaw("height", "6px").CSSRaw("background-color", "var(--xl-comment-corner)"))
+			CSSRaw("width", pxStr(a.zs(noteCornerPx))).CSSRaw("height", pxStr(a.zs(noteCornerPx))).CSSRaw("background-color", "var(--xl-comment-corner)"))
 	}
 	return el
 }
@@ -286,11 +287,11 @@ func (a *app) selectionOverlays(cols, rows []axisSlot) []*ui.Element {
 		if list := a.sheet().ValidationList(a.active.Row, a.active.Col); len(list) > 0 {
 			out = append(out, place(
 				ui.Div().ID("xl-gov-dd").Class("xl-dd").Text("v"),
-				ax+aw-govDropdownInset, ay+dropdownTop, govDropdownWidth, ah-dropdownShrink))
+				ax+aw-a.zs(govDropdownInset), ay+dropdownTop, a.zs(govDropdownWidth), ah-dropdownShrink))
 		}
 	}
 	if x, y, w, h, ok := rectOf(cols, rows, a.sel); ok && !a.editing {
-		out = append(out, place(ui.Div().ID("xl-gov-handle").Class("xl-handle"), x+w-fillHandleInset, y+h-fillHandleInset, fillHandleSize, fillHandleSize))
+		out = append(out, place(ui.Div().ID("xl-gov-handle").Class("xl-handle"), x+w-a.zs(fillHandleInset), y+h-a.zs(fillHandleInset), a.zs(fillHandleSize), a.zs(fillHandleSize)))
 	}
 	if a.editing && aok {
 		out = append(out, a.editorElement(ax, ay, aw, ah))
@@ -303,7 +304,7 @@ func (a *app) selectionOverlays(cols, rows []axisSlot) []*ui.Element {
 // the same text in a static box.
 func (a *app) editorElement(x, y, w, h int) *ui.Element {
 	cw, _ := a.canvasSize()
-	width := max(w, len(a.editBuf)*editorCharWidth+editorPadding)
+	width := max(w, len(a.editBuf)*a.zs(editorCharWidth)+a.zs(editorPadding))
 	width = min(width, max(cw-x, w))
 	if a.editFromBar {
 		return place(ui.Div().ID("xl-geditor-fake").Class("xl-editor-fake").Text(a.editBuf), x-1, y-1, width+1, h+1)
@@ -328,7 +329,7 @@ func (a *app) headers(cols, rows []axisSlot, vw, vh int) []*ui.Element {
 			ui.Div().ID("xl-gch-"+itoa(c.idx)).Class(cls).Text(ColName(c.idx)),
 			c.pos, 0, c.size, hy))
 		if chevrons[c.idx] && c.size >= 32 {
-			colhdrs.Children(filterChevron(c.idx, c.pos+c.size-chevronInset, chevronTop, a.sheet().FilterAllowed(c.idx) != nil))
+			colhdrs.Children(a.filterChevron(c.idx, c.pos+c.size-a.zs(chevronInset), a.zs(chevronTop), a.sheet().FilterAllowed(c.idx) != nil))
 		}
 	}
 	rowhdrs := ui.Div().ID("xl-growhdrs").Class("xl-rowhdrs").
@@ -359,23 +360,26 @@ func (a *app) scrollbars(vw, vh int) []*ui.Element {
 	fw, _ := a.frozenExtent()
 	hvis := max((cw-fw)/a.zs(defaultColWidth), 1)
 	hoff, hlen := thumbGeom(ht[2], a.scrollCol-fc, mc-fc, MaxCols-fc, hvis)
-	v := place(ui.Div().ID("xl-gvt").Class("xl-vtrack"), vt[0], vt[1], scrollbarSize, vt[3])
-	v.Children(place(ui.Div().ID("xl-gvth").Class("xl-thumb"), thumbInset, voff, scrollbarSize-thumbShrink, vlen))
-	h := place(ui.Div().ID("xl-ght").Class("xl-htrack"), ht[0], ht[1], ht[2], scrollbarSize)
-	h.Children(place(ui.Div().ID("xl-ghth").Class("xl-thumb"), hoff, thumbInset, hlen, scrollbarSize-thumbShrink))
+	sb, inset, thick := a.zs(scrollbarSize), a.zs(thumbInset), a.zs(scrollbarSize)-a.zs(thumbShrink)
+	v := place(ui.Div().ID("xl-gvt").Class("xl-vtrack"), vt[0], vt[1], sb, vt[3])
+	v.Children(place(ui.Div().ID("xl-gvth").Class("xl-thumb"), inset, voff, thick, vlen))
+	h := place(ui.Div().ID("xl-ght").Class("xl-htrack"), ht[0], ht[1], ht[2], sb)
+	h.Children(place(ui.Div().ID("xl-ghth").Class("xl-thumb"), hoff, inset, hlen, thick))
 	return []*ui.Element{v, h}
 }
 
 // vTrack returns {x, y, w, h} of the vertical track in grid-viewport pixels.
 func (a *app) vTrack(vw, vh int) [4]int {
 	top := a.colHdrH()
-	return [4]int{vw - scrollbarSize, top, scrollbarSize, max(vh-top-scrollbarSize, 0)}
+	sb := a.zs(scrollbarSize)
+	return [4]int{vw - sb, top, sb, max(vh-top-sb, 0)}
 }
 
 // hTrack returns {x, y, length, h} of the horizontal track.
 func (a *app) hTrack(vw, vh int) [4]int {
 	left := a.rowHdrW()
-	return [4]int{left, vh - scrollbarSize, max(vw-left-scrollbarSize, 0), scrollbarSize}
+	sb := a.zs(scrollbarSize)
+	return [4]int{left, vh - sb, max(vw-left-sb, 0), sb}
 }
 
 func (a *app) resizeTip() *ui.Element {
@@ -388,7 +392,7 @@ func (a *app) resizeTip() *ui.Element {
 	} else {
 		label = "Height: " + itoa(a.sheet().RowHeight(a.dragIndex)) + " px"
 	}
-	return place(ui.Div().ID("xl-gtip").Class("xl-tip").Text(label), rowHeaderWidth+tipOffset, colHeaderHeight+tipOffset, tipWidth, tipHeight)
+	return place(ui.Div().ID("xl-gtip").Class("xl-tip").Text(label), a.rowHdrW()+a.zs(tipOffset), a.colHdrH()+a.zs(tipOffset), a.zs(tipWidth), a.zs(tipHeight))
 }
 
 // contrastText picks dark or light text for a #rrggbb fill. Other color

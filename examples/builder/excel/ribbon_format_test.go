@@ -31,7 +31,7 @@ func TestFontFamilyControl(t *testing.T) {
 		t.Errorf("family menu lacks Serif")
 	}
 	el := ui.Div()
-	applyStyleExtras(el, a.wb.Sheet().StyleAt(1, 0), 96, 22, "x")
+	a.applyStyleExtras(el, a.wb.Sheet().StyleAt(1, 0), 96, 22, "x")
 	if html := rbRender(t, el); !strings.Contains(html, "font-family") || !strings.Contains(html, "monospace") {
 		t.Errorf("cell css lacks the mono stack: %s", html)
 	}
@@ -75,13 +75,13 @@ func TestVerticalAlignAndIndent(t *testing.T) {
 	// CSS: indent pads the left, middle and bottom push text down
 	st := Style{Indent: 2, VAlign: "middle"}
 	el := ui.Div()
-	applyStyleExtras(el, st, 96, 40, "x")
+	a.applyStyleExtras(el, st, 96, 40, "x")
 	html := rbRender(t, el)
 	if !strings.Contains(html, "padding-left:24px") || !strings.Contains(html, "padding-top:9px") {
 		t.Errorf("css = %s", html)
 	}
 	el = ui.Div()
-	applyStyleExtras(el, Style{VAlign: "bottom"}, 96, 40, "x")
+	a.applyStyleExtras(el, Style{VAlign: "bottom"}, 96, 40, "x")
 	if html := rbRender(t, el); !strings.Contains(html, "padding-top:18px") {
 		t.Errorf("bottom css = %s", html)
 	}
@@ -93,8 +93,9 @@ func TestVerticalAlignAndIndent(t *testing.T) {
 
 func TestBorderCSSPerEdge(t *testing.T) {
 	st := Style{Edges: Edges{Left: EdgeThin, Right: EdgeThick, Top: EdgeNone, Bottom: EdgeDouble}}
+	a := rbApp(t)
 	el := ui.Div()
-	applyStyleExtras(el, st, 96, 22, "x")
+	a.applyStyleExtras(el, st, 96, 22, "x")
 	html := rbRender(t, el)
 	for _, want := range []string{"border-left:1px solid", "border-right:2px solid", "border-bottom:3px double"} {
 		if !strings.Contains(html, want) {
@@ -105,7 +106,7 @@ func TestBorderCSSPerEdge(t *testing.T) {
 		t.Errorf("top edge should not be drawn: %s", html)
 	}
 	legacy := ui.Div()
-	applyStyleExtras(legacy, Style{Border: "bottom"}, 96, 22, "x")
+	a.applyStyleExtras(legacy, Style{Border: "bottom"}, 96, 22, "x")
 	if html := rbRender(t, legacy); !strings.Contains(html, "border-bottom:1px solid") {
 		t.Errorf("legacy border not painted: %s", html)
 	}

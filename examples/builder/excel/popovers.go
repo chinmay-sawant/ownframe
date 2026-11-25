@@ -25,6 +25,11 @@ const (
 	acItemPad     = 6  // right padding of an autocomplete row
 	noteGap       = 4  // gap between a comment note and its cell
 	chevronSize   = 16 // filter chevron button side
+	acBoxPad      = 2  // padding inside the autocomplete list
+	noteVPad      = 4  // vertical padding of a comment note
+	popFontPx     = 12 // font size of the autocomplete rows and notes
+	chevronFontPx = 10 // filter chevron glyph size
+	chevronLinePx = 14 // filter chevron line height
 )
 
 var fnTail = regexp.MustCompile(`[A-Za-z][A-Za-z0-9.]*$`)
@@ -132,8 +137,9 @@ func (a *app) autocompletePopover(cols, rows []axisSlot, vw, vh int) *ui.Element
 		return nil
 	}
 	hx, hy := a.rowHdrW(), a.colHdrH()
-	h := len(m)*acRowHeight + acListPad
-	x := min(hx+col.pos, max(vw-acWidth-scrollbarSize, 0))
+	rowH, listW := a.zs(acRowHeight), a.zs(acWidth)
+	h := len(m)*rowH + a.zs(acListPad)
+	x := min(hx+col.pos, max(vw-listW-a.zs(scrollbarSize), 0))
 	y := hy + row.pos + row.size + 1
 	if y+h > vh {
 		y = max(hy+row.pos-h-1, 0)
@@ -141,18 +147,18 @@ func (a *app) autocompletePopover(cols, rows []axisSlot, vw, vh int) *ui.Element
 	sel := a.acSelected(len(m))
 	sigs := FunctionSignatures()
 	list := place(ui.Div().ID("xl-ac").Attr("role", "listbox").Attr("aria-label", "Function suggestions"),
-		x, y, acWidth, h)
+		x, y, listW, h)
 	list.CSSRaw("position", "absolute").CSSRaw("z-index", "30").CSSRaw("box-sizing", "border-box").
-		CSSRaw("padding", "2px").CSSRaw("background-color", "var(--xl-formula-bg)").
+		CSSRaw("padding", pxStr(a.zs(acBoxPad))).CSSRaw("background-color", "var(--xl-formula-bg)").
 		CSSRaw("border", "1px solid var(--xl-ribbon-border)").CSSRaw("color", "var(--xl-cell-text)")
 	for i, name := range m {
 		label := sigs[name]
 		if label == "" {
 			label = name + "(...)"
 		}
-		item := place(ui.Div().ID("xl-ac-"+name).Attr("role", "option").Text(label), 0, i*acRowHeight, acWidth-acItemPad, acRowHeight)
-		item.CSSRaw("position", "absolute").CSSRaw("box-sizing", "border-box").CSSRaw("padding", "0 6px").
-			CSSRaw("line-height", pxStr(acRowHeight)).CSSRaw("font-size", "12px").CSSRaw("overflow", "hidden").
+		item := place(ui.Div().ID("xl-ac-"+name).Attr("role", "option").Text(label), 0, i*rowH, listW-a.zs(acItemPad), rowH)
+		item.CSSRaw("position", "absolute").CSSRaw("box-sizing", "border-box").CSSRaw("padding", "0 "+pxStr(a.zs(acItemPad))).
+			CSSRaw("line-height", pxStr(rowH)).CSSRaw("font-size", pxStr(a.zs(popFontPx))).CSSRaw("overflow", "hidden").
 			CSSRaw("white-space", "nowrap")
 		if i == sel {
 			item.Attr("aria-selected", "true").CSSRaw("background-color", "var(--xl-brand-tint)").
@@ -223,14 +229,15 @@ func (a *app) notePopover(cols, rows []axisSlot, vw, vh int) *ui.Element {
 		return nil
 	}
 	hx, hy := a.rowHdrW(), a.colHdrH()
-	x := hx + col.pos + col.size + noteGap
-	if x+noteWidth > vw {
-		x = max(hx+col.pos-noteWidth-noteGap, 0)
+	gap, nw, nh := a.zs(noteGap), a.zs(noteWidth), a.zs(noteHeight)
+	x := hx + col.pos + col.size + gap
+	if x+nw > vw {
+		x = max(hx+col.pos-nw-gap, 0)
 	}
-	y := min(hy+row.pos, max(vh-noteHeight, 0))
-	n := place(ui.Div().ID("xl-gnote-pop").Attr("role", "tooltip").Text(text), x, y, noteWidth, noteHeight)
+	y := min(hy+row.pos, max(vh-nh, 0))
+	n := place(ui.Div().ID("xl-gnote-pop").Attr("role", "tooltip").Text(text), x, y, nw, nh)
 	return n.CSSRaw("position", "absolute").CSSRaw("z-index", "30").CSSRaw("box-sizing", "border-box").
-		CSSRaw("padding", "4px 6px").CSSRaw("overflow", "hidden").CSSRaw("font-size", "12px").
+		CSSRaw("padding", pxStr(a.zs(noteVPad))+" "+pxStr(a.zs(acItemPad))).CSSRaw("overflow", "hidden").CSSRaw("font-size", pxStr(a.zs(popFontPx))).
 		CSSRaw("background-color", "#ffffe1").CSSRaw("color", "#1f2328").CSSRaw("border", "1px solid #8a8886")
 }
 
@@ -256,15 +263,15 @@ func (a *app) filterChevronCols() map[int]bool {
 }
 
 // filterChevron is the small button at the right edge of a column header.
-func filterChevron(col, x, y int, active bool) *ui.Element {
+func (a *app) filterChevron(col, x, y int, active bool) *ui.Element {
 	btn := place(ui.Div().ID("xl-gfc-"+itoa(col)).Class("xl-chev").Attr("role", "button").
-		Attr("aria-label", "Filter column "+ColName(col)), x, y, chevronSize, chevronSize)
+		Attr("aria-label", "Filter column "+ColName(col)), x, y, a.zs(chevronSize), a.zs(chevronSize))
 	btn.CSSRaw("position", "absolute").CSSRaw("box-sizing", "border-box").CSSRaw("z-index", "2").
 		CSSRaw("background-color", "var(--xl-formula-bg)").CSSRaw("border", "1px solid var(--xl-gridline)")
 	if active {
 		btn.CSSRaw("border-color", "var(--xl-brand-strong)")
 	}
-	btn.CSSRaw("text-align", "center").CSSRaw("font-size", "10px").CSSRaw("line-height", "14px").
+	btn.CSSRaw("text-align", "center").CSSRaw("font-size", pxStr(a.zs(chevronFontPx))).CSSRaw("line-height", pxStr(a.zs(chevronLinePx))).
 		CSSRaw("color", "var(--xl-header-fg)").Text("v")
 	return btn
 }

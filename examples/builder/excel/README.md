@@ -33,6 +33,7 @@ In the preview, read `/frame.png` to see the picture. See `documentation/testing
 - **Context menus** for cells, row and column headers, and sheet tabs.
 - **Starter workbook:** `Sheet1` holds a regional sales table with formulas, and `Summary` rolls it up with cross-sheet `SUM`, `AVERAGE`, `MAX`, and `IF` plus a quarter table to chart.
 - **File menu:** New, Open, and Save or Export for workbook JSON, `.xlsx`, and CSV. The `.xlsx` writer and reader keep values, formulas, number formats, fonts, fills, per-edge borders, alignment and indent, widths and heights, hidden rows and columns, merges, freeze panes, tab colors, conditional formats, data validation, and comments. Dropped `.json`, `.xlsx`, and `.csv` files open through the same path.
+- **Zoom:** the whole UI (title bar, ribbon, formula bar, grid, sheet tabs, status bar, dialogs) scales as one, from 50% to 200%. Use Ctrl+wheel, Ctrl+= / Ctrl++, Ctrl+-, Ctrl+0 (reset to 100%), or the View ribbon. The status bar shows the level. Until you choose one, the default follows the window width: 100% below 1800 px, 125% from 1800 px, 150% from 2400 px. The engine has no CSS `zoom`, so every px length in the theme sheet is rescaled and re-applied with `SetTheme` (`zoom.go`). The web preview has no modifier state, so use the ribbon there.
 - **View:** gridlines, headings, formula bar, Show Formulas, zoom, freeze panes, and the Light and Dark themes.
 
 ## Keyboard shortcuts

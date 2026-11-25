@@ -14,15 +14,16 @@ const (
 	minThumbLength = 24  // shortest scrollbar thumb in pixels
 )
 
-// zs scales a sheet size in pixels by the zoom percentage. Header bands keep
-// their size, only the cells grow or shrink.
+// zs scales a pixel size by the zoom percentage: cells, header bands and the
+// chrome bands all go through it.
 func (a *app) zs(n int) int {
-	z := a.zoomPct()
-	if z == zoomBase {
-		return n
-	}
-	return max((n*z+zoomBase/2)/zoomBase, 1)
+	return scaleBy(n, a.zoomPct())
 }
+
+// zf and unzf are zs and unz for fractional pixel values.
+func (a *app) zf(v float64) float64 { return v * float64(a.zoomPct()) / zoomBase }
+
+func (a *app) unzf(v float64) float64 { return v * zoomBase / float64(a.zoomPct()) }
 
 // unz is the inverse of zs, for turning a pointer distance back into a sheet
 // size.
@@ -52,14 +53,14 @@ func (a *app) rowHdrW() int {
 	if a.x.hideHeads {
 		return 0
 	}
-	return rowHeaderWidth
+	return a.zs(rowHeaderWidth)
 }
 
 func (a *app) colHdrH() int {
 	if a.x.hideHeads {
 		return 0
 	}
-	return colHeaderHeight
+	return a.zs(colHeaderHeight)
 }
 
 // layoutCols returns the visible columns for a canvas width: frozen columns
@@ -283,6 +284,18 @@ func (a *app) visibleRowCount() int {
 func (a *app) handleWheel(_ context.Context, x, y, dx, dy float64) (bool, error) {
 	if dx == 0 && dy == 0 {
 		return false, nil
+	}
+	if _, ctrl := a.mods(); ctrl {
+		// Ctrl+wheel zooms the whole UI instead of scrolling. Wheel away from
+		// the user (positive dy) zooms in.
+		if dy != 0 {
+			step := zoomStepPct
+			if dy < 0 {
+				step = -step
+			}
+			a.stepZoom(step)
+		}
+		return true, nil
 	}
 	if a.overlay != "" {
 		return false, nil
