@@ -494,8 +494,8 @@ func (r *Runtime) CaptureTransitionsScoped(previous, next *Display, roots []stri
 	// pays no scan.
 	var prevIndex, nextIndex *Index
 	if hasNextTransitions {
-		prevIndex = r.indexFor(previous)
-		nextIndex = r.indexFor(next)
+		prevIndex = r.exactIndexFor(previous)
+		nextIndex = r.exactIndexFor(next)
 	}
 	for i := range next.Boxes {
 		box := next.Boxes[i]

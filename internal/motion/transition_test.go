@@ -1712,3 +1712,33 @@ func renderer(t *testing.T, op *layout.DisplayOp, duration, delay time.Duration,
 	}
 	return r
 }
+
+// TestCaptureIgnoresStaleSharedIndex pins a crash seen in the Excel example:
+// the runtime's cached index described a larger display than the previous
+// paint, and indexFor repointed it because r.display matched. Selecting from
+// it returned operation positions past the end of the previous display and
+// sameOpKinds panicked with an index out of range.
+func TestCaptureIgnoresStaleSharedIndex(t *testing.T) {
+	records := []layout.Transition{linearTransition("opacity")}
+	old := transitionChip(0, 1, 0, records...)
+	next := transitionChip(0, .5, 0, records...)
+
+	// A bigger earlier display leaves the cached index with extra operations
+	// owned by the chip's box.
+	big := transitionChip(0, 1, 0, records...)
+	for range 3 {
+		op := big.Ops[0]
+		big.Ops = append(big.Ops, op)
+		big.OpOwners = append(big.OpOwners, 0)
+		big.Boxes[0].OperationIDs = append(big.Boxes[0].OperationIDs, op.ID)
+	}
+
+	r := New()
+	r.index = NewIndex(big)
+	r.display = old
+
+	captures := r.CaptureTransitions(old, next)
+	if len(captures) != 1 {
+		t.Fatalf("captures = %d, want 1", len(captures))
+	}
+}
