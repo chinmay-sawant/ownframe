@@ -2,16 +2,12 @@
 // selected flip take the ui.View.Update patch path instead of a full render.
 //
 // Isolation outcome (measured, box-stable same-length text swaps "aaa"->"aab"):
-// a div patches while a plain span falls back to the full render. The engine
-// only patches an element that owns a block box: checkRelayoutBox in
-// blinkless internal/layout/relayout_subtree.go refuses any other kind with
-// "the element is not a block box". A span nested in a block container stays
-// an inline box, so no fitting edit can patch it; a div owns a block box, and
-// a span that is a flex item is blockified into one (flex.go allocates flex
-// items as boxKindBlock), which is why the Choice check mark and the Button
-// label (display:block via .of-button-label) already patch. ChoiceWithID
-// therefore gives its label span display:block alongside the part id, gated
-// on the host id so Choice without an id renders exactly as before.
+// both a div and a plain inline span patch without reparsing. Earlier engine
+// builds refused non-block boxes in checkRelayoutBox, so ChoiceWithID gave its
+// label span display:block alongside the part id (gated on the host id so
+// Choice without an id renders as before). Blinkless 50ad332 now patches
+// inline spans too, and ChoiceWithID keeps display:block so its layout stays
+// unchanged.
 package chadcn_test
 
 import (
@@ -60,23 +56,11 @@ func TestProbePatchFix2Choice(t *testing.T) {
 		expectProbePatch(t, v, ctx, ui.Div().ID("probe-root").Children(ui.Div().ID("iso").Text("aab")))
 	})
 
-	t.Run("IsolationSpanFullRender", func(t *testing.T) {
+	t.Run("IsolationSpanPatches", func(t *testing.T) {
 		t.Parallel()
-		// The same box-stable edit on a plain inline span cannot patch: the
-		// engine refuses the non-block box, so Update falls back to a full
-		// render (exactly one reparse, generation still advances by one).
+		// A box-stable text edit on a plain inline span patches without
+		// falling back to a full render.
 		v, ctx := mountProbeView(t, ui.Div().ID("probe-root").Children(ui.Span().ID("iso").Text("aaa")))
-		gen0 := v.Page.Probe().Generation()
-		s0 := v.Page.Probe().Stats()
-		if err := v.Update(ctx, ui.Div().ID("probe-root").Children(ui.Span().ID("iso").Text("aab"))); err != nil {
-			t.Fatal(err)
-		}
-		s1 := v.Page.Probe().Stats()
-		if got, want := v.Page.Probe().Generation(), gen0+1; got != want {
-			t.Fatalf("generation = %d, want %d", got, want)
-		}
-		if got, want := s1.Parses, s0.Parses+1; got != want {
-			t.Fatalf("parses = %d, want %d (expected the full-render fallback)", got, want)
-		}
+		expectProbePatch(t, v, ctx, ui.Div().ID("probe-root").Children(ui.Span().ID("iso").Text("aab")))
 	})
 }
