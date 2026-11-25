@@ -127,3 +127,55 @@ The lifetime multiplier compounds the sequential phases of optimization ($\text{
 * At **`27.37 ns`** for 1,000-line viewport virtualization, the CPU completes the operation in approximately **80–100 clock cycles** on modern x86_64 architectures. This operates within the latency threshold of L1/L2 cache line loads.
 * Further micro-optimizations would require raw assembly, unsafe pointer arithmetic, or AVX-512 SIMD vectorization. Doing so would sacrifice Go portability, memory safety, and codebase maintainability for nanosecond margins undetectable by display hardware or human perception.
 
+---
+
+## 7. Latest Core Pipeline, Layout Scaling, Animation & Native Windows GPU Benchmarks (2026-11-25)
+
+*Measured sequentially (`-p 1`) on `13th Gen Intel(R) Core(TM) i7-13700HX`, Go `1.26.11`, Blinkless `7f14e4d`, and native Windows GPU (`NVIDIA GeForce RTX 4060 Laptop GPU` @ 144 Hz, `CGO_ENABLED=0`).*
+
+### Core Pipeline & 1,000-Row Workloads
+
+| Benchmark | Time/op | Bytes/op | Allocs/op |
+|---|---:|---:|---:|
+| `BenchmarkFlappyTick` | **58.8 ns** | 0 B | 0 |
+| `BenchmarkListWorkloads/ScrollOffset` | **22.1 ns** | 0 B | 0 |
+| `BenchmarkDrawRectScan` (dirty / full) | **191 / 183 ns** | 0 B | 0 |
+| `BenchmarkRedrawWarm` / `RedrawHeavyWarm` | **496 / 487 ns** | 0 B | 0 |
+| `BenchmarkNormalRedraw` | **536 ns** | 0 B | 0 |
+| `BenchmarkRedrawStages/TemplateExecute` | **178 ns** | 560 B | 5 |
+| `BenchmarkRedrawStages/HTMLParse` | **5.07 µs** | 27.9 KB | 16 |
+| `BenchmarkRedrawStages/CSSApply` | **2.24 µs** | 3.18 KB | 37 |
+| `BenchmarkRedrawStages/DisplayList` | **36.8 µs** | 33.9 KB | 110 |
+| `BenchmarkRedrawCold` | **65.7 µs** | 64.8 KB | 204 |
+| `BenchmarkAnimationTick` *(534-op CSS gallery)* | **97.7 µs** | 16.6 KB | 38 |
+| `BenchmarkClickCount` *(platform example)* | **221 µs** | 118 KB | 532 |
+| `BenchmarkListWorkloads/WindowedScroll` | **508 µs** | 177 KB | 1,183 |
+| `BenchmarkListPatchVsRebuild/PatchElement1Row` | **584 µs** | 208 KB | 102 |
+| `BenchmarkListPatchVsRebuild/PatchElements10Rows` | **815 µs** | 275 KB | 624 |
+| `BenchmarkListWorkloads/Resize` *(1,000 rows)* | **11.59 ms** | 2.78 MB | 4,298 |
+| `BenchmarkListWorkloads/TextUpdate` *(1,000 rows)* | **16.32 ms** | 6.38 MB | 35,336 |
+| `BenchmarkListPatchVsRebuild/FullRebuild1Row` | **16.85 ms** | 6.37 MB | 44,290 |
+| `BenchmarkLargeRedraw` | **17.14 ms** | 2.79 MB | 7,234 |
+
+### Pipeline Stage Scaling (`BenchmarkScaleStages`) & Layout Models (`BenchmarkLayoutModels`)
+
+| Stage / Model | 50 rows | 200 rows | 1,000 rows Total | Bytes/op | Allocs/op |
+|---|---:|---:|---:|---:|---:|
+| `TemplateExecute` | 2,426 ns/row | 2,440 ns/row | **2.45 ms** | 520 KB | 26,730 |
+| `HTMLParse` | 1,398 ns/row | 1,318 ns/row | **1.39 ms** | 1.64 MB | 6,123 |
+| `CSSApply` | 143.4 ns/row | 62.7 ns/row | **42.2 µs** | 6.68 KB | 75 |
+| `CSSRelayout` | 1.37 ns/row | 0.31 ns/row | **59.2 ns** | 180 B | 1 |
+| `DisplayList` | 12,872 ns/row | 11,511 ns/row | **12.57 ms** | 5.59 MB | 4,338 |
+| `LayoutModels/Block` *(200 rows × 3 cols)* | — | 10,033 ns/row | **2.01 ms** | 1.04 MB | 1,000 |
+| `LayoutModels/Flex` *(200 rows × 3 cols)* | — | 11,131 ns/row | **2.23 ms** | 1.06 MB | 1,025 |
+| `LayoutModels/Grid` *(200 rows × 3 cols)* | — | 11,874 ns/row | **2.37 ms** | 1.24 MB | 2,410 |
+
+### Native Windows GPU Windows (`-tags ownframe_debug -perf -debug-addr`, 8 s each)
+
+| App | Window | Present FPS | Avg Frame | p95 / p99 Frame | Long Frames (>25 ms) | Go Heap (Live) | Windows RSS | CPU (1-core eq.) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| `animations.exe` *(534 ops, active CSS)* | 1140×900 | **144.1 FPS** *(auto-paced)* | **2.64 ms** | **4.24 / 5.08 ms** | **0** | 17.6 MB | 384.0 MB | 89.6% |
+| `wispr-flow-dashboard.exe` *(398 ops)* | 1638×950 | **442.3 FPS** | **0.75 ms** | **1.12 / 7.45 ms** | **0** | 21.4 MB | 344.3 MB | 28.9% |
+| `spotify-player.exe` *(169 ops, 46 images)* | 1440×960 | **68.2 FPS** *(paced)* | **3.57 ms** | **5.35 / 9.59 ms** | **0** | 22.0 MB | 265.5 MB | 18.6% |
+| `departure-board.exe` *(628 ops, idle)* | 1000×640 | **2.1 FPS** *(parked)* | **1.14 ms** | **1.48 / 12.19 ms** | 1 | 17.7 MB | 224.5 MB | **4.1%** |
+
