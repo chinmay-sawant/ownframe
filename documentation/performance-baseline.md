@@ -140,17 +140,18 @@ The cold benchmark changes template output and reports one parse per operation.
 These are local descriptive samples. Runtime checks overlapped the capture,
 so use a fresh isolated run for controlled release comparisons.
 
-## v0.0.6 sequential baseline (2026-11-25)
+## Latest sequential baseline (2026-11-25)
 
-Measured sequentially (`-p 1`, one suite at a time) on `ownframe` `master` commit `b65065a2` (`v0.0.6`) with `blinkless` `master` commit `787ca05` (`v0.1.8`) via `go.work`, machine Chinmay (`13th Gen Intel(R) Core(TM) i7-13700HX`, Linux `amd64`, Go `1.26.11`).
+Measured sequentially (`-p 1`, one suite at a time) on `ownframe` `v0.0.7` with `blinkless` `v0.1.9`, machine Chinmay (`13th Gen Intel(R) Core(TM) i7-13700HX`, Linux `amd64`, Go `1.26.11`).
 
-These are display-free Go CPU benchmarks. They measure template execution, HTML parsing, CSS application, layout, display-list construction, and in-place patching without GPU rasterization, software GL drivers (such as WSL2 Mesa), or Ebiten's 60 Hz vsync/TPS frame pacing.
+These are display-free Go CPU benchmarks. They measure template execution, HTML parsing, CSS application, layout, display-list construction, animation restamping, and in-place patching without GPU rasterization, software GL drivers (such as WSL2 Mesa), or Ebiten's vsync/TPS frame pacing.
 
 Commands run sequentially:
 
 ```sh
 sh scripts/perf-baseline.sh --count 3 --benchtime 500ms --out perf-baseline.txt
 sh scripts/perf-baseline.sh --suite list --conditions "sequential isolated run" --count 3 --benchtime 500ms --out perf-list.txt
+go test -p 1 -run '^$' -bench '^BenchmarkAnimationTick$' -benchmem -count 3 -benchtime 500ms ./examples/animations
 go test -p 1 -run '^$' -bench '^BenchmarkFrame_' -benchmem -benchtime 300ms ./test
 go test -p 1 -run '^$' -bench . -benchmem -benchtime 300ms ./internal/motion ./internal/frame ./internal/textrun ./internal/page/patch
 go test -p 1 -run '^$' -bench '^(BenchmarkScaleStages|BenchmarkLayoutModels)$' -benchmem -benchtime 500ms ./internal/page
@@ -161,55 +162,55 @@ go test -p 1 -run '^$' -bench '^BenchmarkListPatchVsRebuild$' -benchmem -count 3
 
 | Benchmark | Median time | Bytes/op | Allocs/op | What it measures |
 |---|---:|---:|---:|---|
-| `BenchmarkFlappyTick` | **57.2 ns** | 0 B | 0 | Per-frame game/tick loop |
-| `BenchmarkDrawRectScan/dirty` | **177 ns** | 0 B | 0 | Display-list op culling scan (dirty) |
-| `BenchmarkDrawRectScan/full` | **175 ns** | 0 B | 0 | Display-list op culling scan (full) |
-| `BenchmarkRedrawWarm` | **485 ns** | 0 B | 0 | Unchanged warm frame check |
+| `BenchmarkFlappyTick` | **58.8 ns** | 0 B | 0 | Per-frame game/tick loop |
+| `BenchmarkDrawRectScan/dirty` | **191 ns** | 0 B | 0 | Display-list op culling scan (dirty) |
+| `BenchmarkDrawRectScan/full` | **183 ns** | 0 B | 0 | Display-list op culling scan (full) |
+| `BenchmarkRedrawWarm` | **496 ns** | 0 B | 0 | Unchanged warm frame check |
 | `BenchmarkRedrawHeavyWarm` | **487 ns** | 0 B | 0 | Heavy unchanged warm frame check |
-| `BenchmarkNormalRedraw` | **527 ns** | 0 B | 0 | Normal UI warm redraw |
-| `BenchmarkRedrawStages/TemplateExecute` | **179 ns** | 560 B | 5 | Go `html/template` execution |
-| `BenchmarkRedrawStages/HTMLParse` | **4.97 µs** | 27.9 KB | 16 | Blinkless HTML parse |
-| `BenchmarkRedrawStages/CSSApply` | **2.25 µs** | 3.17 KB | 37 | Blinkless CSS selector match/apply |
-| `BenchmarkRedrawStages/DisplayList` | **39.5 µs** | 34.1 KB | 115 | Layout, text measure, and display-list emit |
-| `BenchmarkRedrawCold` | **72.2 µs** | 64.9 KB | 208 | Full cold parse, style, and layout (`1.000 parses/op`) |
-| `BenchmarkClickCount` | **221 µs** | 118 KB | 536 | Click handler plus full redraw (`examples/platform`) |
-| `BenchmarkLargeRedraw` | **21.6 ms** | 3.10 MB | 22,068 | Large unwindowed full rebuild |
+| `BenchmarkNormalRedraw` | **536 ns** | 0 B | 0 | Normal UI warm redraw |
+| `BenchmarkRedrawStages/TemplateExecute` | **178 ns** | 560 B | 5 | Go `html/template` execution |
+| `BenchmarkRedrawStages/HTMLParse` | **5.07 µs** | 27.9 KB | 16 | Blinkless HTML parse |
+| `BenchmarkRedrawStages/CSSApply` | **2.24 µs** | 3.18 KB | 37 | Blinkless CSS selector match/apply |
+| `BenchmarkRedrawStages/DisplayList` | **36.8 µs** | 33.9 KB | 110 | Layout, text measure, and display-list emit |
+| `BenchmarkRedrawCold` | **65.7 µs** | 64.8 KB | 204 | Full cold parse, style, and layout (`1.000 parses/op`) |
+| `BenchmarkClickCount` | **221 µs** | 118 KB | 532 | Click handler plus full redraw (`examples/platform`) |
+| `BenchmarkLargeRedraw` | **17.14 ms** | 2.79 MB | 7,234 | Large unwindowed full rebuild |
 
 ### 1,000-row list workloads (`--suite list`, median of 3)
 
 | Workload | PerfOff median | PerfOn median | PerfOff Bytes/op | PerfOff Allocs/op |
 |---|---:|---:|---:|---:|
-| `ScrollOffset` | **21.9 ns** | 21.9 ns | 0 B | 0 |
-| `Unchanged` | **497 ns** | 542 ns | 0 B | 0 |
-| `WindowedScroll` (overscan 4) | **588 µs** | 595 µs | 186 KB | 1,537 |
-| `Resize` (all 1,000 rows) | **14.6 ms** | 14.6 ms | 3.15 MB | 19,277 |
-| `TextUpdate` (all 1,000 rows) | **19.1 ms** | 18.9 ms | 6.42 MB | 50,293 |
+| `ScrollOffset` | **22.1 ns** | 22.3 ns | 0 B | 0 |
+| `Unchanged` | **500 ns** | 531 ns | 0 B | 0 |
+| `WindowedScroll` (overscan 4) | **508 µs** | 523 µs | 177 KB | 1,183 |
+| `Resize` (all 1,000 rows) | **11.59 ms** | 11.69 ms | 2.78 MB | 4,298 |
+| `TextUpdate` (all 1,000 rows) | **16.32 ms** | 16.37 ms | 6.38 MB | 35,336 |
 
 ### In-place patching vs. full rebuild (`BenchmarkListPatchVsRebuild`, 1,000 rows, median of 3)
 
 | Benchmark | Median time | Bytes/op | Allocs/op | vs. `FullRebuild1Row` |
 |---|---:|---:|---:|---|
-| `FullRebuild1Row` | **18.97 ms** | 6.71 MB | 62,258 | 1.0× |
-| `PatchElement1Row` | **599 µs** | 207 KB | 101 | **31.7× faster**, **616× fewer allocs** |
-| `PatchElements10Rows` | **807 µs** | 271 KB | 614 | **23.5× faster**, **101× fewer allocs** |
+| `FullRebuild1Row` | **16.85 ms** | 6.37 MB | 44,290 | 1.0× |
+| `PatchElement1Row` | **584 µs** | 208 KB | 102 | **28.9× faster**, **434× fewer allocs** |
+| `PatchElements10Rows` | **815 µs** | 275 KB | 624 | **20.7× faster**, **71× fewer allocs** |
 
 ### Pipeline stage scaling (`BenchmarkScaleStages`)
 
 | Stage | 50 rows (ns/row) | 200 rows (ns/row) | 1,000 rows total | 1,000 rows Bytes/op | 1,000 rows Allocs/op | Share of 1,000-row rebuild |
 |---|---:|---:|---:|---:|---:|---:|
-| `TemplateExecute` | 2,386 | 2,375 | **2.41 ms** | 521 KB | 26,730 | 13.5% |
-| `HTMLParse` | 1,391 | 1,316 | **1.32 ms** | 1.64 MB | 6,123 | 7.4% |
-| `CSSApply` | 144.0 | 66.2 | **45.1 µs** | 6.66 KB | 75 | 0.3% |
-| `CSSRelayout` | 26.4 | 20.7 | **19.7 µs** | 752 B | 7 | 0.1% |
-| `DisplayList` | 15,046 | 13,883 | **14.05 ms** | 5.90 MB | 18,312 | **78.8%** |
+| `TemplateExecute` | 2,426 | 2,440 | **2.45 ms** | 520 KB | 26,730 | 14.9% |
+| `HTMLParse` | 1,398 | 1,318 | **1.39 ms** | 1.64 MB | 6,123 | 8.5% |
+| `CSSApply` | 143.4 | 62.7 | **42.2 µs** | 6.68 KB | 75 | 0.3% |
+| `CSSRelayout` | 1.37 | 0.31 | **59.2 ns** | 180 B | 1 | <0.01% |
+| `DisplayList` | 12,872 | 11,511 | **12.57 ms** | 5.59 MB | 4,338 | **76.4%** |
 
 ### Layout model overhead (`BenchmarkLayoutModels`, 200 rows × 3 columns)
 
 | Layout model | Total time | ns/row | Bytes/op | Allocs/op | vs. Block |
 |---|---:|---:|---:|---:|---:|
-| `Block` | **2.45 ms** | 12,237 | 1.05 MB | 2,588 | 1.00× |
-| `Flex` | **2.68 ms** | 13,379 | 1.09 MB | 2,815 | 1.09× |
-| `Grid` | **2.98 ms** | 14,891 | 1.77 MB | 7,204 | 1.22× |
+| `Block` | **2.01 ms** | 10,033 | 1.04 MB | 1,000 | 1.00× |
+| `Flex` | **2.23 ms** | 11,131 | 1.06 MB | 1,025 | 1.11× |
+| `Grid` | **2.37 ms** | 11,874 | 1.24 MB | 2,410 | 1.18× |
 
 ### Frame and internal microbenchmarks
 
@@ -228,25 +229,26 @@ go test -p 1 -run '^$' -bench '^BenchmarkListPatchVsRebuild$' -benchmem -count 3
 | `BenchmarkFrame_WarmRedraw_Card` | **499 ns** | 0 B | 0 | `test` |
 | `BenchmarkFrame_WarmRedraw_Dashboard` | **512 ns** | 0 B | 0 | `test` |
 | `BenchmarkFrame_Click_Dispatch` | **2.19 µs** | 496 B | 5 | `test` |
+| `BenchmarkAnimationTick` | **97.7 µs** | 16.6 KB | 38 | `examples/animations` |
 
-## v0.0.6 native Windows GPU baseline (2026-11-25)
+## Latest native Windows GPU baseline (2026-11-25)
 
 Measured sequentially on native Windows (`goos: windows`, `goarch: amd64`, `CGO_ENABLED=0` pure-Go cross-compile from Linux with `-tags ownframe_debug`, Go `1.26.11`) on machine Chinmay:
 - **CPU:** 13th Gen Intel(R) Core(TM) i7-13700HX
-- **GPUs / Displays:** NVIDIA GeForce RTX 4060 Laptop GPU (1920×1080 @ 143 Hz) and Intel(R) UHD Graphics (2560×1600 @ 165 Hz)
+- **GPUs / Displays:** NVIDIA GeForce RTX 4060 Laptop GPU (1920×1080 @ 143/144 Hz) and Intel(R) UHD Graphics (2560×1600 @ 165 Hz)
 
 ### Live native Windows GPU windows (`-perf -debug-addr`, 8 s per app)
 
 | App | Window | Present FPS | Avg frame | p95 frame | p99 frame | Long frames (>25 ms) | Go heap (live) | Windows RSS | CPU (1-core eq.) |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `animations.exe` (`-dev=false`, 534 ops, active CSS animations) | 1140×900 | **325.3 FPS** (319 repaints/s) | **2.92 ms** | **4.32 ms** | **4.83 ms** | **0** | 20.8 MB | 359.9 MB | 162.3% |
+| `animations.exe` (`-dev=false`, 534 ops, active CSS animations) | 1140×900 | **144.1 FPS** (auto-paced) | **2.64 ms** | **4.24 ms** | **5.08 ms** | **0** | 17.6 MB | 384.0 MB | 89.6% |
 | `wispr-flow-dashboard.exe` (398 ops, 31 images) | 1638×950 | **442.3 FPS** (6 repaints/s) | **0.75 ms** | **1.12 ms** | **7.45 ms** | **0** | 21.4 MB | 344.3 MB | 28.9% |
 | `spotify-player.exe` (169 ops, 46 images, timer-paced) | 1440×960 | **68.2 FPS** | **3.57 ms** | **5.35 ms** | **9.59 ms** | **0** | 22.0 MB | 265.5 MB | 18.6% |
 | `departure-board.exe` (628 ops, idle-parked) | 1000×640 | **2.1 FPS** (parked) | **1.14 ms** | **1.48 ms** | **12.19 ms** | 1 | 17.7 MB | 224.5 MB | **4.1%** |
 
 Notes:
-- Windows RSS includes DirectX/GPU driver shared memory pages; live Go heap stays between **17.7 MB and 22.0 MB** across all four apps.
-- `animations.exe` ran uncapped at 319 repaints/s (`713 MB/s` alloc rate). Profiling `BenchmarkAnimationTick` (`466 µs/op`, `226 KB/op`, `180 allocs/op`) with `go tool pprof` attributes **96.1%** of allocated bytes to `applyRestamp`, led by `blinkless/internal/layout.stampStateAt` (**67.8%** alloc bytes, **58.9%** CPU) walking the whole box tree per animated target instead of only the target's ancestor path.
+- Windows RSS includes DirectX/GPU driver shared memory pages; live Go heap stays between **17.6 MB and 22.0 MB** across all four apps.
+- Desktop animation pacing automatically locks active continuous animations to the current monitor's refresh rate (e.g., 144 Hz on the external display, 165 Hz on the laptop display) and updates dynamically when the window moves across monitors.
 
 ### Native Windows Ebiten replay benchmarks (`replay.test.exe -test.run NONE -test.bench . -test.benchmem -test.benchtime 300ms`)
 

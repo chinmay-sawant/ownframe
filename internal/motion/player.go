@@ -361,9 +361,11 @@ type Player struct {
 	// restampSlots holds the latest sample per target that the 2D matrix path
 	// could not write. restamp is the exposed form, one entry per such target,
 	// and restampBuf is the serialization scratch shared by every target.
-	restampSlots []restampSlot
-	restamp      []RestampValue
-	restampBuf   []byte
+	restampSlots     []restampSlot
+	restamp          []RestampValue
+	restampBuf       []byte
+	lastTransformCSS string
+	transformScratch transformScratch
 }
 
 // restampSlot is one target's latest sampled values that need the engine's
@@ -581,6 +583,7 @@ func (p *Player) StepWithInput(input FrameInput) bool {
 	}
 	p.ensureBound()
 	p.resetRestamp()
+	p.transformScratch.reset()
 	for i := range p.current {
 		p.current[i] = p.targets[i].From
 	}
@@ -614,12 +617,7 @@ func (p *Player) StepWithInput(input FrameInput) bool {
 		table.lastNow = now
 		if sampleAvailable && apply {
 			if table.transform {
-				for target := range p.targets {
-					current, sample := composeSampled(&p.targets[target],
-						p.current[target], p.effects[i], progress)
-					p.current[target] = current
-					p.noteRestamp(target, sample)
-				}
+				p.stepTransformEffect(table, p.effects[i], progress)
 				continue
 			}
 			var set valueSet
@@ -641,6 +639,73 @@ func (p *Player) StepWithInput(input FrameInput) bool {
 	p.touched = p.touched || hasAvailable
 	p.active = active
 	return active
+}
+
+// stepTransformEffect samples an effect with transform, perspective, or SVG
+// keyframes once per effect and applies the sampled values to every target.
+func (p *Player) stepTransformEffect(table *effectTable, e Effect, progress float64) {
+	var set valueSet
+	if table.mask != 0 {
+		table.sample(progress, &set)
+	}
+
+	var xform2D, xform3D TransformValue
+	var ok2D, ok3D bool
+	if table.hasTransformDecl {
+		want2D, want3D := false, false
+		for target := range p.targets {
+			if p.targets[target].HasTransform3D {
+				want3D = true
+			} else {
+				want2D = true
+			}
+		}
+		if want2D {
+			xform2D, ok2D = e.sampleTransformForWithScratch(progress, false, &p.transformScratch)
+		}
+		if want3D {
+			xform3D, ok3D = e.sampleTransformForWithScratch(progress, true, &p.transformScratch)
+		}
+	}
+
+	var perspVal PerspectiveValue
+	perspOK := false
+	if table.hasPerspective {
+		perspVal, perspOK = e.samplePerspective(progress)
+	}
+
+	var svgVal SVGPaintValue
+	if table.hasSVG {
+		svgVal = e.sampleSVGPaint(progress)
+	}
+
+	mode := table.mode
+	for target := range p.targets {
+		if table.mask != 0 {
+			set.applyTo(&p.current[target], p.targets[target].From, mode)
+		}
+		var sample restampSample
+		if table.hasTransformDecl {
+			val, ok := xform2D, ok2D
+			if p.targets[target].HasTransform3D {
+				val, ok = xform3D, ok3D
+			}
+			if ok {
+				composed, restamp := composeTransform(&p.targets[target], &p.current[target], val, mode)
+				sample.hasTransform = true
+				sample.transform = composed
+				sample.transformRestamp = restamp
+			}
+		}
+		if perspOK {
+			sample.hasPerspective = true
+			sample.perspective = perspVal
+		}
+		if table.hasSVG {
+			p.targets[target].svg = svgVal
+		}
+		p.noteRestamp(target, sample)
+	}
 }
 
 // TargetPaint returns one target's latest sampled paint and the paint the
@@ -782,7 +847,12 @@ func (p *Player) collectRestamp() {
 		}
 		if slot.hasTransform {
 			p.restampBuf = AppendTransformCSS(p.restampBuf[:0], slot.transform)
-			value.Transform = string(p.restampBuf)
+			if p.lastTransformCSS != "" && string(p.restampBuf) == p.lastTransformCSS {
+				value.Transform = p.lastTransformCSS
+			} else {
+				value.Transform = string(p.restampBuf)
+				p.lastTransformCSS = value.Transform
+			}
 		}
 		p.restamp = append(p.restamp, value)
 	}

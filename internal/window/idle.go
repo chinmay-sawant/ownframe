@@ -152,7 +152,7 @@ func (g *paceGame) applyIdle() {
 	g.trimmed = false
 	//nolint:staticcheck // reason: needs FPSModeVsyncOffMinimum event-wait; SetVsyncEnabled(false) selects Maximum busy loop and would pin CPU.
 	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMinimum)
-	ebiten.SetTPS(ebiten.SyncWithFPS)
+	g.applyTPS(ebiten.SyncWithFPS)
 }
 
 // applyFast restores the active drawing loop (still VSync-off maximum at the
@@ -168,12 +168,74 @@ func (g *paceGame) applyFast() {
 	if g.shell != nil {
 		g.shell.renderer.Wake()
 	}
+	if g.autoMonitorHz {
+		g.lastMonitorCheck = time.Time{}
+		g.refreshMonitorHz(time.Now())
+	}
 	ebiten.SetVsyncEnabled(false)
 	if loop := LoopFPS(g.maxFPS); loop > 0 {
-		ebiten.SetTPS(loop)
+		g.applyTPS(loop)
 		return
 	}
-	ebiten.SetTPS(g.base)
+	g.applyTPS(g.base)
+}
+
+func (g *paceGame) applyTPS(tps int) {
+	if g.setTPS != nil {
+		g.setTPS(tps)
+		return
+	}
+	ebiten.SetTPS(tps)
+}
+
+// refreshMonitorHz checks whether the window moved to a monitor with a
+// different refresh rate (or whether the display mode changed) and updates the
+// active present cap and TPS headroom accordingly.
+func (g *paceGame) refreshMonitorHz(now time.Time) {
+	if !g.autoMonitorHz {
+		return
+	}
+	if !g.lastMonitorCheck.IsZero() && now.Sub(g.lastMonitorCheck) < monitorCheckInterval {
+		return
+	}
+	g.lastMonitorCheck = now
+
+	sampleFn := g.sampleMonitor
+	if sampleFn == nil {
+		sampleFn = defaultMonitorSample
+	}
+	sample := sampleFn()
+	reprobeDue := g.lastMonitorProbe.IsZero() || now.Sub(g.lastMonitorProbe) >= monitorReprobeInterval
+	if g.monitorChecked && sample == g.lastMonitor && !reprobeDue {
+		return
+	}
+	g.monitorChecked = true
+	g.lastMonitor = sample
+	g.lastMonitorProbe = now
+
+	probeFn := g.probeMonitorHz
+	if probeFn == nil {
+		probeFn = detectMonitorHz
+	}
+	hz := sanitizeMonitorHz(probeFn(sample.posX, sample.posY, sample.winW, sample.winH))
+	g.applyMonitorHz(hz)
+}
+
+func (g *paceGame) applyMonitorHz(hz int) {
+	hz = sanitizeMonitorHz(hz)
+	g.monitorHz = hz
+	if !g.autoMonitorHz || g.maxFPS == hz {
+		return
+	}
+	g.maxFPS = hz
+	// Re-anchor loop pacing so a monitor refresh change takes effect cleanly
+	// without carrying overshoot from the previous monitor's interval.
+	g.lastLoop = time.Time{}
+	if !g.idle {
+		if loop := LoopFPS(g.maxFPS); loop > 0 {
+			g.applyTPS(loop)
+		}
+	}
 }
 
 // paceGame wraps the shell and moves the window between the active drawing loop and
@@ -187,22 +249,32 @@ func (g *paceGame) applyFast() {
 // iteration presents once; the retained screen keeps the last frame between
 // keep-alive wakes. maxFPS==0 is uncapped (legacy uncapped drawing).
 type paceGame struct {
-	shell       *shell
-	policy      pacing.Policy
-	watch       inputWatch
-	input       bool
-	base        int
-	maxFPS      int
-	noIdle      bool
-	idle        bool
-	idleSince   time.Time
-	trimmed     bool
-	eventDriven bool
-	wake        atomic.Bool
-	skipFrame   bool
-	focus       bool
-	size        image.Point
-	seen        bool
+	shell         *shell
+	policy        pacing.Policy
+	watch         inputWatch
+	input         bool
+	base          int
+	maxFPS        int
+	autoMonitorHz bool
+	monitorHz     int
+	noIdle        bool
+	idle          bool
+	idleSince     time.Time
+	trimmed       bool
+	eventDriven   bool
+	wake          atomic.Bool
+	skipFrame     bool
+	focus         bool
+	size          image.Point
+	seen          bool
+	// monitor tracking for dynamic multi-monitor refresh-rate pacing.
+	monitorChecked   bool
+	lastMonitor      monitorSample
+	lastMonitorCheck time.Time
+	lastMonitorProbe time.Time
+	sampleMonitor    func() monitorSample
+	probeMonitorHz   monitorProbeFunc
+	setTPS           func(int)
 	// chrome and chromeNext hold the previous and current frame's chrome
 	// rects, so an unchanged overlay reads as no work.
 	chrome     []image.Rectangle
@@ -227,24 +299,31 @@ type paceGame struct {
 // the keep-alive goroutine after the game loop ends.
 func paceWindow(ctx context.Context, game *shell, options Options) (ebiten.Game, func()) {
 	maxFPS := NormalizeMaxFPS(options.MaxFPS)
+	autoMonitorHz := options.MaxFPS == 0 && idlePaceSupported
+	if autoMonitorHz {
+		maxFPS = sanitizeMonitorHz(detectMonitorHz(0, 0, game.screenW, game.screenH))
+	}
 	if maxFPS == 0 {
 		ebiten.SetTPS(ebiten.SyncWithFPS)
 	}
-	// Uncapped + idle pacing off stays legacy: no wrapper. Capped always
-	// wraps so the present cap holds even with NoIdlePace (which then means
-	// "present continuously at the cap", never parking).
+	// Uncapped + idle pacing off stays legacy: no wrapper. Capped (explicit
+	// or auto monitor Hz) always wraps so the present cap holds even with
+	// NoIdlePace (which then means "present continuously at the cap", never
+	// parking).
 	if (options.NoIdlePace || !idlePaceSupported) && maxFPS == 0 {
 		return game, func() {}
 	}
 
 	pace := &paceGame{
-		shell:     game,
-		policy:    pacing.New(time.Now()),
-		base:      ebiten.TPS(),
-		maxFPS:    maxFPS,
-		noIdle:    options.NoIdlePace,
-		stop:      make(chan struct{}),
-		timerDone: make(chan struct{}),
+		shell:         game,
+		policy:        pacing.New(time.Now()),
+		base:          ebiten.TPS(),
+		maxFPS:        maxFPS,
+		autoMonitorHz: autoMonitorHz,
+		monitorHz:     maxFPS,
+		noIdle:        options.NoIdlePace,
+		stop:          make(chan struct{}),
+		timerDone:     make(chan struct{}),
 	}
 	// Capped active path ticks at the loop rate (present cap + headroom) so
 	// the app runs hotter than the FE presents. Uncapped updates follow each rendered frame.
@@ -303,14 +382,15 @@ func (g *paceGame) Draw(screen *ebiten.Image) {
 	if g.skipFrame {
 		return
 	}
+	now := time.Now()
+	g.refreshMonitorHz(now)
 	if g.maxFPS <= 0 {
-		g.notePresent(time.Now())
+		g.notePresent(now)
 		g.shell.Draw(screen)
 		g.frame(screen, time.Now())
 		return
 	}
 	if g.idle {
-		now := time.Now()
 		g.lastLoop = now
 		g.lastPresent = now
 		g.notePresent(now)
@@ -327,7 +407,6 @@ func (g *paceGame) Draw(screen *ebiten.Image) {
 	// TestLoopWaitNeverExceedsOnePresentInterval. Every iteration presents once; Updates run hotter via
 	// TPS headroom, so the FE shows MaxFPS while the app ticks at
 	// MaxFPS+20. TPS/ActualTPS carries the hotter rate, FPS the cap.
-	now := time.Now()
 	if wait := loopWait(g.maxFPS, g.lastLoop, now); wait > 0 {
 		time.Sleep(wait)
 		now = time.Now()

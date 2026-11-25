@@ -262,7 +262,11 @@ func (g *idleSessionGame) Draw(screen *ebiten.Image) {
 		g.observed = true
 		return
 	}
-	if !g.observed || g.pace.idle || ebiten.TPS() != g.pace.base {
+	wantTPS := g.pace.base
+	if loop := LoopFPS(g.pace.maxFPS); loop > 0 {
+		wantTPS = loop
+	}
+	if !g.observed || g.pace.idle || ebiten.TPS() != wantTPS {
 		g.err = fmt.Errorf("deadline wake did not restore the fast loop and its original TPS")
 		return
 	}

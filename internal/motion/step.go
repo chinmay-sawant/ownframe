@@ -54,12 +54,15 @@ type fieldTable struct {
 // carry a parsed transform list; those effects stay on compose until phase 02
 // gives the transform its own stop table.
 type effectTable struct {
-	fields    [fieldCount]fieldTable
-	mask      uint32
-	mode      Composition
-	transform bool
-	wasPaused bool
-	lastNow   time.Time
+	fields           [fieldCount]fieldTable
+	mask             uint32
+	mode             Composition
+	transform        bool
+	hasTransformDecl bool
+	hasPerspective   bool
+	hasSVG           bool
+	wasPaused        bool
+	lastNow          time.Time
 }
 
 // valueSet is the result of sampling one effect at one time. value is the
@@ -93,13 +96,22 @@ func valueForField(field int) valueOf {
 // buildEffectTable precomputes every field table for one effect.
 func buildEffectTable(e Effect) effectTable {
 	table := effectTable{mode: e.Timing.Composition}
+	ease := effectEase(e.Timing)
 	if hasTransform(e.Frames) {
-		// compose samples the decomposed transform per target. Keep that path
-		// until the transform has a precomputed table of its own.
 		table.transform = true
+		table.hasTransformDecl = hasTransformDecl(e.Frames)
+		table.hasPerspective = hasPerspective(e.Frames)
+		table.hasSVG = hasSVGPaint(e.Frames)
+		for field := animFieldOpacity; field < fieldCount; field++ {
+			ft := buildFieldTable(e.Frames, valueForField(field), ease,
+				sentinelBase(e.Timing.Composition, field))
+			table.fields[field] = ft
+			if ft.present {
+				table.mask |= 1 << field
+			}
+		}
 		return table
 	}
-	ease := effectEase(e.Timing)
 	for field := 0; field < fieldCount; field++ {
 		ft := buildFieldTable(e.Frames, valueForField(field), ease,
 			sentinelBase(e.Timing.Composition, field))
