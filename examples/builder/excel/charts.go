@@ -18,6 +18,8 @@ func chartKinds() []struct{ Kind, Label string } {
 		{"line", "Line"},
 		{"area", "Area"},
 		{"pie", "Pie"},
+		{"donut", "Donut"},
+		{"stacked", "Stacked Column"},
 	}
 }
 
@@ -50,6 +52,9 @@ type ChartSpec struct {
 	Title      string
 	Src        Range
 	X, Y, W, H float64
+	// Auto marks a seeded chart whose position follows the window width. A
+	// drag by the user clears it.
+	Auto bool
 }
 
 // chartData reads categories and series from the spec's source range. The
@@ -202,7 +207,11 @@ func (a *app) chartBody(c *ChartSpec, labels []string, series []chadcn.ChartSeri
 	case "bar":
 		return barChart(labels, series[0])
 	case "pie":
-		return pieChart(labels, series[0])
+		return pieChart(labels, series[0], false)
+	case "donut":
+		return pieChart(labels, series[0], true)
+	case "stacked":
+		return stackedChart(labels, series)
 	case "line", "area":
 		if len(series) == 1 {
 			series = append(series, chadcn.ChartSeries{Label: " ", Values: make([]float64, len(labels))})
@@ -241,17 +250,18 @@ func barChart(labels []string, s chadcn.ChartSeries) *ui.Element {
 	return root
 }
 
-// pieChart is a proportion strip plus legend. Blinkless has no conic
-// gradient, so slices are shown as share-of-total segments.
-func pieChart(labels []string, s chadcn.ChartSeries) *ui.Element {
+// pieChart is a conic-gradient disc with a legend. A donut punches a hole in
+// the middle with a disc in the sheet colour.
+func pieChart(labels []string, s chadcn.ChartSeries, donut bool) *ui.Element {
 	total := 0.0
 	for _, v := range s.Values {
 		if v > 0 {
 			total += v
 		}
 	}
-	strip := ui.Div().Class("rb-pie-strip")
 	legend := ui.Div().Class("rb-pie-legend")
+	var stops []string
+	acc := 0.0
 	for i, l := range labels {
 		v := 0.0
 		if i < len(s.Values) && s.Values[i] > 0 {
@@ -263,14 +273,62 @@ func pieChart(labels []string, s chadcn.ChartSeries) *ui.Element {
 		}
 		col := chartPalette()[i%len(chartPalette())]
 		if pct > 0 {
-			strip.Children(ui.Div().Class("rb-pie-seg").Width(ui.Percent(pct)).BackgroundColor(ui.Hex(col)))
+			stops = append(stops, fmt.Sprintf("%s %.2f%%, %s %.2f%%", col, acc, col, acc+pct))
+			acc += pct
 		}
 		legend.Children(ui.Div().Class("rb-pie-item").Children(
 			ui.Span().Class("rb-pie-dot").BackgroundColor(ui.Hex(col)),
 			ui.Span().Text(fmt.Sprintf("%s  %.1f%%", l, pct)),
 		))
 	}
-	return ui.Div().Class("rb-pie").Children(strip, legend)
+	disc := ui.Div().Class("rb-pie-disc")
+	if len(stops) > 0 {
+		disc.CSSRaw("background", "conic-gradient("+strings.Join(stops, ", ")+")")
+	}
+	if donut {
+		disc.Children(ui.Div().Class("rb-pie-hole"))
+	}
+	return ui.Div().Class("rb-pie").Children(disc, legend)
+}
+
+// stackedChart stacks every series in one column per label. Column height is
+// the label's total against the largest total, and each segment's share of the
+// column follows its value.
+func stackedChart(labels []string, series []chadcn.ChartSeries) *ui.Element {
+	totals := make([]float64, len(labels))
+	maxT := 0.0
+	for i := range labels {
+		for _, s := range series {
+			if i < len(s.Values) && s.Values[i] > 0 {
+				totals[i] += s.Values[i]
+			}
+		}
+		maxT = max(maxT, totals[i])
+	}
+	plot := ui.Div().Class("rb-stack")
+	names := ui.Div().Class("rb-stack-names")
+	for i, l := range labels {
+		col := ui.Div().Class("rb-stack-col")
+		if maxT > 0 {
+			col.CSSRaw("height", fmt.Sprintf("%.2f%%", totals[i]/maxT*percentScale))
+		}
+		for k, s := range series {
+			if i < len(s.Values) && s.Values[i] > 0 {
+				col.Children(ui.Div().Class("rb-stack-seg").CSSRaw("flex-grow", fmt.Sprintf("%.2f", s.Values[i])).
+					BackgroundColor(ui.Hex(chartPalette()[k%len(chartPalette())])))
+			}
+		}
+		plot.Children(col)
+		names.Children(ui.Span().Class("rb-stack-name").Text(l))
+	}
+	legend := ui.Div().Class("rb-pie-legend")
+	for k, s := range series {
+		legend.Children(ui.Div().Class("rb-pie-item").Children(
+			ui.Span().Class("rb-pie-dot").BackgroundColor(ui.Hex(chartPalette()[k%len(chartPalette())])),
+			ui.Span().Text(s.Label),
+		))
+	}
+	return ui.Div().Class("rb-stacked").Children(plot, names, legend)
 }
 
 // chartDragStart claims a press on a chart header. The host calls it from its
@@ -294,6 +352,7 @@ func (a *app) chartDragMove(dx, dy float64) bool {
 	if c == nil {
 		return false
 	}
+	c.Auto = false
 	c.X += a.unzf(dx)
 	c.Y += a.unzf(dy)
 	if c.X < 0 {

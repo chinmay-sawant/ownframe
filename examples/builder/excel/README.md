@@ -29,7 +29,7 @@ In the preview, read `/frame.png` to see the picture. See `documentation/testing
 - **Format Painter** (click for one use, click again for sticky, `Escape` to stop) and a **Clear** menu.
 - **Conditional formatting** from the Styles group: highlight rules, duplicates, top and bottom N, above and below average, data bars, and 3-color scales, plus a Manage Rules dialog with reorder, enable, and delete. A Cell Styles gallery sits next to it.
 - **Dialogs:** Find and Replace, Paste Special, Format Cells (Number, Alignment, Font, Border, Fill), Data Validation, Sort (two keys), Filter (search box, value checkboxes, Sort A to Z and Z to A; the grid header chevron opens it), Comments, Open, Save or Export, and Keyboard Shortcuts.
-- **Charts** from the Insert tab: Column, Bar, Line, Area, and Pie. A chart is bound to a cell range, reads the cells on every render, and moves by dragging its header. `Delete` removes the selected chart.
+- **Charts** from the Insert tab: Column, Bar, Line, Area, Pie, Donut, and Stacked Column. The Quarterly sheet holds twelve quarters of data, and the Charts sheet shows six charts bound to tables built from Sheet1 and Quarterly. The seeded charts wrap to the window width until you drag one. A chart is bound to a cell range, reads the cells on every render, and moves by dragging its header. `Delete` removes the selected chart.
 - **Context menus** for cells, row and column headers, and sheet tabs.
 - **Starter workbook:** `Sheet1` holds a regional sales table with formulas, and `Summary` rolls it up with cross-sheet `SUM`, `AVERAGE`, `MAX`, and `IF` plus a quarter table to chart.
 - **File menu:** New, Open, and Save or Export for workbook JSON, `.xlsx`, and CSV. The `.xlsx` writer and reader keep values, formulas, number formats, fonts, fills, per-edge borders, alignment and indent, widths and heights, hidden rows and columns, merges, freeze panes, tab colors, conditional formats, data validation, and comments. Dropped `.json`, `.xlsx`, and `.csv` files open through the same path.
@@ -56,7 +56,7 @@ In the preview, read `/frame.png` to see the picture. See `documentation/testing
 - A cut moves formulas that point at a single cell or a fully cut range. A range that is only partly cut stays where it is, as in Excel. `Ctrl+V` after `Ctrl+X` still pastes text, so only the ribbon Paste button moves dependents until the keyboard path calls `pasteCut`.
 - Conditional-format rule changes, data validation, and comment edits are not undoable. Adding, deleting, and renaming a sheet, and row and column inserts and deletes, are.
 - XLSX conditional formats keep the rule, range, and preset color; custom dxf styles from other apps map to the closest of the three presets. Disabled rules are written to JSON but not to `.xlsx`, and validation other than "between" bounds or inline lists is skipped on import.
-- The Pie chart is a share-of-total strip with a legend, because the renderer has no conic gradient.
+- Pie and Donut draw a conic-gradient disc clipped with `clip-path: circle(50%)`. There is no scatter chart.
 
 ## Plan and phase-wise checklist
 

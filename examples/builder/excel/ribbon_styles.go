@@ -110,6 +110,15 @@ const ribbonCSS = `
 .rb-hbar-fill { height: 14px; }
 .rb-pie-strip { display: flex; height: 28px; margin: 12px 0; }
 .rb-pie-seg { height: 28px; }
+.rb-pie { display: flex; flex-direction: column; align-items: center; }
+.rb-pie-disc { position: relative; width: 140px; height: 140px; margin: 8px 0; border-radius: 50%; clip-path: circle(50%); background: var(--xl-header-bg); }
+.rb-pie-hole { position: absolute; left: 35px; top: 35px; width: 70px; height: 70px; border-radius: 50%; background: var(--xl-sheet-bg); }
+.rb-stack { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding: 0 4px; border-bottom: 1px solid var(--xl-gridline); }
+.rb-stack-col { flex: 1; display: flex; flex-direction: column-reverse; }
+.rb-stack-seg { flex-basis: 0; min-height: 1px; }
+.rb-stack-names { display: flex; gap: 6px; padding: 2px 4px 6px 4px; }
+.rb-stack-name { flex: 1; text-align: center; font-size: 9px; color: var(--xl-cell-muted); }
+.rb-stacked { display: flex; flex-direction: column; }
 .rb-pie-legend { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
 .rb-pie-item { display: flex; align-items: center; gap: 6px; }
 .rb-pie-dot { width: 10px; height: 10px; border-radius: 5px; }

@@ -171,6 +171,7 @@ func (a *app) onTick(context.Context) error {
 		return nil
 	}
 	a.sizeW, a.sizeH = w, h
+	a.layoutAutoCharts()
 	a.redraw()
 	return nil
 }

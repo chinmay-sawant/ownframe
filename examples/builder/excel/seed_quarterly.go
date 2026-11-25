@@ -136,37 +136,62 @@ func seedChartsSheet(s *Sheet) {
 	}
 }
 
-// seedCharts places one chart of each kind on the Charts sheet, bound to the
-// tables seeded beside them.
+// Auto layout of the seeded charts: they start right of the tables and wrap
+// to the window width.
+const (
+	autoChartX   = 420.0 // left edge, clear of the four table columns
+	autoChartY   = 10.0
+	autoChartGap = 10.0
+	autoChartW   = 300.0
+	autoChartH   = 290.0
+	autoChartTop = 365.0 // height of the column chart, which carries totals
+	autoPadRight = 24.0  // scrollbar and margin kept clear on the right
+)
+
+// seedCharts places one chart of each plotted kind on the Charts sheet, bound
+// to the tables seeded beside them, then lays them out for the window.
 func (a *app) seedCharts() {
-	const (
-		x0, x1, x2 = 420.0, 730.0, 1040.0
-		y0, y1     = 10.0, 385.0
-		w, h0, h1  = 300.0, 365.0, 290.0
-	)
 	rng := func(ref string) Range {
 		r, _ := ParseRange(ref)
 		return r
 	}
 	specs := []struct {
 		kind, title, src string
-		x, y             float64
+		h                float64
 	}{
-		{"column", "Revenue, gross profit and net income", "A16:D24", x0, y0},
-		{"line", "Revenue trend", "A16:B24", x1, y0},
-		{"area", "Revenue and gross profit", "A16:C24", x2, y0},
-		{"bar", "Revenue by region", "A3:B7", x0, y1},
-		{"pie", "Revenue by product", "A10:B12", x1, y1},
+		{"column", "Revenue, gross profit and net income", "A16:D24", autoChartTop},
+		{"line", "Revenue trend", "A16:B24", autoChartTop},
+		{"area", "Revenue and gross profit", "A16:C24", autoChartTop},
+		{"bar", "Revenue by region", "A3:B7", autoChartH},
+		{"pie", "Revenue by product", "A10:B12", autoChartH},
+		{"donut", "Revenue share by region", "A3:B7", autoChartH},
 	}
 	for _, sp := range specs {
-		h := h0
-		if sp.y == y1 {
-			h = h1
-		}
 		a.x.chartSeq++
 		a.x.charts = append(a.x.charts, &ChartSpec{
 			ID: a.x.chartSeq, Sheet: "Charts", Kind: sp.kind, Title: sp.title,
-			Src: rng(sp.src), X: sp.x, Y: sp.y, W: w, H: h,
+			Src: rng(sp.src), W: autoChartW, H: sp.h, Auto: true,
 		})
+	}
+	a.layoutAutoCharts()
+}
+
+// layoutAutoCharts flows the Auto charts left to right and wraps them to the
+// window width, so a narrow window stacks them instead of clipping them. The
+// width is in unzoomed CSS px, the unit chart coordinates use.
+func (a *app) layoutAutoCharts() {
+	w, _ := a.viewportSize()
+	avail := a.unzf(float64(w)) - chartOriginX - autoPadRight
+	x, y, rowH := autoChartX, autoChartY, 0.0
+	for _, c := range a.x.charts {
+		if !c.Auto {
+			continue
+		}
+		if x > autoChartX && x+c.W > avail {
+			x, y, rowH = autoChartX, y+rowH+autoChartGap, 0
+		}
+		c.X, c.Y = x, y
+		x += c.W + autoChartGap
+		rowH = max(rowH, c.H)
 	}
 }

@@ -805,6 +805,9 @@ func TestSeededChartsSheet(t *testing.T) {
 		}
 	}
 	for _, k := range chartKinds() {
+		if k.Kind == "stacked" { // insertable, not seeded: three rows would not fit the window
+			continue
+		}
 		if !kinds[k.Kind] {
 			t.Errorf("no seeded %s chart", k.Kind)
 		}
@@ -824,4 +827,52 @@ func newTestAppForCharts(t *testing.T) *app {
 		t.Fatal(err)
 	}
 	return a
+}
+
+// TestSeededChartsWrapToWindow: a narrow window stacks the seeded charts
+// instead of leaving them past the right edge.
+func TestSeededChartsWrapToWindow(t *testing.T) {
+	a := newTestAppForCharts(t)
+	right := func() float64 {
+		m := 0.0
+		for _, c := range a.x.charts {
+			if c.Auto {
+				m = max(m, c.X+c.W)
+			}
+		}
+		return m
+	}
+	a.page.SetSize(1440, 960)
+	a.layoutAutoCharts()
+	wide := right()
+	a.page.SetSize(900, 960)
+	a.layoutAutoCharts()
+	narrow := right()
+	if narrow >= wide {
+		t.Fatalf("right edge narrow %.0f, wide %.0f: charts did not wrap", narrow, wide)
+	}
+	if limit := a.unzf(900) - chartOriginX; narrow > limit {
+		t.Fatalf("right edge %.0f past the %.0f window", narrow, limit)
+	}
+}
+
+// TestStackedAndDonutChartsRender: the new kinds draw from sheet data.
+func TestStackedAndDonutChartsRender(t *testing.T) {
+	a := rbApp(t)
+	rbSelect(a, "A1:D5")
+	for _, kind := range []string{"stacked", "donut"} {
+		c := a.addChart(kind)
+		labels, series := a.chartData(c)
+		if len(labels) == 0 || len(series) == 0 {
+			t.Fatalf("%s: no data", kind)
+		}
+		html := rbRender(t, a.chartBody(c, labels, series))
+		want := "rb-stack-col"
+		if kind == "donut" {
+			want = "conic-gradient"
+		}
+		if !strings.Contains(html, want) {
+			t.Errorf("%s chart missing %q in %s", kind, want, html)
+		}
+	}
 }
