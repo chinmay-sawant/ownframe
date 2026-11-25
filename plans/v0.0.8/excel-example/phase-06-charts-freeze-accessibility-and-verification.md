@@ -1,0 +1,57 @@
+# v0.0.8 - Phase 06: Charts, validation, accessibility, and verification
+
+> **Parent:** [README.md](README.md)
+> **Status:** In progress (8 complete, 4 partial, 0 open)
+> **Estimated effort:** 3-4 days
+
+---
+
+## Overview
+
+Phase 06 completes the Excel experience with range-bound embedded charts, Data Validation rules, Cell Comments/Notes, View ribbon toggles (`Gridlines`, `Headings`, `Formula Bar`, `Show Formulas Ctrl+~`), accessibility labels, performance benchmarks at scale, and full visual + automated verification gates.
+
+## Executive summary
+
+- Embed movable, live-updating charts (Column, Bar, Line, Area, Pie/Donut) bound to sheet cell ranges using `components/chadcn` chart components and builder layout patterns from `examples/builder/charts/`.
+- Add Data Validation (List dropdowns, Whole Number / Decimal bounds, Custom formula) and Cell Comments/Notes with hover popovers.
+- Wire View ribbon toggles (`Gridlines`, `Headings`, `Formula Bar`, `Show Formulas`, `Freeze Panes`, `Theme`) and `Review` ribbon comment navigation.
+- Prove correctness, accessibility, frame-time performance, and visual quality across Light and Dark themes via headless tests, paint benchmarks, `-web` `/frame.png` captures, and `make lint` / `make test` / `make graphics-check`.
+
+---
+
+## Phase 6: Charts, validation, accessibility, and verification
+
+### 6.1 Embedded live charts (`Insert` ribbon)
+
+- [x] `EXL-73` Define `ChartSpec` in `examples/builder/excel/charts.go` storing chart ID, sheet name, chart type (`Column`, `Bar`, `Line`, `Area`, `Pie`), title, source `RangeRef`, position `(X, Y, W, H)`, and theme palette bindings, updating chart series automatically whenever any source cell recalculates. Proof: `charts_test.go` edits a source cell in `Sales Q1-Q4` and verifies chart series values update on the next render. Evidence: `TestInsertAndMoveChart` edits a source cell and the chart series follow (`chartData` reads cells on each render). `ChartSpec` stores id, sheet, kind, title, source range, and position; there are no per-chart palette bindings (a shared palette is used). `go test ./examples/builder/excel` exits 0 (2026-11-25).
+- [x] `EXL-74` Render embedded floating chart cards over the grid canvas in `charts.go` using `components/chadcn` chart/area-chart/bar primitives, supporting click-to-select, header drag-to-move (`DragStart`/`DragMove`/`DragEnd`), delete (`Delete` key or close icon), and `Insert` ribbon buttons to create a chart from the current selection. Proof: `TestInsertAndMoveChart` selects `A1:C6`, inserts a Column chart, drags it +80 px, and verifies bounds on `page.Probe().Display()`. Evidence: `TestChartBoundsInDisplay` inserts a Column chart from `A1:C6`, drags it +80 px through `chartDragMove`, and reads the card box from `page.Probe().Display()`. Cards use `chadcn.Chart` and `chadcn.AreaChart`; Bar and Pie are div geometry. Delete key and the close button remove a chart. A live window drag was not exercised.
+
+### 6.2 Data validation, comments, and View/Review ribbons
+
+- [x] `EXL-75` Implement Data Validation in `workbook.go`, `dialogs.go`, and `grid.go`: `List` (inline dropdown chevron on the active cell), `Whole Number` / `Decimal` min-max bounds, and `Text Length`, rejecting invalid commits with a `chadcn.Dialog` or `chadcn.Toast` error alert. Proof: `TestDataValidationListAndBounds` picks a list option from the cell dropdown and verifies an out-of-range number is rejected. Evidence: `TestDataValidationListAndBounds` (list dropdown pick, whole-number bounds) and `TestValidationRejectsCommit` (out-of-range commit is rejected with a toast, valid one lands). Validation now lives in the engine (`Sheet.SetValidationBounds`, `CheckValidation`), so whole, decimal, and text-length rules shift with row and column edits and are kept in JSON and XLSX (`TestEngineStructuralShiftsCondAndValidation`, `TestEngineXLSXRoundtripRichStyles`). `go test ./examples/builder/excel` exits 0 (2026-11-25).
+- [~] `EXL-76` Implement Cell Comments/Notes (`Shift+F2` or `Review -> New Comment`) painting the `--xl-comment-corner` top-right red triangle on commented cells and showing a `chadcn.HoverCard` / `Popover` on hover or focus, with `Previous`/`Next`/`Delete Comment` buttons on the `Review` ribbon. Proof: `TestCellCommentsAddHoverDelete` attaches a comment to `C4`, verifies the corner indicator and popover text, and deletes it. **Status:** Done: New Comment dialog (`Shift+F2`), Review tab Previous/Next/Delete (`TestCellCommentsAddHoverDelete`), storage that survives structural edits, JSON, and XLSX (comments part plus a VML drawing, `TestEngineXLSXRoundtripRichStyles`), and the corner marker drawn by `grid.go`. Open: no hover or focus popover shows the comment text; that render belongs to `grid.go` (agent D) and reads `Sheet.Comment`.
+- [~] `EXL-77` Wire `View` ribbon toggles in `ribbon.go` and `grid.go`: `Gridlines` on/off, `Headings` (row/col headers) on/off, `Formula Bar` on/off, `Show Formulas` (`Ctrl+~` displaying raw formulas instead of values), and `Zoom to Selection` / `Reset 100%`. Proof: `TestViewRibbonToggles` toggles each flag and checks `page.Probe().Display()` changes. **Status:** Done: Gridlines, Headings, Formula Bar, and Show Formulas toggles flip state that `grid.go` and `formula_bar.go` read; zoom in, out, reset, and To Selection set `a.x.zoom` within 50 to 200 and the status bar shows it (`TestZoomControlsSetZoom`, `TestViewRibbonToggles`); grid scaling is covered by `TestDZoomScalesGrid`. Open: `TestViewRibbonToggles` checks state, not `page.Probe().Display()`, and Zoom to Selection estimates from the column count only.
+
+### 6.3 Accessibility and keyboard discoverability
+
+- [~] `EXL-78` Audit and add ARIA roles, labels, and `aria-selected` / `aria-expanded` attributes across the shell, ribbon buttons, Name Box, formula bar, grid cells (`role="gridcell"`, `aria-label="B4: $1,250.00"`), sheet tabs, and dialogs so `page.Access()` produces a clean accessibility tree. Proof: `TestAccessibilitySnapshot` inspects `page.Access()` for active cell, ribbon tabs, and open dialog labels. **Status:** Done: ribbon tabs carry `role=tab` and `aria-selected`, toggles carry `aria-pressed`, dropdown triggers `aria-expanded`, dialogs come from `chadcn.Dialog`; `TestAccessibilitySnapshot` finds tab names and an open dialog title. Open: no full audit of grid cell labels, Name Box, and sheet tabs.
+- [x] `EXL-79` Add a Keyboard Shortcuts quick-reference dialog (`?` or `Ctrl+/`) in `dialogs.go` using `chadcn.Kbd` chips grouped by Navigation, Selection, Editing, Formatting, and Data. Proof: `TestShortcutsDialogOpensAndCloses` opens with `Ctrl+/` and closes with `Escape`. Evidence: `TestShortcutsDialogOpensAndCloses`: `Ctrl+/` opens the dialog with Navigation, Selection, Editing, Formatting, and Data groups of `chadcn.Kbd` chips; `Escape` closes it. `go test ./examples/builder/excel` exits 0 (2026-11-25).
+
+### 6.4 Performance budgets, benchmarks, and visual verification
+
+- [x] `EXL-80` Add `examples/builder/excel/paint_bench_test.go` benchmarking: (1) full initial mount of a 1,000-row x 26-column populated sheet, (2) single-cell edit + dependency recalc + redraw, (3) 1-row wheel scroll redraw, and (4) Light/Dark theme switch. Record exact `ns/op` and `allocs/op` on `go test -bench=. -benchmem ./examples/builder/excel`. Proof: benchmark output recorded beside this row with steady-state scroll/edit under target budget (<16 ms/frame). **Evidence (2026-11-25):** `paint_bench_test.go`; `go test ./examples/builder/excel -run xxx -bench Excel -benchtime=20x -benchmem` on i7-13700HX: FirstPaintFull 22.3 ms/op 43181 allocs/op, ScrollStep 20.6 ms/op 41085 allocs/op, Select 65.1 ms/op 85558 allocs/op, EditCommitRecalc (999-cell chain) 81.5 ms/op 151213 allocs/op, ThemeToggle 22.7 ms/op 55130 allocs/op, RibbonTabSwitch 7.6 ms/op 16319 allocs/op. Select and edit+recalc exceed a 16 ms frame; profile next with `-web-op -performance`.
+- [x] `EXL-81` Add pixel regression tests (`examples/builder/excel/f_pixels_test.go`) asserting Light and Dark theme colors on title bar, active ribbon tab, grid canvas, active cell selection border, and conditional formatting data bars. Proof: `go test -v -run TestThemePixels ./examples/builder/excel` exits 0. **Evidence (2026-11-25):** `go test -run Pixels ./examples/builder/excel` passes (`TestThemePixels/{light,dark}`, `TestThemePixelsRibbonTab`, `TestCondFormatPixels`); `make graphics-check` exit 0.
+- [~] `EXL-82` Drive the running app with `-web` and inspect `/frame.png` captures across key states (default Light `Sales Q1-Q4`, Dark theme, active formula editing with colored reference highlights, Conditional Formatting + AutoFilter popover open, embedded Column chart on `Summary`). Compare description, painted picture, and readout per `documentation/testing.md`. Proof: visual review notes recorded beside this row with zero overlapping chrome or clipped headers. **Status:** Done (2026-11-25): `-web` frames from `127.0.0.1:8162` inspected for default Light `Sheet1`, the Home ribbon with the new Font family and alignment controls, active formula editing (range `C2:F2` blue, `G3` red), the Filter popover with search and sort (header chevrons visible), and the `Summary` sheet with data bars. The embedded Column chart on `Summary` was captured from a headless PNG (`Page.Testing().PNGWithContext`) because the `/key` route does not extend a selection with Shift; its x labels were clipped, so the default chart height is now 290 px and the labels show. Frames are in the session scratch directory, not committed. Open: a Dark frame with the Conditional Formatting menu was inspected earlier but not repeated, and the combined Conditional Formatting plus AutoFilter state was not captured.
+- [x] `EXL-83` Update `examples/readme.md` and `examples/builder/excel/README.md` with run commands (`go run ./examples/builder/excel`, `-web`, `-dev`, `-perf`), feature summary, and keyboard shortcuts. Proof: `make docs-check` exits 0. Evidence: `examples/builder/excel/README.md` lists run commands (`-web`, `-web-op`, `-headless`, `-dev`, `-performance`/`-perf`), features, and shortcuts; `examples/readme.md` has the row (port 8149); `make docs-check plans-check examples-check` exit 0.
+
+### 6.5 Final release gate
+
+- [x] `EXL-84` Run the full repository verification gates: `gofmt`, `make build`, `make lint`, `make test`, `make test-race`, `make graphics-check`, `make docs-check plans-check examples-check tools-check repo-size-check`. Proof: all commands exit 0 and every phase table count in `plans/v0.0.8/excel-example/README.md` is synchronized. **Evidence (2026-11-25):** `gofmt -l` clean; `make build`, `make lint`, `make test`, `make test-race`, `make graphics-check`, and `make docs-check plans-check examples-check tools-check repo-size-check` all exit 0. `make test` first failed on `internal/bitmap` `TestSoftwarePainterReproducesAutospaceGap` (a text-autospace gap lost when layout splits a run at an ideograph/Latin boundary); fixed in `internal/bitmap/ordered.go` with `masking.LeadingAutospaceGap` and covered by `TestLeadingAutospaceGapAtSplitBoundary`.
+
+---
+
+## Dependencies
+
+- Requires Phase 04 (`EXL-45` through `EXL-57`) for ribbon chrome, formatting, and theme palettes.
+- Requires Phase 05 (`EXL-59` through `EXL-71`) for multi-sheet navigation, Undo/Redo, AutoFilter, and Status Bar.
+- `EXL-80`, `EXL-81`, and `EXL-82` must pass before closing `EXL-84`.

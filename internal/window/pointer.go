@@ -56,8 +56,10 @@ func (s *shell) pointer() error {
 		return s.devTouch(frameW, frameH)
 	}
 
-	if err := s.hoverCursor(x, y, px, py); err != nil {
-		return err
+	if !s.gesture.active {
+		if err := s.hoverCursor(x, y, px, py); err != nil {
+			return err
+		}
 	}
 
 	handled, err := s.menuPointer(x, y)

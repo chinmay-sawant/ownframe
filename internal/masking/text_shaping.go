@@ -5,8 +5,13 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/chinmay-sawant/blinkless/layout"
 	"golang.org/x/text/language"
 )
+
+// autospaceAbutTol is how far, in points, the end of one text op may sit from
+// the start of the next and still count as the same line of text.
+const autospaceAbutTol = 0.5
 
 // fontTagLen is the byte length of an OpenType feature tag.
 const fontTagLen = 4
@@ -151,4 +156,37 @@ func AutospaceGapBetween(prev, next rune, gap float64) float64 {
 	}
 
 	return 0
+}
+
+// LeadingAutospaceGap is the text-autospace gap, in points, that layout folded
+// into the width of cur but did not draw. Layout splits a run into one text op
+// per font, so an ideograph and Latin boundary can fall exactly between two
+// ops: the second op's width includes the gap while its X does not move, and a
+// painter that starts every op with no previous rune would drop the gap. It
+// returns the gap when prev ends flush against cur on the same baseline and
+// the last rune of prev and the first rune of cur form a boundary, else zero.
+func LeadingAutospaceGap(prev, cur *layout.DisplayOp) float64 {
+	if prev == nil || cur == nil || prev.Text == "" || cur.Text == "" {
+		return 0
+	}
+	gap := cur.TextAutospaceGap()
+	if gap == 0 {
+		return 0
+	}
+	if abs(prev.X+prev.W-cur.X) > autospaceAbutTol || abs(prev.Y-cur.Y) > autospaceAbutTol {
+		return 0
+	}
+	runes := []rune(prev.Text)
+	last := runes[len(runes)-1]
+	first := []rune(cur.Text)[0]
+
+	return AutospaceGapBetween(last, first, gap)
+}
+
+func abs(v float64) float64 {
+	if v < 0 {
+		return -v
+	}
+
+	return v
 }

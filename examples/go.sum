@@ -30,8 +30,8 @@ github.com/benoitkugler/textprocessing v0.0.6 h1:obkMyj62GEPg3xUVYqROlCN22z1Oleu
 github.com/benoitkugler/textprocessing v0.0.6/go.mod h1:Io0gN08/PXEzrSOWFa88xHx2Xv3VjvLMY7H76YoI23A=
 github.com/brianvoe/gofakeit/v7 v7.18.0 h1:vn3tb6OKRUazCkzhotd8xEwz/mhkLFbDoR8OUREFm80=
 github.com/brianvoe/gofakeit/v7 v7.18.0/go.mod h1:QXuPeBw164PJCzCUZVmgpgHJ3Llj49jSLVkKPMtxtxA=
-github.com/chinmay-sawant/blinkless v0.1.9 h1:VSPn6JYH/76ZOhfljTQpuVEDFPP+Pq0ejtr0SXyR6JM=
-github.com/chinmay-sawant/blinkless v0.1.9/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
+github.com/chinmay-sawant/blinkless v0.1.10-0.20261125195439-50ad332fb6d1 h1:djgIr7dM+wJj0NvxQeA1QaRumMj/MneVnElJOeQw8xI=
+github.com/chinmay-sawant/blinkless v0.1.10-0.20261125195439-50ad332fb6d1/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
 github.com/chinmay-sawant/ownframe v0.0.7 h1:ZXHBIDXubh8pkTv/te1WDk5BWYSZEJcgMQq878GnXe4=
 github.com/chinmay-sawant/ownframe v0.0.7/go.mod h1:5bMlNcjdAD/cgfFumRMq3stOHBnkPOMjp6w5uV2h4EY=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=

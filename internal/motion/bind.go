@@ -784,6 +784,20 @@ func (r *Runtime) indexFor(d *Display) *Index {
 	return r.index
 }
 
+// exactIndexFor returns an index built for exactly d. Unlike indexFor it never
+// repoints the shared index, so two displays compared side by side (a
+// transition's previous and next paint) each keep their own operation owners
+// even when their operation counts match or differ by an operation id shuffle.
+func (r *Runtime) exactIndexFor(d *Display) *Index {
+	if d == nil || len(d.Ops) == 0 {
+		return EmptyIndex()
+	}
+	if r.index != nil && r.index.Display() == d {
+		return r.index
+	}
+	return NewIndex(d)
+}
+
 func sameKeyframes(a, b []layout.KeyframesRule) bool {
 	if len(a) == 0 && len(b) == 0 {
 		return true

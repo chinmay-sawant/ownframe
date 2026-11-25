@@ -99,6 +99,7 @@ make air reload ARGS="-web"
 | [ops-console](ops-console) | Five-screen yard ops teaching sample: login, list, detail, settings, report. | 8141 |
 | [builder/ui-builder](builder/ui-builder) | Interactive component gallery for `components/chadcn` built on `ui`. | 8131 |
 | [builder/loglens](builder/loglens) | Observability dashboard exercising the component set: overview, logs, traces, and incident room. | 8132 |
+| [builder/excel](builder/excel) | Spreadsheet in the style of Excel: virtualized grid, formula engine with dependency recalculation, ribbon formatting, conditional formats, sort and filter, charts, undo/redo, and CSV, JSON and XLSX files. | 8149 |
 | [download-manager](download-manager) | Download queue with bounded workers: progress and speed, pause/resume with validated HTTP range resume, retry, cancel, and durable SQLite history. | — |
 | [live-log-viewer](live-log-viewer) | Multi-file log viewer: source sidebar, fixed-height rows, filters, follow/pause with unread count, entry detail, bounded export, and SQLite history. | — |
 | [spreadsheet](spreadsheet) | Sparse editable grid with a formula bar, SUM/AVERAGE formulas, range selection, undo/redo, CSV import/export, and SQLite workbooks. | — |
