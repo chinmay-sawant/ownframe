@@ -53,7 +53,7 @@ func (f *flipper) step() []string {
 
 	for _, id := range f.order {
 		fl := f.cells[id]
-		if fl == nil || fl.done {
+		if fl == nil || fl.done || fl.op == nil {
 			continue
 		}
 

@@ -228,3 +228,42 @@ go test -p 1 -run '^$' -bench '^BenchmarkListPatchVsRebuild$' -benchmem -count 3
 | `BenchmarkFrame_WarmRedraw_Card` | **499 ns** | 0 B | 0 | `test` |
 | `BenchmarkFrame_WarmRedraw_Dashboard` | **512 ns** | 0 B | 0 | `test` |
 | `BenchmarkFrame_Click_Dispatch` | **2.19 µs** | 496 B | 5 | `test` |
+
+## v0.0.6 native Windows GPU baseline (2026-11-25)
+
+Measured sequentially on native Windows (`goos: windows`, `goarch: amd64`, `CGO_ENABLED=0` pure-Go cross-compile from Linux with `-tags ownframe_debug`, Go `1.26.11`) on machine Chinmay:
+- **CPU:** 13th Gen Intel(R) Core(TM) i7-13700HX
+- **GPUs / Displays:** NVIDIA GeForce RTX 4060 Laptop GPU (1920×1080 @ 143 Hz) and Intel(R) UHD Graphics (2560×1600 @ 165 Hz)
+
+### Live native Windows GPU windows (`-perf -debug-addr`, 8 s per app)
+
+| App | Window | Present FPS | Avg frame | p95 frame | p99 frame | Long frames (>25 ms) | Go heap (live) | Windows RSS | CPU (1-core eq.) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `animations.exe` (`-dev=false`, 534 ops, active CSS animations) | 1140×900 | **325.3 FPS** (319 repaints/s) | **2.92 ms** | **4.32 ms** | **4.83 ms** | **0** | 20.8 MB | 359.9 MB | 162.3% |
+| `wispr-flow-dashboard.exe` (398 ops, 31 images) | 1638×950 | **442.3 FPS** (6 repaints/s) | **0.75 ms** | **1.12 ms** | **7.45 ms** | **0** | 21.4 MB | 344.3 MB | 28.9% |
+| `spotify-player.exe` (169 ops, 46 images, timer-paced) | 1440×960 | **68.2 FPS** | **3.57 ms** | **5.35 ms** | **9.59 ms** | **0** | 22.0 MB | 265.5 MB | 18.6% |
+| `departure-board.exe` (628 ops, idle-parked) | 1000×640 | **2.1 FPS** (parked) | **1.14 ms** | **1.48 ms** | **12.19 ms** | 1 | 17.7 MB | 224.5 MB | **4.1%** |
+
+Notes:
+- Windows RSS includes DirectX/GPU driver shared memory pages; live Go heap stays between **17.7 MB and 22.0 MB** across all four apps.
+- `animations.exe` ran uncapped at 319 repaints/s (`713 MB/s` alloc rate). Profiling `BenchmarkAnimationTick` (`466 µs/op`, `226 KB/op`, `180 allocs/op`) with `go tool pprof` attributes **96.1%** of allocated bytes to `applyRestamp`, led by `blinkless/internal/layout.stampStateAt` (**67.8%** alloc bytes, **58.9%** CPU) walking the whole box tree per animated target instead of only the target's ancestor path.
+
+### Native Windows Ebiten replay benchmarks (`replay.test.exe -test.run NONE -test.bench . -test.benchmem -test.benchtime 300ms`)
+
+| Benchmark | Windows time/op | Bytes/op | Allocs/op | Notes |
+|---|---:|---:|---:|---|
+| `BenchmarkDrawRectScan/dirty` | **185 ns** | 0 B | 0 | Op culling scan (dirty rect) |
+| `BenchmarkDrawRectScan/full` | **183 ns** | 0 B | 0 | Op culling scan (full frame) |
+| `BenchmarkChunkCardDamage/direct` | **4.22 µs** | 2.90 KB | 20 | 5 ops/draw |
+| `BenchmarkChunkCardDamage/chunked` | **2.00 µs** | 849 B | 8 | 1 blit/draw (**2.1× faster**) |
+| `BenchmarkBlitRaster` | **406 ns** | 581 B | 4 | Cached raster blit |
+| `BenchmarkCachedRoundedFill_Warm` / `Cold` | **668 ns** / 5.36 µs | 596 B / 5.97 KB | 4 / 43 | **8.0× faster** warm |
+| `BenchmarkCachedStroke_Warm` / `Cold` | **605 ns** / 3.45 µs | 588 B / 4.33 KB | 4 / 31 | **5.7× faster** warm |
+| `BenchmarkText_NoSpacing_Warm` / `Direct` / `Cold` | **612 ns** / 18.5 µs / 23.5 µs | 623 B / 18.9 KB | 4 / 91 | **30× faster** warm vs. direct |
+| `BenchmarkText_LetterSpacing_Warm` / `Direct` / `Cold` | **902 ns** / 40.7 µs / 75.8 µs | 540 B / 29.6 KB | 4 / 215 | **45× faster** warm vs. direct |
+| `BenchmarkCompositeLayer_Normal` | **463 ns** | 536 B | 3 | Standard layer composite |
+| `BenchmarkCompositeLayer_MixBlend_Multiply` / `Screen` | **1.93 µs** / **1.82 µs** | 2.11 / 2.51 KB | 18 | Kage mix-blend shader |
+| `BenchmarkLayerDrawLayers/ops_100` / `500` / `1000` | **1.99** / **3.95** / **4.84 µs** | 2.14 KB | 12 | Retained layer draw |
+| `BenchmarkLayerDrawLayers/blend_mode` | **4.03 µs** | 5.67 KB | 27 | Retained layer with blend |
+| `BenchmarkTextDamageRedraw/warm` / `scroll` / `miss` | **37.4 µs** / **48.6 µs** / 1.44 ms | 27.3 KB / 1.14 MB | 200 / 5,162 | Text damage cache hit vs. miss |
+| `BenchmarkLayerRotatedCard` | **8.56 µs** | 2.04 KB | 11 | 1 blit/frame after 40-op bake |
