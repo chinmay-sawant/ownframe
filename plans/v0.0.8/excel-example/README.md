@@ -2,7 +2,7 @@
 
 > **Parent:** [plans/README.md](../../README.md)
 > **Target package:** `examples/builder/excel`
-> **Status:** Planned (0 complete, 0 partial, 84 open)
+> **Status:** In progress (62 complete, 22 partial, 0 open)
 > **Estimated effort:** 6 phases (iterative implementation and verification)
 
 ---
@@ -109,13 +109,13 @@ Keep files grouped by ownership boundary, matching `examples/builder/inventory` 
 
 | Phase | File | Complete | Partial | Open |
 | --- | --- | ---: | ---: | ---: |
-| Phase 01: Shell, color schemas, and workbook model | [phase-01-shell-theme-and-workbook-model.md](phase-01-shell-theme-and-workbook-model.md) | 0 | 0 | **13** |
-| Phase 02: Virtualized grid, selection, and navigation | [phase-02-virtualized-grid-selection-and-navigation.md](phase-02-virtualized-grid-selection-and-navigation.md) | 0 | 0 | **15** |
-| Phase 03: Cell editing, formula bar, and formula engine | [phase-03-cell-editing-formula-bar-and-engine.md](phase-03-cell-editing-formula-bar-and-engine.md) | 0 | 0 | **16** |
-| Phase 04: Formatting ribbon and conditional styles | [phase-04-formatting-ribbon-and-conditional-styles.md](phase-04-formatting-ribbon-and-conditional-styles.md) | 0 | 0 | **14** |
-| Phase 05: Data tools, sheets, clipboard, and file I/O | [phase-05-data-tools-sheets-and-io.md](phase-05-data-tools-sheets-and-io.md) | 0 | 0 | **14** |
-| Phase 06: Charts, validation, accessibility, and verification | [phase-06-charts-freeze-accessibility-and-verification.md](phase-06-charts-freeze-accessibility-and-verification.md) | 0 | 0 | **12** |
-| **Total** | | **0** | **0** | **84** |
+| Phase 01: Shell, color schemas, and workbook model | [phase-01-shell-theme-and-workbook-model.md](phase-01-shell-theme-and-workbook-model.md) | 8 | 5 | **0** |
+| Phase 02: Virtualized grid, selection, and navigation | [phase-02-virtualized-grid-selection-and-navigation.md](phase-02-virtualized-grid-selection-and-navigation.md) | 13 | 2 | **0** |
+| Phase 03: Cell editing, formula bar, and formula engine | [phase-03-cell-editing-formula-bar-and-engine.md](phase-03-cell-editing-formula-bar-and-engine.md) | 15 | 1 | **0** |
+| Phase 04: Formatting ribbon and conditional styles | [phase-04-formatting-ribbon-and-conditional-styles.md](phase-04-formatting-ribbon-and-conditional-styles.md) | 10 | 4 | **0** |
+| Phase 05: Data tools, sheets, clipboard, and file I/O | [phase-05-data-tools-sheets-and-io.md](phase-05-data-tools-sheets-and-io.md) | 8 | 6 | **0** |
+| Phase 06: Charts, validation, accessibility, and verification | [phase-06-charts-freeze-accessibility-and-verification.md](phase-06-charts-freeze-accessibility-and-verification.md) | 8 | 4 | **0** |
+| **Total** | | **62** | **22** | **0** |
 
 ---
 
