@@ -18,6 +18,7 @@ func paintOrdered(dst *image.NRGBA, d *layout.Display, faces *faceCache) error {
 	seen := map[*layout.DisplayGroup]bool{}
 	areas := map[*layout.DisplayGroup]image.Rectangle{}
 	radii := map[*layout.DisplayGroup]float64{}
+	var prevText *layout.DisplayOp
 	for _, index := range d.Order {
 		if index < 0 || index >= len(d.Ops) {
 			continue
@@ -41,6 +42,10 @@ func paintOrdered(dst *image.NRGBA, d *layout.Display, faces *faceCache) error {
 		if err := attachGroups(group, items, seen); err != nil {
 			return err
 		}
+		op = withLeadingAutospace(prevText, op)
+		if op.Kind == layout.DisplayOpText {
+			prevText = &d.Ops[index]
+		}
 		items[group] = append(items[group], paintItem{op: op})
 		if group != nil && group.BackdropFilter != "" {
 			if _, found := radii[group]; !found &&
@@ -54,6 +59,25 @@ func paintOrdered(dst *image.NRGBA, d *layout.Display, faces *faceCache) error {
 		}
 	}
 	return paintGroup(dst, nil, items, areas, radii, faces)
+}
+
+// withLeadingAutospace returns op moved right by the text-autospace gap layout
+// folded into its width when the previous text op ends at an ideograph and
+// Latin boundary against it. The shift keeps the right edge, so the width
+// shrinks by the gap. It returns op itself when there is no gap.
+func withLeadingAutospace(prev, op *layout.DisplayOp) *layout.DisplayOp {
+	if op.Kind != layout.DisplayOpText {
+		return op
+	}
+	gap := masking.LeadingAutospaceGap(prev, op)
+	if gap == 0 {
+		return op
+	}
+	shifted := *op
+	shifted.X += gap
+	shifted.W -= gap
+
+	return &shifted
 }
 
 func attachGroups(group *layout.DisplayGroup,
