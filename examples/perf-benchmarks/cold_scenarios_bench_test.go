@@ -1,6 +1,7 @@
 package perfbench_test
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
@@ -207,7 +208,7 @@ func buildNestedDashboardTree() *ui.Element {
 	)
 }
 
-func mountScenarioView(b *testing.B, theme string, root *ui.Element) *ui.View {
+func mountScenarioView(ctx context.Context, b *testing.B, theme string, root *ui.Element) *ui.View {
 	b.Helper()
 	v, err := ui.Mount(ownframe.Config{
 		Title:       "Scenario",
@@ -220,7 +221,7 @@ func mountScenarioView(b *testing.B, theme string, root *ui.Element) *ui.View {
 	if err != nil {
 		b.Fatal(err)
 	}
-	if err := v.Page.Redraw(b.Context()); err != nil {
+	if err := v.Page.Redraw(ctx); err != nil {
 		b.Fatal(err)
 	}
 	return v
@@ -273,7 +274,7 @@ func BenchmarkPatchEscalation(b *testing.B) {
 	theme := chadcnLightScenarioTheme()
 
 	b.Run("SharedContainer_2GeoMoves_450Cells", func(b *testing.B) {
-		v := mountScenarioView(b, theme, buildDenseGridTree(gridTreeOpts{selRow: 1, selCol: 1}))
+		v := mountScenarioView(ctx, b, theme, buildDenseGridTree(gridTreeOpts{selRow: 1, selCol: 1}))
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -285,7 +286,7 @@ func BenchmarkPatchEscalation(b *testing.B) {
 	})
 
 	b.Run("IsolatedOverlay_2GeoMoves_450Cells", func(b *testing.B) {
-		v := mountScenarioView(b, theme, buildDenseGridTree(gridTreeOpts{selRow: 1, selCol: 1, isolateOverlay: true}))
+		v := mountScenarioView(ctx, b, theme, buildDenseGridTree(gridTreeOpts{selRow: 1, selCol: 1, isolateOverlay: true}))
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -297,7 +298,7 @@ func BenchmarkPatchEscalation(b *testing.B) {
 	})
 
 	b.Run("LeafText_10Cells_Chadcn", func(b *testing.B) {
-		v := mountScenarioView(b, theme, buildDenseGridTree(gridTreeOpts{isolateOverlay: true, slotKeyed: true, mutatedLeafN: 10}))
+		v := mountScenarioView(ctx, b, theme, buildDenseGridTree(gridTreeOpts{isolateOverlay: true, slotKeyed: true, mutatedLeafN: 10}))
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -316,7 +317,7 @@ func BenchmarkScrollPatterns(b *testing.B) {
 	theme := chadcnLightScenarioTheme()
 
 	b.Run("CoordKeyed_450Cells_Chadcn", func(b *testing.B) {
-		v := mountScenarioView(b, theme, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
+		v := mountScenarioView(ctx, b, theme, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -327,7 +328,7 @@ func BenchmarkScrollPatterns(b *testing.B) {
 	})
 
 	b.Run("SlotKeyed_450Cells_Chadcn", func(b *testing.B) {
-		v := mountScenarioView(b, theme, buildDenseGridTree(gridTreeOpts{isolateOverlay: true, slotKeyed: true}))
+		v := mountScenarioView(ctx, b, theme, buildDenseGridTree(gridTreeOpts{isolateOverlay: true, slotKeyed: true}))
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -346,7 +347,7 @@ func BenchmarkOverlayAndFocus(b *testing.B) {
 	dark := chadcnDarkScenarioTheme()
 
 	b.Run("MountUnmountOverlay_450Cells_Chadcn", func(b *testing.B) {
-		v := mountScenarioView(b, light, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
+		v := mountScenarioView(ctx, b, light, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -360,7 +361,7 @@ func BenchmarkOverlayAndFocus(b *testing.B) {
 	})
 
 	b.Run("RedrawThenFocus_450Cells_Chadcn", func(b *testing.B) {
-		v := mountScenarioView(b, light, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
+		v := mountScenarioView(ctx, b, light, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -380,7 +381,7 @@ func BenchmarkOverlayAndFocus(b *testing.B) {
 	})
 
 	b.Run("RequestFocusWithRedraw_450Cells_Chadcn", func(b *testing.B) {
-		v := mountScenarioView(b, light, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
+		v := mountScenarioView(ctx, b, light, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
@@ -396,7 +397,7 @@ func BenchmarkOverlayAndFocus(b *testing.B) {
 	})
 
 	b.Run("ThemeToggle_450Cells_Chadcn", func(b *testing.B) {
-		v := mountScenarioView(b, light, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
+		v := mountScenarioView(ctx, b, light, buildDenseGridTree(gridTreeOpts{isolateOverlay: true}))
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {

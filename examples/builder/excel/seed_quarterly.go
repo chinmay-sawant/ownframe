@@ -30,6 +30,21 @@ func quarterlyHistory() []quarterlyRow {
 const (
 	chartsTableWidth = 100
 	chartQuarters    = 8 // quarters shown on the Charts sheet
+
+	chartsRegionRow  = 4  // Region table, first data row
+	chartsProductRow = 11 // Product table, first data row
+	chartsQuarterRow = 17 // Quarter table, first data row
+)
+
+const (
+	// Columns after Quarter (0) and Revenue (1).
+	quarterlyCOGS              = 2
+	quarterlyGrossProfit       = 3
+	quarterlyOperatingExpenses = 4
+	quarterlyNetIncome         = 5
+	quarterlyMargin            = 6
+	quarterlyColWidthExtra     = 20
+	quarterlyTotalA1Off        = 2 // len(history) plus this is the total row in A1
 )
 
 // seedQuarterlyModel appends the Quarterly data sheet and the Charts sheet.
@@ -59,11 +74,11 @@ func seedQuarterly(s *Sheet) {
 		} else {
 			set(row, 1, fmt.Sprintf("%.0f", r.revenue))
 		}
-		set(row, 2, fmt.Sprintf("%.0f", r.cogs))
-		set(row, 3, "=B"+n+"-C"+n)
-		set(row, 4, fmt.Sprintf("%.0f", r.operating))
-		set(row, 5, "=D"+n+"-E"+n)
-		set(row, 6, "=IFERROR(F"+n+"/B"+n+",0)")
+		set(row, quarterlyCOGS, fmt.Sprintf("%.0f", r.cogs))
+		set(row, quarterlyGrossProfit, "=B"+n+"-C"+n)
+		set(row, quarterlyOperatingExpenses, fmt.Sprintf("%.0f", r.operating))
+		set(row, quarterlyNetIncome, "=D"+n+"-E"+n)
+		set(row, quarterlyMargin, "=IFERROR(F"+n+"/B"+n+",0)")
 	}
 	last := len(hist)
 	set(last+1, 0, "Total")
@@ -71,7 +86,7 @@ func seedQuarterly(s *Sheet) {
 		name := ColName(col)
 		set(last+1, col, fmt.Sprintf("=SUM(%s2:%s%d)", name, name, last+1))
 	}
-	set(last+1, 6, fmt.Sprintf("=IFERROR(F%d/B%d,0)", last+2, last+2))
+	set(last+1, quarterlyMargin, fmt.Sprintf("=IFERROR(F%d/B%d,0)", last+quarterlyTotalA1Off, last+quarterlyTotalA1Off))
 	s.SetStyle(Range{CellRef{0, 0}, CellRef{0, 6}}, func(st *Style) {
 		st.Bold, st.BG, st.Align = true, "#DDEBF7", "center"
 		st.Edges.Bottom = EdgeThin
@@ -80,7 +95,7 @@ func seedQuarterly(s *Sheet) {
 	s.SetStyle(Range{CellRef{1, 6}, CellRef{last + 1, 6}}, func(st *Style) { st.NumFmt, st.Decimals = "Percent", 1 })
 	s.SetStyle(Range{CellRef{last + 1, 0}, CellRef{last + 1, 6}}, func(st *Style) { st.Bold, st.Edges.Top = true, EdgeThin })
 	for col := 0; col <= 6; col++ {
-		s.SetColWidth(col, sampleColWidth+20)
+		s.SetColWidth(col, sampleColWidth+quarterlyColWidthExtra)
 	}
 	s.SetFreeze(1, 0)
 }
@@ -94,14 +109,14 @@ func seedChartsSheet(s *Sheet) {
 	set("A3", "Region")
 	set("B3", "Revenue")
 	for i, name := range []string{"North", "South", "East", "West"} {
-		n := strconv.Itoa(4 + i)
+		n := strconv.Itoa(chartsRegionRow + i)
 		set("A"+n, name)
 		set("B"+n, `=SUMIF(Sheet1!A2:A9,A`+n+`,Sheet1!G2:G9)`)
 	}
 	set("A10", "Product")
 	set("B10", "Revenue")
 	for i, name := range []string{"Widget", "Gadget"} {
-		n := strconv.Itoa(11 + i)
+		n := strconv.Itoa(chartsProductRow + i)
 		set("A"+n, name)
 		set("B"+n, `=SUMIF(Sheet1!B2:B9,A`+n+`,Sheet1!G2:G9)`)
 	}
@@ -113,7 +128,7 @@ func seedChartsSheet(s *Sheet) {
 	// chart width. The Quarterly sheet keeps all twelve.
 	skip := len(quarterlyHistory()) - chartQuarters
 	for i := 0; i < chartQuarters; i++ {
-		n := strconv.Itoa(17 + i)
+		n := strconv.Itoa(chartsQuarterRow + i)
 		src := strconv.Itoa(2 + skip + i)
 		set("A"+n, "=Quarterly!A"+src)
 		set("B"+n, "=Quarterly!B"+src)
