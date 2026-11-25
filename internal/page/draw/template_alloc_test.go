@@ -1,6 +1,7 @@
 package draw
 
 import (
+	"bytes"
 	"io"
 	"strings"
 	"testing"
@@ -39,7 +40,7 @@ func TestTemplateGoldenByteIdentical(t *testing.T) {
 		t.Fatalf("golden = %d bytes, want at least 600KB", len(want))
 	}
 
-	got, err := Execute(false, len(want), nil, func(b *strings.Builder) error {
+	got, err := Execute(false, len(want), nil, func(b *bytes.Buffer) error {
 		for i := 0; i < largeDocRows; i++ {
 			b.WriteString(largeDocRow)
 		}
@@ -54,7 +55,7 @@ func TestTemplateGoldenByteIdentical(t *testing.T) {
 	}
 
 	// A second run must reproduce the first byte for byte.
-	again, err := Execute(false, len(want), nil, func(b *strings.Builder) error {
+	again, err := Execute(false, len(want), nil, func(b *bytes.Buffer) error {
 		for i := 0; i < largeDocRows; i++ {
 			b.WriteString(largeDocRow)
 		}
@@ -153,7 +154,7 @@ func TestKeyFallsBackToMemcmpOnHashHit(t *testing.T) {
 func TestBuilderPoolReturnsCleanBuffers(t *testing.T) {
 	want := largeDocGolden()
 
-	if _, err := Execute(false, len(want), nil, func(b *strings.Builder) error {
+	if _, err := Execute(false, len(want), nil, func(b *bytes.Buffer) error {
 		b.WriteString(want)
 
 		return nil
@@ -161,7 +162,7 @@ func TestBuilderPoolReturnsCleanBuffers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := Execute(false, 0, nil, func(b *strings.Builder) error {
+	got, err := Execute(false, 0, nil, func(b *bytes.Buffer) error {
 		b.WriteString(largeDocSmall)
 
 		return nil

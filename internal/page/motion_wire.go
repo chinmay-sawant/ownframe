@@ -342,7 +342,13 @@ func applyLayoutRequest(p *Page, ctx context.Context, request motion.LayoutReque
 		return nil
 	}
 
-	overrides := make([]layout.Override, len(request.Overrides))
+	var stackOverrides [8]layout.Override
+	var overrides []layout.Override
+	if len(request.Overrides) <= len(stackOverrides) {
+		overrides = stackOverrides[:len(request.Overrides)]
+	} else {
+		overrides = make([]layout.Override, len(request.Overrides))
+	}
 	for i := range request.Overrides {
 		overrides[i] = layout.Override{
 			ElementID: request.ElementID,
@@ -464,7 +470,13 @@ func applyRestamp(p *Page, ctx context.Context, requests []motion.Request) {
 		return
 	}
 
-	overrides := make([]layout.TransformOverride, len(requests))
+	var stackOverrides [8]layout.TransformOverride
+	var overrides []layout.TransformOverride
+	if len(requests) <= len(stackOverrides) {
+		overrides = stackOverrides[:len(requests)]
+	} else {
+		overrides = make([]layout.TransformOverride, len(requests))
+	}
 	for i := range requests {
 		overrides[i] = restampOverride(requests[i])
 	}

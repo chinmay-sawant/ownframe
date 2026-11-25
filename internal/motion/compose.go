@@ -29,6 +29,14 @@ type restampSample struct {
 	hasPerspective   bool
 }
 
+var composeFields = [fieldCount]struct {
+	get  valueOf
+	kind int
+}{
+	{moveX, animFieldX}, {moveY, animFieldY}, {opacity, animFieldOpacity},
+	{red, animFieldR}, {green, animFieldG}, {blue, animFieldB},
+}
+
 // composeSampled is compose plus the values the 2D matrix path cannot write.
 // The returned sample is set only when the effect sampled a transform or a
 // perspective; a paint-only effect leaves it zero.
@@ -40,17 +48,11 @@ func composeSampled(
 ) (Paint, restampSample) {
 	base := target.From
 	mode := e.Timing.Composition
-	fields := []struct {
-		get  valueOf
-		kind int
-	}{
-		{moveX, animFieldX}, {moveY, animFieldY}, {opacity, animFieldOpacity}, {red, animFieldR}, {green, animFieldG}, {blue, animFieldB},
-	}
 	fallbacks := missingFallbacks(base, mode)
 	// hasTransform also reports inline-SVG paint, which shares this per-target
 	// path; a paint-only effect simply has no transform stops to sample.
 	perTarget := hasTransform(e.Frames)
-	for i, item := range fields {
+	for i, item := range composeFields {
 		if perTarget && (item.kind == animFieldX || item.kind == animFieldY) {
 			continue
 		}
@@ -99,6 +101,17 @@ func composeSampled(
 func hasTransform(frames []Keyframe) bool {
 	for _, frame := range frames {
 		if frame.Transform.declared() || frame.Perspective.declared() || frame.SVG.declared() {
+			return true
+		}
+	}
+	return false
+}
+
+// hasTransformDecl reports whether any keyframe carries a transform or legacy
+// X/Y move that sampleTransformFor produces a stop for.
+func hasTransformDecl(frames []Keyframe) bool {
+	for _, frame := range frames {
+		if frame.Transform.declared() || frame.Move {
 			return true
 		}
 	}
@@ -867,6 +880,48 @@ func (e Effect) sampleTransform(at float64) (TransformValue, bool) {
 // 2D values, whose Decomposed field already carries the pose; any 3D endpoint
 // still blends its list. An endpoint returned as is keeps its own list.
 func (e Effect) sampleTransformFor(at float64, wantFunctions bool) (TransformValue, bool) {
+	return e.sampleTransformForWithScratch(at, wantFunctions, nil)
+}
+
+// transformScratch holds reusable function and argument buffers for a Player's
+// per-frame transform interpolation so 3D frames do not heap-allocate slices.
+type transformScratch struct {
+	funcs []TransformFunction
+	args  []float64
+}
+
+func (s *transformScratch) reset() {
+	s.funcs = s.funcs[:0]
+	s.args = s.args[:0]
+}
+
+func (s *transformScratch) allocFuncs(n int) []TransformFunction {
+	if s == nil {
+		return make([]TransformFunction, n)
+	}
+	start := len(s.funcs)
+	for range n {
+		s.funcs = append(s.funcs, TransformFunction{})
+	}
+	return s.funcs[start : start+n]
+}
+
+func (s *transformScratch) allocArgs(n int) []float64 {
+	if s == nil {
+		return make([]float64, n)
+	}
+	start := len(s.args)
+	for range n {
+		s.args = append(s.args, 0)
+	}
+	return s.args[start : start+n]
+}
+
+// sampleTransformForWithScratch is sampleTransformFor backed by an optional
+// scratch arena for blended 3D function lists and arguments.
+func (e Effect) sampleTransformForWithScratch(
+	at float64, wantFunctions bool, scratch *transformScratch,
+) (TransformValue, bool) {
 	var buf [inlineTransformStops]transformStop
 	stops := appendTransformStops(buf[:0], e.Frames)
 	if len(stops) == 0 {
@@ -885,7 +940,7 @@ func (e Effect) sampleTransformFor(at float64, wantFunctions bool) (TransformVal
 			return next.value, true
 		}
 		part := segmentEase(prev.ease, e.Timing, (at-prev.at)/span)
-		value, err := interpolateTransformFor(prev.value, next.value, part, wantFunctions)
+		value, err := interpolateTransformForWithScratch(prev.value, next.value, part, wantFunctions, scratch)
 		if err != nil {
 			if part < discreteMidpoint {
 				return prev.value, true
@@ -929,21 +984,15 @@ type perspectiveStop struct {
 // discrete because one endpoint is none.
 const discreteMidpoint = 0.5
 
-// perspectiveStops collects the keyframes that declare perspective or
-// perspective-origin, in sorted order, together with the implicit endpoint the
-// padding uses. keyframes() resolves the element's static vanishing point on
-// every frame, so the implicit endpoint holds that point; a frame that carried a
-// static perspective base also supplies its distance, so a partial list starts
-// and ends at the element's camera rather than at none.
-//
-// When the binder supplied a base, every stop also carries the static distance
-// for a keyframe that omits perspective and the static origin for a keyframe
-// that omits perspective-origin. CSS holds the underlying value at such a
-// keyframe, so an origin-only stop in the middle of a distance animation does
-// not pull the distance to zero. The Has flags on the fallback stay limited to
-// the properties the list actually animates, so an origin-only list still
-// leaves the static distance to the engine.
-func perspectiveStops(frames []Keyframe) ([]perspectiveStop, PerspectiveValue) {
+// inlinePerspectiveStops is the stop count samplePerspective keeps on the
+// stack. Keyframe lists longer than this, less the two padded endpoints, spill
+// to the heap.
+const inlinePerspectiveStops = 8
+
+// appendPerspectiveStops appends the keyframes that declare perspective or
+// perspective-origin into stops and brackets them with the underlying camera
+// at 0% and 100%, shifting in place when the buffer has room.
+func appendPerspectiveStops(stops []perspectiveStop, frames []Keyframe) []perspectiveStop {
 	fallback := PerspectiveValue{}
 	var base PerspectiveBase
 	hasBase := false
@@ -967,7 +1016,7 @@ func perspectiveStops(frames []Keyframe) ([]perspectiveStop, PerspectiveValue) {
 		fallback.Distance = baseDistance
 		fallback.OriginX, fallback.OriginY = base.OriginX, base.OriginY
 	}
-	stops := make([]perspectiveStop, 0, len(frames)+extraStops)
+	start := len(stops)
 	for _, frame := range frames {
 		if !frame.Perspective.declared() {
 			continue
@@ -986,17 +1035,13 @@ func perspectiveStops(frames []Keyframe) ([]perspectiveStop, PerspectiveValue) {
 			at: frame.Offset, value: value, ease: frame.frameEasing(nil),
 		})
 	}
-
-	return stops, fallback
-}
-
-// padPerspectiveStops brackets the stops with the underlying value at 0% and
-// 100%. A keyframe that omits perspective holds the element's underlying value;
-// the fallback carries the element's static camera when the binder supplied it,
-// and none otherwise. A synthetic endpoint uses the effect's own easing.
-func padPerspectiveStops(stops []perspectiveStop, fallback PerspectiveValue) []perspectiveStop {
-	if stops[0].at > 0 {
-		stops = append([]perspectiveStop{{at: 0, value: fallback}}, stops...)
+	if len(stops) == start {
+		return stops
+	}
+	if stops[start].at > 0 {
+		stops = append(stops, perspectiveStop{})
+		copy(stops[start+1:], stops[start:len(stops)-1])
+		stops[start] = perspectiveStop{at: 0, value: fallback}
 	}
 	if stops[len(stops)-1].at < 1 {
 		stops = append(stops, perspectiveStop{at: 1, value: fallback})
@@ -1010,11 +1055,11 @@ func padPerspectiveStops(stops []perspectiveStop, fallback PerspectiveValue) []p
 // the midpoint. The origin always interpolates component-wise. The interval
 // from keyframe i to i+1 uses keyframe i's timing function.
 func (e Effect) samplePerspective(at float64) (PerspectiveValue, bool) {
-	stops, fallback := perspectiveStops(e.Frames)
+	var buf [inlinePerspectiveStops]perspectiveStop
+	stops := appendPerspectiveStops(buf[:0], e.Frames)
 	if len(stops) == 0 {
 		return PerspectiveValue{}, false
 	}
-	stops = padPerspectiveStops(stops, fallback)
 	if at <= stops[0].at {
 		return stops[0].value, true
 	}
@@ -1090,50 +1135,59 @@ func interpolateTransform(a, b TransformValue, t float64) (TransformValue, error
 // interpolateTransformFor is interpolateTransform that can leave the blended
 // function list out of a two-dimensional result.
 func interpolateTransformFor(a, b TransformValue, t float64, wantFunctions bool) (TransformValue, error) {
+	return interpolateTransformForWithScratch(a, b, t, wantFunctions, nil)
+}
+
+func interpolateTransformForWithScratch(
+	a, b TransformValue, t float64, wantFunctions bool, scratch *transformScratch,
+) (TransformValue, error) {
 	if a.ThreeD || b.ThreeD {
-		return interpolate3D(a, b, t)
+		return interpolate3DWithScratch(a, b, t, scratch)
 	}
 	value := TransformValue{Decomposed: blendTransform(a.Decomposed, b.Decomposed, t)}
 	if wantFunctions && interpolable(a.Functions, b.Functions) {
-		value.Functions = blendFunctions(a.Functions, b.Functions, t)
+		value.Functions = blendFunctionsWithScratch(a.Functions, b.Functions, t, scratch)
 	}
 	return value, nil
 }
 
-// interpolate3D blends a pair that includes at least one 3D function. A
-// missing list is the underlying none, which CSS replaces with the identity
-// list of the other side, so none to rotateY still interpolates the angle.
-// Lists that do not match function by function, and the matrix, matrix3d, and
-// perspective functions CSS converts first, blend through the four-by-four
-// decomposition and collapse to one matrix3d() for the restamp pass.
-func interpolate3D(a, b TransformValue, t float64) (TransformValue, error) {
+// interpolate3DWithScratch blends a pair that includes at least one 3D
+// function. A missing list is the underlying none, which CSS replaces with the
+// identity list of the other side, so none to rotateY still interpolates the
+// angle. Lists that do not match function by function, and the matrix,
+// matrix3d, and perspective functions CSS converts first, blend through the
+// four-by-four decomposition and collapse to one matrix3d() for the restamp
+// pass.
+func interpolate3DWithScratch(a, b TransformValue, t float64, scratch *transformScratch) (TransformValue, error) {
 	from, to := a.Functions, b.Functions
 	if len(from) == 0 && len(to) > 0 {
-		if identity, ok := identityFunctions(to); ok {
+		if identity, ok := identityFunctionsWithScratch(to, scratch); ok {
 			from = identity
 		}
 	}
 	if len(to) == 0 && len(from) > 0 {
-		if identity, ok := identityFunctions(from); ok {
+		if identity, ok := identityFunctionsWithScratch(from, scratch); ok {
 			to = identity
 		}
 	}
 	if interpolable(from, to) {
 		return TransformValue{
 			Decomposed: blendTransform(a.Decomposed, b.Decomposed, t),
-			Functions:  blendFunctions(from, to, t),
+			Functions:  blendFunctionsWithScratch(from, to, t, scratch),
 			ThreeD:     true,
 		}, nil
 	}
-	return interpolateMatrix3D(from, to, t)
+	return interpolateMatrix3DWithScratch(from, to, t, scratch)
 }
 
-// interpolateMatrix3D is the CSS Transforms Level 2 matrix interpolation: both
-// lists become four-by-four matrices, each is decomposed into translation,
-// scale, skew, perspective, and a rotation quaternion, the components are
-// interpolated, and the result is recomposed. The returned list is the single
-// matrix3d() the engine restamps.
-func interpolateMatrix3D(from, to []TransformFunction, t float64) (TransformValue, error) {
+// interpolateMatrix3DWithScratch is the CSS Transforms Level 2 matrix
+// interpolation: both lists become four-by-four matrices, each is decomposed
+// into translation, scale, skew, perspective, and a rotation quaternion, the
+// components are interpolated, and the result is recomposed. The returned list
+// is the single matrix3d() the engine restamps.
+func interpolateMatrix3DWithScratch(
+	from, to []TransformFunction, t float64, scratch *transformScratch,
+) (TransformValue, error) {
 	decomposedFrom, err := Decompose3D(Matrix4FromFunctions(from))
 	if err != nil {
 		return TransformValue{}, err
@@ -1143,9 +1197,13 @@ func interpolateMatrix3D(from, to []TransformFunction, t float64) (TransformValu
 		return TransformValue{}, err
 	}
 	m := Compose3D(interpolateDecomposition(decomposedFrom, decomposedTo, t))
+	args := scratch.allocArgs(len(m))
+	copy(args, m[:])
+	funcs := scratch.allocFuncs(1)
+	funcs[0] = TransformFunction{Name: Matrix3D, Args: args}
 	return TransformValue{
 		Decomposed: Transform{Tx: m[indexM41], Ty: m[indexM42], Sx: 1, Sy: 1, Set: true},
-		Functions:  []TransformFunction{{Name: Matrix3D, Args: m[:]}},
+		Functions:  funcs,
 		ThreeD:     true,
 	}, nil
 }
@@ -1190,48 +1248,59 @@ func withIdentity(t Transform) Transform {
 	return IdentityTransform()
 }
 
-func blendFunctions(a, b []TransformFunction, t float64) []TransformFunction {
-	out := make([]TransformFunction, len(a))
+func blendFunctionsWithScratch(
+	a, b []TransformFunction, t float64, scratch *transformScratch,
+) []TransformFunction {
+	out := scratch.allocFuncs(len(a))
 	for i := range a {
 		out[i].Name = a[i].Name
-		out[i].Args = make([]float64, len(a[i].Args))
+		args := scratch.allocArgs(len(a[i].Args))
 		for j := range a[i].Args {
-			out[i].Args[j] = lerp(a[i].Args[j], b[i].Args[j], t)
+			args[j] = lerp(a[i].Args[j], b[i].Args[j], t)
 		}
+		out[i].Args = args
 	}
 	return out
 }
 
-// identityFunctions builds a neutral list with the same function signatures.
-// It turns a missing keyframe (the underlying none) into a value that can
-// blend with a 3D list. A perspective function has no finite identity list, so
-// it reports false and the caller falls through to the matrix decomposition,
-// where none is the identity matrix.
-func identityFunctions(functions []TransformFunction) ([]TransformFunction, bool) {
-	out := make([]TransformFunction, len(functions))
+var (
+	identityMatrix2DArgs = [6]float64{1, 0, 0, 1, 0, 0}
+	identityMatrix3DArgs = [16]float64{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}
+)
+
+// identityFunctionsWithScratch builds a neutral list with the same function
+// signatures. It turns a missing keyframe (the underlying none) into a value
+// that can blend with a 3D list. A perspective function has no finite identity
+// list, so it reports false and the caller falls through to the matrix
+// decomposition, where none is the identity matrix.
+func identityFunctionsWithScratch(
+	functions []TransformFunction, scratch *transformScratch,
+) ([]TransformFunction, bool) {
+	out := scratch.allocFuncs(len(functions))
 	for i, f := range functions {
 		out[i].Name = f.Name
-		out[i].Args = make([]float64, len(f.Args))
+		args := scratch.allocArgs(len(f.Args))
 		switch f.Name {
 		case Translate, TranslateX, TranslateY, Translate3D, TranslateZ:
-			out[i].Args = make([]float64, len(f.Args))
+			// zero-initialized by allocArgs
 		case Scale, ScaleX, ScaleY, Scale3D, ScaleZ:
-			for j := range out[i].Args {
-				out[i].Args[j] = 1
+			for j := range args {
+				args[j] = 1
 			}
 		case Rotate, RotateX, RotateY, RotateZ, Skew, SkewX, SkewY:
-			out[i].Args = make([]float64, len(f.Args))
+			// zero-initialized by allocArgs
 		case Rotate3D:
 			if len(f.Args) == rotate3DArgCount {
-				out[i].Args[2] = 1
+				args[2] = 1
 			}
 		case Matrix:
-			copy(out[i].Args, []float64{1, 0, 0, 1, 0, 0})
+			copy(args, identityMatrix2DArgs[:])
 		case Matrix3D:
-			copy(out[i].Args, []float64{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1})
+			copy(args, identityMatrix3DArgs[:])
 		default:
 			return nil, false
 		}
+		out[i].Args = args
 	}
 	return out, true
 }

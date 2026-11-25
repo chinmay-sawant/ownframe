@@ -4,46 +4,46 @@ import { repository } from './project';
 const metrics = [
   { n: '94.7 ns', t: 'Animated card update', d: 'Patched animation update with 0 allocs/op (670× faster than the 63.4 µs full redraw).' },
   { n: '486 ns', t: 'Small-fixture warm redraw', d: 'Unchanged warm redraw check with 0 allocs/op, down from 143 µs in v0.0.2.' },
-  { n: '140 µs', t: 'CSS animation gallery tick', d: 'Full 534-op animation gallery tick (96.4 KB, 3.3× faster), auto-paced to 144 Hz on Windows GPU.' },
+  { n: '97.7 µs', t: 'CSS animation gallery tick', d: 'Full 534-op animation gallery tick (16.6 KB, 38 allocs — 4.8× faster), auto-paced to 144 Hz on Windows GPU.' },
 ];
 
 const corePipelineRows = [
-  ['FlappyTick', '59.2 ns', '0 B', '0', 'Per-frame game/tick loop'],
-  ['DrawRectScan (dirty / full)', '183 / 172 ns', '0 B', '0', 'Display-list op culling scan'],
-  ['RedrawWarm / RedrawHeavyWarm', '486 / 489 ns', '0 B', '0', 'Unchanged warm frame check'],
-  ['NormalRedraw', '528 ns', '0 B', '0', 'Normal UI warm redraw'],
-  ['Stages/TemplateExecute', '182 ns', '560 B', '5', 'Go html/template execution'],
-  ['Stages/HTMLParse', '5.00 µs', '27.9 KB', '16', 'Blinkless HTML parse'],
-  ['Stages/CSSApply', '2.31 µs', '3.18 KB', '37', 'Blinkless CSS selector match/apply'],
-  ['Stages/DisplayList', '38.4 µs', '33.8 KB', '107', 'Layout, text measure, and display-list emit'],
-  ['RedrawCold', '62.9 µs', '64.6 KB', '202', 'Full cold parse, style, and layout'],
-  ['ClickCount (platform example)', '223 µs', '118 KB', '530', 'Click handler plus full redraw'],
-  ['LargeRedraw', '17.99 ms', '2.75 MB', '8,188', 'Large unwindowed full rebuild (2.7× fewer allocs)'],
+  ['FlappyTick', '58.8 ns', '0 B', '0', 'Per-frame game/tick loop'],
+  ['DrawRectScan (dirty / full)', '191 / 183 ns', '0 B', '0', 'Display-list op culling scan'],
+  ['RedrawWarm / RedrawHeavyWarm', '496 / 487 ns', '0 B', '0', 'Unchanged warm frame check'],
+  ['NormalRedraw', '536 ns', '0 B', '0', 'Normal UI warm redraw'],
+  ['Stages/TemplateExecute', '178 ns', '560 B', '5', 'Go html/template execution'],
+  ['Stages/HTMLParse', '5.07 µs', '27.9 KB', '16', 'Blinkless HTML parse'],
+  ['Stages/CSSApply', '2.24 µs', '3.18 KB', '37', 'Blinkless CSS selector match/apply'],
+  ['Stages/DisplayList', '36.8 µs', '33.9 KB', '110', 'Layout, text measure, and display-list emit'],
+  ['RedrawCold', '65.7 µs', '64.8 KB', '204', 'Full cold parse, style, and layout'],
+  ['ClickCount (platform example)', '221 µs', '118 KB', '532', 'Click handler plus full redraw'],
+  ['LargeRedraw', '17.14 ms', '2.79 MB', '7,234', 'Large unwindowed full rebuild (3.05× fewer allocs)'],
 ];
 
 const listWorkloadRows = [
-  ['ScrollOffset (PerfOff)', '23.2 ns', '0 B', '0', 'Offset update without relayout'],
-  ['Unchanged (PerfOff)', '528 ns', '0 B', '0', 'Warm no-op redraw on 1,000 rows'],
-  ['WindowedScroll (overscan 4)', '573 µs', '176 KB', '1,197', 'Visible-window rebuild on scroll'],
-  ['PatchElement1Row', '645 µs', '209 KB', '102', '27.8× faster, 444× fewer allocs vs. full rebuild'],
-  ['PatchElements10Rows', '851 µs', '278 KB', '624', '21.1× faster, 72.5× fewer allocs vs. full rebuild'],
-  ['Resize (all 1,000 rows)', '13.5 ms', '2.64 MB', '5,258', 'Unwindowed full-list relayout (3.67× fewer allocs)'],
-  ['FullRebuild1Row', '17.92 ms', '5.92 MB', '45,248', '1,000-row full template + parse + layout rebuild'],
-  ['TextUpdate (all 1,000 rows)', '18.2 ms', '6.23 MB', '36,297', 'Unwindowed template rebuild on text change'],
+  ['ScrollOffset (PerfOff)', '22.1 ns', '0 B', '0', 'Offset update without relayout'],
+  ['Unchanged (PerfOff)', '500 ns', '0 B', '0', 'Warm no-op redraw on 1,000 rows'],
+  ['WindowedScroll (overscan 4)', '508 µs', '177 KB', '1,183', 'Visible-window rebuild on scroll'],
+  ['PatchElement1Row', '584 µs', '208 KB', '102', '28.9× faster, 434× fewer allocs vs. full rebuild'],
+  ['PatchElements10Rows', '815 µs', '275 KB', '624', '20.7× faster, 71× fewer allocs vs. full rebuild'],
+  ['Resize (all 1,000 rows)', '11.6 ms', '2.78 MB', '4,298', 'Unwindowed full-list relayout (4.49× fewer allocs)'],
+  ['TextUpdate (all 1,000 rows)', '16.3 ms', '6.38 MB', '35,336', 'Unwindowed template rebuild on text change'],
+  ['FullRebuild1Row', '16.85 ms', '6.37 MB', '44,290', '1,000-row full template + parse + layout rebuild'],
 ];
 
 const scaleStageRows = [
-  ['TemplateExecute', '2,583 ns/row', '2,487 ns/row', '2.53 ms', '26,730', '13.2%'],
-  ['HTMLParse', '1,428 ns/row', '1,338 ns/row', '1.36 ms', '6,123', '7.1%'],
-  ['CSSApply', '145.8 ns/row', '63.5 ns/row', '43.2 µs', '75', '0.2%'],
-  ['CSSRelayout', '1.32 ns/row', '0.32 ns/row', '62.2 ns', '1', '<0.01%'],
-  ['DisplayList', '13,310 ns/row', '12,134 ns/row', '15.19 ms', '5,296', '79.4%'],
+  ['TemplateExecute', '2,426 ns/row', '2,440 ns/row', '2.45 ms', '26,730', '14.9%'],
+  ['HTMLParse', '1,398 ns/row', '1,318 ns/row', '1.39 ms', '6,123', '8.5%'],
+  ['CSSApply', '143.4 ns/row', '62.7 ns/row', '42.2 µs', '75', '0.3%'],
+  ['CSSRelayout', '1.37 ns/row', '0.31 ns/row', '59.2 ns', '1', '<0.01%'],
+  ['DisplayList', '12,872 ns/row', '11,511 ns/row', '12.57 ms', '4,338', '76.4%'],
 ];
 
 const layoutModelRows = [
-  ['Block (inline-block cells)', '2.38 ms', '11,910 ns/row', '1.03 MB', '1,179', '1.00×'],
-  ['Flex', '2.79 ms', '13,945 ns/row', '1.05 MB', '1,204', '1.17×'],
-  ['Grid (3-column track)', '2.81 ms', '14,030 ns/row', '1.23 MB', '2,589', '1.18×'],
+  ['Block (inline-block cells)', '2.01 ms', '10,033 ns/row', '1.04 MB', '1,000', '1.00×'],
+  ['Flex', '2.23 ms', '11,131 ns/row', '1.06 MB', '1,025', '1.11×'],
+  ['Grid (3-column track)', '2.37 ms', '11,874 ns/row', '1.24 MB', '2,410', '1.18×'],
 ];
 
 const microRows = [
@@ -56,11 +56,11 @@ const microRows = [
   ['CaretLongRun (offsetIn / lineText)', '495 ns / 1.59 µs', '1.79 / 10.2 KB', '1 / 5', 'Long text-run caret lookup'],
   ['Frame_WarmRedraw (Card / Dashboard)', '499 / 512 ns', '0 B', '0', 'Warm frame redraw microbenchmarks'],
   ['Frame_Click_Dispatch', '2.19 µs', '496 B', '5', 'Pointer hit-test and click dispatch'],
-  ['AnimationTick (534-op CSS gallery)', '140 µs', '96.4 KB', '147', 'Full gallery restamp (3.3× faster than 466 µs)'],
+  ['AnimationTick (534-op CSS gallery)', '97.7 µs', '16.6 KB', '38', 'Full gallery restamp (4.8× faster, 13.6× less mem)'],
 ];
 
 const windowsGpuAppRows = [
-  ['animations.exe (534 ops, active CSS)', '144.0 FPS', '2.76 ms', '4.79 / 5.72 ms', '21.0 MB', 'Auto-paced to 144 Hz monitor, 0 long frames, −43% CPU'],
+  ['animations.exe (534 ops, active CSS)', '144.1 FPS', '2.64 ms', '4.24 / 5.08 ms', '17.6 MB', 'Auto-paced to 144 Hz monitor, 0 long frames, −45% CPU'],
   ['wispr-flow-dashboard.exe (398 ops)', '442.3 FPS', '0.75 ms', '1.12 / 7.45 ms', '21.4 MB', '0 long frames, 1638×950'],
   ['spotify-player.exe (169 ops, 46 images)', '68.2 FPS', '3.57 ms', '5.35 / 9.59 ms', '22.0 MB', '0 long frames, timer-paced, 1440×960'],
   ['departure-board.exe (628 ops, idle)', '2.1 FPS', '1.14 ms', '1.48 / 12.19 ms', '17.7 MB', 'Idle-parked at 4.1% CPU, 1000×640'],
@@ -94,7 +94,7 @@ export default function Benchmarks() {
           <p>{m.d}</p>
         </li>)}
       </ul>
-      <p className="p-note">Measured sequentially (<code>-p 1</code>) after the post-v0.0.6 performance pass with Blinkless <code>0140a5f</code>, Intel Core i7-13700HX, Linux amd64 &amp; native Windows GPU (RTX 4060 @ 144 Hz), Go 1.26.11. Full tables and reproduction commands live in the <a href={`${repository}/blob/master/documentation/performance-baseline.md`}>performance baseline</a> and <a href={`${repository}/blob/master/documentation/performance.md`}>measurement procedure</a>.</p>
+      <p className="p-note">Measured sequentially (<code>-p 1</code>) after the post-v0.0.6 performance pass with Blinkless <code>7f14e4d</code>, Intel Core i7-13700HX, Linux amd64 &amp; native Windows GPU (RTX 4060 @ 144 Hz), Go 1.26.11. Full tables and reproduction commands live in the <a href={`${repository}/blob/master/documentation/performance-baseline.md`}>performance baseline</a> and <a href={`${repository}/blob/master/documentation/performance.md`}>measurement procedure</a>.</p>
 
       <div className="p-bench-group">
         <h2 className="p-bench-title">Core pipeline and page benchmarks</h2>

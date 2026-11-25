@@ -1,6 +1,7 @@
 package window
 
 import (
+	"math"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -43,6 +44,16 @@ func sanitizeMonitorHz(hz int) int {
 		return defaultMonitorHz
 	}
 	return hz
+}
+
+// roundMonitorHz rounds a floating-point refresh rate to the nearest integer
+// Hz, returning 0 for non-finite or non-positive values so sanitizeMonitorHz
+// falls back to defaultMonitorHz.
+func roundMonitorHz(rate float64) int {
+	if math.IsNaN(rate) || math.IsInf(rate, 0) || rate <= 0 {
+		return 0
+	}
+	return int(math.Round(rate))
 }
 
 // defaultMonitorSample reads the live window position, size, and Ebiten

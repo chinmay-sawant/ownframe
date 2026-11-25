@@ -2,6 +2,7 @@ package window
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 
@@ -37,6 +38,33 @@ func TestSanitizeMonitorHz(t *testing.T) {
 	for _, tc := range cases {
 		if got := sanitizeMonitorHz(tc.in); got != tc.want {
 			t.Errorf("sanitizeMonitorHz(%d) = %d, want %d", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestRoundMonitorHz(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		in   float64
+		want int
+	}{
+		{math.NaN(), 0},
+		{math.Inf(1), 0},
+		{math.Inf(-1), 0},
+		{-60, 0},
+		{0, 0},
+		{59.94, 60},
+		{60.0, 60},
+		{119.88, 120},
+		{143.98, 144},
+		{165.01, 165},
+		{240.0, 240},
+	}
+
+	for _, tc := range cases {
+		if got := roundMonitorHz(tc.in); got != tc.want {
+			t.Errorf("roundMonitorHz(%v) = %d, want %d", tc.in, got, tc.want)
 		}
 	}
 }

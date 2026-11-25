@@ -1,6 +1,7 @@
 package page
 
 import (
+	"bytes"
 	"context"
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -10,7 +11,6 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page/form"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"runtime"
-	"strings"
 	"time"
 )
 
@@ -140,11 +140,12 @@ func execTemplate(p *Page, track bool) (string, error) {
 		hint = len(p.lastSyncBody)
 	}
 
-	body, err := draw.Execute(
+	body, err := draw.ExecuteReuse(
 		track,
 		hint,
+		p.lastSyncBody,
 		&p.stats.lastTemplate,
-		func(w *strings.Builder) error {
+		func(w *bytes.Buffer) error {
 			return p.tpl.Execute(w, p.data)
 		},
 	)

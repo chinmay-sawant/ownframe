@@ -270,31 +270,32 @@ Notes:
 
 ## Performance pass after v0.0.6 (2026-11-25, `chore/performance-anim-grid-layout-pacing`)
 
-Measured sequentially (`-p 1`) on `ownframe` + `blinkless` commit `0140a5f` (`chore/performance-anim-grid-layout-pacing`), machine Chinmay (`13th Gen Intel(R) Core(TM) i7-13700HX`, Go `1.26.11`, NVIDIA GeForce RTX 4060 Laptop GPU @ 144 Hz).
+Measured sequentially (`-p 1`) on `ownframe` + `blinkless` commit `7f14e4d` (`chore/performance-anim-grid-layout-pacing`), machine Chinmay (`13th Gen Intel(R) Core(TM) i7-13700HX`, Go `1.26.11`, NVIDIA GeForce RTX 4060 Laptop GPU @ 144 Hz).
 
-### CPU benchmarks — before (`v0.0.6`) vs. after (`0140a5f`)
+### CPU benchmarks — before (`v0.0.6`) vs. after (`chore/performance-anim-grid-layout-pacing`)
 
-| Benchmark | Before (Time / Allocs / Bytes) | After (Time / Allocs / Bytes) | Delta |
+| Benchmark | Before (`v0.0.6`) | After (Wave 2) | Delta |
 |---|---|---|---|
-| `BenchmarkAnimationTick` | 465.8 µs · 180 · 226 KB | **140.2 µs · 147 · 96.4 KB** | **3.32× faster**, **2.35× less memory** |
-| `ScaleStages/Rows1000/CSSRelayout` | 19.7 µs · 7 · 752 B | **62.2 ns · 1 · 180 B** | **317× faster** (`O(1)` viewport relayout) |
-| `ScaleStages/Rows1000/DisplayList` | 14.05 ms · 18,312 · 5.90 MB | **15.19 ms · 5,296 · 5.47 MB** | **3.46× fewer allocs** |
-| `LayoutModels/Grid` (200 rows) | 2.98 ms · 7,204 · 1.77 MB | **2.81 ms · 2,589 · 1.23 MB** | **2.78× fewer allocs**, **−31% bytes** |
-| `LayoutModels/Block` (200 rows) | 2.45 ms · 2,588 · 1.05 MB | **2.38 ms · 1,179 · 1.03 MB** | **2.20× fewer allocs** |
-| `LayoutModels/Flex` (200 rows) | 2.68 ms · 2,815 · 1.09 MB | **2.79 ms · 1,204 · 1.05 MB** | **2.34× fewer allocs** |
-| `BenchmarkLargeRedraw` | 21.6 ms · 22,068 · 3.10 MB | **17.99 ms · 8,188 · 2.75 MB** | **17% faster**, **2.70× fewer allocs** |
-| `ListWorkloads/Resize` (1,000 rows) | 14.63 ms · 19,277 · 3.15 MB | **13.52 ms · 5,258 · 2.64 MB** | **3.67× fewer allocs**, **−1.1 ms** |
-| `ListWorkloads/TextUpdate` (1,000 rows) | 19.11 ms · 50,293 · 6.42 MB | **18.16 ms · 36,297 · 6.23 MB** | **−14,000 allocs**, **−1.0 ms** |
-| `ListWorkloads/WindowedScroll` | 588 µs · 1,537 · 186 KB | **573 µs · 1,197 · 176 KB** | **−22% allocs** |
-| `BenchmarkRedrawCold` | 72.2 µs · 208 · 64.9 KB | **62.9 µs · 202 · 64.6 KB** | **13% faster** |
-| `ListPatchVsRebuild/FullRebuild1Row` | 18.97 ms · 62,258 · 6.71 MB | **17.92 ms · 45,248 · 5.92 MB** | **−17,010 allocs**, **−1.05 ms** |
+| `BenchmarkAnimationTick` | 465.8 µs · 180 · 226 KB | **97.7 µs · 38 · 16.6 KB** | **4.77× faster**, **13.6× less memory** |
+| `ScaleStages/Rows1000/CSSRelayout` | 19.7 µs · 7 · 752 B | **59.2 ns · 1 · 180 B** | **333× faster** (`O(1)` viewport relayout) |
+| `ScaleStages/Rows1000/DisplayList` | 14.05 ms · 18,312 · 5.90 MB | **12.57 ms · 4,338 · 5.59 MB** | **4.22× fewer allocs**, **−1.5 ms** |
+| `LayoutModels/Grid` (200 rows) | 2.98 ms · 7,204 · 1.77 MB | **2.37 ms · 2,410 · 1.24 MB** | **25% faster**, **2.99× fewer allocs** |
+| `LayoutModels/Block` (200 rows) | 2.45 ms · 2,588 · 1.05 MB | **2.01 ms · 1,000 · 1.04 MB** | **22% faster**, **2.59× fewer allocs** |
+| `LayoutModels/Flex` (200 rows) | 2.68 ms · 2,815 · 1.09 MB | **2.23 ms · 1,025 · 1.06 MB** | **20% faster**, **2.75× fewer allocs** |
+| `BenchmarkLargeRedraw` | 21.6 ms · 22,068 · 3.10 MB | **17.14 ms · 7,234 · 2.79 MB** | **26% faster**, **3.05× fewer allocs** |
+| `ListWorkloads/Resize` (1,000 rows) | 14.63 ms · 19,277 · 3.15 MB | **11.59 ms · 4,298 · 2.78 MB** | **26% faster**, **4.49× fewer allocs** |
+| `ListWorkloads/TextUpdate` (1,000 rows) | 19.11 ms · 50,293 · 6.42 MB | **16.32 ms · 35,336 · 6.38 MB** | **17% faster**, **−15,000 allocs** |
+| `ListWorkloads/WindowedScroll` | 588 µs · 1,537 · 186 KB | **508 µs · 1,183 · 177 KB** | **16% faster**, **−23% allocs** |
+| `ListPatchVsRebuild/FullRebuild1Row` | 18.97 ms · 62,258 · 6.71 MB | **16.85 ms · 44,290 · 6.37 MB** | **13% faster**, **−18,000 allocs** |
+| `ListPatchVsRebuild/PatchElement1Row` | 599 µs · 101 · 207 KB | **584 µs · 102 · 208 KB** | **28.9× faster** than full rebuild |
 
-### Native Windows GPU — `animations.exe` before vs. after (multi-monitor Hz pacing + `stampStateAt`)
+### Native Windows GPU — `animations.exe` before vs. after (multi-monitor Hz pacing + restamp scratch + ASCII advances)
 
 | Metric | Before (uncapped) | After (auto-paced 144 Hz) | Delta |
 |---|---:|---:|---|
-| Present FPS | 325.3 FPS | **143.98 FPS** | Auto-matched active 144 Hz monitor |
-| CPU (1-core eq.) | 162.3% | **92.8%** | **−43% CPU** |
-| Alloc rate (`alloc_per_sec`) | 713.0 MB/s | **340.4 MB/s** | **2.09× less heap churn** |
-| GC pause total / count (8 s) | 44.4 ms (381) | **18.2 ms (217)** | **2.44× less GC pause** |
-| Avg / p95 / p99 frame | 2.92 / 4.32 / 4.83 ms | **2.76 / 4.79 / 5.72 ms** | **0 long frames (>25 ms)** |
+| Present FPS | 325.3 FPS | **144.05 FPS** | Auto-matched active 144 Hz monitor |
+| CPU (1-core eq.) | 162.3% | **89.6%** | **−45% CPU** |
+| Alloc rate (`alloc_per_sec`) | 713.0 MB/s | **338.3 MB/s** | **2.11× less heap churn** |
+| GC pause total / count (8 s) | 44.4 ms (381) | **18.0 ms (213)** | **2.47× less GC pause** |
+| Go heap (live) | 20.8 MB | **17.6 MB** | **−15% live heap** |
+| Avg / p95 / p99 frame | 2.92 / 4.32 / 4.83 ms | **2.64 / 4.24 / 5.08 ms** | **0 long frames (>25 ms)** |
