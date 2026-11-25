@@ -110,6 +110,7 @@ func newApp() (*app, error) {
 		wb:        NewWorkbook(),
 		ribbonTab: "Home",
 	}
+	seedQuarterlyModel(a.wb)
 	a.sel = Range{Min: a.active, Max: a.active}
 	a.modsFn = a.readMods
 	a.focus = func(id string) error { return a.page.Form().Focus(a.bg(), id) }
@@ -133,6 +134,7 @@ func newApp() (*app, error) {
 	a.page = view.Page
 	a.page.Scroll().SetAllowScroll(false)
 	a.page.SetTick(a.onTick)
+	a.seedCharts()
 	view.Handle(ownframe.Handlers{
 		Click:     a.handleClick,
 		Press:     a.handlePress,

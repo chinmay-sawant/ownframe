@@ -17,6 +17,9 @@ func rbApp(t *testing.T) *app {
 	if err != nil {
 		t.Fatalf("newApp: %v", err)
 	}
+	// The app seeds sample charts on the Charts sheet. These tests count the
+	// charts they insert themselves.
+	a.x.charts, a.x.chartSeq = nil, 0
 	return a
 }
 
@@ -776,4 +779,49 @@ func TestValidationRejectsCommit(t *testing.T) {
 	if sh.Raw(1, 10) != "5" {
 		t.Errorf("valid entry rejected: %q", sh.Raw(1, 10))
 	}
+}
+
+// TestSeededChartsSheet: the sample workbook carries a Quarterly data sheet
+// and a Charts sheet with one chart per kind, each bound to live data.
+func TestSeededChartsSheet(t *testing.T) {
+	a := newTestAppForCharts(t)
+	var charts, quarterly bool
+	for _, s := range a.wb.Sheets {
+		charts = charts || s.Name == "Charts"
+		quarterly = quarterly || s.Name == "Quarterly"
+	}
+	if !charts || !quarterly {
+		t.Fatalf("sheets missing: Charts=%v Quarterly=%v", charts, quarterly)
+	}
+	kinds := map[string]bool{}
+	for _, c := range a.x.charts {
+		if c.Sheet != "Charts" {
+			continue
+		}
+		kinds[c.Kind] = true
+		labels, series := a.chartData(c)
+		if len(labels) == 0 || len(series) == 0 {
+			t.Errorf("chart %q has no data from %s", c.Title, c.Src.String())
+		}
+	}
+	for _, k := range chartKinds() {
+		if !kinds[k.Kind] {
+			t.Errorf("no seeded %s chart", k.Kind)
+		}
+	}
+	// Revenue for 2025 links to the Sheet1 quarter totals.
+	q := a.wb.Sheets[3]
+	if got, want := q.Value(9, 1).Num, a.wb.Sheets[0].Value(9, 2).Num; got != want || got == 0 {
+		t.Errorf("Q1 2025 revenue %v, want Sheet1 total %v", got, want)
+	}
+}
+
+func newTestAppForCharts(t *testing.T) *app {
+	t.Helper()
+	ownframe.UseMemory(true)
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return a
 }
