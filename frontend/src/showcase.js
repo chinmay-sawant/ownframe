@@ -183,6 +183,20 @@ export const showcaseSections = [
     ],
   },
   {
+    id: 'excel',
+    title: 'Excel',
+    layout: 'grid-3',
+    before: '`examples/builder/excel` is a spreadsheet in the style of Excel, built with the Go builder (`ui` + `components/chadcn`). The starter workbook is Quarterly_Model.xlsx: a regional sales table, an empty sheet, a summary, twelve quarters, and charts bound to those tables. `go run ./examples/builder/excel` opens it on desktop.',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/excel)',
+    media: [
+      { src: 'assets/screenshots/demos/excel/sheet1.webp', alt: 'Excel Sheet1 regional sales table with quarter totals and growth', caption: 'Sheet1', width: 1440, height: 960, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/excel/sheet2.webp', alt: 'Excel Sheet2, an empty grid in the starter workbook', caption: 'Sheet2', width: 1440, height: 960, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/excel/summary.webp', alt: 'Excel Summary sheet with revenue totals and a quarter revenue table', caption: 'Summary', width: 1440, height: 960, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/excel/quarterly.webp', alt: 'Excel Quarterly sheet with twelve quarters of revenue, profit, and margin', caption: 'Quarterly', width: 1440, height: 960, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/excel/charts.webp', alt: 'Excel Charts sheet with region, product, and quarter charts bound to the sample tables', caption: 'Charts', width: 1440, height: 960, nativeDisplay: true },
+    ],
+  },
+  {
     id: 'depth-alert',
     title: 'Depth Alert',
     layout: 'portrait',

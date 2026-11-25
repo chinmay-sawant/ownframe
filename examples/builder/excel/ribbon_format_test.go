@@ -13,8 +13,14 @@ import (
 func TestFontFamilyControl(t *testing.T) {
 	a := rbApp(t)
 	rbSelect(a, "A2:B3")
-	if html := rbRender(t, a.ribbon()); !strings.Contains(html, `aria-label="Font family"`) || !strings.Contains(html, "Default v") {
+	html := rbRender(t, a.ribbon())
+	if !strings.Contains(html, `aria-label="Font family"`) ||
+		!strings.Contains(html, `class="rb-dd-label">Default</span>`) {
 		t.Fatalf("Home ribbon has no font family control")
+	}
+	a.runAction("xl:menu:ffamily")
+	if panel := a.menuPanel(); panel == nil || !strings.Contains(rbRender(t, panel), "xl:family:serif") {
+		t.Fatal("font family trigger did not open a menu with Serif")
 	}
 	a.runAction("xl:family:mono")
 	for _, ref := range []string{"A2", "B3"} {
@@ -24,11 +30,8 @@ func TestFontFamilyControl(t *testing.T) {
 		}
 	}
 	rbSelect(a, "A2")
-	if html := rbRender(t, a.ribbon()); !strings.Contains(html, "Mono v") {
+	if html := rbRender(t, a.ribbon()); !strings.Contains(html, `class="rb-dd-label">Mono</span>`) {
 		t.Errorf("ribbon does not reflect the Mono family")
-	}
-	if html := rbRender(t, a.fontFamilyMenu()); !strings.Contains(html, "xl:family:serif") {
-		t.Errorf("family menu lacks Serif")
 	}
 	el := ui.Div()
 	a.applyStyleExtras(el, a.wb.Sheet().StyleAt(1, 0), 96, 22, "x")

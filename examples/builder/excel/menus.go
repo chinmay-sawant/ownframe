@@ -42,6 +42,8 @@ func (a *app) menuPanel() *ui.Element {
 		panel = a.numberFormatMenu()
 	case "fsize":
 		panel = a.fontSizeMenu()
+	case "ffamily":
+		panel = a.fontFamilyMenu()
 	case "border":
 		panel = a.borderMenu()
 	case "fill":
