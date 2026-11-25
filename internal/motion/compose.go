@@ -29,14 +29,6 @@ type restampSample struct {
 	hasPerspective   bool
 }
 
-var composeFields = [fieldCount]struct {
-	get  valueOf
-	kind int
-}{
-	{moveX, animFieldX}, {moveY, animFieldY}, {opacity, animFieldOpacity},
-	{red, animFieldR}, {green, animFieldG}, {blue, animFieldB},
-}
-
 // composeSampled is compose plus the values the 2D matrix path cannot write.
 // The returned sample is set only when the effect sampled a transform or a
 // perspective; a paint-only effect leaves it zero.
@@ -46,6 +38,13 @@ func composeSampled(
 	e Effect,
 	at float64,
 ) (Paint, restampSample) {
+	composeFields := [fieldCount]struct {
+		get  valueOf
+		kind int
+	}{
+		{moveX, animFieldX}, {moveY, animFieldY}, {opacity, animFieldOpacity},
+		{red, animFieldR}, {green, animFieldG}, {blue, animFieldB},
+	}
 	base := target.From
 	mode := e.Timing.Composition
 	fallbacks := missingFallbacks(base, mode)
@@ -1263,11 +1262,6 @@ func blendFunctionsWithScratch(
 	return out
 }
 
-var (
-	identityMatrix2DArgs = [6]float64{1, 0, 0, 1, 0, 0}
-	identityMatrix3DArgs = [16]float64{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}
-)
-
 // identityFunctionsWithScratch builds a neutral list with the same function
 // signatures. It turns a missing keyframe (the underlying none) into a value
 // that can blend with a 3D list. A perspective function has no finite identity
@@ -1276,6 +1270,8 @@ var (
 func identityFunctionsWithScratch(
 	functions []TransformFunction, scratch *transformScratch,
 ) ([]TransformFunction, bool) {
+	identityMatrix2DArgs := [6]float64{1, 0, 0, 1, 0, 0}
+	identityMatrix3DArgs := [16]float64{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}
 	out := scratch.allocFuncs(len(functions))
 	for i, f := range functions {
 		out[i].Name = f.Name

@@ -94,7 +94,7 @@ export default function Benchmarks() {
           <p>{m.d}</p>
         </li>)}
       </ul>
-      <p className="p-note">Measured sequentially (<code>-p 1</code>) after the post-v0.0.6 performance pass with Blinkless <code>7f14e4d</code>, Intel Core i7-13700HX, Linux amd64 &amp; native Windows GPU (RTX 4060 @ 144 Hz), Go 1.26.11. Full tables and reproduction commands live in the <a href={`${repository}/blob/master/documentation/performance-baseline.md`}>performance baseline</a> and <a href={`${repository}/blob/master/documentation/performance.md`}>measurement procedure</a>.</p>
+      <p className="p-note">Measured sequentially (<code>-p 1</code>) on v0.0.7 with Blinkless <code>v0.1.9</code>, Intel Core i7-13700HX, Linux amd64 &amp; native Windows GPU (RTX 4060 @ 144 Hz), Go 1.26.11. Full tables and reproduction commands live in the <a href={`${repository}/blob/master/documentation/performance-baseline.md`}>performance baseline</a> and <a href={`${repository}/blob/master/documentation/performance.md`}>measurement procedure</a>.</p>
 
       <div className="p-bench-group">
         <h2 className="p-bench-title">Core pipeline and page benchmarks</h2>

@@ -131,7 +131,7 @@ The lifetime multiplier compounds the sequential phases of optimization ($\text{
 
 ## 7. Latest Core Pipeline, Layout Scaling, Animation & Native Windows GPU Benchmarks (2026-11-25)
 
-*Measured sequentially (`-p 1`) on `13th Gen Intel(R) Core(TM) i7-13700HX`, Go `1.26.11`, Blinkless `7f14e4d`, and native Windows GPU (`NVIDIA GeForce RTX 4060 Laptop GPU` @ 144 Hz, `CGO_ENABLED=0`).*
+*Measured sequentially (`-p 1`) on `13th Gen Intel(R) Core(TM) i7-13700HX`, Go `1.26.11`, Blinkless `v0.1.9`, and native Windows GPU (`NVIDIA GeForce RTX 4060 Laptop GPU` @ 144 Hz, `CGO_ENABLED=0`).*
 
 ### Core Pipeline & 1,000-Row Workloads
 

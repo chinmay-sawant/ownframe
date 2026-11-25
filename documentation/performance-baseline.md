@@ -142,7 +142,7 @@ so use a fresh isolated run for controlled release comparisons.
 
 ## Latest sequential baseline (2026-11-25)
 
-Measured sequentially (`-p 1`, one suite at a time) on `ownframe` with `blinkless` commit `7f14e4d` (`chore/performance-anim-grid-layout-pacing`), machine Chinmay (`13th Gen Intel(R) Core(TM) i7-13700HX`, Linux `amd64`, Go `1.26.11`).
+Measured sequentially (`-p 1`, one suite at a time) on `ownframe` `v0.0.7` with `blinkless` `v0.1.9`, machine Chinmay (`13th Gen Intel(R) Core(TM) i7-13700HX`, Linux `amd64`, Go `1.26.11`).
 
 These are display-free Go CPU benchmarks. They measure template execution, HTML parsing, CSS application, layout, display-list construction, animation restamping, and in-place patching without GPU rasterization, software GL drivers (such as WSL2 Mesa), or Ebiten's vsync/TPS frame pacing.
 
