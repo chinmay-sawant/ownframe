@@ -9,7 +9,7 @@ const ribbonCSS = `
 .rb-tab {
   display: flex; align-items: center; justify-content: center; box-sizing: border-box; margin: 0;
   height: 24px; padding: 0 12px; border: 0; border-radius: 4px; background: transparent;
-  color: var(--xl-header-fg); font-size: 12px;
+  color: var(--xl-header-fg); font-size: 12px; white-space: nowrap; flex-shrink: 0;
 }
 .rb-tab:hover { background-color: var(--xl-brand-tint); }
 .rb-tab-on { background-color: var(--xl-brand-tint); color: var(--xl-brand-strong); font-weight: 700; }
@@ -48,7 +48,7 @@ const ribbonCSS = `
 .rb-dd-panel {
   position: absolute; left: 0; top: 24px; z-index: 80; display: flex; flex-direction: column; min-width: 190px;
   padding: 4px; background: var(--xl-ribbon-group-bg); border: 1px solid var(--xl-ribbon-border); border-radius: 6px;
-  box-shadow: 0 8px 24px #00000040; color: var(--xl-cell-text);
+  box-shadow: 0 2px 6px #00000026; color: var(--xl-cell-text);
 }
 .rb-dd-scroll { max-height: 240px; overflow-y: auto; min-width: 70px; }
 .rb-dd-item {

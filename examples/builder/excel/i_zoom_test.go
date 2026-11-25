@@ -193,3 +193,18 @@ func TestIZoomChordWhileEditing(t *testing.T) {
 		t.Fatalf("edit state changed: editing=%v buf=%q", a.editing, a.editBuf)
 	}
 }
+
+// TestTickRescalesWhenWindowGrows: the window reaches its real size after the
+// first build, so the frame tick must apply the width based default zoom.
+func TestTickRescalesWhenWindowGrows(t *testing.T) {
+	a, _ := newTestApp(t)
+	ctx := context.Background()
+	_ = a.onTick(ctx)
+	a.page.SetSize(2560, 1440)
+	if err := a.onTick(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if a.x.themePct != 150 {
+		t.Fatalf("theme built at %d%%, want 150%% for a 2560 px window", a.x.themePct)
+	}
+}

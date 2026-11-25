@@ -592,6 +592,12 @@ func (a *app) pointer(x, y float64) (lx, ly float64) {
 const tapEchoGap = 40 * time.Millisecond
 
 func (a *app) handlePress(_ context.Context, box ownframe.Box, x, y float64) (bool, error) {
+	// The grid claims presses before any click arrives, so an open dropdown
+	// would stay up over a cell click. Close it here.
+	if a.x.menu != "" && !strings.HasPrefix(box.Action, "xl:") {
+		a.x.menu = ""
+		a.redraw()
+	}
 	if a.overlay == "" && isGridID(box.ID) && time.Since(a.dragEndAt) < a.tapEcho {
 		a.pressSeen = time.Now()
 		return true, nil

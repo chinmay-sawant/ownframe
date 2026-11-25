@@ -72,26 +72,27 @@ type app struct {
 	copyRange *Range // source of the last copy
 
 	// Pointer gesture state.
-	drag       dragKind
-	dragPressX float64
-	dragPressY float64
-	dragAccX   float64
-	dragAccY   float64
-	fillTo     CellRef // cell under the pointer during a fill-handle drag
-	fillSet    bool
-	dragIndex  int // header index or original size being resized
-	dragOrig   int
-	dragMoved  bool
-	refStart   int // byte offset in editBuf where a dragged reference begins
-	refEnd     int
-	refActive  bool // the buffer still ends with a point-and-click reference
-	lastPress  time.Time
-	pressSeen  time.Time // last grid Press, so a Click that follows is not handled twice
-	lastCell   CellRef
-	tapEcho    time.Duration // window for dropping the tap echo; tests zero it so scripted clicks may be instant
-	dragEndAt  time.Time     // when the last claimed drag ended, to drop the window's trailing tap Press
-	wheelRow   float64
-	wheelCol   float64
+	drag         dragKind
+	dragPressX   float64
+	dragPressY   float64
+	dragAccX     float64
+	dragAccY     float64
+	fillTo       CellRef // cell under the pointer during a fill-handle drag
+	fillSet      bool
+	dragIndex    int // header index or original size being resized
+	dragOrig     int
+	dragMoved    bool
+	refStart     int // byte offset in editBuf where a dragged reference begins
+	refEnd       int
+	refActive    bool // the buffer still ends with a point-and-click reference
+	lastPress    time.Time
+	pressSeen    time.Time // last grid Press, so a Click that follows is not handled twice
+	lastCell     CellRef
+	sizeW, sizeH int           // window size the tree was last built for
+	tapEcho      time.Duration // window for dropping the tap echo; tests zero it so scripted clicks may be instant
+	dragEndAt    time.Time     // when the last claimed drag ended, to drop the window's trailing tap Press
+	wheelRow     float64
+	wheelCol     float64
 
 	// modsFn reports Shift and Ctrl. Tests replace it; the web preview has no
 	// keyboard modifier source, so it reports neither.
@@ -131,6 +132,7 @@ func newApp() (*app, error) {
 	a.view = view
 	a.page = view.Page
 	a.page.Scroll().SetAllowScroll(false)
+	a.page.SetTick(a.onTick)
 	view.Handle(ownframe.Handlers{
 		Click:     a.handleClick,
 		Press:     a.handlePress,
@@ -156,6 +158,19 @@ func newApp() (*app, error) {
 		Drop:           a.handleDrop,
 	})
 	return a, nil
+}
+
+// onTick rebuilds the tree when the window size changes. The width picks the
+// default zoom, and the window opens at its saved or maximised size after the
+// first build, so without this the first frame keeps the 100% scale.
+func (a *app) onTick(context.Context) error {
+	w, h := a.page.Size()
+	if w == a.sizeW && h == a.sizeH {
+		return nil
+	}
+	a.sizeW, a.sizeH = w, h
+	a.redraw()
+	return nil
 }
 
 func (a *app) sheet() *Sheet { return a.wb.Sheet() }
@@ -238,6 +253,11 @@ func (a *app) ribbonHeight() int {
 // hooks that agent C's files own.
 func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 	act := box.Action
+	// An open dropdown closes on any click outside the ribbon actions, before
+	// the cell, autocomplete and filter handlers below claim the click.
+	if handled, err := a.overlayClick(ctx, box); handled || err != nil {
+		return err
+	}
 	switch {
 	case act == "win-min":
 		a.page.Window().Minimize()
@@ -284,9 +304,6 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 	}
 	if a.clickCellBox(box) {
 		return nil
-	}
-	if handled, err := a.overlayClick(ctx, box); handled || err != nil {
-		return err
 	}
 	if handled, err := a.ribbonClick(ctx, box); handled || err != nil {
 		return err

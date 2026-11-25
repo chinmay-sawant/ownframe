@@ -79,3 +79,22 @@ func TestBlankCellClickKeepsCellSize(t *testing.T) {
 		}
 	}
 }
+
+// TestClickOutsideClosesFileMenu: a click on a cell, which the grid claims
+// before the ribbon sees it, still dismisses the open File menu.
+func TestClickOutsideClosesFileMenu(t *testing.T) {
+	a, _ := newTestApp(t)
+	a.runAction("xl:menu:file")
+	if a.x.menu != "file" {
+		t.Fatalf("menu = %q, want file", a.x.menu)
+	}
+	c := CellRef{Row: 3, Col: 3}
+	x, y := cellPoint(t, a, c)
+	pointer(t, a, x, y)
+	if a.x.menu != "" {
+		t.Fatalf("menu = %q after clicking a cell, want closed", a.x.menu)
+	}
+	if a.active != c {
+		t.Fatalf("active %v, want %v", a.active, c)
+	}
+}
