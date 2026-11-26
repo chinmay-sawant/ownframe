@@ -100,6 +100,7 @@ make air reload ARGS="-web"
 | [builder/ui-builder](builder/ui-builder) | Interactive component gallery for `components/chadcn` built on `ui`. | 8131 |
 | [builder/loglens](builder/loglens) | Observability dashboard exercising the component set: overview, logs, traces, and incident room. | 8132 |
 | [builder/excel](builder/excel) | Spreadsheet in the style of Excel: virtualized grid, formula engine with dependency recalculation, ribbon formatting, conditional formats, sort and filter, charts, undo/redo, and CSV, JSON and XLSX files. | 8149 |
+| [builder/quarry](builder/quarry) | Local-first SQLite and PostgreSQL client: schema tree, multi-tab SQL editor with highlighting and autocomplete, EXPLAIN plans, a virtualized result grid with staged transactional edits, CSV/JSON/SQL import and export, and a live monitor. Dark by default with a light toggle. | 8150 |
 | [download-manager](download-manager) | Download queue with bounded workers: progress and speed, pause/resume with validated HTTP range resume, retry, cancel, and durable SQLite history. | — |
 | [live-log-viewer](live-log-viewer) | Multi-file log viewer: source sidebar, fixed-height rows, filters, follow/pause with unread count, entry detail, bounded export, and SQLite history. | — |
 | [spreadsheet](spreadsheet) | Sparse editable grid with a formula bar, SUM/AVERAGE formulas, range selection, undo/redo, CSV import/export, and SQLite workbooks. | — |
@@ -189,6 +190,7 @@ The remaining ticks are input or I/O bridges, not animation:
 | [spreadsheet](spreadsheet) | Worker results: drains a bounded batch of fetch, edit, undo, and CSV answers, then redraws once. |
 | [download-manager](download-manager) | Worker results and progress: drains download events and repaints the retained progress operations in place. |
 | [live-log-viewer](live-log-viewer) | Worker results and follow: drains log batches, retries a snapshot, and polls the feed on a slow clock. |
+| [builder/quarry](builder/quarry) | Query results and monitor samples: drains finished queries and `monitor.Collector` snapshots through bounded channels, repaints only when something changed, and returns clean while the monitor is paused. |
 | [system-monitor](system-monitor) | Collector results: drains CPU, memory, disk, and process samples, then repaints retained operations. |
 | [depth-alert](depth-alert) | Live depth data: applies a queued view from the device and updates retained operations. |
 | [digital-wellbeing](digital-wellbeing) | Queued Android data: applies usage, app icons, restore, and back presses on the game loop. |

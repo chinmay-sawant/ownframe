@@ -1,0 +1,54 @@
+/* QuarryLight: runtime toggle theme. White and off-white surfaces, hairline
+   borders, the same green accent. Tokens only; geometry lives in base.css. */
+:root {
+  --qr-brand: #1f9d6b;
+  --qr-brand-hover: #178a5c;
+  --qr-brand-tint: #e6f4ed;
+  --qr-titlebar-bg: #fafafa;
+  --qr-titlebar-fg: #171717;
+  --qr-rail-bg: #f4f4f4;
+  --qr-sidebar-bg: #fafafa;
+  --qr-canvas-bg: #ffffff;
+  --qr-surface-bg: #fafafa;
+  --qr-surface-elevated: #ffffff;
+  --qr-border: #e5e5e5;
+  --qr-border-strong: #d4d4d4;
+  --qr-text: #171717;
+  --qr-text-muted: #6b6b6b;
+  --qr-row-alt: #fafafa;
+  --qr-row-hover: #f4f4f4;
+  --qr-cell-selected: #1f9d6b;
+  --qr-null-bg: #efefef;
+  --qr-null-fg: #737373;
+  --qr-diff-edit-bg: #fdf3d3;
+  --qr-diff-insert-bg: #dff3e8;
+  --qr-diff-delete-bg: #fbe4e4;
+  --qr-status-ok: #1a9a68;
+  --qr-status-warn: #b7791f;
+  --qr-status-err: #d1453b;
+  --qr-on-brand: #ffffff;
+  --qr-syn-kw: #2563a8;
+  --qr-syn-fn: #7c4fb3;
+  --qr-syn-str: #2f7d4f;
+  --qr-syn-num: #b45f1a;
+  --qr-syn-type: #b13e6a;
+  --qr-syn-comment: #9a9a9a;
+  --qr-syn-op: #5a5a5a;
+  --qr-shadow-pop: rgba(23, 23, 23, 0.10);
+  --qr-shadow-edge: rgba(23, 23, 23, 0.06);
+  --qr-menu-hover: #f0f0f0;
+  --qr-btn-bg: #f4f4f4;
+  --qr-btn-bg-hover: #ececec;
+  --qr-seg-bg: #f0f0f0;
+  --qr-brand-soft: rgba(31, 157, 107, 0.10);
+  --of-scrollbar: #c4c4c4;
+  --of-scrollbar-width: 6px;
+  --of-scrollbar-inset: 2px;
+  --of-radius: 6px;
+  --qr-sel-bg: #bfe3d0;
+  --qr-chart-2: #4a78b5;
+  --qr-chart-3: #b07d1f;
+  --qr-env-local: #1a9a68;
+  --qr-env-staging: #b7791f;
+  --qr-env-prod: #d1453b;
+}
