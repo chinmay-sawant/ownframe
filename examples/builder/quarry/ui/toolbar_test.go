@@ -50,9 +50,10 @@ func TestToolbarsFitAt1280(t *testing.T) {
 	r.png("toolbar-table-1280")
 }
 
-// TestToolbarsWrapWhenNarrow renders both toolbars at 1000 px and checks no
-// control leaves the toolbar's horizontal bounds.
-func TestToolbarsWrapWhenNarrow(t *testing.T) {
+// TestToolbarOverflowWhenNarrow renders both toolbars at 1000 px: the low
+// priority buttons collapse into a "..." menu instead of wrapping, and every
+// action stays reachable through it.
+func TestToolbarOverflowWhenNarrow(t *testing.T) {
 	r := newRig(t, 1000, 760, "")
 	host, kids := r.toolbarKids("editor-toolbar")
 	for _, k := range kids {
@@ -60,15 +61,48 @@ func TestToolbarsWrapWhenNarrow(t *testing.T) {
 			t.Errorf("%s overflows at 1000px: %.0f > %.0f", k.ID, k.X+k.W, host.X+host.W)
 		}
 	}
-	if lo, hi := rowSpan(r, "editor-toolbar"); hi-lo < 20 {
-		t.Errorf("query toolbar should wrap to a second row at 1000 px (rows span %.0f px)", hi-lo)
+	if lo, hi := rowSpan(r, "editor-toolbar"); hi-lo > 10 {
+		t.Errorf("query toolbar must not wrap at 1000 px (rows span %.0f px)", hi-lo)
 	}
-	if bar := r.box("editor-toolbar"); bar.H < 60 {
-		t.Errorf("wrapped toolbar must grow to hold both rows, height %.0f", bar.H)
+	if !r.has("ov-more-ed") || r.has("ed-snippet") || !r.has("ed-run") {
+		t.Fatal("Save Snippet should have collapsed into the overflow menu, Run stays")
 	}
-	r.png("toolbar-query-1000")
+	r.tap("ov-more-ed")
+	for _, id := range []string{"ov-item-ed-snippet", "ov-item-ed-format", "ov-item-ed-wrap"} {
+		if !r.has(id) {
+			t.Fatalf("overflow menu lacks %s", id)
+		}
+	}
+	r.png("toolbar-query-1000-menu")
+	r.tap("ov-item-ed-snippet")
+	if r.a.menuOpen != "" || r.has("ov-menu-ed") {
+		t.Fatal("choosing an item closes the menu")
+	}
+	r.tap("ov-more-ed")
+	r.key("escape")
+	if r.has("ov-menu-ed") {
+		t.Fatal("Escape closes the menu")
+	}
+	r.tap("ov-more-ed")
+	r.tap("sb-title")
+	if r.has("ov-menu-ed") {
+		t.Fatal("a press elsewhere closes the menu")
+	}
 	r.openTableByName("orders")
+	if !r.has("ov-more-tbl") {
+		t.Fatal("the table toolbar collapses Import/Export at 1000 px")
+	}
 	r.png("toolbar-table-1000")
+}
+
+// TestToolbarNoOverflowWhenWide keeps every button visible when there is room.
+func TestToolbarNoOverflowWhenWide(t *testing.T) {
+	r := newRig(t, 1600, 900, "")
+	for _, id := range []string{"ed-run", "ed-run-sel", "ed-explain", "ed-analyze", "ed-format", "ed-snippet"} {
+		if !r.has(id) {
+			t.Fatalf("%s should show at 1600 px", id)
+		}
+	}
 }
 
 // rowSpan is the vertical spread of the toolbar's controls: near zero on one

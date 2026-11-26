@@ -265,6 +265,10 @@ func (e *editor) longestLine() int {
 
 // ensureVisibleCol scrolls horizontally so the caret column is visible.
 func (e *editor) ensureVisibleCol(cols int) {
+	if e.wrapCols > 0 {
+		e.hcol = 0
+		return
+	}
 	_, c := e.lineCol(e.caret)
 	if c < e.hcol {
 		e.hcol = c
@@ -308,10 +312,11 @@ func (a *App) pointToOffset(px, py float64) (int, bool) {
 	if t == nil || t.ed == nil || !ok {
 		return 0, false
 	}
-	line := t.ed.scroll + int((py-wy-edBodyPad)/edLineH)
-	line = max(0, min(line, t.ed.lineCount()-1))
+	a.syncWrap(t)
+	rows := t.ed.vrows()
+	row := max(0, min(t.ed.scroll+int((py-wy-edBodyPad)/edLineH), len(rows)-1))
 	col := t.ed.hcol + int((px-wx-edGutterW+edCharW/2)/edCharW)
-	return t.ed.offsetAt(line, max(0, col)), true
+	return t.ed.offsetInRow(rows, row, max(0, col)), true
 }
 
 // ---- pointer clicks, drag selection ----
@@ -363,7 +368,7 @@ func (a *App) editorDrag(ctx context.Context, dx, dy float64) error {
 		case py < wy:
 			t.ed.scroll = max(0, t.ed.scroll-1)
 		case py > wy+float64(rows*edLineH):
-			t.ed.scroll = min(max(0, t.ed.lineCount()-rows), t.ed.scroll+1)
+			t.ed.scroll = min(max(0, t.ed.rowCount()-rows), t.ed.scroll+1)
 		}
 		cols := a.editorViewCols()
 		switch {

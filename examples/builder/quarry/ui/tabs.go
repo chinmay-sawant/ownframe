@@ -56,9 +56,11 @@ type workTab struct {
 	grid          *gridState
 	filter        string
 	sortCol       int
-	sortDir       int    // 0 none, 1 asc, 2 desc
-	freeze        bool   // keep the first column fixed while scrolling sideways
-	quick         string // client-side filter of a query result
+	sortDir       int            // 0 none, 1 asc, 2 desc
+	freeze        bool           // keep the first column fixed while scrolling sideways
+	quick         string         // client-side filter of a query result
+	colf          map[int]string // per-column filters of a query result, by column index
+	showFilters   bool           // the filter row under the header is open
 	page          int
 	pageSize      int
 	totalRows     int64

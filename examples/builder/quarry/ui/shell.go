@@ -19,7 +19,7 @@ func (a *App) screen() *ui.Element {
 	}
 	body.Children(a.workspace())
 	root := ui.Div().ID("qr-root").Class("qr-root").Children(a.titleBar(), body, a.statusBar())
-	root.Children(a.connMenu(), a.modalView(), a.toastView())
+	root.Children(a.connMenu(), a.overflowMenu(), a.modalView(), a.toastView())
 	return root
 }
 

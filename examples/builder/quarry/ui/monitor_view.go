@@ -289,16 +289,16 @@ func (a *App) monitorCharts() *ui.Element {
 	for i := range times {
 		times[i] = a.mon.ring.At(i).At
 	}
-	tps := chartCard(chartSpec{ID: "chart-tps", Times: times, Hover: a.chartHoverFor("chart-tps"), Title: "Throughput (TPS / QPS)", Unit: "/s",
+	tps := chartCard(chartSpec{ID: "chart-tps", Times: times, Hover: a.chartHoverFor("chart-tps"), Expand: a.mon.hoverChart == "chart-tps", Title: "Throughput (TPS / QPS)", Unit: "/s",
 		Series: []chartSeries{{Name: "TPS", Values: ser(func(s sample) float64 { return s.TPS }), Class: "qr-s1"}}})
-	conns := chartCard(chartSpec{ID: "chart-conns", Times: times, Hover: a.chartHoverFor("chart-conns"), Title: "Connections (Active vs Idle vs Waiting)",
+	conns := chartCard(chartSpec{ID: "chart-conns", Times: times, Hover: a.chartHoverFor("chart-conns"), Expand: a.mon.hoverChart == "chart-conns", Title: "Connections (Active vs Idle vs Waiting)",
 		Series: []chartSeries{
 			{Name: "Active", Values: ser(func(s sample) float64 { return s.Active }), Class: "qr-s1"},
 			{Name: "Idle", Values: ser(func(s sample) float64 { return s.Idle }), Class: "qr-s2"},
 			{Name: "Waiting", Values: ser(func(s sample) float64 { return s.Waiting }), Class: "qr-s3"},
 		}})
 	cache := a.cacheOrSizeCard(times, ser)
-	lat := chartCard(chartSpec{ID: "chart-latency", Times: times, Hover: a.chartHoverFor("chart-latency"), Title: "Query Latency (p50 / p95 ms)", Unit: "ms",
+	lat := chartCard(chartSpec{ID: "chart-latency", Times: times, Hover: a.chartHoverFor("chart-latency"), Expand: a.mon.hoverChart == "chart-latency", Title: "Query Latency (p50 / p95 ms)", Unit: "ms",
 		Series: []chartSeries{
 			{Name: "p50", Values: ser(func(s sample) float64 { return s.P50ms }), Class: "qr-s1"},
 			{Name: "p95", Values: ser(func(s sample) float64 { return s.P95ms }), Class: "qr-s3"},
@@ -316,10 +316,10 @@ func (a *App) monitorCharts() *ui.Element {
 // flat 0% series.
 func (a *App) cacheOrSizeCard(times []time.Time, ser func(func(sample) float64) []float64) *ui.Element {
 	if s, ok := a.latestSample(); ok && s.HasSnapshot && s.Snapshot.CacheHitRatio < 0 {
-		return chartCard(chartSpec{ID: "chart-cache", Times: times, Hover: a.chartHoverFor("chart-cache"), Title: "Database Size (MB)", Unit: " MB",
+		return chartCard(chartSpec{ID: "chart-cache", Times: times, Hover: a.chartHoverFor("chart-cache"), Expand: a.mon.hoverChart == "chart-cache", Title: "Database Size (MB)", Unit: " MB",
 			Series: []chartSeries{{Name: "Size", Values: ser(func(s sample) float64 { return float64(s.SizeBytes) / (bytesPerKB * bytesPerKB) }), Class: "qr-s1"}}})
 	}
-	return chartCard(chartSpec{ID: "chart-cache", Times: times, Hover: a.chartHoverFor("chart-cache"), Title: "Cache Hit Ratio (%)", Unit: "%", Max: chartHundred,
+	return chartCard(chartSpec{ID: "chart-cache", Times: times, Hover: a.chartHoverFor("chart-cache"), Expand: a.mon.hoverChart == "chart-cache", Title: "Cache Hit Ratio (%)", Unit: "%", Max: chartHundred,
 		Series: []chartSeries{{Name: "Hit", Values: ser(func(s sample) float64 { return s.HitPct }), Class: "qr-s1"}}})
 }
 

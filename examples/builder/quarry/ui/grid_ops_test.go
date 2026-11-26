@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/examples/builder/quarry/driver"
 )
 
 // wideQuery returns a SELECT of n integer columns over three rows.
@@ -345,5 +346,109 @@ func TestGridContextMenuCsvFilterAndInspector(t *testing.T) {
 	}
 	if r.a.page.Form().FormValue("tbl-filter") != tt.filter {
 		t.Fatal("the WHERE box should show the generated condition")
+	}
+}
+
+func TestGridPerColumnFilters(t *testing.T) {
+	r := newRig(t, 1440, 960, "")
+	r.must(r.a.RunSQL(r.ctx, "SELECT id, full_name, CASE WHEN id % 5 = 0 THEN NULL ELSE country END AS country, plan FROM users WHERE id <= 100"))
+	tab := r.a.activeTabPtr()
+	total := len(tab.grid.rows)
+	if r.has("grid-filters") {
+		t.Fatal("the filter row starts closed")
+	}
+	r.tap("rs-filters")
+	if !r.has("grid-filters") || !r.has("colf-0") || !r.has("colf-3") {
+		t.Fatal("the filter row shows one box per column")
+	}
+	set := func(i int, v string) {
+		id := fmt.Sprintf("colf-%d", i)
+		r.a.page.Form().SetFormValue(id, v)
+		r.must(r.a.onChange(r.ctx, r.box(id)))
+	}
+	// contains
+	set(3, "PRO")
+	n := len(tab.grid.rows)
+	if n == 0 || n >= total {
+		t.Fatalf("contains kept %d of %d", n, total)
+	}
+	for _, row := range tab.grid.rows {
+		if !strings.Contains(strings.ToLower(row[3].S), "pro") {
+			t.Fatalf("row %v does not contain pro", row)
+		}
+	}
+	// equals combines with contains (AND)
+	set(3, "=pro")
+	for _, row := range tab.grid.rows {
+		if row[3].S != "pro" {
+			t.Fatalf("equals matched %q", row[3].S)
+		}
+	}
+	set(3, "=pr") // partial text does not equal
+	if len(tab.grid.rows) != 0 {
+		t.Fatal("= needs the whole value")
+	}
+	set(3, "")
+	// null / not null
+	set(2, "null")
+	if len(tab.grid.rows) != total/5 {
+		t.Fatalf("null kept %d, want %d", len(tab.grid.rows), total/5)
+	}
+	set(2, "not null")
+	if len(tab.grid.rows) != total-total/5 {
+		t.Fatalf("not null kept %d", len(tab.grid.rows))
+	}
+	// combines with the quick filter, and the label shows N of M
+	r.a.page.Form().SetFormValue("grid-filter", "pro")
+	r.must(r.a.onChange(r.ctx, r.box("grid-filter")))
+	m := len(tab.grid.rows)
+	if m >= total-total/5 || m == 0 {
+		t.Fatalf("quick + column filter kept %d", m)
+	}
+	if !strings.Contains(r.texts(), fmt.Sprintf("%d of %d rows", m, total)) {
+		t.Fatalf("label should read %d of %d rows", m, total)
+	}
+	if !r.has("rs-clear-filters") {
+		t.Fatal("Clear filters shows while a filter is set")
+	}
+	// sorting keeps working on the filtered rows
+	r.tap("grid-h-0")
+	for i := 1; i < len(tab.grid.rows); i++ {
+		if tab.grid.rows[i-1][0].I > tab.grid.rows[i][0].I {
+			t.Fatal("sort order lost under filters")
+		}
+	}
+	r.tap("rs-clear-filters")
+	if len(tab.grid.rows) != total || tab.filtersActive() || r.has("rs-clear-filters") {
+		t.Fatalf("clear-all restores %d rows, got %d", total, len(tab.grid.rows))
+	}
+	if r.a.page.Form().FormValue("colf-2") != "" || r.a.page.Form().FormValue("grid-filter") != "" {
+		t.Fatal("clear-all empties the input boxes")
+	}
+	// A new run resets everything; closing the row hides it.
+	set(1, "a")
+	r.must(r.a.RunSQL(r.ctx, "SELECT 1 AS one"))
+	if tab.filtersActive() {
+		t.Fatal("a new result starts unfiltered")
+	}
+	r.tap("rs-filters")
+	if r.has("grid-filters") {
+		t.Fatal("the toggle closes the row")
+	}
+}
+
+func TestColMatchesRules(t *testing.T) {
+	null, abc := driver.Null(), driver.Text("Abc")
+	for _, c := range []struct {
+		cell driver.CellValue
+		spec string
+		want bool
+	}{
+		{abc, "b", true}, {abc, "B", true}, {abc, "x", false}, {abc, "=abc", true}, {abc, "= abc", true}, {abc, "=ab", false},
+		{null, "null", true}, {null, "NOT NULL", false}, {abc, "not null", true}, {abc, "null", false}, {null, "x", false},
+	} {
+		if got := colMatches(c.cell, c.spec); got != c.want {
+			t.Errorf("colMatches(%v, %q) = %v, want %v", c.cell, c.spec, got, c.want)
+		}
 	}
 }

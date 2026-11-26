@@ -33,6 +33,9 @@ type chartSpec struct {
 	Max float64
 	// Hover is the sample index under the pointer, or -1.
 	Hover int
+	// Expand builds the per-sample hover columns. Only the chart under the
+	// pointer needs them, which keeps the other cards at one box per bar.
+	Expand bool
 }
 
 const (
@@ -152,15 +155,17 @@ func chartCard(spec chartSpec) *ui.Element {
 		}
 		plot.Children(ui.Div().Class("qr-chart-layer").Children(bars...))
 	}
-	hits := make([]*ui.Element, 0, n)
-	for i := 0; i < n; i++ {
-		cls := "qr-chart-hit"
-		if i == hover {
-			cls += " qr-chart-hit-on"
+	if spec.Expand || hover >= 0 {
+		hits := make([]*ui.Element, 0, n)
+		for i := 0; i < n; i++ {
+			cls := "qr-chart-hit"
+			if i == hover {
+				cls += " qr-chart-hit-on"
+			}
+			hits = append(hits, ui.Div().Class(cls).ID(fmt.Sprintf("%s%s%d", spec.ID, chartHitSep, i)))
 		}
-		hits = append(hits, ui.Div().Class(cls).ID(fmt.Sprintf("%s%s%d", spec.ID, chartHitSep, i)))
+		plot.Children(ui.Div().Class("qr-chart-layer qr-chart-hits").Children(hits...))
 	}
-	plot.Children(ui.Div().Class("qr-chart-layer qr-chart-hits").Children(hits...))
 
 	yaxis := ui.Div().ID(spec.ID+"-y").Class("qr-chart-y").Attr("aria-hidden", "true").Children(
 		ui.Span().Text(axisNum(top)), ui.Span().Text(axisNum(top/chartHalf)), ui.Span().Text("0"))
@@ -227,12 +232,23 @@ func chartHoverIndex(id string) (chart string, idx int, ok bool) {
 func (a *App) trackChartHover(id string) {
 	chart, idx, ok := chartHoverIndex(id)
 	if !ok {
-		chart, idx = "", -1
+		chart, idx = chartOf(id), -1 // entering a card expands its hover columns
 	}
 	if chart == a.mon.hoverChart && (chart == "" || idx == a.mon.hoverIdx) {
 		return
 	}
 	a.mon.hoverChart, a.mon.hoverIdx, a.mon.hoverDirty = chart, idx, true
+}
+
+// chartOf names the chart card a box id belongs to ("chart-tps-plot" gives
+// "chart-tps"), or "" for any other box.
+func chartOf(id string) string {
+	rest, ok := strings.CutPrefix(id, "chart-")
+	if !ok {
+		return ""
+	}
+	name, _, _ := strings.Cut(rest, "-")
+	return "chart-" + name
 }
 
 // chartHoverFor is the hover index for chart id, or -1.

@@ -258,7 +258,8 @@ func (a *App) applyQueryDone(r queryDone) {
 	for i := len(r.results) - 1; i >= 0; i-- {
 		if r.results[i].IsRead {
 			t.grid = newGridState(r.results[i].Res)
-			t.sortCol, t.sortDir, t.quick = 0, 0, ""
+			t.sortCol, t.sortDir, t.quick, t.colf = 0, 0, "", nil
+			t.grid.colf = nil
 			t.cs = nil
 			t.editing = nil
 			t.resultView = "results"

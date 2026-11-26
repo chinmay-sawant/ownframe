@@ -54,3 +54,31 @@ func TestShotsEditorAndGridOps(t *testing.T) {
 		_ = fmt.Sprint
 	}
 }
+
+// TestShotsWrapFiltersOverflow captures word wrap, the filter row and the
+// overflow menu in both themes. It runs only with QUARRY_SHOTS=1.
+func TestShotsWrapFiltersOverflow(t *testing.T) {
+	if os.Getenv("QUARRY_SHOTS") == "" {
+		t.Skip("set QUARRY_SHOTS=1 to capture the screenshots")
+	}
+	for _, dark := range []bool{true, false} {
+		name := map[bool]string{true: "dark", false: "light"}[dark]
+		r := newRig(t, 900, 800, "")
+		if !dark {
+			r.tap("tb-theme")
+		}
+		r.tap("ov-more-ed")
+		r.png("40-overflow-menu-" + name)
+		r.tap("ov-item-ed-wrap")
+		ed := r.setEditor(wrapSample)
+		ed.anchor, ed.caret = 20, 70
+		r.png("41-word-wrap-" + name)
+		r.must(r.a.RunSQL(r.ctx, "SELECT id, full_name, country, plan FROM users WHERE id <= 80"))
+		r.tap("rs-filters")
+		r.a.page.Form().SetFormValue("colf-3", "pro")
+		r.must(r.a.onChange(r.ctx, r.box("colf-3")))
+		r.a.page.Form().SetFormValue("colf-2", "de")
+		r.must(r.a.onChange(r.ctx, r.box("colf-2")))
+		r.png("42-column-filters-" + name)
+	}
+}

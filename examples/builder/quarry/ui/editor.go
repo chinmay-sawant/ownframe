@@ -30,13 +30,14 @@ type editSnap struct {
 
 // editor is the SQL buffer with caret, selection, scroll, and undo history.
 type editor struct {
-	text   string
-	caret  int
-	anchor int // selection anchor; equal to caret when nothing is selected
-	scroll int // first visible line
-	hcol   int // first visible column
-	undo   []editSnap
-	redo   []editSnap
+	text     string
+	caret    int
+	anchor   int // selection anchor; equal to caret when nothing is selected
+	scroll   int // first visible line
+	hcol     int // first visible column
+	wrapCols int // word-wrap width in characters, 0 when wrapping is off
+	undo     []editSnap
+	redo     []editSnap
 
 	tokText string
 	tokens  []sqlkit.Token
@@ -219,9 +220,17 @@ func (e *editor) key(key string, shift bool) bool {
 			}
 		}
 	case "arrowup":
-		e.move(l-1, c, extend)
+		if e.wrapCols > 0 {
+			e.moveRow(-1, extend)
+		} else {
+			e.move(l-1, c, extend)
+		}
 	case "arrowdown":
-		e.move(l+1, c, extend)
+		if e.wrapCols > 0 {
+			e.moveRow(1, extend)
+		} else {
+			e.move(l+1, c, extend)
+		}
 	case "pageup":
 		e.move(l-editorPageLines, c, extend)
 	case "pagedown":
@@ -249,14 +258,14 @@ func (e *editor) key(key string, shift bool) bool {
 
 // ensureVisible scrolls so the caret line shows inside rows lines.
 func (e *editor) ensureVisible(rows int) {
-	l, _ := e.lineCol(e.caret)
+	l, _ := e.rowOf(e.caret)
 	if l < e.scroll {
 		e.scroll = l
 	}
 	if l >= e.scroll+rows {
 		e.scroll = l - rows + 1
 	}
-	e.scroll = max(0, min(e.scroll, max(0, e.lineCount()-rows)))
+	e.scroll = max(0, min(e.scroll, max(0, e.rowCount()-rows)))
 }
 
 func (e *editor) tokensFor(d sqlkit.Dialect) []sqlkit.Token {
@@ -304,33 +313,41 @@ func (a *App) renderEditorBody(t *workTab) *ui.Element {
 	ed := t.ed
 	d := a.dialect()
 	toks := ed.tokensFor(d)
-	starts := ed.lineStarts()
-	total := len(starts)
+	a.syncWrap(t)
+	vr := ed.vrows()
+	total := len(vr)
 	rows := a.editorRows()
 	win := virtual.Window(float64(ed.scroll*edLineH), float64(rows*edLineH), edLineH, total, 1)
-	caretLine, caretCol := ed.lineCol(ed.caret)
+	caretLine, _ := ed.lineCol(ed.caret)
+	caretRow, _ := ed.rowOf(ed.caret)
 	selLo, selHi := ed.selection()
 	cols := a.editorViewCols()
 	focus := a.focus == "editor"
 	body := ui.Div().ID("editor-body").Class("qr-ed-body").Attr("role", "textbox").
 		Attr("aria-multiline", "true").Attr("aria-label", "SQL editor")
-	for ln := win.Start; ln < win.End; ln++ {
-		ls := starts[ln]
-		le := len(ed.text)
-		if ln+1 < total {
-			le = starts[ln+1] - 1
-		}
-		row := ui.Div().ID(fmt.Sprintf("ed-line-%d", ln)).Class("qr-ed-line")
+	for vi := win.Start; vi < win.End; vi++ {
+		ls, le, ln := vr[vi].start, vr[vi].end, vr[vi].line
+		row := ui.Div().ID(fmt.Sprintf("ed-line-%d", vi)).Class("qr-ed-line")
 		switch ln {
 		case t.rowErrLine:
 			row.Class("qr-ed-line qr-ed-line-err")
 		case caretLine:
 			row.Class("qr-ed-line qr-ed-line-active")
 		}
-		ls, le = colWindow(ed.text, ls, le, ed.hcol, cols)
-		row.Children(ui.Span().Class("qr-ed-gutter").Text(fmt.Sprint(ln + 1)))
+		if ed.wrapCols == 0 {
+			ls, le = colWindow(ed.text, ls, le, ed.hcol, cols)
+		}
+		num := ""
+		if vr[vi].first {
+			num = fmt.Sprint(ln + 1)
+		}
+		row.Children(ui.Span().Class("qr-ed-gutter").Text(num))
+		caretAt := -1
+		if vi == caretRow {
+			caretAt = ed.caret
+		}
 		code := ui.Div().Class("qr-ed-code")
-		for _, r := range lineRuns(ed.text, toks, ls, le, selLo, selHi, ed.caret) {
+		for _, r := range lineRuns(ed.text, toks, ls, le, selLo, selHi, caretAt) {
 			if r.caret {
 				if focus {
 					code.Children(ui.Span().Class("qr-caret"))
@@ -349,7 +366,6 @@ func (a *App) renderEditorBody(t *workTab) *ui.Element {
 		row.Children(code)
 		body.Children(row)
 	}
-	_ = caretCol
 	return body
 }
 
@@ -399,16 +415,21 @@ func lineRuns(text string, toks []sqlkit.Token, ls, le, selLo, selHi, caret int)
 
 // editorPane builds toolbar, body, and the autocomplete popover.
 func (a *App) editorPane(t *workTab) *ui.Element {
+	a.syncWrap(t)
 	rows := a.editorRows()
 	cols := a.editorViewCols()
+	longest := t.ed.longestLine()
+	if a.wrap {
+		longest = 0
+	}
 	pane := ui.Div().ID("editor-pane").Class("qr-editor").Height(ui.Px(float64(a.editorH))).Children(
 		a.editorToolbar(t),
 		a.findBar(),
 		ui.Div().ID("editor-wrap").Class("qr-ed-wrap").Height(ui.Px(float64(rows*edLineH+edLineH/2))).Children(
 			a.renderEditorBody(t),
-			a.scrollbarFor("editor", "Editor scroll", t.ed.lineCount()*edLineH, rows*edLineH, t.ed.scroll*edLineH,
+			a.scrollbarFor("editor", "Editor scroll", t.ed.rowCount()*edLineH, rows*edLineH, t.ed.scroll*edLineH,
 				func(o int) { t.ed.scroll = o / edLineH }),
-			a.hbar("editor", "Editor horizontal scroll", int(float64(t.ed.longestLine())*edCharW), int(float64(cols)*edCharW), int(float64(t.ed.hcol)*edCharW),
+			a.hbar("editor", "Editor horizontal scroll", int(float64(longest)*edCharW), int(float64(cols)*edCharW), int(float64(t.ed.hcol)*edCharW),
 				func(o int) { t.ed.hcol = int(float64(o)/edCharW + edRound) }),
 			a.autocompletePopover(t),
 		),
@@ -435,12 +456,14 @@ func (a *App) editorToolbar(t *workTab) *ui.Element {
 	tb := ui.Div().ID("editor-toolbar").Class("qr-toolbar")
 	tb.Children(
 		a.tbButton("ed-run", "Run", "qr-btn qr-btn-primary", busy, func(ctx context.Context) error { return a.runFromKey(ctx, false) }),
-		a.tbButton("ed-run-sel", "Run Selection", "qr-btn", busy, func(ctx context.Context) error { return a.runSelection(ctx) }),
-		a.tbButton("ed-explain", "Explain", "qr-btn", busy, func(ctx context.Context) error { return a.startExplain(ctx, false) }),
-		a.tbButton("ed-analyze", "Explain Analyze", "qr-btn", busy, func(ctx context.Context) error { return a.startExplain(ctx, true) }),
-		a.tbButton("ed-format", "Format", "qr-btn", false, func(ctx context.Context) error { return a.formatEditor(ctx) }),
-		a.tbButton("ed-snippet", "Save Snippet", "qr-btn", false, func(ctx context.Context) error { return a.saveSnippet(ctx) }),
 	)
+	tb.Children(a.overflowGroup("ed", a.mainWidth()-edToolbarFixed-tbRunWidth, []tbItem{
+		{id: "ed-run-sel", label: "Run Selection", class: "qr-btn", disabled: busy, fn: a.runSelection},
+		{id: "ed-explain", label: "Explain", class: "qr-btn", disabled: busy, fn: func(ctx context.Context) error { return a.startExplain(ctx, false) }},
+		{id: "ed-analyze", label: "Explain Analyze", class: "qr-btn", disabled: busy, fn: func(ctx context.Context) error { return a.startExplain(ctx, true) }},
+		{id: "ed-format", label: "Format", class: "qr-btn", fn: a.formatEditor},
+		{id: "ed-snippet", label: "Save Snippet", class: "qr-btn", fn: a.saveSnippet},
+	}, []tbItem{{id: "ed-wrap", label: "Word wrap", check: true, on: a.wrap, fn: a.toggleWrap}})...)
 	if busy {
 		tb.Children(a.tbButton("ed-cancel", "Cancel", "qr-btn qr-btn-danger", false, func(ctx context.Context) error {
 			a.cancelRunning()
@@ -526,7 +549,10 @@ func (a *App) tbButton(id, label, class string, disabled bool, fn func(context.C
 		b.Class(class+" qr-btn-off").Attr("aria-disabled", "true")
 		return b
 	}
-	return b.OnClick(fn)
+	return b.OnClick(func(ctx context.Context) error {
+		a.ac.open = false // a toolbar action is a blur for the completion popup
+		return fn(ctx)
+	})
 }
 
 // ---- editor input ----
@@ -560,6 +586,7 @@ func (a *App) editorBackspace(ctx context.Context) error {
 func (a *App) editorKey(ctx context.Context, key string, shift bool) (bool, error) {
 	t := a.activeTabPtr()
 	ed := t.ed
+	a.syncWrap(t)
 	switch key {
 	case "enter":
 		a.suppressSubmit = true
@@ -770,9 +797,9 @@ func (a *App) autocompletePopover(t *workTab) *ui.Element {
 	if !a.ac.open || len(a.ac.items) == 0 || t.ed == nil {
 		return nil
 	}
-	l, c := t.ed.lineCol(a.ac.comp.ReplaceStart)
+	l, c := t.ed.rowOf(a.ac.comp.ReplaceStart)
 	top := (l-t.ed.scroll+1)*edLineH + acGap
-	left := edGutterW + edPadLeft + int(float64(c)*edCharW)
+	left := edGutterW + edPadLeft + int(float64(c-t.ed.hcol)*edCharW)
 	pop := ui.Div().ID("ac-popover").Class("qr-ac").Attr("role", ariaRole("listbox")).Attr("aria-label", "Completions").
 		Position(ui.PositionAbsolute).Top(ui.Px(float64(top))).Left(ui.Px(float64(left)))
 	for i, it := range a.ac.items {

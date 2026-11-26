@@ -132,6 +132,7 @@ func TestChartHoverShowsSampleValueAndTime(t *testing.T) {
 		r.must(r.a.Page().Edit().Hover(r.ctx, float64(b.X+b.W/2), float64(b.Y+b.H/2)))
 		r.tick()
 	}
+	hover("chart-tps-plot") // entering a card builds its hover columns
 	hover("chart-tps-h10")
 	want := r.now.Format(chartTimeFmt) // sample 10 was pushed at r.now+10s before tick moved r.now
 	_ = want
@@ -164,6 +165,10 @@ func TestChartHoverShowsSampleValueAndTime(t *testing.T) {
 func TestChartHoverCostsNoFramesWhenSteady(t *testing.T) {
 	r := newRig(t, 1440, 960, "mock:postgres")
 	r.feedMonitor(30)
+	r.a.trackChartHover("chart-tps-plot")
+	if !r.a.takeChartHover() {
+		t.Fatal("entering a chart must request one repaint to build its hover columns")
+	}
 	r.a.trackChartHover("chart-tps-h3")
 	if !r.a.takeChartHover() {
 		t.Fatal("a new hover column must request one repaint")
@@ -200,4 +205,36 @@ func (r *rig) textOf(id string) string {
 		}
 	}
 	return strings.Join(parts, " ")
+}
+
+// TestChartHoverColumnsOnlyForHoveredChart checks the per-tick cost saving:
+// idle cards carry no hover columns, and the one under the pointer gets them.
+func TestChartHoverColumnsOnlyForHoveredChart(t *testing.T) {
+	r := newRig(t, 1440, 960, "mock:postgres")
+	r.feedMonitor(60)
+	count := func(chart string) int {
+		n := 0
+		for _, b := range r.a.Page().Boxes() {
+			if c, _, ok := chartHoverIndex(b.ID); ok && c == chart {
+				n++
+			}
+		}
+		return n
+	}
+	for _, c := range []string{"chart-tps", "chart-conns", "chart-latency", "chart-cache"} {
+		if count(c) != 0 {
+			t.Fatalf("%s has hover columns while idle", c)
+		}
+	}
+	b := r.box("chart-conns-plot")
+	r.must(r.a.Page().Edit().Hover(r.ctx, float64(b.X+b.W/2), float64(b.Y+b.H/2)))
+	r.tick()
+	if count("chart-conns") != 60 || count("chart-tps") != 0 {
+		t.Fatalf("only the hovered chart expands: conns=%d tps=%d", count("chart-conns"), count("chart-tps"))
+	}
+	r.must(r.a.Page().Edit().Hover(r.ctx, 5, 500))
+	r.tick()
+	if count("chart-conns") != 0 {
+		t.Fatal("leaving the chart drops its hover columns")
+	}
 }

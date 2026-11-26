@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -125,6 +126,8 @@ type App struct {
 	edPX, edPY         float64
 	edSumX, edSumY     float64
 	find               findState
+	ov                 overflowOpen
+	wrap               bool // editor word wrap (persisted as editor.wrap)
 	nodeByID           map[string]driver.SchemaNode
 	histQuery          string
 	lastType           time.Time
@@ -652,7 +655,14 @@ func (a *App) onChange(ctx context.Context, box ownframe.Box) error {
 	case box.ID == "grid-filter":
 		if t := a.activeTabPtr(); t != nil && t.grid != nil {
 			t.quick = a.page.Form().FormValue("grid-filter")
-			t.grid.rebuild(t.quick, t.sortCol, t.sortDir)
+			t.applyFilters()
+		}
+		return a.redraw(ctx)
+	case strings.HasPrefix(box.ID, "colf-"):
+		if t := a.activeTabPtr(); t != nil && t.grid != nil {
+			if i, err := strconv.Atoi(strings.TrimPrefix(box.ID, "colf-")); err == nil {
+				t.setColFilter(i, a.page.Form().FormValue(box.ID))
+			}
 		}
 		return a.redraw(ctx)
 	case box.ID == "find-input":

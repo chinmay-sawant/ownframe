@@ -73,6 +73,9 @@ func (a *App) restoreSettings() {
 	if ms := a.prefInt("monitor.poll", int(defaultPollEvery.Milliseconds())); ms >= 0 {
 		a.mon.pollEvery = time.Duration(ms) * time.Millisecond
 	}
+	if v, ok := a.loadPref("editor.wrap"); ok {
+		a.wrap = v == "1"
+	}
 	if v, ok := a.loadPref("confirm.destructive"); ok {
 		a.confirmDestructive = v != "0"
 	}

@@ -432,7 +432,7 @@ func (a *App) filterByValue(ctx context.Context, t *workTab, r, c int) error {
 	cell := g.rows[r][c]
 	if t.kind == tabQuery {
 		t.quick = cellPlain(cell)
-		g.rebuild(t.quick, t.sortCol, t.sortDir)
+		t.applyFilters()
 		return a.redraw(ctx)
 	}
 	col := driver.QuoteIdent(g.cols[c].Name)

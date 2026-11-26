@@ -27,8 +27,9 @@ type gridState struct {
 	rows      [][]driver.CellValue
 	widths    []int
 	scrollY   float64
-	scrollX   float64 // unused horizontal pixel offset; columns scroll by hcol
-	hcol      int     // first scrolled column
+	scrollX   float64        // unused horizontal pixel offset; columns scroll by hcol
+	hcol      int            // first scrolled column
+	colf      map[int]string // per-column filters in force
 	all       [][]driver.CellValue
 	truncated bool
 	// viewH is the measured pixel height of the body; zero until the first layout.
@@ -280,6 +281,17 @@ func (a *App) renderGrid(t *workTab) *ui.Element {
 		head.Children(ui.Div().ID(fmt.Sprintf("colresize-%d", i)).Class("qr-colresize"))
 	}
 
+	var filterRow *ui.Element
+	if t.showFilters && t.kind == tabQuery {
+		filterRow = ui.Div().ID("grid-filters").Class("qr-grid-filters").Attr("role", ariaRole("row"))
+		filterRow.Children(ui.Div().Class("qr-grid-gutter qr-grid-fcell"))
+		for _, i := range cols {
+			filterRow.Children(ui.Div().Class("qr-grid-fcell").Width(ui.Px(float64(g.widths[i]))).Children(
+				ui.Input().ID(fmt.Sprintf("colf-%d", i)).Class("qr-input qr-colf").Attr("type", "text").
+					Attr("placeholder", "contains").Attr("title", "text contains; =text equals; null; not null").
+					Attr("aria-label", "Filter column "+g.cols[i].Name).Attr("value", t.colf[i])))
+		}
+	}
 	body := ui.Div().ID("grid-body").Class("qr-grid-body").Height(ui.Px(float64(viewH))).Attr("role", ariaRole("grid")).
 		Attr("aria-label", "Result grid").Attr("aria-rowcount", fmt.Sprint(len(g.rows)))
 	inner := ui.Div().Class("qr-grid-inner").MarginTop(ui.Px(-(g.scrollY - win.TopSpacer)))
@@ -293,7 +305,11 @@ func (a *App) renderGrid(t *workTab) *ui.Element {
 	}
 	body.Children(a.scrollbarFor("grid", "Result grid scroll", (len(g.rows)+nExtra)*gridRowHeight, viewH, int(g.scrollY),
 		func(o int) { g.scrollY = float64(o / gridRowHeight * gridRowHeight) }))
-	return ui.Div().ID("grid").Class("qr-grid").Children(head, body)
+	grid := ui.Div().ID("grid").Class("qr-grid").Children(head)
+	if filterRow != nil {
+		grid.Children(filterRow)
+	}
+	return grid.Children(body)
 }
 
 func (a *App) rowID(t *workTab, g *gridState, r int) (sqlkit.RowID, bool) {
@@ -442,7 +458,7 @@ func (a *App) cycleSort(ctx context.Context, t *workTab, col int) error {
 	}
 	if t.kind == tabQuery { // a result set is sorted in memory
 		if t.grid != nil {
-			t.grid.rebuild(t.quick, t.sortCol, t.sortDir)
+			t.applyFilters()
 		}
 		return a.redraw(ctx)
 	}
@@ -456,7 +472,7 @@ func (g *gridState) rebuild(filter string, sortCol, dir int) {
 	f := strings.ToLower(strings.TrimSpace(filter))
 	rows := make([][]driver.CellValue, 0, len(g.all))
 	for _, r := range g.all {
-		if f == "" || rowContains(r, f) {
+		if (f == "" || rowContains(r, f)) && rowPasses(r, g.colf) {
 			rows = append(rows, r)
 		}
 	}
@@ -552,8 +568,8 @@ func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
 		return false
 	}
 	if t.kind == tabQuery && t.ed != nil && inside("editor-wrap") {
-		t.ed.scroll = max(0, min(t.ed.scroll-int(dy*wheelEditorLines), max(0, t.ed.lineCount()-a.editorRows())))
-		if dx != 0 {
+		t.ed.scroll = max(0, min(t.ed.scroll-int(dy*wheelEditorLines), max(0, t.ed.rowCount()-a.editorRows())))
+		if dx != 0 && !a.wrap {
 			t.ed.hcol = max(0, min(t.ed.hcol-int(dx*wheelEditorLines), max(0, t.ed.longestLine()-a.editorViewCols()+edHScrollLead)))
 		}
 		return true, a.redraw(ctx)
@@ -702,10 +718,18 @@ func (a *App) resultsPane(t *workTab) *ui.Element {
 		head.Children(ui.Span().ID("results-info").Class("qr-muted qr-nowrap").Text(info))
 	}
 	head.Children(ui.Div().Class("qr-spacer"))
+	if t.grid != nil && t.resultView == "results" && t.filtersActive() {
+		head.Children(a.tbButton("rs-clear-filters", "Clear filters", "qr-btn qr-btn-ghost", false,
+			func(ctx context.Context) error { return a.clearFilters(ctx, t) }))
+	}
 	if t.grid != nil && t.resultView == "results" {
 		head.Children(
 			ui.Input().ID("grid-filter").Class("qr-input qr-quick").Attr("type", "text").Attr("placeholder", "Filter rows").
 				Attr("aria-label", "Filter result rows").Attr("value", t.quick),
+			a.tbButton("rs-filters", "Filters", filterBtnClass(t), false, func(ctx context.Context) error {
+				t.showFilters = !t.showFilters
+				return a.redraw(ctx)
+			}),
 			a.tbButton("rs-freeze", freezeLabel(t), "qr-btn qr-btn-ghost", false, func(ctx context.Context) error {
 				t.freeze = !t.freeze
 				return a.redraw(ctx)
@@ -796,18 +820,20 @@ func (a *App) tableTabView(t *workTab) *ui.Element {
 		a.tbButton("tbl-next", "Next", "qr-btn", t.page+1 >= pages, func(ctx context.Context) error { t.page++; return a.loadTablePage(ctx, t) }),
 		ui.Div().Class("qr-spacer"),
 	)
+	bar.Children(a.freezeIconButton(t))
+	var tools []tbItem
 	if t.writable {
-		bar.Children(a.tbButton("tbl-add", "Add Row", "qr-btn", false, func(ctx context.Context) error { return a.stageInsert(ctx, t) }))
+		tools = append(tools, tbItem{id: "tbl-add", label: "Add Row", class: "qr-btn", fn: func(ctx context.Context) error { return a.stageInsert(ctx, t) }})
 	}
-	bar.Children(
-		a.freezeIconButton(t),
-		a.tbButton("tbl-import", "Import CSV", "qr-btn", a.cfg.ReadOnly, func(ctx context.Context) error { return a.openImport(ctx) }),
-		a.tbButton("tbl-export", "Export", "qr-btn", false, func(ctx context.Context) error { return a.openExport(ctx, true) }),
-		a.tbButton("tbl-inspector", "Inspector", "qr-btn", false, func(ctx context.Context) error {
+	tools = append(tools,
+		tbItem{id: "tbl-inspector", label: "Inspector", class: "qr-btn", fn: func(ctx context.Context) error {
 			t.inspectorOpen = !t.inspectorOpen
 			return a.redraw(ctx)
-		}),
+		}},
+		tbItem{id: "tbl-export", label: "Export", class: "qr-btn", fn: func(ctx context.Context) error { return a.openExport(ctx, true) }},
+		tbItem{id: "tbl-import", label: "Import CSV", class: "qr-btn", disabled: a.cfg.ReadOnly, fn: func(ctx context.Context) error { return a.openImport(ctx) }},
 	)
+	bar.Children(a.overflowGroup("tbl", a.mainWidth()-tblToolbarFixed-tbIconBtnWidth, tools, nil)...)
 	view := ui.Div().ID("table-tab").Class("qr-tab-body").Children(filterBar, bar)
 	if t.err != nil {
 		view.Children(a.errorBanner(t))
@@ -856,6 +882,12 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 	}
 	if a.modal != "" || box.ID == "" {
 		return false, nil
+	}
+	if strings.HasPrefix(a.menuOpen, "ov-") && !strings.HasPrefix(box.ID, "ov-") {
+		a.menuOpen = "" // a press outside the overflow menu dismisses it
+		if err := a.redraw(ctx); err != nil {
+			return false, err
+		}
 	}
 	if a.ac.open && !strings.HasPrefix(box.ID, "ac-") && !strings.HasPrefix(box.ID, "ed-line-") && box.ID != "editor-body" && box.ID != "editor-wrap" {
 		a.ac.open = false // a press anywhere else is a blur
@@ -1064,4 +1096,77 @@ func (a *App) freezeIconButton(t *workTab) *ui.Element {
 		Attr("aria-label", freezeLabel(t)).Attr("title", freezeLabel(t)).Attr("aria-pressed", fmt.Sprint(t.freeze)).
 		Children(a.icon("lock", tone, iconMedium)).
 		OnClick(func(ctx context.Context) error { t.freeze = !t.freeze; return a.redraw(ctx) })
+}
+
+// applyFilters rebuilds the grid rows from the quick filter, the per-column
+// filters and the sort of a query tab.
+func (t *workTab) applyFilters() {
+	if t.grid == nil {
+		return
+	}
+	t.grid.colf = t.colf
+	t.grid.rebuild(t.quick, t.sortCol, t.sortDir)
+}
+
+// setColFilter sets or clears the filter of column i.
+func (t *workTab) setColFilter(i int, spec string) {
+	if t.colf == nil {
+		t.colf = map[int]string{}
+	}
+	if strings.TrimSpace(spec) == "" {
+		delete(t.colf, i)
+	} else {
+		t.colf[i] = spec
+	}
+	t.applyFilters()
+}
+
+// filtersActive reports whether any quick or column filter is set.
+func (t *workTab) filtersActive() bool { return strings.TrimSpace(t.quick) != "" || len(t.colf) > 0 }
+
+// clearFilters drops the quick and all column filters, and their input text.
+func (a *App) clearFilters(ctx context.Context, t *workTab) error {
+	f := a.page.Form()
+	f.SetFormValue("grid-filter", "")
+	for i := range t.colf {
+		f.SetFormValue(fmt.Sprintf("colf-%d", i), "")
+	}
+	t.quick, t.colf = "", nil
+	t.applyFilters()
+	return a.redraw(ctx)
+}
+
+// rowPasses reports whether r satisfies every column filter.
+func rowPasses(r []driver.CellValue, colf map[int]string) bool {
+	for i, spec := range colf {
+		if i >= len(r) || !colMatches(r[i], spec) {
+			return false
+		}
+	}
+	return true
+}
+
+// colMatches applies one column filter: "=text" matches the whole value,
+// "null" and "not null" test for NULL, anything else is a case-insensitive
+// contains.
+func colMatches(c driver.CellValue, spec string) bool {
+	s := strings.ToLower(strings.TrimSpace(spec))
+	switch s {
+	case "null", "is null":
+		return c.IsNull()
+	case "not null", "!null", "is not null":
+		return !c.IsNull()
+	}
+	text := strings.ToLower(cellPlain(c))
+	if rest, ok := strings.CutPrefix(s, "="); ok {
+		return !c.IsNull() && text == strings.TrimSpace(rest)
+	}
+	return !c.IsNull() && strings.Contains(text, s)
+}
+
+func filterBtnClass(t *workTab) string {
+	if t.showFilters {
+		return "qr-btn qr-btn-ghost qr-btn-on"
+	}
+	return "qr-btn qr-btn-ghost"
 }

@@ -23,6 +23,7 @@ func TestAutocompleteClosesOnRunExplainTabEscapeBlurAndCaretMove(t *testing.T) {
 		"blur":     func(r *rig) { r.tap("sb-title") },
 		"caret":    func(r *rig) { r.key("home") },
 		"f5":       func(r *rig) { r.key("f5") },
+		"overflow": func(r *rig) { r.tap("ov-more-ed") },
 		"ctrlente": func(r *rig) { r.chord("enter", true) },
 	}
 	for name, act := range cases {
