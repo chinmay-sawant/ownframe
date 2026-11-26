@@ -2,7 +2,7 @@
 
 > **Parent:** [plans/README.md](../../README.md)
 > **Target package:** `examples/builder/quarry`
-> **Status:** Open (0 complete, 0 partial, 68 open)
+> **Status:** Partial (63 complete, 5 partial, 0 open)
 > **Estimated effort:** 6 phases (iterative implementation and verification)
 
 ---
@@ -33,51 +33,53 @@ Quarry defines `--qr-*` CSS custom properties layered on top of `chadcn.Dark` (d
 
 | Token | Role | **QuarryDark (default)** | **QuarryLight** |
 | --- | --- | --- | --- |
-| `--qr-brand` | Primary accent, active tab underline, primary CTA | **#38bdf8** | **#0284c7** |
-| `--qr-brand-hover` | Primary button hover fill | **#0ea5e9** | **#0369a1** |
-| `--qr-brand-tint` | Active sidebar row and subtle selection tint | **#0c2a3e** | **#e0f2fe** |
-| `--qr-titlebar-bg` | Custom window title bar background | **#0f1117** | **#f1f5f9** |
-| `--qr-titlebar-fg` | Title bar text and window control icons | **#e2e8f0** | **#0f172a** |
-| `--qr-rail-bg` | Left connection/activity icon rail | **#0b0d12** | **#e2e8f0** |
-| `--qr-sidebar-bg` | Schema explorer sidebar surface | **#13161f** | **#f8fafc** |
-| `--qr-canvas-bg` | Main workspace and grid viewport background | **#161a24** | **#ffffff** |
-| `--qr-surface-bg` | Cards, popovers, inspector drawer, toolbar | **#1c212e** | **#f8fafc** |
-| `--qr-surface-elevated` | Modals, autocomplete menu, context menus | **#23293a** | **#ffffff** |
-| `--qr-border` | Standard 1 px pane divider and gridline | **#272e40** | **#e2e8f0** |
-| `--qr-border-strong` | Focused input ring and active split handle | **#3b4661** | **#cbd5e1** |
-| `--qr-text` | Primary text and cell values | **#e6edf3** | **#0f172a** |
-| `--qr-text-muted` | Secondary labels, types, row numbers | **#8b96ab** | **#64748b** |
-| `--qr-row-alt` | Zebra row background in result grid | **#191e2a** | **#f8fafc** |
-| `--qr-row-hover` | Hovered grid row background | **#212838** | **#f1f5f9** |
-| `--qr-cell-selected` | Selected cell outline | **#38bdf8** | **#0284c7** |
-| `--qr-null-bg` | `NULL` badge pill background | **#252c3d** | **#e2e8f0** |
-| `--qr-null-fg` | `NULL` badge pill text | **#7d8aa3** | **#64748b** |
-| `--qr-diff-edit-bg` | Staged cell update highlight | **#3b2f12** | **#fef3c7** |
-| `--qr-diff-insert-bg` | Staged row insert highlight | **#123226** | **#dcfce7** |
-| `--qr-diff-delete-bg` | Staged row delete highlight | **#3b1820** | **#fee2e2** |
-| `--qr-status-ok` | Connected badge, healthy cache hit, index scan | **#34d399** | **#059669** |
-| `--qr-status-warn` | Slow query, lock wait, seq scan warning | **#fbbf24** | **#d97706** |
-| `--qr-status-err` | Query error, disconnected, Prod env badge | **#f87171** | **#dc2626** |
+| `--qr-brand` | Primary accent, active tab underline, primary CTA | **#3ecf8e** | **#1f9d6b** |
+| `--qr-brand-hover` | Primary button hover fill | **#34b97c** | **#178a5c** |
+| `--qr-brand-tint` | Active sidebar row and subtle selection tint | **#1f2c26** | **#e6f4ed** |
+| `--qr-titlebar-bg` | Custom window title bar background | **#171717** | **#fafafa** |
+| `--qr-titlebar-fg` | Title bar text and window control icons | **#ededed** | **#171717** |
+| `--qr-rail-bg` | Left connection/activity icon rail | **#141414** | **#f4f4f4** |
+| `--qr-sidebar-bg` | Schema explorer sidebar surface | **#171717** | **#fafafa** |
+| `--qr-canvas-bg` | Main workspace and grid viewport background | **#1c1c1c** | **#ffffff** |
+| `--qr-surface-bg` | Cards, popovers, inspector drawer, toolbar | **#232323** | **#fafafa** |
+| `--qr-surface-elevated` | Modals, autocomplete menu, context menus | **#262626** | **#ffffff** |
+| `--qr-border` | Standard 1 px pane divider and gridline | **#2e2e2e** | **#e5e5e5** |
+| `--qr-border-strong` | Focused input ring and active split handle | **#3e3e3e** | **#d4d4d4** |
+| `--qr-text` | Primary text and cell values | **#ededed** | **#171717** |
+| `--qr-text-muted` | Secondary labels, types, row numbers | **#8f8f8f** | **#6b6b6b** |
+| `--qr-row-alt` | Zebra row background in result grid | **#1f1f1f** | **#fafafa** |
+| `--qr-row-hover` | Hovered grid row background | **#262626** | **#f4f4f4** |
+| `--qr-cell-selected` | Selected cell outline | **#3ecf8e** | **#1f9d6b** |
+| `--qr-null-bg` | `NULL` badge pill background | **#2a2a2a** | **#efefef** |
+| `--qr-null-fg` | `NULL` badge pill text | **#7a7a7a** | **#737373** |
+| `--qr-diff-edit-bg` | Staged cell update highlight | **#34301a** | **#fdf3d3** |
+| `--qr-diff-insert-bg` | Staged row insert highlight | **#1b3326** | **#dff3e8** |
+| `--qr-diff-delete-bg` | Staged row delete highlight | **#3a2023** | **#fbe4e4** |
+| `--qr-status-ok` | Connected badge, healthy cache hit, index scan | **#3ecf8e** | **#1a9a68** |
+| `--qr-status-warn` | Slow query, lock wait, seq scan warning | **#e5b340** | **#b7791f** |
+| `--qr-status-err` | Query error, disconnected, Prod env badge | **#e5645f** | **#d1453b** |
+
+Additional implementation tokens (not part of the original table): `--qr-on-brand` (text on the accent fill), `--qr-shadow-pop` / `--qr-shadow-edge` (soft shadows for floating surfaces and hairline edges), `--qr-menu-hover`, `--qr-btn-bg` / `--qr-btn-bg-hover`, `--qr-seg-bg`, `--qr-brand-soft` and `--qr-chart-2`, plus the chadcn scrollbar tokens `--of-scrollbar` (`#4a4a4a` dark, `#c4c4c4` light), `--of-scrollbar-width` (6 px) and `--of-scrollbar-inset` (2 px). `--qr-shadow-pop` is deliberately faint (alpha 0.30 dark, 0.10 light) and used only by floating overlays. The palette is neutral near-black (`#1c1c1c` canvas, `#2e2e2e` hairlines) and near-white, with one restrained green accent; there are no gradients, because the engine ignores border-radius on them.
 
 ### 2. SQL syntax highlight tokens
 
 | Token | Role | **QuarryDark** | **QuarryLight** |
 | --- | --- | --- | --- |
-| `--qr-syn-kw` | SQL keywords (`SELECT`, `FROM`, `JOIN`, `EXPLAIN`) | **#7dd3fc** | **#0369a1** |
-| `--qr-syn-fn` | Built-in functions (`COUNT`, `COALESCE`, `NOW`) | **#c4b5fd** | **#6d28d9** |
-| `--qr-syn-str` | String literals | **#86efac** | **#15803d** |
-| `--qr-syn-num` | Numeric literals | **#fdba74** | **#c2410c** |
-| `--qr-syn-type` | Data types (`BIGINT`, `JSONB`, `TIMESTAMPTZ`) | **#f9a8d4** | **#be185d** |
-| `--qr-syn-comment` | `--` and `/* ... */` comments | **#64748b** | **#94a3b8** |
-| `--qr-syn-op` | Operators and punctuation | **#94a3b8** | **#475569** |
+| `--qr-syn-kw` | SQL keywords (`SELECT`, `FROM`, `JOIN`, `EXPLAIN`) | **#8ab4f8** | **#2563a8** |
+| `--qr-syn-fn` | Built-in functions (`COUNT`, `COALESCE`, `NOW`) | **#c3a6e8** | **#7c4fb3** |
+| `--qr-syn-str` | String literals | **#7fc99a** | **#2f7d4f** |
+| `--qr-syn-num` | Numeric literals | **#e0a875** | **#b45f1a** |
+| `--qr-syn-type` | Data types (`BIGINT`, `JSONB`, `TIMESTAMPTZ`) | **#e59bb5** | **#b13e6a** |
+| `--qr-syn-comment` | `--` and `/* ... */` comments | **#6b6b6b** | **#9a9a9a** |
+| `--qr-syn-op` | Operators and punctuation | **#9a9a9a** | **#5a5a5a** |
 
 ### 3. Environment safety badges
 
 | Tag | Meaning | **QuarryDark** | **QuarryLight** |
 | --- | --- | --- | --- |
-| `Local` | Local SQLite or dev Postgres | **#34d399** | **#059669** |
-| `Staging` | Shared staging database | **#fbbf24** | **#d97706** |
-| `Prod` | Production (defaults to read-only lock banner) | **#f87171** | **#dc2626** |
+| `Local` | Local SQLite or dev Postgres | **#3ecf8e** | **#1a9a68** |
+| `Staging` | Shared staging database | **#e5b340** | **#b7791f** |
+| `Prod` | Production (defaults to read-only lock banner) | **#e5645f** | **#d1453b** |
 
 ---
 
@@ -319,13 +321,13 @@ done:
 
 | Phase | File | Complete | Partial | Open |
 | --- | --- | ---: | ---: | ---: |
-| Phase 01: Shell, dark/light themes, and connection manager | [phase-01-shell-theme-and-connections.md](phase-01-shell-theme-and-connections.md) | 0 | 0 | **12** |
-| Phase 02: SQLite & PostgreSQL drivers and schema explorer | [phase-02-drivers-and-schema-explorer.md](phase-02-drivers-and-schema-explorer.md) | 0 | 0 | **12** |
-| Phase 03: SQL editor, autocomplete, async runner, and EXPLAIN | [phase-03-sql-editor-and-query-execution.md](phase-03-sql-editor-and-query-execution.md) | 0 | 0 | **12** |
-| Phase 04: Virtualized data grid, staged edits, and import/export | [phase-04-data-grid-editing-and-io.md](phase-04-data-grid-editing-and-io.md) | 0 | 0 | **12** |
-| Phase 05: Live database monitoring and slow-query diagnostics | [phase-05-live-monitoring-and-diagnostics.md](phase-05-live-monitoring-and-diagnostics.md) | 0 | 0 | **10** |
-| Phase 06: Command palette, accessibility, benchmarks, and verification | [phase-06-polish-accessibility-and-verification.md](phase-06-polish-accessibility-and-verification.md) | 0 | 0 | **10** |
-| **Total** | | **0** | **0** | **68** |
+| Phase 01: Shell, dark/light themes, and connection manager | [phase-01-shell-theme-and-connections.md](phase-01-shell-theme-and-connections.md) | 12 | 0 | **0** |
+| Phase 02: SQLite & PostgreSQL drivers and schema explorer | [phase-02-drivers-and-schema-explorer.md](phase-02-drivers-and-schema-explorer.md) | 10 | 2 | **0** |
+| Phase 03: SQL editor, autocomplete, async runner, and EXPLAIN | [phase-03-sql-editor-and-query-execution.md](phase-03-sql-editor-and-query-execution.md) | 12 | 0 | **0** |
+| Phase 04: Virtualized data grid, staged edits, and import/export | [phase-04-data-grid-editing-and-io.md](phase-04-data-grid-editing-and-io.md) | 12 | 0 | **0** |
+| Phase 05: Live database monitoring and slow-query diagnostics | [phase-05-live-monitoring-and-diagnostics.md](phase-05-live-monitoring-and-diagnostics.md) | 9 | 1 | **0** |
+| Phase 06: Command palette, accessibility, benchmarks, and verification | [phase-06-polish-accessibility-and-verification.md](phase-06-polish-accessibility-and-verification.md) | 8 | 2 | **0** |
+| **Total** | | **63** | **5** | **0** |
 
 ---
 
