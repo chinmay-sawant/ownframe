@@ -11,6 +11,7 @@ import (
 	"image"
 	"math"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -1158,9 +1159,13 @@ body { margin: 0 }
 // newTransitionWirePage draws the class-change fixture with retained state so
 // PatchElement can splice it.
 func newTransitionWirePage(t *testing.T) *Page {
+	return newTransitionWirePageWithHTML(t, transitionWireHTML)
+}
+
+func newTransitionWirePageWithHTML(t *testing.T, html string) *Page {
 	t.Helper()
 
-	p, err := New(Config{HTML: transitionWireHTML, Width: 200, Height: 100, RetainState: true})
+	p, err := New(Config{HTML: html, Width: 200, Height: 100, RetainState: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1251,13 +1256,18 @@ func TestPatchElementStartsAutomaticTransitions(t *testing.T) {
 // the page hook: the patch captures the operation the running renderer wrote,
 // so the second run starts at the paint on screen.
 func TestInterruptedClassChangeReversesFromTheScreen(t *testing.T) {
-	p := newTransitionWirePage(t)
+	// The destination-only negative delay starts the first run at 25% on the
+	// page's real clock; removing the class also removes that delay.
+	html := strings.NewReplacer(
+		"transition-duration: 400ms;", "transition-duration: 4s;",
+		"#target.on {", "#target.on { transition-delay: -1s;",
+	).Replace(transitionWireHTML)
+	p := newTransitionWirePageWithHTML(t, html)
 	ctx := context.Background()
 	patchTargetClass(t, p, "on")
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
-	p.motion.Step(p.draw.Display, time.Now().Add(100*time.Millisecond))
 	presented := transitionWireOp(t, p).R
 	if presented <= 0 || presented >= 1 {
 		t.Fatalf("the first run did not reach an intermediate paint: %v", presented)
@@ -1273,8 +1283,8 @@ func TestInterruptedClassChangeReversesFromTheScreen(t *testing.T) {
 	}
 
 	// The reverse is shortened by the progress already spent, so it finishes
-	// well inside the next 200ms rather than after the declared duration.
-	p.motion.Step(p.draw.Display, time.Now().Add(200*time.Millisecond))
+	// before the full four-second declared duration.
+	p.motion.Step(p.draw.Display, time.Now().Add(2*time.Second))
 	if got := transitionWireOp(t, p).R; !transitionWireNear(got, 0) {
 		t.Fatalf("shortened reversal end = %v, want 0", got)
 	}
