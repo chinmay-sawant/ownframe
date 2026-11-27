@@ -13,6 +13,7 @@ const (
 	largeLayoutWidth = 2400
 	largeLayoutScale = 150
 	baseLayoutScale  = 100
+	cssFractionScale = 100
 )
 
 // responsiveTheme scales the Spotify rules at wide viewport breakpoints.
@@ -73,6 +74,6 @@ func scaleCSSLength(length float64, scale int) string {
 		return strconv.Itoa(scaled)
 	}
 
-	scaled := math.Round(length*float64(scale)/baseLayoutScale*100) / 100
+	scaled := math.Round(length*float64(scale)/baseLayoutScale*cssFractionScale) / cssFractionScale
 	return strconv.FormatFloat(scaled, 'f', -1, 64)
 }

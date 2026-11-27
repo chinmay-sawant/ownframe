@@ -11,4 +11,3 @@ docs/demos/wispr-flow.webp
 frontend/public/demos/desktop-cat.webp
 frontend/public/demos/teams.webp
 frontend/public/demos/trade.webp
-frontend/public/demos/wispr-flow.webp
