@@ -2,7 +2,7 @@
 
 .srch-grid {
   display: grid;
-  grid-template-columns: repeat(4, 246px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-top: 12px;
 }
@@ -15,7 +15,6 @@
    the border box, so the tile does not need the clip. */
 .srch-tile {
   position: relative;
-  width: 246px;
   height: 116px;
   box-sizing: border-box;
   padding: 12px;

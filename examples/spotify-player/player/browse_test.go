@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -105,7 +106,10 @@ func TestBrowseHoverKeepsGenreArtworkAndBackground(t *testing.T) {
 			if i == len(tones) {
 				var found bool
 				for _, op := range display.Ops {
-					if op.Kind == layout.DisplayOpFillRect && op.X == x && op.Y == y && op.W == w && op.H == h {
+					const tolerance = 0.01
+					if op.Kind == layout.DisplayOpFillRect &&
+						math.Abs(op.X-x) < tolerance && math.Abs(op.Y-y) < tolerance &&
+						math.Abs(op.W-w) < tolerance && math.Abs(op.H-h) < tolerance {
 						tones = append(tones, [3]float64{op.R, op.G, op.B})
 						found = true
 						break

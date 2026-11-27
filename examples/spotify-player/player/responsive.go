@@ -34,7 +34,6 @@ func responsiveTheme() string {
 		theme.WriteString(strconv.Itoa(layout.width))
 		theme.WriteString("px) {\n")
 		theme.WriteString(scaleCSS(css, layout.scale))
-		theme.WriteString("\n.page { height: 96.5%; }\n")
 		theme.WriteString("\n}\n")
 	}
 

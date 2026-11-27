@@ -1,6 +1,6 @@
 .brw-screen { margin-top: 16px; }
 
-.brw-heroes { display: grid; grid-template-columns: repeat(3, 336px); gap: 16px; margin-top: 14px; }
+.brw-heroes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 14px; }
 
 .brw-hero {
   box-sizing: border-box;
@@ -37,7 +37,7 @@
 
 .brw-head { font-size: 18px; font-weight: 700; margin: 22px 0 0; }
 
-.brw-grid { display: grid; grid-template-columns: repeat(6, 160px); gap: 14px; margin-top: 12px; }
+.brw-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; margin-top: 12px; }
 
 .brw-tile {
   box-sizing: border-box;
