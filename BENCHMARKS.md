@@ -205,3 +205,35 @@ The lifetime multiplier compounds the sequential phases of optimization ($\text{
 | HTML generation (`Config.Render` vs `TemplateExecute`) | `2,400 µs` · `518.9 KB` · `26,730 allocs` | **`64.45 µs`** · **`3.06 KB`** · **`991 allocs`** | **`-97.3%` (`37.2x`)** | **`-99.4%` bytes**, **`-96.3%` allocs** |
 | DisplayList (`Options.CullWindow` 600 px vs full) | `9.73 ms` · `2.88 MB` · `304 allocs` | **`1.24 ms`** · **`1.82 MB`** · **`261 allocs`** | **`-87.2%` (`7.83x`)** | **`-36.7%` bytes**, **`-14.1%` allocs** |
 
+---
+
+## 9. Retained DOM Mutation & Copy-on-Write Batch Relayout (`feat/retained-dom-mutation`, 2026-11-28)
+
+*Measured on `13th Gen Intel(R) Core(TM) i7-13700HX`, Go `1.26.11` (`linux/amd64`), median of 3 runs via `BenchmarkListPatchVsRebuild`, `BenchmarkRetainedMutations`, and `blinkless/layout.BenchmarkRelayoutElements1000Rows`.*
+
+### `ownframe` End-to-End 1,000-Row Patching (`BenchmarkListPatchVsRebuild`)
+
+| Benchmark | `v0.0.8` Baseline | Pass 1 (CoW Box Graph + Lazy Owners) | Pass 2 (`SheetVersion` + `DiffDirect`) | Total Speedup vs. Baseline | Memory (Baseline -> Pass 2) | Allocs |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `PatchElement1Row` | `584 µs` | `361.7 µs` | **`176.5 µs`** | **`3.31x faster` (`-69.8%`)** | `208 KB` -> **`77.9 KB` (`-62.5%`)** | `102` -> **`75`** |
+| `PatchElements10Rows` | `815 µs` | `679.9 µs` | **`452.6 µs`** | **`1.80x faster` (`-44.5%`)** | `275 KB` -> **`249.7 KB` (`-9.2%`)** | `624` -> **`540`** |
+| `FullRebuild1Row` *(reference)* | `16.85 ms` | `17.30 ms` | **`15.28 ms`** | **`PatchElement1Row` is `86.6x` faster** | `6.37 MB` -> `6.05 MB` | `40,275` (**`537x` fewer** on 1-row patch) |
+
+### `blinkless` Engine Subtree Relayout (`BenchmarkRelayoutElements1000Rows`)
+
+| Benchmark | Baseline | After Pass 1 | Speedup | Memory (Before -> After) | Allocs |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| `Text1Row` | `471.5 µs` | **`121.5 µs`** | **`3.88x faster` (`-74.2%`)** | `222.2 KB` -> **`76.7 KB` (`-65.5%`)** | `83` -> **`67`** |
+| `TextLastRow` | `635.6 µs` | **`175.1 µs`** | **`3.63x faster` (`-72.5%`)** | `216.9 KB` -> **`76.2 KB` (`-64.9%`)** | `79` -> **`63`** |
+| `Text10Rows` | `729.7 µs` | **`432.1 µs`** | **`1.69x faster` (`-40.8%`)** | `290.8 KB` -> **`249.1 KB` (`-14.3%`)** | `622` -> **`537`** |
+| `BgRestyle1Row` | `529.2 µs` | **`154.9 µs`** | **`3.42x faster` (`-70.7%`)** | `127.9 KB` -> `220.9 KB` | `81` -> `95` |
+
+### Retained Mutation Regression Baselines (`BenchmarkRetainedMutations`)
+
+| Benchmark | Median Time | Bytes/op | Allocs/op |
+| :--- | ---: | ---: | ---: |
+| `ClassToggle1Row` *(1,000 rows, `AddClass` / `RemoveClass`)* | **`1.29 ms`** | `517.1 KB` | `148` |
+| `AttributeSetRemove1Row` *(1,000 rows, `Attribute` / `RemoveAttribute`)* | **`1.26 ms`** | `499.2 KB` | `144` |
+| `StructuralAppendRemove` *(50-row feed, `AppendHTML` / `RemoveElement`)* | **`236.8 µs`** | `172.2 KB` | `243` |
+| `StructuralSetInnerHTML` *(replacing feed children with HTML fragment)* | **`209.2 µs`** | `660.6 KB` | `189` |
+
