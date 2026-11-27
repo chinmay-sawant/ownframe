@@ -47,6 +47,36 @@ func TestDevFrameSections(t *testing.T) {
 	}
 }
 
+func TestDevFrameRowsFitMaximizedDock(t *testing.T) {
+	t.Parallel()
+
+	s := newDevShell(newDevScreen())
+	s.screenW = 1920
+	s.screenH = 996
+	s.perf = true
+	s.dev.tab = devTabFrame
+	s.dev.sampler.last = time.Now()
+	s.perfHooks.devPipelinePerf = func(host.Stats) (time.Duration, time.Duration, time.Duration, time.Duration, int, int, int, bool) {
+		return 0, 0, 0, 0, 0, 0, 0, true
+	}
+	s.devLayout()
+
+	rowsHeight := float64(len(s.dev.rows)) * devLineHeight()
+	if rowsHeight > s.dev.content.H {
+		t.Fatalf("Frame rows need %.0fpx across %d rows, maximized dock has %.0fpx", rowsHeight, len(s.dev.rows), s.dev.content.H)
+	}
+	if s.dev.scroll != 0 {
+		t.Fatalf("maximized Frame tab scrolled to %v", s.dev.scroll)
+	}
+
+	s.screenH = 600
+	s.devLayout()
+	rowsHeight = float64(len(s.dev.rows)) * devLineHeight()
+	if rowsHeight <= s.dev.content.H {
+		t.Fatalf("short dock has %.0fpx for %.0fpx of Frame rows, want scroll", s.dev.content.H, rowsHeight)
+	}
+}
+
 // TestDevFrameReloadErrorInk checks the error ink.
 func TestDevFrameReloadErrorInk(t *testing.T) {
 	t.Parallel()

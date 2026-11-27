@@ -15,7 +15,7 @@ func (s *shell) devFrameRows(width float64) []devRow {
 	st := s.dev.stats
 	appW, appH := s.app.Size()
 	rs := []devRow{}
-	h := func(s string) { rs = append(rs, devRow{}, devRow{line: devText(strings.ToUpper(s), devDim)}) }
+	h := func(s string) { rs = append(rs, devRow{line: devText(strings.ToUpper(s), devDim)}) }
 	n := func(l string, v any) { rs = append(rs, devFrameRow(width, l, fmt.Sprint(v), devNumInk)) }
 	b := func(l string, v bool) { rs = append(rs, devFrameRow(width, l, fmt.Sprint(v), devBoolInk)) }
 	h("Sampling")

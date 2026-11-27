@@ -16,7 +16,7 @@ body {
   box-sizing: border-box;
   display: grid;
   grid-template-columns: 280px 1fr;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) 88px;
   gap: 8px;
 }
 

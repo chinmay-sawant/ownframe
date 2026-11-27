@@ -51,12 +51,11 @@
 
 .rad-sect { margin-top: 20px; }
 
-.rad-grid { display: grid; grid-template-columns: repeat(3, 330px); gap: 16px; margin-top: 12px; }
+.rad-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 12px; }
 
 .rad-card {
   position: relative;
   box-sizing: border-box;
-  width: 330px;
   height: 226px;
   padding: 12px;
   background-color: #181818;

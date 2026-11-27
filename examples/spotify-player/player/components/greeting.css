@@ -2,7 +2,7 @@
 
 .greet-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
 
-.picks { display: grid; grid-template-columns: repeat(3, 341px); gap: 8px; margin-top: 8px; }
+.picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 
 .pick {
   height: 56px;

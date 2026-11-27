@@ -1,6 +1,10 @@
 <section class="shelf">
-  <div class="sect-head"><h2 class="sect-title">{{.ShelfTitle}}</h2><span class="show-all">Show all</span></div>
+  <h2 class="sect-title">{{.ShelfTitle}}</h2>
   <div class="cards">
-    {{range .Shelf}}<div id="card-{{.Index}}" data-action="card-{{.Index}}" class="card{{if .Active}} on{{end}}" style="background-image:url({{.Cover}})"><span class="card-title" data-action="card-{{.Index}}">{{.Title}}</span><span class="card-sub" data-action="card-{{.Index}}">Album · {{.Sub}}</span></div>{{end}}
+    {{range .Shelf}}<div id="card-{{.Index}}" data-action="card-{{.Index}}" class="card{{if .Active}} on{{end}}">
+      <div data-action="card-{{.Index}}" class="card-art" style="background-image:url({{.Cover}})"></div>
+      <span class="card-title" data-action="card-{{.Index}}">{{.Title}}</span>
+      <span class="card-sub" data-action="card-{{.Index}}">Album · {{.Sub}}</span>
+    </div>{{end}}
   </div>
 </section>
