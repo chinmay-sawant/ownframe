@@ -2,14 +2,14 @@ module github.com/chinmay-sawant/ownframe/examples
 
 go 1.26.11
 
-// The require pins the published ownframe tag v0.0.7. Keep the blinkless
+// The require pins the published ownframe tag v0.0.8. Keep the blinkless
 // version equal to the root go.mod. During development, re-add
 // `replace github.com/chinmay-sawant/ownframe => ../` and drop it again when
 // tagging examples/vX.Y.Z after the library tag.
 require (
 	github.com/brianvoe/gofakeit/v7 v7.18.0
 	github.com/chinmay-sawant/blinkless v0.1.10
-	github.com/chinmay-sawant/ownframe v0.0.7
+	github.com/chinmay-sawant/ownframe v0.0.8
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/hajimehoshi/ebiten/v2 v2.10.6
 	github.com/jackc/pgx/v5 v5.9.2
