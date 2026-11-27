@@ -529,8 +529,12 @@ type displayDecls struct {
 func setBoxes(p *Page, boxes []Box) {
 	old := p.boxes
 	w, h := canvasSize(p)
-	sameIDs := hit.SameIDs(old, boxes)
-	sameBacking := sameIDs && sameBoxList(old, boxes)
+	sameBacking := sameBoxList(old, boxes)
+	if sameBacking && p.contentOK && p.contentW == w && p.contentH == h {
+		p.hits = nil
+		return
+	}
+	sameIDs := sameBacking || hit.SameIDs(old, boxes)
 	var content image.Rectangle
 	var ok bool
 	if sameIDs && !sameBacking {

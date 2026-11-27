@@ -17,6 +17,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/state"
 	"html/template"
 	"image"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -53,8 +54,9 @@ var (
 
 // Page is one template and its picture.
 type Page struct {
-	title string
-	tpl   *template.Template
+	title    string
+	tpl      *template.Template
+	renderFn func(io.Writer, any) error
 	// dataMu guards data and the form-sync handoff below it. SetData
 	// takes it to publish new data; the redraw path takes it to run the
 	// template (shared) and to check, merge, and store the sync flags
@@ -103,6 +105,9 @@ type Page struct {
 	nav             nav.History
 	deepLinkSchemes map[string]struct{}
 	ff              formFocusState
+	cullWindow      bool
+	cullTop         int
+	cullBottom      int
 	picker          PickFunc
 	// hoverPatch re-lays one element's subtree for a hover-only change.
 	// Production pages use the engine patch; tests swap it per page to
@@ -167,30 +172,41 @@ func New(cfg Config) (*Page, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
-	source, htmlInfo, err := sourceHTML(cfg)
-	if err != nil {
-		return nil, err
-	}
-	if len(source) > MaxSourceSize {
-		path := cfg.File
-		if path == "" {
-			path = "html"
+	var (
+		source   string
+		htmlInfo os.FileInfo
+		entry    nav.Entry
+		tpl      *template.Template
+		err      error
+	)
+	if cfg.Render != nil {
+		entry = nav.Entry{Execute: true}
+	} else {
+		source, htmlInfo, err = sourceHTML(cfg)
+		if err != nil {
+			return nil, err
 		}
-		return nil, sourceTooLarge(path, int64(len(source)))
-	}
-	if err := validateHTML(source); err != nil {
-		return nil, err
+		if len(source) > MaxSourceSize {
+			path := cfg.File
+			if path == "" {
+				path = "html"
+			}
+			return nil, sourceTooLarge(path, int64(len(source)))
+		}
+		if err := validateHTML(source); err != nil {
+			return nil, err
+		}
+		entry = nav.Source(source, cfg.StaticHTML)
+		tpl, err = parseTemplate(entry)
+		if err != nil {
+			return nil, err
+		}
 	}
 	schemes, err := acceptedDeepLinkSchemes(cfg.DeepLinkSchemes)
 	if err != nil {
 		return nil, err
 	}
 	minW, minH := cfg.mins()
-	entry := nav.Source(source, cfg.StaticHTML)
-	tpl, err := parseTemplate(entry)
-	if err != nil {
-		return nil, err
-	}
 	themeSrc, themeInfo, err := sourceTheme(cfg)
 	if err != nil {
 		return nil, err
@@ -201,7 +217,29 @@ func New(cfg Config) (*Page, error) {
 	}
 	page := assemblePage(cfg, tpl, theme, themeSrc, entry, htmlInfo, themeInfo, minW, minH, schemes)
 	page.width, page.height = page.Clamp(cfg.Width, cfg.Height)
+	if page.cullWindow {
+		page.scroll.SetOn(true)
+		page.scroll.SetFn(page.updateCullWindow)
+	}
 	return page, nil
+}
+
+const (
+	defaultCullViewHeight = 600
+	minCullMarginPx       = 300
+)
+
+func (p *Page) updateCullWindow(offsetY, viewH int) bool {
+	if viewH <= 0 {
+		viewH = max(p.height, defaultCullViewHeight)
+	}
+	if p.cullBottom > p.cullTop && offsetY >= p.cullTop && offsetY+viewH <= p.cullBottom {
+		return false
+	}
+	margin := max(viewH, minCullMarginPx)
+	p.cullTop = max(0, offsetY-margin)
+	p.cullBottom = offsetY + viewH + margin
+	return true
 }
 
 // assemblePage builds the Page shell; New clamps the size after it.
@@ -213,6 +251,7 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 	p := &Page{
 		title:    title,
 		tpl:      tpl,
+		renderFn: cfg.Render,
 		theme:    theme,
 		themeSrc: themeSrc,
 		pageGeom: pageGeom{
@@ -228,6 +267,7 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		perfOptIn:        cfg.Perf,
 		motion:           motion.New(),
 		retainState:      cfg.RetainState,
+		cullWindow:       cfg.CullWindow,
 		lockView:         cfg.LockView,
 		allowTouchZoom:   !cfg.DisableTouchZoom,
 		disableWheelZoom: cfg.DisableWheelZoom,

@@ -32,6 +32,10 @@ github.com/brianvoe/gofakeit/v7 v7.18.0 h1:vn3tb6OKRUazCkzhotd8xEwz/mhkLFbDoR8OU
 github.com/brianvoe/gofakeit/v7 v7.18.0/go.mod h1:QXuPeBw164PJCzCUZVmgpgHJ3Llj49jSLVkKPMtxtxA=
 github.com/chinmay-sawant/blinkless v0.1.10-0.20261125195439-50ad332fb6d1 h1:djgIr7dM+wJj0NvxQeA1QaRumMj/MneVnElJOeQw8xI=
 github.com/chinmay-sawant/blinkless v0.1.10-0.20261125195439-50ad332fb6d1/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
+github.com/chinmay-sawant/blinkless v0.1.10-0.20261127145550-1860c9822c61 h1:PSL0tk8OjLOn6ZMgv6l4aeFqBMkjF50/c62+Ky/ThwY=
+github.com/chinmay-sawant/blinkless v0.1.10-0.20261127145550-1860c9822c61/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
+github.com/chinmay-sawant/blinkless v0.1.10 h1:7ELJ6qriikt6/DSyzjIW5k1cZx7EzFlE+d2fh6pSlaA=
+github.com/chinmay-sawant/blinkless v0.1.10/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
 github.com/chinmay-sawant/ownframe v0.0.7 h1:ZXHBIDXubh8pkTv/te1WDk5BWYSZEJcgMQq878GnXe4=
 github.com/chinmay-sawant/ownframe v0.0.7/go.mod h1:5bMlNcjdAD/cgfFumRMq3stOHBnkPOMjp6w5uV2h4EY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
