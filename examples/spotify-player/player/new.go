@@ -53,6 +53,7 @@ func NewWith(base string, engine *music.Engine) (*App, error) {
 		DevTools:    true,
 		Title:       "Spotify — Player",
 		HTML:        buildHTML(),
+		Theme:       responsiveTheme(),
 		Width:       DefaultWidth,
 		Height:      DefaultHeight,
 		MinWidth:    MinWidth,

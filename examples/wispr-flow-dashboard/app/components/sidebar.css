@@ -4,8 +4,8 @@
   width: 236px;
   flex: none;
   min-height: 100vh;
-  background: #f5f4f0;
-  padding: 13px 12px 16px;
+  background: #f4f1f7;
+  padding: 16px 14px 18px;
   box-sizing: border-box;
 }
 
@@ -25,8 +25,8 @@
 .side-logo {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 17px 8px 13px;
+  gap: 8px;
+  padding: 19px 8px 16px;
 }
 
 .logo-mark { width: 22px; height: 22px; }
@@ -34,8 +34,8 @@
 .logo-word { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
 
 .logo-pro {
-  background: #e9ddff;
-  color: #6d28d9;
+  background: #e9def8;
+  color: #54238f;
   font-size: 11px;
   font-weight: 700;
   line-height: 16px;
@@ -51,26 +51,29 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
+  padding: 10px 11px;
   border-radius: 8px;
   font-size: 14px;
   line-height: 18px;
-  color: #2c2a26;
-  background-color: #f5f4f0;
-  transition: background-color 120ms;
+  color: #453d4d;
+  background-color: #f4f1f7;
+  transition: background-color 140ms;
   margin-bottom: 2px;
 }
 
+.nav-item:hover { background-color: #ece7f2; }
+
 .nav-icon { width: 19px; height: 19px; flex: none; }
 
-.nav-item.on { background-color: #ece9e1; font-weight: 600; }
+.nav-item.on { background-color: #e9e1f4; color: #54238f; font-weight: 700; }
 
 .mobile-card {
   margin-top: auto;
   background: #fff;
-  border-radius: 10px;
+  border: 1px solid #e8e2ee;
+  border-radius: 12px;
   padding: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(47, 26, 75, 0.05);
 }
 
 .mobile-head { display: flex; align-items: center; gap: 7px; }
@@ -79,18 +82,18 @@
 
 .mobile-title { font-size: 13px; font-weight: 700; flex: 1; }
 
-.mobile-min { color: #8b877e; font-size: 15px; line-height: 15px; }
+.mobile-min { color: #6b6472; font-size: 15px; line-height: 15px; }
 
 .mobile-text {
   font-size: 12px;
   line-height: 16px;
-  color: #6f6b63;
+  color: #625b69;
   margin: 8px 0 10px;
 }
 
 .app-btn { width: 100%; }
 
-.sidebar.collapsed { width: 64px; padding: 13px 8px 16px; }
+.sidebar.collapsed { width: 64px; padding: 16px 8px 18px; }
 
 .sidebar.collapsed .logo-word,
 .sidebar.collapsed .logo-pro,
@@ -99,6 +102,6 @@
 
 .sidebar.collapsed .side-top { flex-direction: column; gap: 4px; }
 
-.sidebar.collapsed .side-logo { justify-content: center; padding: 15px 0 12px; }
+.sidebar.collapsed .side-logo { justify-content: center; padding: 17px 0 14px; }
 
-.sidebar.collapsed .nav-item { justify-content: center; padding: 9px 0; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 10px 0; }

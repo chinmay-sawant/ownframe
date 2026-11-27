@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"math"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -46,7 +47,7 @@ func TestBoxesCoverTheDashboard(t *testing.T) {
 		t.Fatalf("top cards y = %v %v %v", wpm.Y, fixes.Y, words.Y)
 	}
 
-	if wpm.W > 250 || words.W < 480 {
+	if wpm.W != fixes.W || math.Abs(words.W-2*wpm.W) > 0.01 {
 		t.Fatalf("top card widths = %v %v", wpm.W, words.W)
 	}
 

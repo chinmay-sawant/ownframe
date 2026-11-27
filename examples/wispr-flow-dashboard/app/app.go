@@ -28,6 +28,7 @@ func New() (*App, error) {
 	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Flow",
 		HTML:      buildHTML(),
+		Theme:     responsiveTheme(),
 		Width:     DefaultWidth,
 		Height:    DefaultHeight,
 		MinWidth:  MinWidth,

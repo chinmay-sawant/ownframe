@@ -16,17 +16,17 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.07em;
-  color: #8b877e;
+  color: #696270;
 }
 
-.lead-row { padding-top: 13px; padding-bottom: 13px; border-bottom: 1px solid #e8e4db; font-size: 14px; }
+.lead-row { padding-top: 13px; padding-bottom: 13px; border-bottom: 1px solid #ebe6ef; font-size: 14px; }
 
 .lead-you { background: #f1ecfb; border-radius: 8px; }
 
-.lead-rank { color: #8b877e; font-weight: 600; }
+.lead-rank { color: #696270; font-weight: 600; }
 
 .lead-friend { font-weight: 600; }
 
 .lead-right { text-align: right; }
 
-.lead-streak { color: #6f6b63; }
+.lead-streak { color: #625b69; }

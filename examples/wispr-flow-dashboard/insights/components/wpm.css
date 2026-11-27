@@ -12,7 +12,7 @@
   text-align: center;
 }
 
-.gauge-top { display: block; font-size: 15px; line-height: 18px; color: #8b877e; }
+.gauge-top { display: block; font-size: 15px; line-height: 18px; color: #696270; }
 
 .gauge-pct {
   display: block;
@@ -20,5 +20,5 @@
   font-size: 19px;
   font-weight: 600;
   line-height: 1.2;
-  color: #1a1a1a;
+  color: #241f2b;
 }

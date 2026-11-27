@@ -1,5 +1,7 @@
 .word-search { margin-top: 4px; }
 
+#word-search:focus { border-color: #ded7e5; outline: none; }
+
 .word-search-icon { display: flex; align-items: center; }
 
 .word-search-icon img { width: 18px; height: 18px; }
@@ -13,7 +15,7 @@
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #8b877e;
+  color: #696270;
 }
 
 .word-word { width: 30%; font-size: 14px; font-weight: 600; }

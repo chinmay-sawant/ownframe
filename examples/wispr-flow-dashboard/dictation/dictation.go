@@ -17,11 +17,12 @@ type DictRow struct {
 	Text string
 }
 
-// Default returns the dictation page data.
+// Default returns the dictation page data. TotalWords references the local
+// Wispr usage aggregate; the history rows remain sample content.
 func Default() Data {
 	return Data{
 		User:       "Chinmay",
-		TotalWords: "173.6K",
+		TotalWords: "424.6K",
 		WPM:        "145",
 		Streak:     "53",
 		Rows: []DictRow{

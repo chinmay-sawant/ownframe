@@ -23,7 +23,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 12px 0;
-  border-top: 1px solid #e8e4db;
+  border-top: 1px solid #ebe6ef;
 }
 
 .voice-step-num {
@@ -33,7 +33,7 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #1a1a1a;
+  background: #241f2b;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
@@ -47,7 +47,7 @@
 
 .voice-samples { min-height: 164px; }
 
-.voice-empty { font-size: 14px; color: #8b877e; margin: 10px 0 0; }
+.voice-empty { font-size: 14px; color: #696270; margin: 10px 0 0; }
 
 .voice-details { grid-column: 1 / span 2; }
 
@@ -56,10 +56,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 0;
-  border-top: 1px solid #e8e4db;
+  border-top: 1px solid #ebe6ef;
 }
 
-.voice-detail-label { font-size: 13px; color: #6f6b63; }
+.voice-detail-label { font-size: 13px; color: #625b69; }
 
 .voice-detail-value { font-size: 14px; font-weight: 600; }
 

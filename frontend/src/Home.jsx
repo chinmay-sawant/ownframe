@@ -32,7 +32,7 @@ const showcases = [
     title: 'Spotify Player',
     tag: 'Media Application',
     description: 'Play bundled audio, browse your library, and watch CSS animations respond to playback.',
-    image: `${import.meta.env.BASE_URL}demos/spotify-still.png`,
+    image: `${import.meta.env.BASE_URL}demos/spotify-still.webp`,
     alt: 'Spotify Player desktop demo with a sidebar and music library.',
     href: `${repository}/tree/master/examples/spotify-player`,
     link: 'View the Go example',

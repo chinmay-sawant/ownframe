@@ -8,13 +8,13 @@
 .tab {
   font-size: 15px;
   line-height: 18px;
-  color: #6f6b63;
+  color: #625b69;
   padding-bottom: 14px;
   border-bottom: 2px solid transparent;
 }
 
 .tab.on {
-  color: #1a1a1a;
-  border-bottom-color: #1a1a1a;
+  color: #241f2b;
+  border-bottom-color: #241f2b;
   font-weight: 600;
 }
