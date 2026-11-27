@@ -21,7 +21,8 @@
 }
 
 .bar {
-  width: 263px;
+  width: 34%;
+  max-width: 420px;
   height: 28px;
   border-radius: 6px;
   background: #1a5c5c;

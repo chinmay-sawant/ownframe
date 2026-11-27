@@ -9,8 +9,8 @@
 .snip-uses { font-size: 13px; white-space: nowrap; }
 
 .snip-toggle {
-  background: #ece9e1;
-  color: #6f6b63;
+  background: #eee8f6;
+  color: #625b69;
   border-radius: 999px;
   padding: 4px 12px;
   font-size: 12px;
@@ -18,4 +18,4 @@
   line-height: 16px;
 }
 
-.snip-on { background: #1a1a1a; color: #fff; }
+.snip-on { background: #241f2b; color: #fff; }

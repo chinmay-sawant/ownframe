@@ -47,7 +47,7 @@ export const showcaseSections = [
     before: 'The Spotify Player is a Go desktop app. ownframe renders its HTML and CSS with Blinkless, and Ebitengine handles the native window and bundled audio. It uses no WebView. Phone apps use ownframe\'s Ebitengine Mobile binding; this example does not have a mobile wrapper. Its `-web` mode serves a picture of the page over HTTP.',
     after: '[Try the live WebAssembly demo](frontend/public/demos/spotify-player/index.html) (compressed download, includes bundled audio)\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/spotify-player)',
     media: [
-      { src: 'frontend/public/demos/videos/spotify.webp', alt: 'Animated Spotify Player demo showing its Home, Browse, Profile, and Library screens', caption: 'Spotify Player', width: 780, height: 520, nativeDisplay: true },
+      { src: 'frontend/public/demos/videos/spotify.webp', alt: 'Animated Spotify Player demo showing Home, Search, Library, Liked Songs, Browse, Radio, Queue, Profile, and playlist screens', caption: 'Spotify Player', width: 780, height: 520, nativeDisplay: true },
     ],
   },
   {
@@ -94,7 +94,7 @@ export const showcaseSections = [
     before: 'The Wispr Flow example is an HTML and CSS interface rendered by ownframe.',
     after: '[Try the live WebAssembly demo](frontend/public/demos/wispr-flow/index.html) (52 MB download)\n\n[Watch the demo](https://x.com/chinmay_sawant_/status/2106788230154871126)\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/wispr-flow-dashboard)',
     media: [
-      { src: 'assets/screenshots/demos/wispr-flow.webp', animated: 'demos/wispr-flow.webp', autoplayPreview: true, alt: 'Wispr Flow example preview', caption: 'Wispr Flow', width: 1906, height: 1030 },
+      { src: 'assets/screenshots/demos/wispr-flow.webp', animated: 'demos/wispr-flow.webp', autoplayPreview: true, alt: 'Animated Wispr Flow dashboard showing Dictation, Notetaker, Insights, Dictionary, Snippets, Style, Transforms, Scratchpad, Invite, Free Month, Settings, Help, and Voice Profile screens', caption: 'Wispr Flow', width: 1906, height: 1165 },
     ],
   },
   {

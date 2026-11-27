@@ -31,7 +31,7 @@
   width: 148px;
   height: 148px;
   margin: 16px auto 0;
-  border: 1px solid #e8e4db;
+  border: 1px solid #ebe6ef;
   border-radius: 8px;
   padding: 8px;
   box-sizing: border-box;
@@ -40,7 +40,7 @@
 .getapp-text {
   font-size: 13px;
   line-height: 18px;
-  color: #6f6b63;
+  color: #625b69;
   margin: 14px 0 16px;
 }
 

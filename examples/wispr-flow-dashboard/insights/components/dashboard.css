@@ -1,8 +1,8 @@
-.page { position: relative; width: 100%; max-width: 1045px; margin: 0 auto; padding-top: 15px; box-sizing: border-box; }
+.page { position: relative; width: 100%; max-width: none; margin: 0 auto; padding: 34px 42px 56px; box-sizing: border-box; }
 
 .card {
   position: relative;
-  background: #f5f4f0;
+  background: #f4f1f7;
   border-radius: 8px;
   padding: 17px 18px;
   box-sizing: border-box;
@@ -20,7 +20,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #8b877e;
+  color: #696270;
   margin: 9px 0 0;
 }
 
@@ -40,7 +40,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6f6b63;
+  color: #625b69;
 }
 
 .info { display: block; width: 14px; height: 14px; }
@@ -61,7 +61,7 @@
   bottom: 22px;
   width: 188px;
   box-sizing: border-box;
-  background: #1a1a1a;
+  background: #241f2b;
   color: #fff;
   border-radius: 6px;
   padding: 8px 10px;
@@ -75,9 +75,9 @@
 
 .tip:hover .tip-bubble { display: block; }
 
-.top-grid { display: grid; grid-template-columns: 243px 243px 1fr; gap: 24px; margin-top: 46px; }
+.top-grid { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(360px, 2fr); gap: 24px; margin-top: 46px; }
 
-.bottom-grid { display: grid; grid-template-columns: 510px 511px; gap: 24px; margin-top: 24px; }
+.bottom-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; margin-top: 24px; }
 
 .card.stat { min-height: 184px; }
 

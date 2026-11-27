@@ -6,11 +6,11 @@
 
 .inv-list .h2 { margin-bottom: 8px; }
 
-.inv-person { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid #e8e4db; font-size: 14px; }
+.inv-person { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid #ebe6ef; font-size: 14px; }
 
 .inv-glyph { width: 17px; height: 17px; }
 
-.inv-mark { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #ece9e1; color: #4a4741; font-size: 11px; font-weight: 700; }
+.inv-mark { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eee8f6; color: #51495b; font-size: 11px; font-weight: 700; }
 
 @media (max-width: 760px) {
   .inv-share .row { flex-direction: column; align-items: stretch; }
