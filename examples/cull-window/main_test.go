@@ -10,7 +10,7 @@ func TestCullWindowExample(t *testing.T) {
 
 	ctx := context.Background()
 
-	full, err := newCullWindowPage(false)
+	full, err := newCullWindowPage(false, false, true)
 	if err != nil {
 		t.Fatalf("newCullWindowPage(false) failed: %v", err)
 	}
@@ -18,7 +18,7 @@ func TestCullWindowExample(t *testing.T) {
 		t.Fatalf("full Redraw failed: %v", err)
 	}
 
-	culled, err := newCullWindowPage(true)
+	culled, err := newCullWindowPage(true, false, true)
 	if err != nil {
 		t.Fatalf("newCullWindowPage(true) failed: %v", err)
 	}

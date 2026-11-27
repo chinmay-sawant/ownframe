@@ -113,14 +113,20 @@ func makeRows(n int) []rowItem {
 	return rows
 }
 
-func newCullWindowPage(cull bool) (*ownframe.Page, error) {
+func newCullWindowPage(cull, devtools, perf bool) (*ownframe.Page, error) {
+	title := "ownframe — cull-window ON (1,000 rows)"
+	if !cull {
+		title = "ownframe — cull-window OFF (1,000 rows)"
+	}
+
 	p, err := ownframe.New(ownframe.Config{
-		Title:      "ownframe — cull-window (1,000 rows)",
+		Title:      title,
 		HTML:       cullWindowHTML,
 		Width:      windowWidth,
 		Height:     windowHeight,
 		CullWindow: cull,
-		Perf:       true,
+		DevTools:   devtools,
+		Perf:       perf,
 	})
 	if err != nil {
 		return nil, err
