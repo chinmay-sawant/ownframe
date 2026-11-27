@@ -629,7 +629,7 @@ func (p *Player) SVGPaintValues() []SVGPaintValue {
 // no operation value. The bit sits above every cssmotion write field, so
 // cssmotion.Read and cssmotion.Write leave the operation at its captured paint
 // and the page restyles the raster through layout.RestyleInlineSVG instead.
-const SVGPaintMask Mask = 1 << 8
+const SVGPaintMask Mask = 1 << 15
 
 // svgPaintClass is the pseudo target class for an animation whose declarations
 // are all inline-SVG paint. The kind is unused: the class selects the element's

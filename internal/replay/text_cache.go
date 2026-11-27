@@ -174,12 +174,12 @@ func textRasterLayout(ink image.Rectangle) (size image.Point, dx, dy int, ok boo
 }
 
 // textRunMaxEntries and textRunMaxPixels bound what one page caches: at most
-// 256 baked runs holding 2M pixels (8 MB of GPU bytes). A page with more
+// 1024 baked runs holding 8M pixels (32 MB of GPU bytes). A page with more
 // runs than this keeps the most-recently-used; the least-recently-used
 // rasters are disposed.
 const (
-	textRunMaxEntries = 256
-	textRunMaxPixels  = 2 << 20
+	textRunMaxEntries = 1024
+	textRunMaxPixels  = 8 << 20
 )
 
 // textRasterEntry is one baked run, offset from the integer origin the key

@@ -19,13 +19,22 @@ func buildHTML() string {
 
 	for _, name := range []string{
 		"base.css", "motion.css",
-		"topbar.css", "rail.css",
-		"watchlist.css", "chart.css", "quote.css", "blotter.css",
-		"statusbar.css", "markets.css", "portfolio.css",
-		"orders.css", "news.css", "screener.css", "settings.css",
+		"topbar.css", "rail.css", "statusbar.css",
 		"layout-wide.css",
 	} {
 		b.WriteString(file("components/" + name))
+	}
+
+	b.WriteString(`{{if eq .Screen "watchlist"}}`)
+	for _, name := range []string{"watchlist.css", "chart.css", "quote.css", "blotter.css"} {
+		b.WriteString(file("components/" + name))
+	}
+	b.WriteString(`{{end}}`)
+
+	for _, screen := range []string{"markets", "portfolio", "orders", "news", "screener", "settings"} {
+		b.WriteString(`{{if eq .Screen "` + screen + `"}}`)
+		b.WriteString(file("components/" + screen + ".css"))
+		b.WriteString(`{{end}}`)
 	}
 
 	b.WriteString(shellBody)

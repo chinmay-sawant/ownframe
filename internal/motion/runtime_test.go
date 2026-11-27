@@ -367,6 +367,87 @@ func TestPromotedLayerStopsStepDamage(t *testing.T) {
 	}
 }
 
+// TestPromotedLayerBoxesStopsAnonymousStepDamage verifies that
+// SetPromotedLayerBoxes suppresses background damage by boxIndex for anonymous
+// boxes (box.ID == ""), and reuses its map with zero allocations.
+func TestPromotedLayerBoxesStopsAnonymousStepDamage(t *testing.T) {
+	r := New()
+	r.now = testClock
+	d := animatedDisplay("running", true)
+	d.Boxes[0].ID = ""
+
+	if err := r.Bind(d); err != nil {
+		t.Fatalf("bind: %v", err)
+	}
+	r.Step(d, testClock().Add(10*time.Millisecond))
+
+	boxes := []int{0}
+	r.SetPromotedLayerBoxes(boxes)
+	damage := r.Step(d, testClock().Add(30*time.Millisecond))
+	if !damage.Empty() {
+		t.Fatalf("promoted box damage = %v, want none", damage.Bounds())
+	}
+	if allocs := testing.AllocsPerRun(50, func() { r.SetPromotedLayerBoxes(boxes) }); allocs != 0 {
+		t.Fatalf("SetPromotedLayerBoxes allocs/op = %v, want 0", allocs)
+	}
+
+	r.SetPromotedLayerBoxes(nil)
+	damage = r.Step(d, testClock().Add(50*time.Millisecond))
+	if damage.Empty() {
+		t.Fatal("demoted box reported no damage")
+	}
+}
+
+// TestPromotedTransitionStopsStepDamage verifies that stepTransitions skips
+// background damage when the transitioning element is promoted.
+func TestPromotedTransitionStopsStepDamage(t *testing.T) {
+	t.Parallel()
+
+	old := &layout.Display{
+		Width: testWidth, Height: testHeight, PointsPerPixel: 1, PixelPerPoint: 1,
+		Ops: []layout.DisplayOp{
+			{ID: 1, Kind: layout.DisplayOpFillRect, X: 10, Y: 10, W: 20, H: 20, R: 1, Alpha: 1},
+		},
+		OpOwners: []int{0},
+		Boxes: []layout.Box{{
+			ID: "chip", Tag: "div", X: 10, Y: 10, W: 20, H: 20, ParentIndex: -1,
+			OperationIDs: []uint64{1},
+			Transitions:  []layout.Transition{{Property: "opacity", DurationMS: 200}},
+		}},
+	}
+	next := &layout.Display{
+		Width: testWidth, Height: testHeight, PointsPerPixel: 1, PixelPerPoint: 1,
+		Ops: []layout.DisplayOp{
+			{ID: 1, Kind: layout.DisplayOpFillRect, X: 10, Y: 10, W: 20, H: 20, R: 1, Alpha: 1},
+		},
+		OpOwners: []int{0},
+		Boxes: []layout.Box{{
+			ID: "chip", Tag: "div", X: 10, Y: 10, W: 20, H: 20, ParentIndex: -1,
+			OperationIDs: []uint64{1},
+			Transitions:  []layout.Transition{{Property: "opacity", DurationMS: 200}},
+		}},
+	}
+	old.Ops[0].SetPaintOpacity(1)
+	next.Ops[0].SetPaintOpacity(0.2)
+
+	r := New()
+	t0 := testClock()
+	captures := r.CaptureTransitions(old, next)
+	r.BindTransitions(next, captures, t0)
+
+	// Promoted by id: StepTransitions must emit no background damage.
+	r.SetPromotedLayers([]string{"chip"})
+	if dmg := r.StepTransitions(next, t0.Add(50*time.Millisecond)); !dmg.Empty() {
+		t.Fatalf("promoted transition damage = %v, want none", dmg.Bounds())
+	}
+
+	// Demoted: StepTransitions must emit background damage.
+	r.SetPromotedLayers(nil)
+	if dmg := r.StepTransitions(next, t0.Add(100*time.Millisecond)); dmg.Empty() {
+		t.Fatal("demoted transition reported no damage")
+	}
+}
+
 // splitDisplay is one card with a transform animation on its subtree and a
 // background-colour animation on its own fill. The two properties bind as two
 // entries that share the fill operation, which is the case the pause handoff
@@ -956,8 +1037,8 @@ func TestColourOnlyEntryDamagesItsPaint(t *testing.T) {
 	if err := r.Bind(d); err != nil {
 		t.Fatalf("bind: %v", err)
 	}
-	if got := r.entries[0].mask; got != fieldRGB {
-		t.Fatalf("colour mask = %b, want the colour field only", got)
+	if got := r.entries[0].mask; got != fieldRGB|fieldAlpha {
+		t.Fatalf("colour mask = %b, want colour RGB+Alpha fields only", got)
 	}
 
 	damage := r.Step(d, testClock().Add(50*time.Millisecond))

@@ -12,11 +12,11 @@ import (
 )
 
 // rasterMaxEntries and rasterMaxTotalPixels bound what one page caches: at
-// most 128 baked shape rasters holding 2M pixels (8 MB of GPU bytes). A
+// most 512 baked shape rasters holding 2M pixels (8 MB of GPU bytes). A
 // page with more shapes than this keeps the newest; the oldest rasters are
 // disposed.
 const (
-	rasterMaxEntries     = 128
+	rasterMaxEntries     = 512
 	rasterMaxTotalPixels = 2 << 20
 )
 

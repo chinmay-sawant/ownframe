@@ -35,6 +35,10 @@ type Runtime struct {
 	// promoted holds the element ids the compositor kept as retained layers
 	// on the last frame. Step leaves their page damage to the layer cache.
 	promoted map[string]struct{}
+	// promotedBoxes holds the box indices the compositor kept as retained
+	// layers on the last frame, so anonymous promoted layers suppress
+	// background damage by boxIndex as well as elementID.
+	promotedBoxes map[int]struct{}
 
 	// transitions is the second registry: one renderer per element, property,
 	// and target set. It shares the runtime and the Step call with the
@@ -128,17 +132,78 @@ func (r *Runtime) SetPromotedLayers(ids []string) {
 	}
 }
 
+// SetPromotedLayerBoxes tells the runtime which box indices the compositor
+// kept as retained layers on the last frame, so anonymous promoted layers can
+// suppress background damage by boxIndex as well as elementID.
+func (r *Runtime) SetPromotedLayerBoxes(boxes []int) {
+	if r == nil {
+		return
+	}
+	if len(boxes) == 0 {
+		r.promotedBoxes = nil
+
+		return
+	}
+
+	if r.promotedBoxes == nil {
+		r.promotedBoxes = make(map[int]struct{}, len(boxes))
+	} else {
+		clear(r.promotedBoxes)
+	}
+	for _, box := range boxes {
+		if box >= 0 {
+			r.promotedBoxes[box] = struct{}{}
+		}
+	}
+}
+
+// promotedBox reports whether boxIndex is currently promoted to a retained
+// layer.
+func (r *Runtime) promotedBox(boxIndex int) bool {
+	if r == nil || boxIndex < 0 || len(r.promotedBoxes) == 0 {
+		return false
+	}
+
+	_, ok := r.promotedBoxes[boxIndex]
+
+	return ok
+}
+
 // promotedEntry reports that the entry's changed paint lands in a retained
 // layer, so it needs no background repaint. A layout entry on the same
 // element still moves the page and keeps its damage.
 func (r *Runtime) promotedEntry(e *entry) bool {
-	if r == nil || len(r.promoted) == 0 || e.layout || e.svg {
+	if r == nil || e.layout || e.svg {
 		return false
 	}
+	if e.key.id != "" && len(r.promoted) > 0 {
+		if _, ok := r.promoted[e.key.id]; ok {
+			return true
+		}
+	}
 
-	_, ok := r.promoted[e.key.id]
+	return r.promotedBox(e.boxIndex)
+}
 
-	return ok
+// promotedTransition reports whether a live transition's element is currently
+// promoted to a retained layer (by element id or box index), so its sample
+// needs no background repaint.
+func (r *Runtime) promotedTransition(d *Display, e *transitionEntry) bool {
+	if r == nil {
+		return false
+	}
+	if e.key.element.id != "" && len(r.promoted) > 0 {
+		if _, ok := r.promoted[e.key.element.id]; ok {
+			return true
+		}
+	}
+	if len(r.promotedBoxes) > 0 && d != nil {
+		if box := transitionBoxIndex(d, e.key.element); box >= 0 {
+			return r.promotedBox(box)
+		}
+	}
+
+	return false
 }
 
 // visible reports whether the entry's border box is in or near the page's
@@ -254,6 +319,7 @@ func opsMutated(before, after []layout.DisplayOp, indices []int) bool {
 		a, b := &before[idx], &after[idx]
 		if a.X != b.X || a.Y != b.Y || a.W != b.W || a.H != b.H ||
 			a.R != b.R || a.G != b.G || a.B != b.B || a.Alpha != b.Alpha ||
+			a.Radius != b.Radius || a.RadiusY != b.RadiusY ||
 			a.Opacity() != b.Opacity() || a.XformValue() != b.XformValue() {
 			return true
 		}
@@ -695,14 +761,16 @@ const (
 	fieldMatrix
 	fieldOpacity
 	fieldRGB
+	fieldAlpha
+	fieldRadius
 )
 
 // maskAll is every field a target can carry. A zero mask writes nothing.
-const maskAll = fieldX | fieldY | fieldMatrix | fieldOpacity | fieldRGB
+const maskAll = fieldX | fieldY | fieldMatrix | fieldOpacity | fieldRGB | fieldAlpha | fieldRadius
 
 // fieldMaskOf narrows the driver's mask to the paint fields a player owns. A
-// full snapshot maps to maskAll; W, H, and Alpha are not driver write fields,
-// so they never appear here.
+// full snapshot maps to maskAll; W and H are not driver write fields, so they
+// never appear here.
 func fieldMaskOf(mask Mask) fieldMask {
 	if mask == 0 || mask == MaskAll {
 		return maskAll
@@ -722,6 +790,12 @@ func fieldMaskOf(mask Mask) fieldMask {
 	}
 	if mask&MaskRGB != 0 {
 		out |= fieldRGB
+	}
+	if mask&MaskAlpha != 0 {
+		out |= fieldAlpha
+	}
+	if mask&MaskRadius != 0 {
+		out |= fieldRadius
 	}
 	return out
 }

@@ -148,6 +148,9 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 		return err
 	}
 
+	if patch.HasStructuralEdit(edits) {
+		markFormDirty(p)
+	}
 	finishPatchedCommit(p, state)
 
 	return nil
@@ -212,7 +215,7 @@ func adoptSplicedPatch(p *Page, d *Display, paintOnly bool) *Display {
 	} else {
 		setDisplayBoxes(p, d)
 	}
-	dirtyFromDisplay(p, prev, d)
+	dirtyFromPatchedDisplay(p, prev, d)
 	p.generation++
 	p.layerGen++
 	p.stats.layouts++
@@ -362,10 +365,22 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 
 	touched := make([]bool, len(patches))
 	changed := false
+	structural := false
 	for i := range patches {
-		if patch.Apply(p.cache, patches[i].ID, patches[i].Edits) {
+		did, err := patch.Apply(p.cache, patches[i].ID, patches[i].Edits)
+		if err != nil {
+			if changed || did {
+				return failBatch(p, err)
+			}
+
+			return patch.Refuse(ErrPatchRefused, err)
+		}
+		if did {
 			touched[i] = true
 			changed = true
+			if patch.HasStructuralEdit(patches[i].Edits) {
+				structural = true
+			}
 		}
 	}
 	if !changed {
@@ -402,6 +417,9 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 		}
 	})
 	p.cache.SetStyled(styled)
+	if structural {
+		markFormDirty(p)
+	}
 	finishPatchedCommit(p, state)
 
 	return nil

@@ -184,15 +184,15 @@ func transitionClass(property string) (Kind, Mask, bool) {
 	case "transform":
 		return KindSubtree, MaskMatrix, true
 	case "background-color", "accent-color":
-		return KindFill, MaskRGB, true
+		return KindFill, MaskRGB | MaskAlpha, true
 	case "color", "text-decoration-color", "text-emphasis-color":
-		return KindInk, MaskRGB, true
+		return KindInk, MaskRGB | MaskAlpha, true
 	case "border-color", "border-top-color", "border-right-color",
 		"border-bottom-color", "border-left-color", "border-block-color",
 		"border-block-start-color", "border-block-end-color", "border-inline-color",
 		"border-inline-start-color", "border-inline-end-color", "outline-color",
 		"column-rule-color", "row-rule-color", "rule-color":
-		return KindStroke, MaskRGB, true
+		return KindStroke, MaskRGB | MaskAlpha, true
 	}
 	return 0, 0, false
 }
@@ -915,6 +915,11 @@ func paintChanged(a, b Paint, mask Mask) bool {
 	if mask&MaskAlpha != 0 && math.Abs(a.Alpha-b.Alpha) > transitionPaintEpsilon {
 		return true
 	}
+	if mask&MaskRadius != 0 &&
+		(math.Abs(a.Radius-b.Radius) > transitionPaintEpsilon ||
+			math.Abs(a.RadiusY-b.RadiusY) > transitionPaintEpsilon) {
+		return true
+	}
 	if mask&MaskMatrix != 0 {
 		am, bm := transitionMatrix(a), transitionMatrix(b)
 		return math.Abs(am.A-bm.A) > transitionPaintEpsilon ||
@@ -1433,12 +1438,22 @@ func (r *Runtime) stepTransitions(d *Display, now time.Time) Damage {
 			kept = append(kept, entry)
 			continue
 		}
-		before := transitionBounds(d, entry.indices)
+		mask := transitionMask(entry.key.property)
+		promoted := r.promotedTransition(d, &entry)
+		var before image.Rectangle
+		if !promoted {
+			before = transitionBounds(d, entry.indices)
+		}
 		active := entry.renderer.Step(now)
 		entry.sampled, entry.wrote, entry.active = true, true, active
 		r.stats.TransitionsSampled++
-		after := transitionBounds(d, entry.indices)
-		damage.Add(before.Union(after))
+		if !promoted {
+			after := before
+			if mask&(MaskX|MaskY|MaskMatrix) != 0 {
+				after = transitionBounds(d, entry.indices)
+			}
+			damage.Add(before.Union(after))
+		}
 		if active {
 			r.stats.TransitionsActive++
 			kept = append(kept, entry)

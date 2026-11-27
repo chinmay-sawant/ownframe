@@ -208,6 +208,60 @@ func Diff(prev, next *layout.Display) (Set, bool, int) {
 	return set, full, changed
 }
 
+// DiffDirect diffs prev and next without region hashing, comparing equal-length
+// op slices directly with SameOp. On spliced retained patches where unchanged
+// ops share string backing memory, direct comparison avoids hashing every byte
+// of every string and float in both displays.
+func DiffDirect(prev, next *layout.Display) (Set, bool, int) {
+	return diffDirectInner(prev, next, nil)
+}
+
+// DiffDirectWithBounds is the direct-comparison counterpart to DiffWithBounds.
+func DiffDirectWithBounds(prev, next *layout.Display) (Set, bool, int, *BoundsMemo) {
+	if prev == next {
+		return newSet(next.Width, next.Height), false, 0, nil
+	}
+	if prev.Width != next.Width || prev.Height != next.Height {
+		return Set{}, true, len(next.Ops), nil
+	}
+
+	memo := rentBoundsMemo(len(next.Ops))
+	set, full, changed := diffDirectInner(prev, next, memo)
+	return set, full, changed, memo
+}
+
+func diffDirectInner(prev, next *layout.Display, memo *BoundsMemo) (Set, bool, int) {
+	if prev.Width != next.Width || prev.Height != next.Height {
+		return Set{}, true, len(next.Ops)
+	}
+	if len(prev.Ops) != len(next.Ops) {
+		return diffByPosition(prev, next, memo)
+	}
+	if prev == next {
+		return newSet(next.Width, next.Height), false, 0
+	}
+
+	d := newSet(next.Width, next.Height)
+	changed := 0
+	for i := range prev.Ops {
+		if SameOp(&prev.Ops[i], &next.Ops[i]) {
+			continue
+		}
+		changed++
+		pb := OpBounds(&prev.Ops[i], prev)
+		nb := OpBounds(&next.Ops[i], next)
+		if memo != nil {
+			memo.Set(i, nb)
+		}
+		d.add(pb.Union(nb))
+		if d.full {
+			return d, true, changed
+		}
+	}
+
+	return d, false, changed
+}
+
 // DiffWithBounds diffs like Diff and also returns the next-side rounded
 // op bounds the diff already computed, so the perf accounting pass
 // reuses them instead of recomputing every bound a second time. The

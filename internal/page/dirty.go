@@ -51,6 +51,29 @@ func diffDisplayMemo(prev, next *Display) (dirtySet, bool, int) {
 	}, full, changed
 }
 
+func diffDisplayDirect(prev, next *Display) (dirtySet, bool, int) {
+	set, full, changed := dirty.DiffDirect(prev, next)
+
+	return dirtySet{
+		rects:   set.Rects,
+		n:       set.N,
+		added:   set.Added,
+		removed: set.Removed,
+	}, full, changed
+}
+
+func diffDisplayDirectMemo(prev, next *Display) (dirtySet, bool, int) {
+	set, full, changed, memo := dirty.DiffDirectWithBounds(prev, next)
+
+	return dirtySet{
+		rects:   set.Rects,
+		n:       set.N,
+		added:   set.Added,
+		removed: set.Removed,
+		memo:    memo,
+	}, full, changed
+}
+
 // freeMemo returns the diff's bounds memo for reuse. A nil memo is a
 // no-op.
 func (d dirtySet) freeMemo() {
@@ -261,6 +284,18 @@ func markToggle(p *Page, id string) {
 // on it also stores the changed, dirty, and region counters Stats reports;
 // TakeDirty clears only the region, never these counters.
 func dirtyFromDisplay(p *Page, prev, display *Display) {
+	dirtyFromDisplayWith(p, prev, display, diffDisplay, diffDisplayMemo)
+}
+
+func dirtyFromPatchedDisplay(p *Page, prev, display *Display) {
+	dirtyFromDisplayWith(p, prev, display, diffDisplayDirect, diffDisplayDirectMemo)
+}
+
+func dirtyFromDisplayWith(
+	p *Page,
+	prev, display *Display,
+	diffFn, diffMemoFn func(*Display, *Display) (dirtySet, bool, int),
+) {
 	if prev == nil {
 		markFull(p)
 		if p.perf {
@@ -285,7 +320,7 @@ func dirtyFromDisplay(p *Page, prev, display *Display) {
 	// that first marked full.
 	if p.dirty.Full {
 		if p.painted != nil && p.fullGen < p.generation {
-			d, full, changed := diffDisplayMemo(p.painted, display)
+			d, full, changed := diffMemoFn(p.painted, display)
 			if !full {
 				p.dirty.Full = false
 				markDisplayPartial(p, d, display, changed)
@@ -317,7 +352,7 @@ func dirtyFromDisplay(p *Page, prev, display *Display) {
 			return
 		}
 
-		d, _, changed := diffDisplay(prev, display)
+		d, _, changed := diffFn(prev, display)
 		markFull(p)
 		// This commit carries a mark that was already pending, so a later
 		// diff from painted cannot recover what the mark covered (an
@@ -338,7 +373,7 @@ func dirtyFromDisplay(p *Page, prev, display *Display) {
 		return
 	}
 
-	d, full, changed := diffDisplayMemo(prev, display)
+	d, full, changed := diffMemoFn(prev, display)
 	if full {
 		d.freeMemo()
 		markFull(p)
@@ -961,6 +996,16 @@ func (p *Page) SetPromotedLayers(ids []string) {
 	}
 
 	p.motion.SetPromotedLayers(ids)
+}
+
+// SetPromotedLayerBoxes tells the motion driver which box indices (including
+// anonymous elements without an id) the compositor kept as retained layers.
+func (p *Page) SetPromotedLayerBoxes(boxes []int) {
+	if p == nil || p.motion == nil {
+		return
+	}
+
+	p.motion.SetPromotedLayerBoxes(boxes)
 }
 
 func (p *Page) LayerSpecs(display *layout.Display) []host.LayerSpec {

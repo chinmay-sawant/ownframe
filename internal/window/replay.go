@@ -250,11 +250,11 @@ const maxRepaintRects = 24
 // The content can outgrow the canvas when a fixed root's children overflow, so
 // the grid and the full rect use the content. A frame with no damage blits
 // when the grid holds this generation and rebuilds it otherwise. A
-// full-content rect, a list longer than maxRepaintRects, or a rect that clamps
-// away rebuilds the grid. Otherwise every rect gets its own repaint; all
-// plans share one mode. clipX is the first page x the devtools dock hides:
-// damage right of it needs no pixels, and a clip that grew repaints the strip
-// the dock hid.
+// full-content rect or a list longer than maxRepaintRects rebuilds the grid;
+// rects completely outside the content are skipped. Otherwise every rect gets
+// its own repaint; all plans share one mode. clipX is the first page x the
+// devtools dock hides: damage right of it needs no pixels, and a clip that
+// grew repaints the strip the dock hid.
 func planRepaints(contentW, contentH int, st partialState, gen uint64, rects []image.Rectangle, ok bool, clipX int) []repaintPlan {
 	full := image.Rect(0, 0, contentW, contentH)
 	plans := st.plans[:0]
@@ -286,7 +286,7 @@ func planRepaints(contentW, contentH int, st partialState, gen uint64, rects []i
 	for _, rect := range rects {
 		inside := rect.Intersect(full)
 		if inside.Empty() {
-			return append(plans[:0], repaintPlan{mode: repaintBuffer, rect: full})
+			continue
 		}
 
 		visible := clipDockX(inside, clipX)

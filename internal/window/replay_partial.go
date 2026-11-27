@@ -45,10 +45,51 @@ func (s *shell) drawTileSurface(dst *ebiten.Image, frame surfaceFrame, stale boo
 	whole := scroll != s.partial.scroll
 	s.partial.scroll = scroll
 
-	// Prepare this frame's retained layers before planning, so their old ∪
-	// new damage joins the page's dirty rects and the tile pass can skip their
-	// owned operations.
-	layerDamage := s.renderer.BeginLayers(display, s.layerGeneration(), s.layerSpecs(display))
+	// Prefer top-composited retained layers (BeginViewportLayers) so moving
+	// layers composite onto dst in blitFrame without repainting static tiles
+	// every frame. Fall back to in-tile layer replay (BeginLayers) when layers
+	// are covered by later static operations and cannot safely composite on top.
+	prevTileLayers := s.partial.tileLayers
+	specs := s.layerSpecs(display)
+	gen := s.layerGeneration()
+	var layerDamage []image.Rectangle
+	var topLayers bool
+	if s.partial.tileFallback && s.partial.tileFallbackGen == gen && len(specs) > 0 {
+		layerDamage = s.renderer.BeginLayers(display, gen, specs)
+	} else {
+		s.partial.tileFallback = false
+		layerDamage = s.renderer.BeginViewportLayers(display, gen, specs, s.viewportPinZ())
+		topLayers = s.renderer.LayersActive(display)
+		if !topLayers && len(specs) > 0 {
+			var prevTopo []image.Rectangle
+			if topo := s.renderer.LayerTopologyDamage(); len(topo) > 0 {
+				prevTopo = append([]image.Rectangle(nil), topo...)
+			}
+			layerDamage = s.renderer.BeginLayers(display, gen, specs)
+			if s.renderer.LayersActive(display) {
+				s.partial.tileFallback = true
+				s.partial.tileFallbackGen = gen
+			}
+			if len(prevTopo) > 0 {
+				layerDamage = append(prevTopo, layerDamage...)
+			}
+		}
+	}
+	s.partial.tileLayers = topLayers
+	if topLayers {
+		s.syncPromotedLayers(display)
+		layerDamage = s.renderer.LayerTopologyDamage()
+		if !prevTileLayers && len(layerDamage) == 0 && len(specs) > 0 {
+			// Switching from in-tile layers to top-composited layers: rebuild
+			// the tiles so previously baked layer pixels do not remain underneath.
+			layerDamage = []image.Rectangle{image.Rect(0, 0, contentW, contentH)}
+		}
+	} else {
+		s.clearPromotedLayers()
+		if prevTileLayers {
+			whole = true
+		}
+	}
 
 	clipX := s.dockClipX(contentW)
 	rects, ok := frame.damage.TakeDirtyRects()
@@ -121,20 +162,35 @@ type layerPromoter interface {
 
 // syncPromotedLayers hands the active layer ids back to the page. A demoted
 // layer leaves the set, so its next sample damages the background again.
-func (s *shell) syncPromotedLayers() {
-	promoter, ok := s.app.(layerPromoter)
-	if !ok {
-		return
-	}
+type layerBoxPromoter interface {
+	SetPromotedLayerBoxes([]int)
+}
 
-	promoter.SetPromotedLayers(s.renderer.ActiveLayerIDs())
+func (s *shell) syncPromotedLayers(d *layout.Display) {
+	if promoter, ok := s.app.(layerPromoter); ok {
+		promoter.SetPromotedLayers(s.renderer.ActiveLayerIDs())
+	}
+	if boxPromoter, ok := s.app.(layerBoxPromoter); ok {
+		boxPromoter.SetPromotedLayerBoxes(s.renderer.ActiveLayerBoxIndices(d))
+	}
+}
+
+func (s *shell) clearPromotedLayers() {
+	if promoter, ok := s.app.(layerPromoter); ok {
+		promoter.SetPromotedLayers(nil)
+	}
+	if boxPromoter, ok := s.app.(layerBoxPromoter); ok {
+		boxPromoter.SetPromotedLayerBoxes(nil)
+	}
 }
 
 // demoteLayers drops every retained layer and clears the page's promoted set
 // when leaving an active layer-compositing path.
 func (s *shell) demoteLayers() {
+	s.partial.tileLayers = false
+	s.partial.tileFallback = false
 	s.renderer.DemoteLayers()
-	s.syncPromotedLayers()
+	s.clearPromotedLayers()
 }
 
 // ticking reports a page with a frame callback. A Page marks mutated ops
@@ -175,6 +231,9 @@ type partialState struct {
 	pins            int
 	focus           bool
 	whole           bool
+	tileLayers      bool
+	tileFallback    bool
+	tileFallbackGen uint64
 	scroll          image.Point
 	screen          image.Point
 	clipX           int

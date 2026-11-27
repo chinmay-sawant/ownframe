@@ -672,8 +672,8 @@ func TestBindLayoutBuildsOnePlayerPerElement(t *testing.T) {
 			layoutDecl(1, "height", "80px"),
 		}},
 		{Name: "round", Keyframes: []layout.Keyframe{
-			layoutDecl(0, "border-radius", "0px"),
-			layoutDecl(1, "border-radius", "12px"),
+			layoutDecl(0, "border-radius", "0px 4px"),
+			layoutDecl(1, "border-radius", "12px 16px"),
 		}},
 	}
 	display := &layout.Display{Keyframes: rules}

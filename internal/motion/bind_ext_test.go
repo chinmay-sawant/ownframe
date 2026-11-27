@@ -421,8 +421,8 @@ func TestBackgroundTargetsOnlyTheOwnerFill(t *testing.T) {
 	if !slices.Equal(bounds[0].Indices, []int{0}) {
 		t.Fatalf("background targets = %v, want the parent fill only", bounds[0].Indices)
 	}
-	if bounds[0].Mask != motion.MaskRGB {
-		t.Fatalf("background mask = %b, want RGB only", bounds[0].Mask)
+	if bounds[0].Mask != motion.MaskRGB|motion.MaskAlpha {
+		t.Fatalf("background mask = %b, want RGB+Alpha only", bounds[0].Mask)
 	}
 	if d.Ops[0].R != .5 || d.Ops[0].G != .5 || d.Ops[0].B != 0 {
 		t.Fatalf("parent fill = %v,%v,%v, want the sRGB midpoint .5,.5,0",
@@ -528,6 +528,30 @@ func TestOwnerFallbackReportsAGap(t *testing.T) {
 	}
 	if len(gaps) != 1 {
 		t.Fatalf("gaps = %v, want one owner-fallback gap", gaps)
+	}
+}
+
+// TestAnonymousBoxWithOpOwnersUsesOwnerScopedColor verifies that Runtime.Bind
+// passes the box's display index even when box.ID is empty, so owner-scoped
+// colour animations only mutate the box's own operations instead of its whole
+// subtree.
+func TestAnonymousBoxWithOpOwnersUsesOwnerScopedColor(t *testing.T) {
+	d := cardDisplay(running("tint"))
+	d.Boxes[0].ID = ""
+	d.Keyframes = colorRule("tint", "background-color", "#ff0000", "#00ff00")
+
+	r := motion.New()
+	if err := r.Bind(d); err != nil {
+		t.Fatalf("bind: %v", err)
+	}
+	if gaps := r.Stats().Gaps; len(gaps) != 0 {
+		t.Fatalf("gaps = %v, want none when OpOwners is populated", gaps)
+	}
+	wantR, wantG, wantB := d.Ops[2].R, d.Ops[2].G, d.Ops[2].B
+	r.Step(d, started().Add(500*time.Millisecond))
+	// Box 0 owns op 0; child box 1 owns op 2 (unchanged).
+	if d.Ops[2].R != wantR || d.Ops[2].G != wantG || d.Ops[2].B != wantB {
+		t.Fatalf("child fill mutated = %v,%v,%v, want unchanged %v,%v,%v", d.Ops[2].R, d.Ops[2].G, d.Ops[2].B, wantR, wantG, wantB)
 	}
 }
 
@@ -646,8 +670,8 @@ func TestBackgroundRecoloursACornerPath(t *testing.T) {
 		t.Fatalf("background targets = %v, want the path fill %d", bounds[0].Indices, fill)
 	}
 
-	if bounds[0].Mask != motion.MaskRGB {
-		t.Fatalf("background mask = %b, want RGB only", bounds[0].Mask)
+	if bounds[0].Mask != motion.MaskRGB|motion.MaskAlpha {
+		t.Fatalf("background mask = %b, want RGB+Alpha only", bounds[0].Mask)
 	}
 
 	strokeR, strokeG, strokeB := display.Ops[stroke].R, display.Ops[stroke].G, display.Ops[stroke].B

@@ -183,6 +183,11 @@ func (g *tileGrid) dispose() {
 // untouched tile, so the screen is complete when this returns.
 func (s *shell) blitFrame(dst *ebiten.Image, display *layout.Display, plans []repaintPlan, chrome []image.Rectangle, whole, stale bool) {
 	if s.blitFromTiles(dst, display, plans, chrome, whole, stale) {
+		if s.partial.tileLayers {
+			if clip := s.pinClip(dst); clip != nil {
+				s.renderer.DrawLayers(clip, display, -float64(s.scrollX), -float64(s.scrollY))
+			}
+		}
 		s.paintPinnedChrome(dst, display)
 
 		return
@@ -311,11 +316,11 @@ func (s *shell) blitFromTiles(dst *ebiten.Image, display *layout.Display, plans 
 		return s.showTilesWhole(dst, display)
 	}
 
-	// Pinned chrome paints over the screen after this blit. Restoring the
-	// visible unfixed tiles first keeps translucent fixed layers (such as
-	// modal backdrops or shadows) from compositing over their own pixels
-	// from the previous retained frame.
-	if whole || s.hasViewportOps() {
+	// Pinned chrome and top-composited retained layers paint over the screen
+	// after this blit. Restoring the visible unfixed tiles first keeps moving
+	// layers from leaving trails and translucent layers from compositing over
+	// their own pixels from the previous retained frame.
+	if whole || s.hasViewportOps() || s.partial.tileLayers {
 		vis := s.visibleRect()
 		if !vis.In(grid.content()) {
 			return s.showTilesWhole(dst, display)
@@ -443,6 +448,11 @@ func (s *shell) paintTile(d *layout.Display, g *tileGrid, col, row int, rect ima
 	s.partial.paintPx += part.Dx() * part.Dy()
 	g.markClean(col, row)
 	sub.Fill(s.pageBackground())
+	if s.partial.tileLayers {
+		s.renderer.DrawVisibleUnfixedZBackground(sub, d, -float64(tile.Min.X), -float64(tile.Min.Y), s.viewportPinZ())
+
+		return
+	}
 	if s.renderer.LayersActive(d) {
 		s.renderer.DrawVisibleUnfixedZLayers(sub, d, -float64(tile.Min.X), -float64(tile.Min.Y), s.viewportPinZ())
 

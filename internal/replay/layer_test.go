@@ -1543,3 +1543,167 @@ func TestLayerStoreChurnPrunesAndCloses(t *testing.T) {
 		t.Fatal("close did not clear churn map")
 	}
 }
+
+func TestLayerUniformOverflowClip(t *testing.T) {
+	const pt = 72.0 / 96.0
+	d := layerDisplay()
+	d.Boxes[1].ID = ""
+	d.Ops[1].SetOverflowClip(22*pt, 18*pt, 16*pt, 14*pt)
+	d.Ops[2].SetOverflowClip(22*pt, 18*pt, 16*pt, 14*pt)
+
+	var renderer Renderer
+	defer renderer.Close()
+
+	specs := []LayerSpec{{
+		BoxIndex: 1,
+		Matrix:   layerTranslate(10, 0),
+		Alpha:    1,
+	}}
+	damage := renderer.BeginLayers(d, 1, specs)
+	if len(damage) == 0 {
+		t.Fatal("uniform-clipped layer reported no damage")
+	}
+	stats := renderer.Layers()
+	if stats.Active != 1 || stats.Promoted != 1 {
+		t.Fatalf("stats = %+v, want active=1 promoted=1", stats)
+	}
+	layer := renderer.layers.entries[layerKey{id: "", box: 1, gen: 1}]
+	if layer == nil || !layer.hasClip {
+		t.Fatalf("layer = %+v, want hasClip=true", layer)
+	}
+	wantClip := image.Rect(22, 18, 38, 32)
+	if layer.clip != wantClip {
+		t.Fatalf("clip = %v, want %v", layer.clip, wantClip)
+	}
+	if !layer.pose.In(wantClip) {
+		t.Fatalf("pose %v escapes clip %v", layer.pose, wantClip)
+	}
+
+	boxes := renderer.ActiveLayerBoxIndices(d)
+	if len(boxes) != 1 || boxes[0] != 1 {
+		t.Fatalf("ActiveLayerBoxIndices = %v, want [1]", boxes)
+	}
+	if ids := renderer.ActiveLayerIDs(); len(ids) != 0 {
+		t.Fatalf("ActiveLayerIDs = %v, want empty for anonymous layer", ids)
+	}
+
+	// Drawing onto a dst outside the clip returns early without panic.
+	dst := ebiten.NewImage(16, 16)
+	defer dst.Deallocate()
+	renderer.drawLayerPose(dst, d, layer, 0, 0)
+
+	// Drawing onto a dst overlapping the clip succeeds.
+	full := ebiten.NewImage(120, 90)
+	defer full.Deallocate()
+	renderer.drawLayerPose(full, d, layer, 0, 0)
+}
+
+func TestLayerMixedOverflowClipRejected(t *testing.T) {
+	const pt = 72.0 / 96.0
+	active := layerTranslate(4, 0)
+
+	// One op clipped, one op unclipped.
+	d := layerDisplay()
+	d.Ops[1].SetOverflowClip(10*pt, 10*pt, 40*pt, 40*pt)
+	if _, reason := resolveLayer(d, LayerSpec{BoxIndex: 1, Matrix: active}, 1, nil, nil); reason != "mixed clip rects" {
+		t.Fatalf("clipped+unclipped reason = %q, want %q", reason, "mixed clip rects")
+	}
+
+	// Two ops with differing clip rects.
+	d.Ops[2].SetOverflowClip(12*pt, 10*pt, 40*pt, 40*pt)
+	if _, reason := resolveLayer(d, LayerSpec{BoxIndex: 1, Matrix: active}, 1, nil, nil); reason != "mixed clip rects" {
+		t.Fatalf("differing clips reason = %q, want %q", reason, "mixed clip rects")
+	}
+}
+
+// TestLayerBlendSiblingPromotion verifies that an unrelated mix-blend-mode
+// element on the page does not demote a separate animated retained layer, while
+// an element inside a blend group, a layer interleaved with a blend group, and
+// a viewport layer covered by a later blend group are still rejected.
+func TestLayerBlendSiblingPromotion(t *testing.T) {
+	const pt = 72.0 / 96.0
+	blendGroup := &layout.DisplayGroup{ID: 1, Mode: "multiply", Isolate: true}
+
+	// Build a page with an animated card and an unrelated blend-mode sibling.
+	makeDisplay := func(badgeX, badgeY float64) *layout.Display {
+		d := layerDisplay()
+		d.Boxes = append(d.Boxes, layout.Box{
+			ID: "badge", X: badgeX, Y: badgeY, W: 20, H: 20, ParentIndex: 0,
+		})
+		badgeOp := layout.DisplayOp{
+			Kind: layout.DisplayOpFillRect,
+			X:    badgeX * pt, Y: badgeY * pt, W: 20 * pt, H: 20 * pt,
+			G: 1, Alpha: 1,
+		}
+		badgeOp.SetBlendGroup(blendGroup)
+		d.Ops = append(d.Ops, badgeOp)
+		d.Order = append(d.Order, 3)
+		d.OpOwners = append(d.OpOwners, 2)
+		return d
+	}
+
+	// 1. Unrelated blend sibling promotes in BeginLayers and BeginViewportLayers,
+	//    and drawing uses the group plan so the blend group stays buffered.
+	d := makeDisplay(80, 50)
+	var renderer Renderer
+	defer renderer.Close()
+
+	specs := layerSpecsFor(d, layerTranslate(6, 0), 1)
+	renderer.BeginLayers(d, 1, specs)
+	if !renderer.LayersActive(d) {
+		t.Fatalf("unrelated blend sibling demoted BeginLayers: %+v", renderer.Layers())
+	}
+
+	dst := ebiten.NewImage(120, 90)
+	defer dst.Deallocate()
+	plansBefore := groupPlanBuildCount()
+	renderer.DrawVisibleUnfixedZBackground(dst, d, 0, 0, 0)
+	if groupPlanBuildCount() == plansBefore {
+		t.Fatal("DrawVisibleUnfixedZBackground bypassed the group plan on a display with blend groups")
+	}
+	renderer.DrawLayers(dst, d, 0, 0)
+	renderer.DrawVisibleUnfixedZLayers(dst, d, 0, 0, 0)
+	renderer.DrawRectUnfixedZLayers(dst, d, image.Rect(0, 0, 120, 90), 0)
+
+	renderer.DemoteLayers()
+	renderer.BeginViewportLayers(d, 1, specs, 0)
+	if !renderer.LayersActive(d) {
+		t.Fatalf("unrelated blend sibling demoted BeginViewportLayers: %+v", renderer.Layers())
+	}
+
+	// 2. An element whose own op is inside a blend group is still rejected.
+	dOwn := makeDisplay(80, 50)
+	badgeOp2 := layout.DisplayOp{
+		Kind: layout.DisplayOpFillRect,
+		X:    82 * pt, Y: 52 * pt, W: 10 * pt, H: 10 * pt,
+		B: 1, Alpha: 1,
+	}
+	badgeOp2.SetBlendGroup(blendGroup)
+	dOwn.Ops = append(dOwn.Ops, badgeOp2)
+	dOwn.Order = append(dOwn.Order, 4)
+	dOwn.OpOwners = append(dOwn.OpOwners, 2)
+	if _, reason := resolveLayer(dOwn, LayerSpec{
+		ElementID: "badge", BoxIndex: 2, Matrix: layerTranslate(4, 0), Alpha: 1,
+	}, 1, nil, nil); reason != "op inside a blend group" {
+		t.Fatalf("blended element reason = %q, want %q", reason, "op inside a blend group")
+	}
+
+	// 3. A blend group op sitting in paint order between firstRank and lastRank
+	//    must reject the interleaved layer.
+	dInterleaved := makeDisplay(80, 50)
+	dInterleaved.Order = []int{0, 1, 3, 2}
+	if _, reason := resolveLayer(dInterleaved, specs[0], 1, nil, nil); reason != "non-contiguous ops" {
+		t.Fatalf("interleaved blend group reason = %q, want %q", reason, "non-contiguous ops")
+	}
+
+	// 4. A later overlapping blend group still rejects BeginViewportLayers.
+	dOverlap := makeDisplay(25, 20)
+	renderer.DemoteLayers()
+	renderer.BeginViewportLayers(dOverlap, 2, specs, 0)
+	if renderer.LayersActive(dOverlap) {
+		t.Fatal("viewport path promoted a layer covered by a later blend group")
+	}
+	if got := renderer.Layers().Reasons[layerReasonCovered]; got != 1 {
+		t.Fatalf("covered reason = %d, want 1 (%v)", got, renderer.Layers().Reasons)
+	}
+}

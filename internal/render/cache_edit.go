@@ -40,6 +40,97 @@ func (c *Cache) SetText(elementID, text string) bool {
 	return c.doc.SetText(elementID, text)
 }
 
+// RemoveAttribute removes an attribute from an element in the cached tree and
+// reports whether the attribute existed and was removed.
+func (c *Cache) RemoveAttribute(elementID, name string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.doc == nil || elementID == "" || name == "" {
+		return false
+	}
+
+	return c.doc.RemoveAttribute(elementID, name)
+}
+
+// AddClass adds className to an element's class list in the cached tree and
+// reports whether the class list changed.
+func (c *Cache) AddClass(elementID, className string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.doc == nil || elementID == "" || className == "" {
+		return false
+	}
+
+	return c.doc.AddClass(elementID, className)
+}
+
+// RemoveClass removes className from an element's class list in the cached
+// tree and reports whether the class list changed.
+func (c *Cache) RemoveClass(elementID, className string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.doc == nil || elementID == "" || className == "" {
+		return false
+	}
+
+	return c.doc.RemoveClass(elementID, className)
+}
+
+// ToggleClass toggles className on an element's class list in the cached tree
+// and reports whether className is now present and whether the element existed.
+func (c *Cache) ToggleClass(elementID, className string) (bool, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.doc == nil || elementID == "" || className == "" {
+		return false, false
+	}
+
+	return c.doc.ToggleClass(elementID, className)
+}
+
+// RemoveElement detaches an element from its parent in the cached tree and
+// reports whether the element was removed.
+func (c *Cache) RemoveElement(elementID string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.doc == nil || elementID == "" {
+		return false
+	}
+
+	return c.doc.RemoveElement(elementID)
+}
+
+// SetInnerHTML replaces an element's children in the cached tree with the
+// parsed HTML fragment and reports whether the parent element existed.
+func (c *Cache) SetInnerHTML(parentID, fragment string) (bool, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.doc == nil || parentID == "" {
+		return false, nil
+	}
+
+	return c.doc.SetInnerHTML(parentID, fragment)
+}
+
+// AppendHTML appends the parsed HTML fragment as children of parentID in the
+// cached tree and reports whether the parent element existed.
+func (c *Cache) AppendHTML(parentID, fragment string) (bool, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.doc == nil || parentID == "" {
+		return false, nil
+	}
+
+	return c.doc.AppendHTML(parentID, fragment)
+}
+
 // RelayoutFor re-collects the sheets for the cached tree at the given
 // viewport and state and returns the styled document. The cached one stays
 // until the caller commits it with SetStyled, so a caller that refuses the

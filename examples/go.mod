@@ -8,7 +8,7 @@ go 1.26.11
 // tagging examples/vX.Y.Z after the library tag.
 require (
 	github.com/brianvoe/gofakeit/v7 v7.18.0
-	github.com/chinmay-sawant/blinkless v0.1.10
+	github.com/chinmay-sawant/blinkless v0.1.11
 	github.com/chinmay-sawant/ownframe v0.0.8
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/hajimehoshi/ebiten/v2 v2.10.6

@@ -39,7 +39,7 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	// under it.
 	specs := s.layerSpecs(d)
 	s.renderer.BeginViewportLayers(d, s.layerGeneration(), specs, s.viewportPinZ())
-	s.syncPromotedLayers()
+	s.syncPromotedLayers(d)
 	// Paint dirty rects separately so a moving chip costs its own box instead
 	// of the bounding box of every moving chip.
 	rects, changed := taker.TakeDirtyRects()

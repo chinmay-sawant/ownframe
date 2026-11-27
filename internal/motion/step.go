@@ -8,8 +8,8 @@ import (
 )
 
 // fieldCount is the number of paint fields sampled per keyframe. It stays in
-// step with the animFieldX..animFieldB indices in fields.go.
-const fieldCount = animFieldB + 1
+// step with the animFieldX..animFieldRadius indices in step.go.
+const fieldCount = animFieldRadius + 1
 
 // extraStops is the room reserved for the 0 and 1 sentinels.
 const extraStops = 2
@@ -89,6 +89,10 @@ func valueForField(field int) valueOf {
 		return green
 	case animFieldB:
 		return blue
+	case animFieldAlpha:
+		return colorAlpha
+	case animFieldRadius:
+		return borderRadius
 	}
 	return nil
 }
@@ -174,7 +178,7 @@ func sentinelBase(mode Composition, field int) float64 {
 		return 0
 	}
 	switch field {
-	case animFieldOpacity, animFieldR, animFieldG, animFieldB:
+	case animFieldOpacity, animFieldR, animFieldG, animFieldB, animFieldAlpha, animFieldRadius:
 		return 1
 	}
 	return 0
@@ -316,6 +320,10 @@ func baseFieldValue(base Paint, field int) float64 {
 		return base.G
 	case animFieldB:
 		return base.B
+	case animFieldAlpha:
+		return base.Alpha
+	case animFieldRadius:
+		return base.Radius
 	}
 	return 0
 }
@@ -366,12 +374,14 @@ func (t *effectTable) resetCursors() {
 
 type valueOf func(Keyframe) (float64, bool)
 
-func moveX(k Keyframe) (float64, bool)   { return k.X, k.Move }
-func moveY(k Keyframe) (float64, bool)   { return k.Y, k.Move }
-func opacity(k Keyframe) (float64, bool) { return k.Opacity, k.OpacitySet }
-func red(k Keyframe) (float64, bool)     { return k.R, k.ColorSet }
-func green(k Keyframe) (float64, bool)   { return k.G, k.ColorSet }
-func blue(k Keyframe) (float64, bool)    { return k.B, k.ColorSet }
+func moveX(k Keyframe) (float64, bool)        { return k.X, k.Move }
+func moveY(k Keyframe) (float64, bool)        { return k.Y, k.Move }
+func opacity(k Keyframe) (float64, bool)      { return k.Opacity, k.OpacitySet }
+func red(k Keyframe) (float64, bool)          { return k.R, k.ColorSet }
+func green(k Keyframe) (float64, bool)        { return k.G, k.ColorSet }
+func blue(k Keyframe) (float64, bool)         { return k.B, k.ColorSet }
+func colorAlpha(k Keyframe) (float64, bool)   { return k.ColorAlpha, k.ColorAlphaSet }
+func borderRadius(k Keyframe) (float64, bool) { return k.Radius, k.RadiusSet }
 
 // sample resolves one field at at. The live path uses the precomputed
 // effectTable; compose keeps this scan for callers that still hold a bare
@@ -441,6 +451,8 @@ const (
 	animFieldR       = 3
 	animFieldG       = 4
 	animFieldB       = 5
+	animFieldAlpha   = 6
+	animFieldRadius  = 7
 )
 
 // Canonical serialization for the engine re-projection pass.

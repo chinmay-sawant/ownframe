@@ -417,6 +417,7 @@ const (
 // binder reports a malformed value once instead of animating a wrong length.
 func LayoutKeyframes(rules []layout.KeyframesRule, name string) ([]Keyframe, error) {
 	source := ruleFor(rules, name)
+	uniformRadius := uniformBorderRadiusRule(source)
 	frames := make([]Keyframe, len(source))
 	for i, item := range source {
 		frame := Keyframe{Offset: item.Offset}
@@ -427,6 +428,9 @@ func LayoutKeyframes(rules []layout.KeyframesRule, name string) ([]Keyframe, err
 				continue
 			}
 			property := strings.ToLower(strings.TrimSpace(declaration.Property))
+			if property == "border-radius" && uniformRadius {
+				continue
+			}
 			if !layoutProperty(property) {
 				continue
 			}
@@ -441,6 +445,56 @@ func LayoutKeyframes(rules []layout.KeyframesRule, name string) ([]Keyframe, err
 	sort.SliceStable(frames, func(i, j int) bool { return frames[i].Offset < frames[j].Offset })
 
 	return frames, nil
+}
+
+// uniformBorderRadiusRule reports whether source declares at least one
+// border-radius keyframe and every border-radius declaration in the rule is a
+// uniform single-value absolute length (convertible to px). Such rules animate
+// op.Radius/op.RadiusY in place instead of triggering RelayoutElementWithOverrides.
+func uniformBorderRadiusRule(source []layout.Keyframe) bool {
+	found := false
+	for i := range source {
+		for _, declaration := range source[i].Declarations {
+			if !strings.EqualFold(strings.TrimSpace(declaration.Property), "border-radius") {
+				continue
+			}
+			found = true
+			if _, ok := parseUniformRadiusPx(declaration.Value); !ok {
+				return false
+			}
+		}
+	}
+	return found
+}
+
+// parseUniformRadiusPx parses a single non-negative absolute length (or
+// unitless 0) for border-radius and returns its value in CSS pixels.
+// Multi-value, elliptical (/), percentage, and font/viewport-relative values
+// return false so they remain on the engine relayout path.
+func parseUniformRadiusPx(raw string) (float64, bool) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" || strings.Contains(trimmed, "/") {
+		return 0, false
+	}
+	fields := strings.Fields(trimmed)
+	if len(fields) != 1 {
+		return 0, false
+	}
+	number, unit, numeric := splitLayoutNumber(fields[0])
+	if !numeric || number < 0 {
+		return 0, false
+	}
+	switch strings.ToLower(unit) {
+	case "":
+		if number != 0 {
+			return 0, false
+		}
+		return 0, true
+	case "px", "pt", "pc", "in", "cm", "mm":
+		return resolveAbsoluteLength(number, strings.ToLower(unit)), true
+	default:
+		return 0, false
+	}
 }
 
 // BindLayout builds one player for an element's layout-tier keyframes, or nil

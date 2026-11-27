@@ -260,10 +260,10 @@ func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *Index) erro
 		key := entryKey{id: box.ID, ordinal: ordinal}
 
 		// The loop index is the box's position in next.Boxes, which is what
-		// OpOwners points at. An element with no id is anonymous for owner
-		// selection; BindBox then falls back to the subtree and reports it.
+		// OpOwners points at. When OpOwners is populated for every op, even
+		// anonymous boxes (box.ID == "") have an exact display index.
 		boxIndex := -1
-		if box.ID != "" {
+		if box.ID != "" || len(next.OpOwners) == len(next.Ops) {
 			boxIndex = i
 		}
 
@@ -574,6 +574,8 @@ func samePose(a, b Paint, mask Mask) bool {
 	case mask&MaskRGB != 0 && (a.R != b.R || a.G != b.G || a.B != b.B):
 		return false
 	case mask&MaskAlpha != 0 && a.Alpha != b.Alpha:
+		return false
+	case mask&MaskRadius != 0 && (a.Radius != b.Radius || a.RadiusY != b.RadiusY):
 		return false
 	case mask&MaskMatrix != 0 && (a.HasMatrix != b.HasMatrix || a.Matrix != b.Matrix):
 		return false
@@ -971,7 +973,6 @@ func bindBox(d *layout.Display, box layout.Box, boxIndex int, start time.Time,
 					continue
 				}
 			}
-			reportColorAlpha(&report, box, frames)
 			group := groupFor(&groups, indices)
 			group.mask |= class.mask
 			group.effects = append(group.effects, Effect{
@@ -1098,19 +1099,6 @@ func reportDeferred(report *gapList, box layout.Box, source []layout.Keyframe) {
 	}
 }
 
-// reportColorAlpha counts a keyframed colour whose alpha the paint phase cannot
-// write. The sRGB channels animate; the composite alpha stays at the element's
-// base paint until an alpha field exists.
-func reportColorAlpha(report *gapList, box layout.Box, frames []Keyframe) {
-	for i := range frames {
-		if !frames[i].ColorAlphaSet {
-			continue
-		}
-		report.add(fmt.Sprintf("box %q: keyframed colour alpha is left at base paint", box.ID))
-		return
-	}
-}
-
 // gapList collects fidelity gaps once each, in the order they appear.
 type gapList struct {
 	list []string
@@ -1153,20 +1141,20 @@ type paintClass struct {
 // the ones deferredPhase names.
 func propertyClass(property string) (paintClass, bool) {
 	switch property {
-	case "transform", "perspective", "perspective-origin":
+	case "transform", "translate", "rotate", "scale", "perspective", "perspective-origin":
 		return paintClass{kind: KindSubtree, mask: MaskMatrix}, true
 	case "opacity":
 		return paintClass{kind: KindSubtree, mask: MaskOpacity}, true
 	case "background-color", "accent-color":
-		return paintClass{kind: KindFill, mask: MaskRGB}, true
+		return paintClass{kind: KindFill, mask: MaskRGB | MaskAlpha}, true
 	case "color", "text-decoration-color", "text-emphasis-color":
-		return paintClass{kind: KindInk, mask: MaskRGB}, true
+		return paintClass{kind: KindInk, mask: MaskRGB | MaskAlpha}, true
 	case "border-color", "border-top-color", "border-right-color",
 		"border-bottom-color", "border-left-color", "border-block-color",
 		"border-block-start-color", "border-block-end-color", "border-inline-color",
 		"border-inline-start-color", "border-inline-end-color", "outline-color",
 		"column-rule-color", "row-rule-color", "rule-color":
-		return paintClass{kind: KindStroke, mask: MaskRGB}, true
+		return paintClass{kind: KindStroke, mask: MaskRGB | MaskAlpha}, true
 	}
 	return paintClass{}, false
 }
@@ -1177,9 +1165,8 @@ func propertyClass(property string) (paintClass, bool) {
 // Deferred property phases. The number is the phase that owns the property, so
 // a gap report can point a reader at the right plan.
 const (
-	phaseTransform = 2
-	phaseLayout    = 4
-	phaseFilter    = 8
+	phaseLayout = 4
+	phaseFilter = 8
 )
 
 // deferredPhase names the phase that owns a property this binder leaves at the
@@ -1190,8 +1177,6 @@ func deferredPhase(property string) (int, bool) {
 	case "filter", "backdrop-filter", "clip-path", "mask-position", "mask-size",
 		"mix-blend-mode", "isolation":
 		return phaseFilter, true
-	case "translate", "rotate", "scale":
-		return phaseTransform, true
 	}
 	if deferredLayoutProperty(property) {
 		return phaseLayout, true
@@ -1234,6 +1219,7 @@ func parseKeyframes(rules []layout.KeyframesRule, name string, size transformSiz
 func parseFrames(source []layout.Keyframe, size transformSize,
 	class *paintClass, current Color, hasCurrent bool,
 	base PerspectiveBase) []Keyframe {
+	uniformRadius := uniformBorderRadiusRule(source)
 	frames := make([]Keyframe, len(source))
 	for i, item := range source {
 		frame := Keyframe{
@@ -1241,6 +1227,8 @@ func parseFrames(source []layout.Keyframe, size transformSize,
 			Perspective:     framePerspective(size, base),
 			PerspectiveBase: base,
 		}
+		var frameTranslate, frameRotate, frameScale, frameTransform []TransformFunction
+		var hasTranslate, hasRotate, hasScale, hasTransform bool
 		for _, declaration := range item.Declarations {
 			// A keyframe timing function is not a paint property, so it is
 			// read before the paint-class filter: every paint class of the
@@ -1256,16 +1244,85 @@ func parseFrames(source []layout.Keyframe, size transformSize,
 				parseSVGPaintDeclaration(&frame, declaration, size, current, hasCurrent)
 				continue
 			}
-			pc, ok := propertyClass(declaration.Property)
+			pc, ok := declarationPaintClass(declaration.Property, uniformRadius)
 			if !ok || (class != nil && pc != *class) {
 				continue
 			}
-			parseDeclaration(&frame, declaration, size, current, hasCurrent)
+			switch declaration.Property {
+			case "translate":
+				fns, err := parseIndividualTranslate(declaration.Value, size)
+				if err != nil {
+					frame.Err = err
+					continue
+				}
+				frameTranslate, hasTranslate = fns, true
+			case "rotate":
+				fns, err := parseIndividualRotate(declaration.Value)
+				if err != nil {
+					frame.Err = err
+					continue
+				}
+				frameRotate, hasRotate = fns, true
+			case "scale":
+				fns, err := parseIndividualScale(declaration.Value)
+				if err != nil {
+					frame.Err = err
+					continue
+				}
+				frameScale, hasScale = fns, true
+			case "transform":
+				fns, err := parseTransformFunctions(declaration.Value, size)
+				if err != nil {
+					frame.Err = err
+					continue
+				}
+				frameTransform, hasTransform = fns, true
+			default:
+				parseDeclaration(&frame, declaration, size, current, hasCurrent)
+			}
+		}
+		if (hasTranslate || hasRotate || hasScale || hasTransform) && frame.Err == nil {
+			total := len(frameTranslate) + len(frameRotate) + len(frameScale) + len(frameTransform)
+			var combined []TransformFunction
+			if total > 0 {
+				// Combine in CSS Transforms Level 2 canonical order:
+				// translate, rotate, scale, then transform.
+				switch {
+				case len(frameTransform) == total:
+					combined = frameTransform
+				case len(frameTranslate) == total:
+					combined = frameTranslate
+				case len(frameRotate) == total:
+					combined = frameRotate
+				case len(frameScale) == total:
+					combined = frameScale
+				default:
+					combined = make([]TransformFunction, 0, total)
+					combined = append(combined, frameTranslate...)
+					combined = append(combined, frameRotate...)
+					combined = append(combined, frameScale...)
+					combined = append(combined, frameTransform...)
+				}
+			}
+			value := transformValueFromFunctions(combined)
+			frame.Transform = value
+			frame.X, frame.Y = value.Decomposed.Tx, value.Decomposed.Ty
+			frame.Move = true
 		}
 		frames[i] = frame
 	}
 	sort.SliceStable(frames, func(i, j int) bool { return frames[i].Offset < frames[j].Offset })
 	return frames
+}
+
+// declarationPaintClass returns the paint class for a keyframe declaration,
+// routing uniform single-value pixel border-radius rules to the in-place
+// MaskRadius paint path.
+func declarationPaintClass(property string, uniformRadius bool) (paintClass, bool) {
+	if property == "border-radius" && uniformRadius {
+		return paintClass{kind: KindRect, mask: MaskRadius}, true
+	}
+	return propertyClass(property)
 }
 
 // keyframeTimingFunction reports a declaration that eases the interval starting
@@ -1316,6 +1373,13 @@ func parseDeclaration(frame *Keyframe, declaration layout.KeyframeDeclaration,
 			return
 		}
 		frame.Opacity, frame.OpacitySet = value, true
+	case "border-radius":
+		px, ok := parseUniformRadiusPx(declaration.Value)
+		if !ok {
+			return
+		}
+		frame.Radius = px * size.pointsPerPixel
+		frame.RadiusSet = true
 	default:
 		value, err := resolveColor(declaration.Value, current, hasCurrent)
 		if err != nil {
@@ -1325,9 +1389,7 @@ func parseDeclaration(frame *Keyframe, declaration layout.KeyframeDeclaration,
 			return
 		}
 		frame.R, frame.G, frame.B, frame.ColorSet = value.R, value.G, value.B, true
-		if value.A < maxChannel {
-			frame.ColorAlpha, frame.ColorAlphaSet = value.A, true
-		}
+		frame.ColorAlpha, frame.ColorAlphaSet = value.A, true
 	}
 }
 
@@ -1335,6 +1397,9 @@ func parseDeclaration(frame *Keyframe, declaration layout.KeyframeDeclaration,
 func (c paintClass) name() string {
 	if c.mask == MaskOpacity {
 		return "opacity"
+	}
+	if c.mask == MaskRadius {
+		return "border radius"
 	}
 	switch c.kind {
 	case KindFill:
@@ -1389,10 +1454,11 @@ func ruleFor(rules []layout.KeyframesRule, name string) []layout.Keyframe {
 // effectClasses returns the distinct paint classes the declarations of one
 // effect use, in declaration order.
 func effectClasses(source []layout.Keyframe) []paintClass {
+	uniformRadius := uniformBorderRadiusRule(source)
 	var classes []paintClass
 	for i := range source {
 		for _, declaration := range source[i].Declarations {
-			class, ok := propertyClass(declaration.Property)
+			class, ok := declarationPaintClass(declaration.Property, uniformRadius)
 			if !ok || containsClass(classes, class) {
 				continue
 			}

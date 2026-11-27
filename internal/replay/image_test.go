@@ -18,11 +18,20 @@ import (
 
 // tinyPNG builds a 2x2 PNG whose first pixel carries shade, enough to
 // exercise decode and caching without a fixture file.
-func tinyPNG(t *testing.T, shade uint8) []byte {
+func tinyPNG(t *testing.T, shade int) []byte {
 	t.Helper()
 
+	const (
+		byteMask  = 0xff
+		byteShift = 8
+	)
+
 	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
-	img.Set(0, 0, color.RGBA{R: shade, A: 255})
+	img.Set(0, 0, color.RGBA{
+		R: uint8(shade & byteMask),
+		G: uint8((shade >> byteShift) & byteMask),
+		A: byteMask,
+	})
 
 	var out bytes.Buffer
 	if err := png.Encode(&out, img); err != nil {
@@ -134,7 +143,7 @@ func TestDecodedImageEvictsOldest(t *testing.T) {
 	}
 
 	for i := range imageCacheLimit {
-		filler := imageOp(t, tinyPNG(t, uint8(100+i)), 2, 2, false)
+		filler := imageOp(t, tinyPNG(t, 1000+i), 2, 2, false)
 		if decodedImage(&filler) == nil {
 			t.Fatalf("filler %d did not decode", i)
 		}

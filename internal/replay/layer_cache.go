@@ -2,6 +2,7 @@ package replay
 
 import (
 	"image"
+	"slices"
 	"sync"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -77,6 +78,7 @@ type layerStore struct {
 	keepScratch   map[layerKey]bool
 	activeScratch []*Layer
 	idScratch     []string
+	boxScratch    []int
 	dropScratch   []bool
 }
 
@@ -165,9 +167,11 @@ func (renderer *Renderer) beginLayers(d *layout.Display, gen uint64, specs []Lay
 		old := store.entries[cand.key]
 		oldPose := image.Rectangle{}
 		oldMatrix, oldAlpha, oldMode := layout.Matrix2D{}, 0.0, ""
+		oldClip, oldHasClip := image.Rectangle{}, false
 		if old != nil {
 			oldPose = old.pose
 			oldMatrix, oldAlpha, oldMode = old.Matrix, old.Alpha, old.Mode
+			oldClip, oldHasClip = old.clip, old.hasClip
 		}
 
 		if until, ok := store.churn[cand.key]; ok && store.use < until {
@@ -189,6 +193,8 @@ func (renderer *Renderer) beginLayers(d *layout.Display, gen uint64, specs []Lay
 		layer.Matrix = cand.matrix
 		layer.Alpha = cand.alpha
 		layer.Mode = cand.mode
+		layer.clip = cand.clip
+		layer.hasClip = cand.hasClip
 		layer.firstRank = cand.firstRank
 		layer.pose = layerPose(layer, d)
 		layer.LastUse = store.use
@@ -197,7 +203,8 @@ func (renderer *Renderer) beginLayers(d *layout.Display, gen uint64, specs []Lay
 			store.addDamage(layer.pose)
 			store.addTopology(layer.pose)
 		} else if !hit || oldPose != layer.pose ||
-			oldMatrix != layer.Matrix || oldAlpha != layer.Alpha || oldMode != layer.Mode {
+			oldMatrix != layer.Matrix || oldAlpha != layer.Alpha || oldMode != layer.Mode ||
+			oldHasClip != layer.hasClip || (layer.hasClip && oldClip != layer.clip) {
 			store.addDamage(oldPose.Union(layer.pose))
 		}
 
@@ -402,6 +409,7 @@ func (store *layerStore) getLocked(cand layerCandidate, keep map[layerKey]bool,
 
 	layer := &Layer{
 		ElementID: cand.spec.ElementID,
+		BoxIndex:  cand.key.box,
 		Gen:       cand.key.gen,
 		Box:       cand.box,
 		Tex:       img,
@@ -409,6 +417,8 @@ func (store *layerStore) getLocked(cand layerCandidate, keep map[layerKey]bool,
 		Ops:       setLayerOps(nil, cand.owned),
 		Alpha:     cand.alpha,
 		Matrix:    cand.matrix,
+		clip:      cand.clip,
+		hasClip:   cand.hasClip,
 		LastUse:   store.use,
 		Valid:     true,
 	}
@@ -624,6 +634,31 @@ func (renderer *Renderer) ActiveLayerIDs() []string {
 	store.idScratch = ids
 
 	return ids
+}
+
+// ActiveLayerBoxIndices returns the sorted, deduplicated box indices of this
+// frame's active retained layers for d, including anonymous layers whose
+// ElementID is empty. The slice is scratch owned by the renderer and is valid
+// until the next call.
+func (renderer *Renderer) ActiveLayerBoxIndices(d *layout.Display) []int {
+	store := &renderer.layers
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	boxes := store.boxScratch[:0]
+	if d == nil || store.frame.display != d || len(store.frame.active) == 0 {
+		store.boxScratch = boxes
+
+		return boxes
+	}
+	for _, layer := range store.frame.active {
+		boxes = append(boxes, layer.BoxIndex)
+	}
+	slices.Sort(boxes)
+	boxes = slices.Compact(boxes)
+	store.boxScratch = boxes
+
+	return boxes
 }
 
 func (store *layerStore) resetFrameStats() {

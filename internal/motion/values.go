@@ -595,12 +595,18 @@ func parseTransform(value string, size transformSize) (TransformValue, error) {
 	if err != nil {
 		return TransformValue{}, err
 	}
+	return transformValueFromFunctions(functions), nil
+}
+
+// transformValueFromFunctions folds a parsed function list into a
+// TransformValue, keeping planar 2D lists on the fast 2D decomposition path.
+func transformValueFromFunctions(functions []TransformFunction) TransformValue {
 	if len(functions) == 0 {
-		return TransformValue{Decomposed: IdentityTransform()}, nil
+		return TransformValue{Decomposed: IdentityTransform()}
 	}
 	threeD := false
 	for _, f := range functions {
-		threeD = threeD || is3DFunc(f.Name)
+		threeD = threeD || is3DFunction(f)
 	}
 	if threeD {
 		// The 2D projection of a 3D list is not a matrix, but its translation
@@ -608,10 +614,143 @@ func parseTransform(value string, size transformSize) (TransformValue, error) {
 		m := compose3D(functions)
 		t := IdentityTransform()
 		t.Tx, t.Ty = m[matrix3DTx], m[matrix3DTy]
-		return TransformValue{Decomposed: t, Functions: functions, ThreeD: true}, nil
+		return TransformValue{Decomposed: t, Functions: functions, ThreeD: true}
 	}
 	m := compose2D(functions)
-	return TransformValue{Decomposed: decompose2D(m), Functions: functions}, nil
+	return TransformValue{Decomposed: decompose2D(m), Functions: functions}
+}
+
+// parseIndividualTranslate parses the CSS `translate` property:
+// none | <length-percentage> | <length-percentage> <length-percentage> | <length-percentage> <length-percentage> <length>.
+func parseIndividualTranslate(value string, size transformSize) ([]TransformFunction, error) {
+	value = strings.TrimSpace(value)
+	if strings.EqualFold(value, "none") {
+		return nil, nil
+	}
+	fields := strings.Fields(value)
+	if len(fields) == 0 || len(fields) > threeArgs {
+		return nil, transformErr("translate takes 1 to 3 values")
+	}
+	if len(fields) <= twoArgs {
+		vals, err := transformLengths(fields, size, oneArg, twoArgs, axisX, axisY)
+		if err != nil {
+			return nil, err
+		}
+		return []TransformFunction{{Name: Translate, Args: vals}}, nil
+	}
+	vals, err := transformLengths(fields, size, threeArgs, threeArgs, axisX, axisY, axisZ)
+	if err != nil {
+		return nil, err
+	}
+	return []TransformFunction{{Name: Translate3D, Args: vals}}, nil
+}
+
+// parseIndividualRotate parses the CSS `rotate` property:
+// none | <angle> | [ x | y | z | <number>{3} ] && <angle>.
+func parseIndividualRotate(value string) ([]TransformFunction, error) {
+	value = strings.TrimSpace(value)
+	if strings.EqualFold(value, "none") {
+		return nil, nil
+	}
+	fields := strings.Fields(value)
+	switch len(fields) {
+	case oneArg:
+		angle, err := transformAngleArg(fields[0])
+		if err != nil {
+			return nil, err
+		}
+		return []TransformFunction{{Name: Rotate, Args: []float64{angle}}}, nil
+	case twoArgs:
+		axis, angleToken := strings.ToLower(fields[0]), fields[1]
+		if axis != "x" && axis != "y" && axis != "z" {
+			axis, angleToken = strings.ToLower(fields[1]), fields[0]
+		}
+		angle, err := transformAngleArg(angleToken)
+		if err != nil {
+			return nil, err
+		}
+		switch axis {
+		case "x":
+			return []TransformFunction{{Name: RotateX, Args: []float64{angle}}}, nil
+		case "y":
+			return []TransformFunction{{Name: RotateY, Args: []float64{angle}}}, nil
+		case "z":
+			return []TransformFunction{{Name: RotateZ, Args: []float64{angle}}}, nil
+		}
+		return nil, transformErr("rotate: invalid axis %q", fields[0])
+	case rotate3DArgs:
+		vals, err := transformRotate3D(fields)
+		if err != nil {
+			reordered := []string{fields[1], fields[2], fields[3], fields[0]}
+			if vals2, err2 := transformRotate3D(reordered); err2 == nil {
+				vals, err = vals2, nil
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+		return []TransformFunction{{Name: Rotate3D, Args: vals}}, nil
+	default:
+		return nil, transformErr("rotate takes 1, 2, or 4 values")
+	}
+}
+
+// parseIndividualScale parses the CSS `scale` property:
+// none | [ <number> | <percentage> ]{1,3}.
+func parseIndividualScale(value string) ([]TransformFunction, error) {
+	value = strings.TrimSpace(value)
+	if strings.EqualFold(value, "none") {
+		return nil, nil
+	}
+	fields := strings.Fields(value)
+	switch len(fields) {
+	case oneArg:
+		sx, err := transformScaleFactor(fields[0])
+		if err != nil {
+			return nil, err
+		}
+		return []TransformFunction{{Name: Scale, Args: []float64{sx, sx}}}, nil
+	case twoArgs:
+		sx, err := transformScaleFactor(fields[0])
+		if err != nil {
+			return nil, err
+		}
+		sy, err := transformScaleFactor(fields[1])
+		if err != nil {
+			return nil, err
+		}
+		return []TransformFunction{{Name: Scale, Args: []float64{sx, sy}}}, nil
+	case threeArgs:
+		sx, err := transformScaleFactor(fields[0])
+		if err != nil {
+			return nil, err
+		}
+		sy, err := transformScaleFactor(fields[1])
+		if err != nil {
+			return nil, err
+		}
+		sz, err := transformScaleFactor(fields[2])
+		if err != nil {
+			return nil, err
+		}
+		return []TransformFunction{{Name: Scale3D, Args: []float64{sx, sy, sz}}}, nil
+	default:
+		return nil, transformErr("scale takes 1 to 3 values")
+	}
+}
+
+func transformScaleFactor(value string) (float64, error) {
+	number, unit, err := transformValueUnit(value)
+	if err != nil {
+		return 0, err
+	}
+	switch unit {
+	case "":
+		return number, nil
+	case "%":
+		return number / percentScale, nil
+	}
+	return 0, transformErr("%q must be a number or percentage", value)
 }
 
 // parseTransformFunctions tokenizes the whitespace-separated function list.
@@ -964,6 +1103,25 @@ func transformValueUnit(value string) (float64, string, error) {
 
 func transformErr(format string, args ...any) error {
 	return fmt.Errorf("%w: %s", ErrTransform, fmt.Sprintf(format, args...))
+}
+
+// is3DFunction reports whether a parsed transform function actually leaves the
+// 2D plane. Planar translate3d(x, y, 0), translateZ(0), scale3d(sx, sy, 1),
+// and scaleZ(1) stay on the 2D affine path so they can promote to compositor
+// layers without forcing RestampTransforms every frame.
+func is3DFunction(f TransformFunction) bool {
+	switch f.Name {
+	case Translate3D:
+		return len(f.Args) >= threeArgs && f.Args[2] != 0
+	case TranslateZ:
+		return len(f.Args) >= oneArg && f.Args[0] != 0
+	case Scale3D:
+		return len(f.Args) >= scaleArgs && f.Args[2] != 1
+	case ScaleZ:
+		return len(f.Args) >= oneArg && f.Args[0] != 1
+	default:
+		return is3DFunc(f.Name)
+	}
 }
 
 func is3DFunc(name TransformFunc) bool {

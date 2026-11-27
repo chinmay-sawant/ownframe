@@ -14,6 +14,8 @@ import (
 type paintItem struct {
 	op    *layout.DisplayOp
 	child *groupNode
+	index int
+	rank  int
 }
 
 // groupNode buffers one blend or isolation group. The root has a nil group.
@@ -134,7 +136,7 @@ func buildPlan(d *layout.Display) *groupNode {
 	root := &groupNode{}
 	nodes := map[*layout.DisplayGroup]*groupNode{}
 
-	for _, i := range d.Order {
+	for rank, i := range d.Order {
 		if i < 0 || i >= len(d.Ops) {
 			continue
 		}
@@ -161,7 +163,7 @@ func buildPlan(d *layout.Display) *groupNode {
 		}
 
 		node := attachNode(root, nodes, op.Group())
-		node.items = append(node.items, paintItem{op: op})
+		node.items = append(node.items, paintItem{op: op, index: i, rank: rank})
 	}
 	setBackdropRadii(root, d.PixelPerPoint)
 

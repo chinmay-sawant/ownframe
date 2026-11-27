@@ -136,10 +136,17 @@ func accessibilityEdits(edits []ElementEdit) []a11y.Edit {
 	out := make([]a11y.Edit, len(edits))
 	for i, e := range edits {
 		out[i] = a11y.Edit{
-			ID:        e.ID,
-			Attribute: e.Attribute,
-			Value:     e.Value,
-			Text:      e.Text,
+			ID:              e.ID,
+			Attribute:       e.Attribute,
+			Value:           e.Value,
+			Text:            e.Text,
+			RemoveAttribute: e.RemoveAttribute,
+			AddClass:        e.AddClass,
+			RemoveClass:     e.RemoveClass,
+			ToggleClass:     e.ToggleClass,
+			Remove:          e.Remove,
+			InnerHTML:       e.InnerHTML,
+			AppendHTML:      e.AppendHTML,
 		}
 	}
 	return out
