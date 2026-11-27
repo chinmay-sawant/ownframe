@@ -179,3 +179,29 @@ The lifetime multiplier compounds the sequential phases of optimization ($\text{
 | `spotify-player.exe` *(169 ops, 46 images)* | 1440×960 | **68.2 FPS** *(paced)* | **3.57 ms** | **5.35 / 9.59 ms** | **0** | 22.0 MB | 265.5 MB | 18.6% |
 | `departure-board.exe` *(628 ops, idle)* | 1000×640 | **2.1 FPS** *(parked)* | **1.14 ms** | **1.48 / 12.19 ms** | 1 | 17.7 MB | 224.5 MB | **4.1%** |
 
+---
+
+## 8. Pipeline & Animation Optimization Wave (`v0.0.8` / Blinkless `v0.1.10`, 2026-11-27)
+
+*Measured on `13th Gen Intel(R) Core(TM) i7-13700HX`, Go `1.26.11`, Blinkless `v0.1.10` (`linux/amd64`).*
+
+### Always-On Pipeline Improvements
+
+| Benchmark | `v0.0.7` Baseline | `v0.0.8` Current | Latency Delta | Allocs Delta |
+| :--- | ---: | ---: | ---: | ---: |
+| `BenchmarkAnimationTick` *(534-op CSS gallery)* | `98.87 µs` · `38 allocs` · `16.5 KB` | **`52.36 µs`** · **`20 allocs`** · **`11.8 KB`** | **`-47.0%` (`1.89x`)** | **`-47.4%`** |
+| `BenchmarkScaleStages/Rows1000/DisplayList` | `11.56 ms` · `4,316 allocs` | **`10.09 ms`** · **`318 allocs`** | **`-12.7%`** | **`-92.6%`** |
+| `BenchmarkListWorkloads/PerfOff/Resize` | `11.67 ms` · `4,295 allocs` | **`10.21 ms`** · **`290 allocs`** | **`-12.5%`** | **`-93.2%`** |
+| `BenchmarkListWorkloads/PerfOn/Resize` | `11.91 ms` · `4,299 allocs` | **`10.17 ms`** · **`292 allocs`** | **`-14.6%`** | **`-93.2%`** |
+| `BenchmarkListWorkloads/PerfOff/TextUpdate` | `16.74 ms` · `35,329 allocs` | **`15.05 ms`** · **`31,324 allocs`** | **`-10.1%`** | **`-11.3%`** |
+| `BenchmarkListWorkloads/PerfOn/TextUpdate` | `16.53 ms` · `35,330 allocs` | **`14.93 ms`** · **`31,325 allocs`** | **`-9.7%`** | **`-11.3%`** |
+| `BenchmarkListWorkloads/PerfOff/WindowedScroll` | `518.8 µs` · `1,181 allocs` | **`495.1 µs`** · **`1,082 allocs`** | **`-4.6%`** | **`-8.4%`** |
+| `BenchmarkListPatchVsRebuild/FullRebuild1Row` | `16.83 ms` · `44,267 allocs` | **`15.49 ms`** · **`40,278 allocs`** | **`-8.0%`** | **`-9.0%`** |
+
+### Opt-In Fast Paths (1,000 Rows)
+
+| Stage | Standard Path | Opt-In Path | Latency Delta | Memory / Alloc Delta |
+| :--- | ---: | ---: | ---: | ---: |
+| HTML generation (`Config.Render` vs `TemplateExecute`) | `2,400 µs` · `518.9 KB` · `26,730 allocs` | **`64.45 µs`** · **`3.06 KB`** · **`991 allocs`** | **`-97.3%` (`37.2x`)** | **`-99.4%` bytes**, **`-96.3%` allocs** |
+| DisplayList (`Options.CullWindow` 600 px vs full) | `9.73 ms` · `2.88 MB` · `304 allocs` | **`1.24 ms`** · **`1.82 MB`** · **`261 allocs`** | **`-87.2%` (`7.83x`)** | **`-36.7%` bytes**, **`-14.1%` allocs** |
+
