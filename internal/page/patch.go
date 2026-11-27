@@ -215,7 +215,7 @@ func adoptSplicedPatch(p *Page, d *Display, paintOnly bool) *Display {
 	} else {
 		setDisplayBoxes(p, d)
 	}
-	dirtyFromDisplay(p, prev, d)
+	dirtyFromPatchedDisplay(p, prev, d)
 	p.generation++
 	p.layerGen++
 	p.stats.layouts++
