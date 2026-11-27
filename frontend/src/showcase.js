@@ -197,6 +197,21 @@ export const showcaseSections = [
     ],
   },
   {
+    id: 'quarry',
+    title: 'Quarry',
+    layout: 'grid-3',
+    before: '`examples/builder/quarry` is a local-first SQLite and PostgreSQL client built with the Go `ui` builder and `components/chadcn`. It opens with a seeded SQLite database for browsing tables, running SQL, inspecting plans, and monitoring database activity.',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/quarry)',
+    media: [
+      { src: 'assets/screenshots/demos/quarry/query-results.webp', alt: 'Quarry SQL editor with a joined order query and its result rows', caption: 'Query results', width: 1440, height: 960, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/quarry/orders.webp', alt: 'Orders table with status, total, and placed-at columns', caption: 'Orders', width: 1440, height: 960, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/quarry/monitor.webp', alt: 'Quarry live database monitor with throughput, connection, size, and latency charts', caption: 'Monitor', width: 1440, height: 960, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/quarry/connections.webp', alt: 'Quarry connection manager with SQLite and PostgreSQL connection options', caption: 'Connections', width: 1440, height: 960, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/quarry/history.webp', alt: 'Quarry query history with saved statements and execution details', caption: 'History', width: 1440, height: 960, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/quarry/settings.webp', alt: 'Quarry settings for theme, row limit, monitoring, and safety options', caption: 'Settings', width: 1440, height: 960, nativeDisplay: true },
+    ],
+  },
+  {
     id: 'depth-alert',
     title: 'Depth Alert',
     layout: 'portrait',

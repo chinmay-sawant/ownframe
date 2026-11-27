@@ -107,7 +107,7 @@ func (w *Workbook) record(s *Sheet, refs []CellRef, mutate func()) {
 
 func xlRangeRefs(r Range) []CellRef {
 	r = r.clip()
-	refs := make([]CellRef, 0, r.Rows()*r.Cols())
+	var refs []CellRef
 	for row := r.Min.Row; row <= r.Max.Row; row++ {
 		for col := r.Min.Col; col <= r.Max.Col; col++ {
 			refs = append(refs, CellRef{row, col})

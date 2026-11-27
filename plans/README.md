@@ -47,6 +47,7 @@ This ledger does not award a perfect rating. Dependency pins are checked against
 |---|---|---|
 | [plans/README.md](README.md) | **Active** | Authoritative maintenance ledger checked by `make plans-check` |
 | [plans/v0.0.8/excel-example/](v0.0.8/excel-example/README.md) | **Active** | Phase-wise checklist and color schemas for `examples/builder/excel` |
+| [plans/v0.0.8/quarry-db-client/](v0.0.8/quarry-db-client/README.md) | **Active** | Phase-wise checklist, color schemas, and sample blueprints for `examples/builder/quarry` (SQLite & PostgreSQL client) |
 | [plans/v0.0.4/go-review-hardening/](v0.0.4/go-review-hardening/README.md) | **Active** | Cross-checked Go review P0–P2 safety, security, concurrency, perf, and CI hardening plan |
 | [plans/v0.0.4/chore-improvements/](v0.0.4/chore-improvements/README.md) | **Active** | Phase-wise structural cleanup, footprint, doc truth, API, motion, cohesion, and binary/platform plan |
 | [plans/v0.0.3/](v0.0.3/README.md) | **Current cycle** | v0.0.3 release notes, PR records, and completed performance/animation/example plans |
