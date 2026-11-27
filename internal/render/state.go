@@ -1,6 +1,9 @@
 package render
 
-import "github.com/chinmay-sawant/blinkless/css"
+import (
+	"github.com/chinmay-sawant/blinkless/css"
+	"github.com/chinmay-sawant/blinkless/layout"
+)
 
 // State carries the runtime pointer and focus state the engine's stateful
 // pseudo-classes match: the ids of the focused, hovered, and pressed elements.
@@ -20,6 +23,9 @@ type State struct {
 	// produced. It is off by default, so a host that never patches an
 	// element does not pay for the retained state.
 	RetainState bool
+	// CullWindow is an opt-in vertical cull band forwarded to
+	// layout.DisplayListOptions. Nil emits the full document display list.
+	CullWindow *layout.CullWindow
 }
 
 // options builds the screen cascade options for a viewport.

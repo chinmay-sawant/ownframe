@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/css"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
@@ -40,6 +41,10 @@ type Config struct {
 	// off by default, so a page that never patches pays nothing. With it on,
 	// Page.PatchElement can re-lay out one element.
 	RetainState bool
+	// CullWindow enables opt-in vertical viewport culling with overscan. Fixed-height
+	// off-screen rows skip layout and op emission while preserving full canvas height;
+	// scrolling past the overscan band re-runs a culled layout for the new window.
+	CullWindow bool
 	// DevTools starts the window overlay on and enables performance sampling
 	// while it is open.
 	DevTools bool
@@ -79,7 +84,19 @@ func renderState(p *Page) render.State {
 		focus = st.FocusID
 	}
 
-	return draw.RenderState(p.HoverID(), activeID(p), focus, p.theme, p.imageResolver, p.retainState)
+	st := draw.RenderState(p.HoverID(), activeID(p), focus, p.theme, p.imageResolver, p.retainState)
+	if p.cullWindow {
+		if p.cullBottom <= p.cullTop {
+			_, scrollY := p.scroll.Offset()
+			p.updateCullWindow(scrollY, p.height)
+		}
+		st.CullWindow = &layout.CullWindow{
+			TopPx:    float64(p.cullTop),
+			BottomPx: float64(p.cullBottom),
+		}
+	}
+
+	return st
 }
 
 // allocSampleGap bounds ReadMemStats on a Perf redraw to about twice a second.

@@ -511,8 +511,10 @@ type renderTrack struct {
 	// The layout key omits retained-state and caret paint inputs. A
 	// collapsed caret, including a move within IME preedit, can change
 	// paint without changing the source or the CSS state the key covers.
-	lastRetain bool
-	lastCaret  caretPaintState
+	lastRetain     bool
+	lastCullTop    int
+	lastCullBottom int
+	lastCaret      caretPaintState
 	// statePseudos records the interactive pseudo-classes the sheets use. All
 	// true means unknown, which keeps the old redraw behavior.
 	statePseudos render.StatePseudos
@@ -609,6 +611,9 @@ func unchanged(p *Page, state render.State) bool {
 	if p.restampRedraw || p.retainState != p.lastRetain {
 		return false
 	}
+	if p.cullWindow && (p.cullTop != p.lastCullTop || p.cullBottom != p.lastCullBottom) {
+		return false
+	}
 	if currentCaretPaint(p) != p.lastCaret {
 		return false
 	}
@@ -626,6 +631,8 @@ func remember(p *Page, state render.State) {
 	}
 	p.hasLast = true
 	p.lastRetain = p.retainState
+	p.lastCullTop = p.cullTop
+	p.lastCullBottom = p.cullBottom
 	p.lastCaret = currentCaretPaint(p)
 }
 

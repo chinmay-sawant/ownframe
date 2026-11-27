@@ -105,6 +105,9 @@ type Page struct {
 	nav             nav.History
 	deepLinkSchemes map[string]struct{}
 	ff              formFocusState
+	cullWindow      bool
+	cullTop         int
+	cullBottom      int
 	picker          PickFunc
 	// hoverPatch re-lays one element's subtree for a hover-only change.
 	// Production pages use the engine patch; tests swap it per page to
@@ -214,7 +217,29 @@ func New(cfg Config) (*Page, error) {
 	}
 	page := assemblePage(cfg, tpl, theme, themeSrc, entry, htmlInfo, themeInfo, minW, minH, schemes)
 	page.width, page.height = page.Clamp(cfg.Width, cfg.Height)
+	if page.cullWindow {
+		page.scroll.SetOn(true)
+		page.scroll.SetFn(page.updateCullWindow)
+	}
 	return page, nil
+}
+
+const (
+	defaultCullViewHeight = 600
+	minCullMarginPx       = 300
+)
+
+func (p *Page) updateCullWindow(offsetY, viewH int) bool {
+	if viewH <= 0 {
+		viewH = max(p.height, defaultCullViewHeight)
+	}
+	if p.cullBottom > p.cullTop && offsetY >= p.cullTop && offsetY+viewH <= p.cullBottom {
+		return false
+	}
+	margin := max(viewH, minCullMarginPx)
+	p.cullTop = max(0, offsetY-margin)
+	p.cullBottom = offsetY + viewH + margin
+	return true
 }
 
 // assemblePage builds the Page shell; New clamps the size after it.
@@ -242,6 +267,7 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		perfOptIn:        cfg.Perf,
 		motion:           motion.New(),
 		retainState:      cfg.RetainState,
+		cullWindow:       cfg.CullWindow,
 		lockView:         cfg.LockView,
 		allowTouchZoom:   !cfg.DisableTouchZoom,
 		disableWheelZoom: cfg.DisableWheelZoom,

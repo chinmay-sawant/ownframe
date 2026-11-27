@@ -61,6 +61,7 @@ func List(ctx context.Context, styled *css.Document, state render.State) (*layou
 	return render.DisplayListDocumentOptions(ctx, styled, layout.Options{
 		Images:      state.Images,
 		RetainState: state.RetainState,
+		CullWindow:  state.CullWindow,
 	})
 }
 
