@@ -14,15 +14,63 @@ import (
 )
 
 // cellEditing is an open inline editor on one grid cell.
-type cellEditing struct{ row, col int }
+type cellEditing struct {
+	row, col int
+	draft    string
+	invalid  bool
+}
 
-// selectedCell returns the focus cell of t's grid.
-func (t *workTab) selectedCell() (driver.CellValue, driver.ColumnMeta, bool) {
+// colMeta returns the best-known ColumnMeta for grid column c, preferring
+// table schema metadata (which carries accurate Nullable and Type info).
+func (t *workTab) colMeta(c int) (driver.ColumnMeta, bool) {
+	if t == nil || t.grid == nil || c < 0 || c >= len(t.grid.cols) {
+		return driver.ColumnMeta{}, false
+	}
+	meta := t.grid.cols[c]
+	for _, tc := range t.cols {
+		if strings.EqualFold(tc.Name, meta.Name) {
+			meta.Nullable = tc.Nullable
+			meta.PrimaryKey = tc.PrimaryKey
+			meta.ForeignKey = tc.ForeignKey
+			meta.DefaultVal = tc.DefaultVal
+			if tc.Type != "" {
+				meta.Type = tc.Type
+			}
+			break
+		}
+	}
+	return meta, true
+}
+
+// selectedCell returns the focus cell of t's grid (including any staged edit).
+func (a *App) selectedCell(t *workTab) (driver.CellValue, driver.ColumnMeta, bool) {
 	g := t.grid
 	if g == nil || g.fr < 0 || g.fc < 0 || g.fr >= len(g.rows) || g.fc >= len(g.cols) {
 		return driver.CellValue{}, driver.ColumnMeta{}, false
 	}
-	return g.rows[g.fr][g.fc], g.cols[g.fc], true
+	cell := g.rows[g.fr][g.fc]
+	if v, ok := a.stagedValue(t, g.fr, g.fc); ok {
+		cell = v
+	}
+	col, _ := t.colMeta(g.fc)
+	return cell, col, true
+}
+
+// syncInspectorEditor resets the inspector textarea's form buffer to match the
+// currently selected cell so switching cells never carries stale text across.
+func (a *App) syncInspectorEditor(t *workTab) {
+	if a.page == nil || t == nil || !t.inspectorOpen {
+		return
+	}
+	cell, _, ok := a.selectedCell(t)
+	if !ok {
+		return
+	}
+	if cell.IsNull() {
+		a.page.Form().SetFormValue("insp-edit", "")
+	} else {
+		a.page.Form().SetFormValue("insp-edit", cell.S)
+	}
 }
 
 // inspectorPane is the right-hand drawer with the full value of the selected cell.
@@ -30,7 +78,7 @@ func (a *App) inspectorPane(t *workTab) *ui.Element {
 	if !t.inspectorOpen {
 		return nil
 	}
-	cell, col, ok := t.selectedCell()
+	cell, col, ok := a.selectedCell(t)
 	pane := ui.Div().ID("inspector").Class("qr-inspector").Width(ui.Px(float64(a.inspectorW))).
 		Attr("role", ariaRole("complementary")).Attr("aria-label", "Cell inspector")
 	head := ui.Div().Class("qr-inspector-head").Children(
@@ -69,15 +117,57 @@ func (a *App) inspectorPane(t *workTab) *ui.Element {
 			body.Children(ui.Div().Class("qr-ddl-line").Children(ui.Span().Class("qr-run").Text(ln)))
 		}
 	}
-	editable := t.writable && t.kind == tabTable && (cell.Kind == driver.KindText || cell.Kind == driver.KindJSON)
+	isBool := isBoolColType(col.Type) || cell.Kind == driver.KindBool
+	editable := t.writable && t.kind == tabTable &&
+		(cell.Kind == driver.KindText || cell.Kind == driver.KindJSON ||
+			(cell.Kind == driver.KindNull && (isJSONColType(col.Type) || isTextColType(col.Type))))
 	if !editable || isJSON {
 		pane.Children(a.pane("insp", "Inspector scroll", "qr-insp-pane", body)) // an editable plain value shows only the editor, not a second copy
 	}
-	if t.writable && t.kind == tabTable && (cell.Kind == driver.KindText || cell.Kind == driver.KindJSON) {
+	if t.writable && t.kind == tabTable && isBool {
+		boolBtn := func(id, label string, active bool, val driver.CellValue) *ui.Element {
+			cls := "qr-btn"
+			if active {
+				cls = "qr-btn qr-btn-primary"
+			}
+			return a.tbButton(id, label, cls, false, func(ctx context.Context) error {
+				if err := a.stageCell(ctx, t, t.grid.fr, t.grid.fc, val); err != nil {
+					return err
+				}
+				return nil
+			})
+		}
+		row := ui.Div().Class("qr-insp-bool-row").Children(
+			boolBtn("insp-bool-true", "true", !cell.IsNull() && cell.B, driver.Bool(true)),
+			boolBtn("insp-bool-false", "false", !cell.IsNull() && !cell.B, driver.Bool(false)),
+		)
+		if col.Nullable {
+			row.Children(boolBtn("insp-bool-null", "NULL", cell.IsNull(), driver.Null()))
+		}
+		pane.Children(ui.Div().ID("insp-bool").Class("qr-insp-bool").Children(
+			ui.Span().Class("qr-muted").Text("Value"),
+			row,
+		))
+	}
+	if editable {
+		initText := cell.S
+		if cell.IsNull() {
+			initText = ""
+		}
 		pane.Children(
-			ui.Tag("textarea").ID("insp-edit").Class("qr-input qr-insp-edit").Attr("aria-label", "Edit cell value").Text(cell.S),
+			ui.Tag("textarea").ID("insp-edit").Class("qr-input qr-insp-edit").Attr("aria-label", "Edit cell value").Text(initText),
 			a.tbButton("insp-apply", "Apply to cell", "qr-btn qr-btn-primary", false, func(ctx context.Context) error {
-				return a.stageCell(ctx, t, t.grid.fr, t.grid.fc, editedCell(cell.Kind, a.page.Form().FormValue("insp-edit")))
+				nv, err := parseCell(a.page.Form().FormValue("insp-edit"), col, cell)
+				if err != nil {
+					a.notify(err.Error())
+					return a.redraw(ctx)
+				}
+				if err := a.stageCell(ctx, t, t.grid.fr, t.grid.fc, nv); err != nil {
+					return err
+				}
+				a.syncInspectorEditor(t)
+				a.notify("Applied to cell — click Commit to save")
+				return a.redraw(ctx)
 			}),
 		)
 	}
@@ -96,9 +186,45 @@ func (a *App) beginInlineEdit(ctx context.Context, t *workTab, r, c int) error {
 		a.notify("Table is read-only")
 		return a.redraw(ctx)
 	}
+	cur := t.grid.rows[r][c]
+	if v, ok := a.stagedValue(t, r, c); ok {
+		cur = v
+	}
+	col, _ := t.colMeta(c)
+	// Boolean columns open a dropdown (true / false) instead of a free-text input.
+	if isBoolColType(col.Type) || cur.Kind == driver.KindBool {
+		t.editing = &cellEditing{row: r, col: c}
+		return a.redraw(ctx)
+	}
+	// JSON, multiline, or long text values open in the Cell Inspector so they
+	// never spill horizontally across neighboring grid columns.
+	maxInlineChars := max(gridMinInlineText, (t.grid.widths[c]-gridCellPad)/gridCellCharW)
+	isJSON := cur.Kind == driver.KindJSON || isJSONColType(col.Type)
+	isLong := !cur.IsNull() && (strings.Contains(cur.S, "\n") || len([]rune(cur.String())) > maxInlineChars)
+	if isJSON || isLong {
+		t.editing = nil
+		t.inspectorOpen = true
+		a.syncInspectorEditor(t)
+		if cur.Kind == driver.KindText || cur.Kind == driver.KindJSON || (cur.IsNull() && (isJSONColType(col.Type) || isTextColType(col.Type))) {
+			a.page.Form().RequestFocus("insp-edit")
+		}
+		return a.redraw(ctx)
+	}
 	t.editing = &cellEditing{row: r, col: c}
 	a.page.Form().RequestFocus("cell-editor")
 	return a.redraw(ctx)
+}
+
+func (a *App) isBoolEditing(t *workTab) bool {
+	if t == nil || t.editing == nil || t.grid == nil {
+		return false
+	}
+	e := t.editing
+	if e.row < 0 || e.row >= len(t.grid.rows) || e.col < 0 || e.col >= len(t.grid.cols) {
+		return false
+	}
+	col, _ := t.colMeta(e.col)
+	return isBoolColType(col.Type) || t.grid.rows[e.row][e.col].Kind == driver.KindBool
 }
 
 func (a *App) inlineEditor(t *workTab) *ui.Element {
@@ -106,18 +232,95 @@ func (a *App) inlineEditor(t *workTab) *ui.Element {
 	if v, ok := a.stagedValue(t, t.editing.row, t.editing.col); ok {
 		cur = v
 	}
+	if a.isBoolEditing(t) {
+		label := cur.String()
+		if cur.IsNull() {
+			label = "NULL"
+		}
+		return ui.Div().ID("cell-bool-trigger").Class("qr-bool-trigger").Attr("role", "combobox").
+			Attr("aria-label", "Select boolean value").Children(
+			ui.Span().Text(label),
+			a.icon("chevron-down", toneMuted, iconSmall),
+		)
+	}
 	val := cur.String()
 	if cur.IsNull() {
 		val = ""
 	}
-	return ui.Div().Class("qr-inline-edit").Children(
+	if t.editing.invalid {
+		val = t.editing.draft
+	}
+	ed := ui.Div().Class("qr-inline-edit").Children(
 		ui.Input().ID("cell-editor").Class("qr-input qr-cell-input").Attr("type", "text").Attr("value", val).
 			Attr("aria-label", "Edit cell value"),
-		ui.Button("NULL").ID("cell-set-null").Class("qr-btn").Attr("type", "button").Attr("aria-label", "Set NULL").
-			OnClick(func(ctx context.Context) error {
-				return a.stageCell(ctx, t, t.editing.row, t.editing.col, driver.Null())
-			}),
 	)
+	if col, ok := t.colMeta(t.editing.col); ok && col.Nullable {
+		ed.Children(
+			ui.Button("NULL").ID("cell-set-null").Class("qr-cell-null").Attr("type", "button").Attr("aria-label", "Set NULL").
+				OnClick(func(ctx context.Context) error {
+					return a.stageCell(ctx, t, t.editing.row, t.editing.col, driver.Null())
+				}),
+		)
+	}
+	return ed
+}
+
+// boolDropdownMenu renders the floating true/false (and optional NULL) picker
+// anchored directly below the editing boolean cell inside grid-body.
+func (a *App) boolDropdownMenu(t *workTab, g *gridState, cols []int, viewH int) *ui.Element {
+	if !a.isBoolEditing(t) {
+		return nil
+	}
+	e := t.editing
+	left := gutterWidth
+	found := false
+	for _, ci := range cols {
+		if ci == e.col {
+			found = true
+			break
+		}
+		left += g.widths[ci]
+	}
+	if !found {
+		return nil
+	}
+	cur := g.rows[e.row][e.col]
+	if v, ok := a.stagedValue(t, e.row, e.col); ok {
+		cur = v
+	}
+	col, _ := t.colMeta(e.col)
+	optCount := 2
+	if col.Nullable {
+		optCount = 3
+	}
+	menuH := optCount*boolMenuOptionH + boolMenuPadY
+	top := int(float64((e.row+1)*gridRowHeight) - g.scrollY)
+	if top+menuH > viewH && top-gridRowHeight-menuH >= 0 {
+		top = top - gridRowHeight - menuH
+	}
+	opt := func(id, label string, active bool, val driver.CellValue) *ui.Element {
+		cls := "qr-bool-opt"
+		if active {
+			cls += " qr-bool-opt-on"
+		}
+		el := ui.Div().ID(id).Class(cls).Attr("role", ariaRole("option")).Children(ui.Span().Text(label))
+		if active {
+			el.Children(a.icon("check", toneBrand, iconSmall))
+		}
+		return el.OnClick(func(ctx context.Context) error {
+			return a.stageCell(ctx, t, e.row, e.col, val)
+		})
+	}
+	menu := ui.Div().ID("cell-bool-menu").Class("qr-bool-menu").
+		Left(ui.Px(float64(left))).Top(ui.Px(float64(max(0, top)))).
+		Attr("role", ariaRole("listbox")).Attr("aria-label", "Boolean options").Children(
+		opt("cell-bool-true", "true", !cur.IsNull() && cur.B, driver.Bool(true)),
+		opt("cell-bool-false", "false", !cur.IsNull() && !cur.B, driver.Bool(false)),
+	)
+	if col.Nullable {
+		menu.Children(opt("cell-bool-null", "NULL", cur.IsNull(), driver.Null()))
+	}
+	return menu
 }
 
 func (a *App) stagedValue(t *workTab, r, c int) (driver.CellValue, bool) {
@@ -151,12 +354,27 @@ func (a *App) commitInlineEdit(ctx context.Context, t *workTab) error {
 		return nil
 	}
 	old := t.grid.rows[e.row][e.col]
-	nv := parseCell(a.page.Form().FormValue("cell-editor"), old)
+	col, _ := t.colMeta(e.col)
+	raw := a.page.Form().FormValue("cell-editor")
+	nv, err := parseCell(raw, col, old)
+	if err != nil {
+		e.draft = raw
+		e.invalid = true
+		a.notify(err.Error())
+		a.page.Form().RequestFocus("cell-editor")
+		return a.redraw(ctx)
+	}
 	return a.stageCell(ctx, t, e.row, e.col, nv)
 }
 
 // stageCell records one cell edit in the changeset.
 func (a *App) stageCell(ctx context.Context, t *workTab, r, c int, nv driver.CellValue) error {
+	if nv.IsNull() && t.kind == tabTable && len(t.cols) > 0 {
+		if col, ok := t.colMeta(c); ok && !col.Nullable {
+			a.notify(fmt.Sprintf("Column %q cannot be NULL", col.Name))
+			return a.redraw(ctx)
+		}
+	}
 	t.editing = nil
 	id, ok := a.rowID(t, t.grid, r)
 	if !ok {
@@ -243,6 +461,7 @@ func (a *App) changesetBar(t *workTab) *ui.Element {
 		a.tbButton("cs-discard", "Discard", "qr-btn", false, func(ctx context.Context) error {
 			t.cs.Discard()
 			t.cs, t.csErr = nil, ""
+			a.syncInspectorEditor(t)
 			return a.redraw(ctx)
 		}),
 		a.tbButton("cs-commit", "Commit", "qr-btn qr-btn-primary", false, func(ctx context.Context) error { return a.commitChangeset(ctx, t) }),
@@ -402,14 +621,6 @@ func selectionMarkdown(g *gridState, r, c int) string {
 		}
 	}
 	return b.String()
-}
-
-// editedCell wraps edited inspector text in a cell of the original text kind.
-func editedCell(kind driver.CellKind, text string) driver.CellValue {
-	if kind == driver.KindJSON {
-		return driver.JSON(text)
-	}
-	return driver.Text(text)
 }
 
 // rowCSV renders row r as one CSV record (NULL as an empty field).

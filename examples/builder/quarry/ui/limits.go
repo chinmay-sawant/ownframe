@@ -50,6 +50,8 @@ const (
 	gridHeaderPad     = 12
 	gridCellPad       = 16
 	gridCellChars     = 40
+	gridMinTextChars  = 4
+	gridMinInlineText = 8
 	gridMinColWidth   = 72
 	gridMaxColWidth   = 300
 	gridTypeCharW     = 6
@@ -100,6 +102,8 @@ const (
 	defaultEditorH    = 260
 	defaultInspectorW = 320
 	defaultPollEvery  = 2 * time.Second
+	boolMenuOptionH   = 26
+	boolMenuPadY      = 10
 	exportBatchSize   = 100
 	acGap             = 2
 	gridNameCharW     = 8

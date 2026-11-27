@@ -189,6 +189,10 @@ func (a *App) contextMenuFor(id string) []ownframe.MenuItem {
 	if _, err := fmt.Sscanf(id, "cell-%d-%d", &r, &c); err == nil {
 		if t := a.activeTabPtr(); t != nil && t.grid != nil {
 			w := t.writable
+			nullOK := w
+			if col, ok := t.colMeta(c); ok && t.kind == tabTable && len(t.cols) > 0 {
+				nullOK = w && col.Nullable
+			}
 			a.ctxMenu = &contextMenu{grid: true, row: r, col: c}
 			items := []ownframe.MenuItem{
 				{ID: "g-copy", Label: "Copy Value", Enabled: true},
@@ -198,7 +202,7 @@ func (a *App) contextMenuFor(id string) []ownframe.MenuItem {
 				{ID: "g-md", Label: "Copy Selection as Markdown Table", Enabled: true},
 				{ID: "g-filter", Label: "Filter by Value", Enabled: true},
 				{ID: "g-inspect", Label: "Open in Inspector", Enabled: true},
-				{ID: "g-null", Label: "Set NULL", Enabled: w},
+				{ID: "g-null", Label: "Set NULL", Enabled: nullOK},
 				{ID: "g-dup", Label: "Duplicate Row", Enabled: w},
 				{ID: "g-del", Label: "Delete Row", Enabled: w},
 			}

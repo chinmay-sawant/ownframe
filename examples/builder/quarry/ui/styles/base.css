@@ -1,7 +1,7 @@
 /* Quarry shared geometry. Colors come only from --qr-* tokens (dark.css / light.css). */
 .qr-root, .qr-root * { box-sizing: border-box; font-kerning: none; text-rendering: geometricPrecision; letter-spacing: 0.2px; word-spacing: 2px; }
 /* Monospace text keeps exact advances: the editor maps clicks to columns by character width. */
-.qr-mono, .qr-mono *, .qr-ed-body, .qr-ed-body *, .qr-ddl, .qr-ddl *, .qr-insp-body, .qr-insp-body *, .qr-raw, .qr-num, .qr-time { letter-spacing: 0; word-spacing: 0; }
+.qr-mono, .qr-mono *, .qr-ed-body, .qr-ed-body *, .qr-ddl, .qr-ddl *, .qr-insp-body, .qr-insp-body *, .qr-raw, .qr-num, .qr-time, .qr-json { letter-spacing: 0; word-spacing: 0; }
 .qr-icon { flex: none; display: block; }
 .qr-logo { flex: none; display: block; border-radius: 6px; }
 .qr-iconbtn {
@@ -248,27 +248,28 @@
 .qr-colresize { flex: none; width: 4px; margin-left: -4px; height: 28px; }
 .qr-colresize:hover { background-color: var(--qr-border-strong); }
 .qr-grid-gutter {
-  display: flex; align-items: center; justify-content: flex-end; flex: none; width: 52px; height: 26px; padding: 0 8px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: flex-end; flex: none; width: 52px; height: 25px; padding: 0 8px; box-sizing: border-box;
   border-right: 1px solid var(--qr-border); background-color: var(--qr-surface-bg); color: var(--qr-text-muted); font-size: 11px;
 }
 .qr-grid-head .qr-grid-gutter { height: 28px; }
+.qr-grid-filters .qr-grid-gutter { height: 29px; }
 .qr-grid-body { overflow: hidden; position: relative; flex: none; }
 .qr-grid-inner { display: flex; flex-direction: column; }
 .qr-grid-row { display: flex; flex: none; height: 26px; border-bottom: 1px solid var(--qr-border); }
 .qr-grid-alt { background-color: var(--qr-row-alt); }
 .qr-grid-row:hover { background-color: var(--qr-row-hover); }
 .qr-cell {
-  display: flex; align-items: center; flex: none; height: 26px; padding: 0 8px; box-sizing: border-box;
+  display: flex; align-items: center; flex: none; height: 25px; padding: 0 8px; box-sizing: border-box;
   border-right: 1px solid var(--qr-border); overflow: hidden; white-space: nowrap; font-size: 12px;
 }
 .qr-cell-sel { border: 1px solid var(--qr-cell-selected); }
 .qr-num { justify-content: flex-end; font-family: monospace; }
 .qr-time { font-family: monospace; color: var(--qr-text-muted); }
-.qr-cellpill { padding: 0 8px; border-radius: 9px; font-size: 11px; line-height: 18px; height: 18px; }
+.qr-cellpill { padding: 0 6px; border-radius: 3px; font-size: 11px; line-height: 18px; height: 18px; font-family: monospace; letter-spacing: 0; word-spacing: 0; }
 .qr-null { background-color: var(--qr-null-bg); color: var(--qr-null-fg); }
 .qr-bool-true { background-color: var(--qr-diff-insert-bg); color: var(--qr-status-ok); }
 .qr-bool-false { background-color: var(--qr-diff-delete-bg); color: var(--qr-status-err); }
-.qr-json { background-color: var(--qr-brand-tint); color: var(--qr-brand); }
+.qr-json { font-family: monospace; color: var(--qr-text); }
 .qr-blob { background-color: var(--qr-null-bg); color: var(--qr-syn-type); }
 .qr-diff-edit { background-color: var(--qr-diff-edit-bg); }
 .qr-diff-insert { background-color: var(--qr-diff-insert-bg); }
@@ -365,7 +366,6 @@
 .qr-aq-user { width: 80px; flex: none; }
 .qr-aq-wait { width: 90px; flex: none; }
 .qr-aq-query { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
-.qr-insp-edit { height: 120px; padding: 6px 8px; font-family: monospace; }
 
 /* Overlay rows sit on the elevated surface, so they get their own visible hover tint. */
 .qr-scrim .qr-list-row:hover, .qr-menu .qr-list-row:hover, .qr-ac-row:hover { background-color: var(--qr-menu-hover); }
@@ -451,13 +451,13 @@
 .qr-pill:hover { background-color: var(--qr-btn-bg-hover); border-color: var(--qr-border-strong); }
 .qr-kbd { border-radius: 4px; background-color: transparent; border-color: var(--qr-border); }
 .qr-cellpill { border: 0; }
-.qr-json { background-color: var(--qr-brand-soft); color: var(--qr-brand); }
 
 /* Grid */
 .qr-grid-head { position: relative; z-index: 3; background-color: var(--qr-surface-bg); border-bottom: 1px solid var(--qr-border-strong); box-shadow: none; }
 .qr-grid-hname { letter-spacing: 0.2px; }
 .qr-grid-hkey .qr-grid-hname { color: var(--qr-text); }
 .qr-cell-sel { border: 1px solid var(--qr-cell-selected); background-color: var(--qr-brand-soft); }
+.qr-grid-gutter-sel { border: 1px solid var(--qr-cell-selected); background-color: var(--qr-brand-tint); color: var(--qr-brand); font-weight: 700; }
 
 /* Floating surfaces */
 .qr-modal { border-radius: 10px; border-color: var(--qr-border-strong); box-shadow: 0 4px 14px var(--qr-shadow-pop); }
@@ -528,7 +528,8 @@
 .qr-palette-search { border-radius: 6px; }
 .qr-kpi, .qr-chart, .qr-panel, .qr-plan-card, .qr-menu, .qr-ac { border-radius: 8px; }
 .qr-modal { border-radius: 10px; }
-.qr-cellpill, .qr-count { border-radius: 9px; }
+.qr-cellpill { border-radius: 3px; }
+.qr-count { border-radius: 9px; }
 .qr-badge { border-radius: 4px; }
 .qr-pal-rows { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 .qr-palette-list { flex-direction: row; }
@@ -574,10 +575,10 @@
 .qr-set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 12px; border-bottom: 1px solid var(--qr-border); }
 .qr-set-text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
 .qr-set-label { font-size: 12px; }
-.qr-switch { display: flex; align-items: center; flex: none; width: 36px; height: 22px; padding: 0; box-sizing: border-box; border: 2px solid transparent; border-radius: 11px; background-color: var(--qr-border-strong); }
+.qr-switch { display: flex; align-items: center; flex: none; width: 38px; height: 22px; padding: 0 3px; box-sizing: border-box; border: 0; border-radius: 11px; background-color: var(--qr-border-strong); }
 .qr-switch-on { justify-content: flex-end; background-color: var(--qr-brand); }
-.qr-switch-knob { width: 14px; height: 14px; border-radius: 7px; background-color: #ffffff; }
-.qr-switch:focus { border-color: var(--qr-brand); }
+.qr-switch-knob { width: 16px; height: 16px; border-radius: 8px; background-color: #ffffff; }
+.qr-switch:focus { outline: 1px solid var(--qr-brand); }
 /* Buttons are borderless, so keyboard focus tints the fill instead of the stroke. */
 .qr-btn:focus { background-color: var(--qr-brand-tint); color: var(--qr-brand); }
 .qr-btn-primary:focus { background-color: var(--qr-brand-hover); color: var(--qr-on-brand); text-decoration: underline; }
@@ -595,3 +596,71 @@
 .qr-grid-fcell { flex: none; box-sizing: border-box; padding: 0 3px; }
 .qr-colf { width: 100%; min-width: 0; max-width: 100%; height: 22px; min-height: 22px; padding: 0 6px; font-size: 11px; }
 .qr-btn-on { background-color: var(--qr-brand-soft); }
+
+/* Inline grid cell editor: flush inside the selected cell frame, no inner rounded border. */
+.qr-cell-editing { padding: 0; background-color: var(--qr-canvas-bg); }
+.qr-cell-invalid { border-color: var(--qr-status-err); }
+.qr-inline-edit { display: flex; align-items: center; gap: 2px; width: 100%; height: 100%; min-width: 0; overflow: hidden; }
+.qr-cell-input, .qr-cell-input:hover, .qr-cell-input:focus {
+  flex: 1; min-width: 0; width: auto; height: 23px; padding: 3px 6px 0 6px;
+  border: 0; border-radius: 0; background-color: transparent; color: var(--qr-text);
+  font-size: 12px; white-space: nowrap; overflow: hidden; outline: none;
+}
+.qr-cell-null {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  height: 18px; padding: 0 5px; margin-right: 3px; border: 0; border-radius: 3px;
+  background-color: var(--qr-null-bg); color: var(--qr-null-fg);
+  font-size: 10px; font-weight: 600; white-space: nowrap;
+}
+.qr-cell-null:hover { background-color: var(--qr-btn-bg-hover); color: var(--qr-text); }
+
+/* Inspector textarea: must sit after .qr-input so height: 28px does not crush it. */
+.qr-insp-edit {
+  flex: none; height: 120px; min-height: 120px; min-width: 0;
+  padding: 6px 8px; font-family: monospace; font-size: 12px; line-height: 16px;
+  letter-spacing: 0; word-spacing: 0; white-space: pre-wrap; overflow: hidden;
+}
+
+/* Override ownframe default formCSS so dark-mode selection, focus borders, and narrow inputs stay themed. */
+.qr-root [data-ownframe-field] { min-width: 0; }
+.qr-root [data-ownframe-selection] { background-color: var(--qr-sel-bg); color: var(--qr-text); }
+.qr-root [data-ownframe-field][data-ownframe-placeholder="1"] { color: var(--qr-text-muted); }
+.qr-root [data-ownframe-field][data-ownframe-focus="1"] { outline: none; border-color: var(--qr-brand); }
+.qr-root .qr-input-bad[data-ownframe-field][data-ownframe-focus="1"] { border-color: var(--qr-status-err); }
+.qr-root .qr-palette-input[data-ownframe-field][data-ownframe-focus="1"],
+.qr-root .qr-cell-input[data-ownframe-field][data-ownframe-focus="1"] { border: 0; outline: none; }
+
+/* Secondary buttons inside elevated modals need a distinct fill in dark mode. */
+.qr-modal .qr-btn { background-color: var(--qr-menu-hover); }
+.qr-modal .qr-btn:hover { background-color: var(--qr-border-strong); }
+.qr-modal .qr-btn-primary { background-color: var(--qr-brand); }
+.qr-modal .qr-btn-primary:hover { background-color: var(--qr-brand-hover); }
+.qr-modal .qr-btn-danger { background-color: transparent; }
+.qr-modal .qr-btn-danger:hover { background-color: var(--qr-diff-delete-bg); }
+.qr-modal .qr-btn-ghost { background-color: transparent; }
+.qr-modal .qr-btn:focus { background-color: var(--qr-brand-tint); color: var(--qr-brand); }
+.qr-modal .qr-btn-primary:focus { background-color: var(--qr-brand-hover); color: var(--qr-on-brand); text-decoration: underline; }
+.qr-modal .qr-btn-danger:focus { background-color: var(--qr-diff-delete-bg); color: var(--qr-status-err); }
+.qr-modal .qr-btn-ghost:focus { background-color: var(--qr-brand-tint); color: var(--qr-brand); }
+
+/* Boolean dropdown trigger & floating menu inside the grid and inspector. */
+.qr-bool-trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: 4px;
+  width: 100%; height: 100%; padding: 0 6px; box-sizing: border-box;
+  font-family: monospace; font-size: 12px; color: var(--qr-text);
+}
+.qr-bool-menu {
+  position: absolute; z-index: 45; width: 112px; padding: 4px; box-sizing: border-box;
+  border: 1px solid var(--qr-border-strong); border-radius: 8px;
+  background-color: var(--qr-surface-elevated); box-shadow: 0 3px 10px var(--qr-shadow-pop);
+}
+.qr-bool-opt {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 26px; padding: 0 8px; border-radius: 5px;
+  font-family: monospace; font-size: 12px; color: var(--qr-text);
+}
+.qr-bool-opt:hover { background-color: var(--qr-menu-hover); }
+.qr-bool-opt-on { background-color: var(--qr-brand-tint); color: var(--qr-brand); font-weight: 600; }
+.qr-insp-bool { display: flex; flex-direction: column; gap: 6px; }
+.qr-insp-bool-row { display: flex; gap: 6px; }
+.qr-insp-bool-row .qr-btn { flex: 1; }

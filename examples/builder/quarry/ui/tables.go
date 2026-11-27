@@ -101,6 +101,23 @@ func (a *App) applyTablePage(t *workTab, r queryDone) {
 		return
 	}
 	t.err = nil
+	if len(t.cols) > 0 {
+		byName := make(map[string]driver.ColumnMeta, len(t.cols))
+		for _, c := range t.cols {
+			byName[strings.ToLower(c.Name)] = c
+		}
+		for i, c := range s.Res.Columns {
+			if meta, ok := byName[strings.ToLower(c.Name)]; ok {
+				s.Res.Columns[i].Nullable = meta.Nullable
+				s.Res.Columns[i].PrimaryKey = meta.PrimaryKey
+				s.Res.Columns[i].ForeignKey = meta.ForeignKey
+				s.Res.Columns[i].DefaultVal = meta.DefaultVal
+				if meta.Type != "" {
+					s.Res.Columns[i].Type = meta.Type
+				}
+			}
+		}
+	}
 	prev := t.grid
 	t.grid = newGridState(s.Res)
 	if prev != nil && len(prev.widths) == len(t.grid.widths) {

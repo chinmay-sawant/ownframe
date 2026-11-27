@@ -160,7 +160,9 @@ func (a *App) modalEnter(ctx context.Context) error {
 		}
 		return a.runImport(ctx)
 	case "settings":
-		a.applySlowThreshold()
+		if !a.applySlowThreshold() {
+			return a.redraw(ctx)
+		}
 		return a.closeModal(ctx)
 	case "confirm":
 		return a.confirmOK(ctx)

@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,8 +53,12 @@ func newGridState(res driver.QueryResult) *gridState {
 		}
 		for r := 0; r < len(g.rows) && r < 50; r++ {
 			if i < len(g.rows[r]) {
-				txt, _ := cellDisplay(g.rows[r][i])
-				w = max(w, gridCellPad+gridCellCharW*min(len(txt), gridCellChars))
+				txt, tcls := cellDisplay(g.rows[r][i])
+				cw := gridCellCharW
+				if tcls == "qr-json" {
+					cw = gridNameCharW
+				}
+				w = max(w, gridCellPad+cw*min(len([]rune(txt)), gridCellChars))
 			}
 		}
 		g.widths[i] = max(gridMinColWidth, min(w, gridMaxColWidth))
@@ -119,18 +125,29 @@ func cellDisplay(c driver.CellValue) (string, string) {
 	return strings.ReplaceAll(strings.ReplaceAll(c.S, "\n", " "), "\r", ""), ""
 }
 
+// jsonPreview compacts valid JSON onto one readable line (preserving key order)
+// and flattens newlines in malformed JSON.
 func jsonPreview(s string) string {
-	var v any
-	if err := json.Unmarshal([]byte(s), &v); err != nil {
-		return strings.ReplaceAll(s, "\n", " ")
+	var buf bytes.Buffer
+	if err := json.Compact(&buf, []byte(s)); err == nil {
+		return buf.String()
 	}
-	switch x := v.(type) {
-	case map[string]any:
-		return fmt.Sprintf("{...} %d keys", len(x))
-	case []any:
-		return fmt.Sprintf("[...] %d items", len(x))
+	return strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(s, "\n", " "), "\r", ""))
+}
+
+// truncateRunes caps s to limit runes, ending with an ellipsis when trimmed.
+func truncateRunes(s string, limit int) string {
+	if limit <= 0 {
+		return ""
 	}
-	return s
+	r := []rune(s)
+	if len(r) <= limit {
+		return s
+	}
+	if limit == 1 {
+		return "…"
+	}
+	return string(r[:limit-1]) + "…"
 }
 
 // prettyJSON indents valid JSON; ok is false for other text.
@@ -160,37 +177,133 @@ func cellAny(c driver.CellValue) any {
 	return c.S
 }
 
-// parseCell converts edited text back to a cell of the same kind as old.
-func parseCell(text string, old driver.CellValue) driver.CellValue {
-	switch old.Kind {
-	case driver.KindInt:
-		var n int64
-		if _, err := fmt.Sscan(text, &n); err == nil {
-			return driver.Int(n)
-		}
-	case driver.KindFloat:
-		var f float64
-		if _, err := fmt.Sscan(text, &f); err == nil {
-			return driver.Float(f)
-		}
-	case driver.KindBool:
+// normalizeSQLType strips precision/length qualifiers and returns the uppercased base type.
+func normalizeSQLType(typ string) string {
+	t := strings.TrimSpace(strings.ToUpper(typ))
+	if i := strings.IndexByte(t, '('); i >= 0 {
+		t = strings.TrimSpace(t[:i])
+	}
+	return t
+}
+
+func isBoolColType(typ string) bool {
+	switch normalizeSQLType(typ) {
+	case "BOOL", "BOOLEAN", "BIT":
+		return true
+	}
+	return false
+}
+
+func isIntColType(typ string) bool {
+	switch normalizeSQLType(typ) {
+	case "INT", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "MEDIUMINT",
+		"INT2", "INT4", "INT8", "SERIAL", "BIGSERIAL", "SMALLSERIAL":
+		return true
+	}
+	return false
+}
+
+func isFloatColType(typ string) bool {
+	switch normalizeSQLType(typ) {
+	case "REAL", "FLOAT", "FLOAT4", "FLOAT8", "DOUBLE", "DOUBLE PRECISION",
+		"NUMERIC", "DECIMAL", "MONEY":
+		return true
+	}
+	return false
+}
+
+func isJSONColType(typ string) bool {
+	switch normalizeSQLType(typ) {
+	case "JSON", "JSONB":
+		return true
+	}
+	return false
+}
+
+func isTimeColType(typ string) bool {
+	switch normalizeSQLType(typ) {
+	case "DATE", "TIME", "TIMETZ", "TIME WITH TIME ZONE", "TIME WITHOUT TIME ZONE",
+		"TIMESTAMP", "TIMESTAMPTZ", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITHOUT TIME ZONE",
+		"DATETIME":
+		return true
+	}
+	return false
+}
+
+func isTextColType(typ string) bool {
+	t := normalizeSQLType(typ)
+	return t == "TEXT" || t == "CLOB" || t == "NAME" || t == "UUID" ||
+		strings.Contains(t, "CHAR")
+}
+
+// parseCell validates and converts edited text to a typed CellValue using the
+// column's declared metadata (falling back to old.Kind when the type is empty).
+func parseCell(text string, col driver.ColumnMeta, old driver.CellValue) (driver.CellValue, error) {
+	colLabel := col.Name
+	if colLabel == "" {
+		colLabel = "cell"
+	}
+	baseType := normalizeSQLType(col.Type)
+
+	switch {
+	case isBoolColType(col.Type) || (baseType == "" && old.Kind == driver.KindBool):
 		switch strings.ToLower(strings.TrimSpace(text)) {
-		case "true", "1", "t":
-			return driver.Bool(true)
-		case "false", "0", "f":
-			return driver.Bool(false)
+		case "true", "1", "t", "yes":
+			return driver.Bool(true), nil
+		case "false", "0", "f", "no":
+			return driver.Bool(false), nil
+		default:
+			return driver.CellValue{}, fmt.Errorf("invalid boolean value %q for %s (expected true, false, 1, 0, t, f, yes, or no)", text, colLabel)
 		}
-	case driver.KindJSON:
-		return driver.JSON(text)
-	case driver.KindTime:
-		if tm, err := time.Parse("2006-01-02 15:04:05", text); err == nil {
-			return driver.Time(tm)
+
+	case isIntColType(col.Type) || (baseType == "" && old.Kind == driver.KindInt):
+		n, err := strconv.ParseInt(strings.TrimSpace(text), 10, 64)
+		if err != nil {
+			return driver.CellValue{}, fmt.Errorf("invalid integer value %q for %s", text, colLabel)
 		}
+		return driver.Int(n), nil
+
+	case isFloatColType(col.Type) || (baseType == "" && old.Kind == driver.KindFloat):
+		f, err := strconv.ParseFloat(strings.TrimSpace(text), 64)
+		if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
+			return driver.CellValue{}, fmt.Errorf("invalid numeric value %q for %s", text, colLabel)
+		}
+		return driver.Float(f), nil
+
+	case isJSONColType(col.Type) || (baseType == "" && old.Kind == driver.KindJSON):
+		if !json.Valid([]byte(text)) {
+			return driver.CellValue{}, fmt.Errorf("invalid JSON value for %s", colLabel)
+		}
+		return driver.JSON(text), nil
+
+	case isTimeColType(col.Type) || (baseType == "" && old.Kind == driver.KindTime):
+		trimmed := strings.TrimSpace(text)
+		var layouts []string
+		switch baseType {
+		case "DATE":
+			layouts = []string{"2006-01-02"}
+		case "TIME", "TIMETZ", "TIME WITH TIME ZONE", "TIME WITHOUT TIME ZONE":
+			layouts = []string{"15:04:05.999999999Z07:00", "15:04:05Z07:00", "15:04:05.999999999", "15:04:05", "15:04"}
+		default:
+			layouts = []string{
+				time.RFC3339Nano,
+				time.RFC3339,
+				"2006-01-02 15:04:05.999999999",
+				"2006-01-02 15:04:05",
+				"2006-01-02T15:04:05.999999999",
+				"2006-01-02T15:04:05",
+				"2006-01-02",
+			}
+		}
+		for _, layout := range layouts {
+			if tm, err := time.Parse(layout, trimmed); err == nil {
+				return driver.Time(tm), nil
+			}
+		}
+		return driver.CellValue{}, fmt.Errorf("invalid date/time value %q for %s", text, colLabel)
 	}
-	if old.Kind == driver.KindNull {
-		return driver.Text(text)
-	}
-	return driver.Text(text)
+
+	return driver.Text(text), nil
 }
 
 // ---- layout ----
@@ -222,7 +335,7 @@ func (a *App) gridViewH(t *workTab) int {
 func (a *App) gridViewW(t *workTab) int {
 	w := a.width - railWidth
 	if a.sidebarOpen {
-		w -= a.sidebarW
+		w -= a.sidebarW + edSidebarGap
 	}
 	if t.inspectorOpen {
 		w -= a.inspectorW
@@ -299,6 +412,9 @@ func (a *App) renderGrid(t *workTab) *ui.Element {
 		inner.Children(a.gridRow(t, g, r, cols))
 	}
 	body.Children(inner)
+	if bm := a.boolDropdownMenu(t, g, cols, viewH); bm != nil {
+		body.Children(bm)
+	}
 	if hb := a.hbar("grid", "Result grid horizontal scroll", scrollContent, viewport, scrollOff,
 		func(o int) { g.hcol = a.colAtOffset(t, g, o) }); hb != nil {
 		body.Children(hb.Position(ui.PositionAbsolute).Left(ui.Px(float64(fixedW))))
@@ -357,8 +473,13 @@ func (a *App) gridRow(t *workTab, g *gridState, r int, cols []int) *ui.Element {
 	}
 	row := ui.Div().ID(fmt.Sprintf("grid-row-%d", r)).Class(cls).Attr("role", ariaRole("row")).Attr("aria-rowindex", fmt.Sprint(r+1)).
 		Attr("aria-label", rowLabel(g, cells, r))
-	row.Children(ui.Div().ID(fmt.Sprintf("grid-gutter-%d", r)).Class("qr-grid-gutter").Text(fmt.Sprint(r + 1)).
+	gcls := "qr-grid-gutter"
+	if g.rowSel && g.selected(r, 0) {
+		gcls += " qr-grid-gutter-sel"
+	}
+	row.Children(ui.Div().ID(fmt.Sprintf("grid-gutter-%d", r)).Class(gcls).Text(fmt.Sprint(r + 1)).
 		OnClick(func(ctx context.Context) error {
+			t.editing = nil
 			g.ar, g.ac, g.fr, g.fc, g.rowSel = r, 0, r, max(0, len(g.cols)-1), true
 			a.focus = "grid"
 			return a.redraw(ctx)
@@ -384,15 +505,24 @@ func (a *App) gridRow(t *workTab, g *gridState, r int, cols []int) *ui.Element {
 		if g.selected(r, ci) {
 			ccls += " qr-cell-sel"
 		}
+		isEditing := t.editing != nil && t.editing.row == r && t.editing.col == ci
+		if isEditing {
+			ccls += " qr-cell-editing"
+			if t.editing.invalid {
+				ccls += " qr-cell-invalid"
+			}
+		}
 		cell := ui.Div().ID(fmt.Sprintf("cell-%d-%d", r, ci)).Class(ccls).Width(ui.Px(float64(g.widths[ci]))).
 			Attr("role", ariaRole("gridcell")).Attr("aria-label", g.cols[ci].Name+": "+text)
 		switch {
-		case t.editing != nil && t.editing.row == r && t.editing.col == ci:
+		case isEditing:
 			cell.Children(a.inlineEditor(t))
-		case tcls == "qr-null" || strings.HasPrefix(tcls, "qr-bool") || tcls == "qr-blob" || tcls == "qr-json":
+		case tcls == "qr-null" || strings.HasPrefix(tcls, "qr-bool") || tcls == "qr-blob":
 			cell.Children(ui.Span().Class(tcls + " qr-cellpill").Text(text))
+		case tcls == "qr-json":
+			cell.Text(truncateRunes(text, max(gridMinTextChars, (g.widths[ci]-gridCellPad)/gridNameCharW)))
 		default:
-			cell.Text(text)
+			cell.Text(truncateRunes(text, max(gridMinTextChars, (g.widths[ci]-gridCellPad)/gridCellCharW)))
 		}
 		cell.OnClick(func(ctx context.Context) error { return a.clickCell(ctx, t, r, ci) })
 		row.Children(cell)
@@ -438,11 +568,16 @@ func (a *App) clickCell(ctx context.Context, t *workTab, r, c int) error {
 	} else {
 		g.ar, g.ac, g.fr, g.fc, g.rowSel = r, c, r, c, false
 	}
+	if t.editing != nil && (t.editing.row != r || t.editing.col != c) {
+		t.editing = nil
+	}
+	a.syncInspectorEditor(t)
 	if dbl {
 		if t.writable && t.kind == tabTable && r < len(g.rows) {
 			return a.beginInlineEdit(ctx, t, r, c)
 		}
 		t.inspectorOpen = true
+		a.syncInspectorEditor(t)
 	}
 	return a.redraw(ctx)
 }
@@ -658,6 +793,7 @@ func (a *App) gridKey(ctx context.Context, t *workTab, key string, shift bool) e
 		g.scrollY = top + gridRowHeight - float64(a.gridViewH(t))
 	}
 	g.clampScroll(a.gridViewW(t), a.gridViewH(t), extraRows(t))
+	a.syncInspectorEditor(t)
 	return a.redraw(ctx)
 }
 
@@ -828,6 +964,7 @@ func (a *App) tableTabView(t *workTab) *ui.Element {
 	tools = append(tools,
 		tbItem{id: "tbl-inspector", label: "Inspector", class: "qr-btn", fn: func(ctx context.Context) error {
 			t.inspectorOpen = !t.inspectorOpen
+			a.syncInspectorEditor(t)
 			return a.redraw(ctx)
 		}},
 		tbItem{id: "tbl-export", label: "Export", class: "qr-btn", fn: func(ctx context.Context) error { return a.openExport(ctx, true) }},
@@ -889,6 +1026,12 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 			return false, err
 		}
 	}
+	if t := a.activeTabPtr(); t != nil && a.isBoolEditing(t) && !strings.HasPrefix(box.ID, "cell-bool-") {
+		t.editing = nil
+		if err := a.redraw(ctx); err != nil {
+			return false, err
+		}
+	}
 	if a.ac.open && !strings.HasPrefix(box.ID, "ac-") && !strings.HasPrefix(box.ID, "ed-line-") && box.ID != "editor-body" && box.ID != "editor-wrap" {
 		a.ac.open = false // a press anywhere else is a blur
 		if err := a.redraw(ctx); err != nil {
@@ -930,9 +1073,9 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 }
 
 // cellAlign keeps only the layout part of a cell's type class. The tint of
-// NULL, boolean, JSON and BLOB values belongs to the inner pill, never the cell.
+// NULL, boolean, and BLOB values belongs to the inner badge, never the cell.
 func cellAlign(tcls string) string {
-	if tcls == "qr-num" || tcls == "qr-time" {
+	if tcls == "qr-num" || tcls == "qr-time" || tcls == "qr-json" {
 		return tcls
 	}
 	return ""

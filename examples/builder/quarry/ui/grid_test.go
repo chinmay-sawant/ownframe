@@ -109,8 +109,8 @@ func TestTypedCellRendering(t *testing.T) {
 		{driver.Bool(true), "true", "qr-bool qr-bool-true"},
 		{driver.Bool(false), "false", "qr-bool qr-bool-false"},
 		{driver.Time(time.Date(2025, 1, 2, 3, 4, 5, 0, time.UTC)), "2025-01-02 03:04:05", "qr-time"},
-		{jsonCell, "{...} 2 keys", "qr-json"},
-		{driver.JSON(`[1,2,3]`), "[...] 3 items", "qr-json"},
+		{jsonCell, `{"a":1,"b":[1,2]}`, "qr-json"},
+		{driver.JSON(`[1, 2, 3]`), `[1,2,3]`, "qr-json"},
 		{driver.Blob(make([]byte, 4300)), "<BLOB 4.2 KB>", "qr-blob"},
 		{driver.Text("multi\nline"), "multi line", ""},
 	}
@@ -129,7 +129,7 @@ func TestTypedCellRendering(t *testing.T) {
 	r.a.activeTabPtr().grid = newGridState(driver.QueryResult{Columns: cols, Rows: [][]driver.CellValue{row}})
 	r.must(r.a.redraw(r.ctx))
 	txt := r.texts()
-	for _, want := range []string{"NULL", "true", "2025-05-06 07:08:09", "{...} 2 keys", "<BLOB 2.0 KB>", "hi", "2.5"} {
+	for _, want := range []string{"NULL", "true", "2025-05-06 07:08:09", `{"a":1,"b":[1,2]}`, "<BLOB 2.0 KB>", "hi", "2.5"} {
 		if !strings.Contains(txt, want) {
 			t.Errorf("grid did not paint %q", want)
 		}
@@ -146,6 +146,43 @@ func TestTypedCellRendering(t *testing.T) {
 		t.Errorf("number not right aligned: text x=%.1f in cell %.1f..%.1f", numX, num.X, num.X+num.W)
 	}
 	r.png("typed-cells")
+}
+
+func TestAuditEventsJSONAndHorizontalScrollbar(t *testing.T) {
+	r := newRig(t, 1440, 960, "")
+	r.openTableByName("audit_events")
+	txt := r.texts()
+	if strings.Contains(txt, "4 keys") {
+		t.Fatalf("JSON cells must show compact JSON preview, not placeholder: %q", txt)
+	}
+	if !strings.Contains(txt, `{"action":"`) {
+		t.Fatalf("expected compact JSON preview in audit_events grid")
+	}
+	if r.has("grid-hbar") || r.has("grid-hthumb") {
+		t.Fatal("audit_events fits at 1440x960 and must not show a horizontal scrollbar")
+	}
+	// Opening the inspector at 1440x960 still fits without a horizontal scrollbar.
+	r.tap("cell-0-3")
+	r.tap("tbl-inspector")
+	if r.has("grid-hbar") || r.has("grid-hthumb") {
+		t.Fatal("audit_events fits at 1440x960 with inspector open")
+	}
+	// At 1280x800 without inspector, audit_events also fits with no horizontal scrollbar.
+	r2 := newRig(t, 1280, 800, "")
+	r2.openTableByName("audit_events")
+	if r2.has("grid-hbar") || r2.has("grid-hthumb") {
+		t.Fatal("audit_events fits at 1280x800 and must not show a horizontal scrollbar")
+	}
+	// Widening payload past the viewport brings up the horizontal scrollbar flush with grid-body.
+	r2.a.activeTabPtr().grid.widths[3] = 900
+	r2.must(r2.a.redraw(r2.ctx))
+	if !r2.has("grid-hbar") || !r2.has("grid-hthumb") {
+		t.Fatal("overflowing columns must show the horizontal scrollbar")
+	}
+	body, hbar := r2.box("grid-body"), r2.box("grid-hbar")
+	if hbar.X+hbar.W > body.X+body.W+0.5 {
+		t.Fatalf("grid-hbar extends past grid-body: %.1f > %.1f", hbar.X+hbar.W, body.X+body.W)
+	}
 }
 
 func TestGridNavigationAndCopy(t *testing.T) {

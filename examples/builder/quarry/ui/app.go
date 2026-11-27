@@ -641,6 +641,13 @@ func (a *App) onSubmit(ctx context.Context) error {
 	if t := a.activeTabPtr(); t != nil && t.editing != nil {
 		return a.commitInlineEdit(ctx, t)
 	}
+	if a.page.Form().FocusID() == "tbl-filter" {
+		if t := a.activeTabPtr(); t != nil && t.kind == tabTable {
+			t.filter = a.page.Form().FormValue("tbl-filter")
+			t.page = 0
+			return a.loadTablePage(ctx, t)
+		}
+	}
 	return nil
 }
 

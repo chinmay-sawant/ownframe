@@ -64,9 +64,8 @@ func iconBody(name string) string {
 	case "clock", "history":
 		return `<circle cx="12" cy="12" r="10"/>` + poly("12 6 12 12 16 14")
 	case "settings":
-		return `<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.5"/>` +
-			line("12", "1", "12", "3.5") + line("12", "20.5", "12", "23") + line("1", "12", "3.5", "12") + line("20.5", "12", "23", "12") +
-			line("4.2", "4.2", "6", "6") + line("18", "18", "19.8", "19.8") + line("4.2", "19.8", "6", "18") + line("18", "6", "19.8", "4.2")
+		return path("M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z") +
+			`<circle cx="12" cy="12" r="3"/>`
 	case "sun":
 		return `<circle cx="12" cy="12" r="4"/>` + line("12", "2", "12", "4") + line("12", "20", "12", "22") +
 			line("4.9", "4.9", "6.3", "6.3") + line("17.7", "17.7", "19.1", "19.1") + line("2", "12", "4", "12") + line("20", "12", "22", "12") +
@@ -148,10 +147,10 @@ func iconBody(name string) string {
 	return `<circle cx="12" cy="12" r="4"/>`
 }
 
-// iconSVG renders the stroke icon in colour hex.
+// iconSVG renders the stroke icon in colour hex at 2x resolution for crisp downscaling.
 func iconSVG(name, hex string) []byte {
 	var b strings.Builder
-	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="%s" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">`, hex)
+	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="%s" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">`, hex)
 	b.WriteString(iconBody(name))
 	b.WriteString(`</svg>`)
 	return []byte(b.String())
@@ -163,7 +162,7 @@ func logoSVG(dark bool) []byte {
 	if !dark {
 		bg, fg = "#1f9d6b", "#ffffff"
 	}
-	return []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">` +
+	return []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48">` +
 		`<rect x="0" y="0" width="24" height="24" rx="6" fill="` + bg + `"/>` +
 		`<path d="M5 8H11V12H15V16H19V19H5Z" fill="` + fg + `"/>` +
 		`<rect x="5" y="5" width="6" height="1.8" rx="0.9" fill="` + fg + `"/></svg>`)

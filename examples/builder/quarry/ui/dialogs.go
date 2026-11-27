@@ -777,11 +777,17 @@ func toggleSwitch(id, label string, on bool, fn func(context.Context) error) *ui
 		Children(ui.Span().Class("qr-switch-knob")).OnClick(fn)
 }
 
-func (a *App) applySlowThreshold() {
-	if n, err := strconv.Atoi(strings.TrimSpace(a.page.Form().FormValue("set-slow"))); err == nil && n >= 0 {
-		a.slow.SetThreshold(time.Duration(n) * time.Millisecond)
-		a.savePref("slow.ms", strconv.Itoa(n))
+func (a *App) applySlowThreshold() bool {
+	raw := strings.TrimSpace(a.page.Form().FormValue("set-slow"))
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 {
+		a.notify(fmt.Sprintf("Invalid slow-query threshold %q (expected non-negative integer ms)", raw))
+		return false
 	}
+	a.slow.SetThreshold(time.Duration(n) * time.Millisecond)
+	a.savePref("slow.ms", strconv.Itoa(n))
+	a.notify(fmt.Sprintf("Slow query threshold set to %d ms", n))
+	return true
 }
 
 // settingsDialog edits the persisted preferences. Every choice applies and is
