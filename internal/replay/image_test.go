@@ -21,8 +21,17 @@ import (
 func tinyPNG(t *testing.T, shade int) []byte {
 	t.Helper()
 
+	const (
+		byteMask  = 0xff
+		byteShift = 8
+	)
+
 	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
-	img.Set(0, 0, color.RGBA{R: uint8(shade), G: uint8(shade >> 8), A: 255})
+	img.Set(0, 0, color.RGBA{
+		R: uint8(shade & byteMask),
+		G: uint8((shade >> byteShift) & byteMask),
+		A: byteMask,
+	})
 
 	var out bytes.Buffer
 	if err := png.Encode(&out, img); err != nil {

@@ -30,8 +30,8 @@ github.com/benoitkugler/textprocessing v0.0.6 h1:obkMyj62GEPg3xUVYqROlCN22z1Oleu
 github.com/benoitkugler/textprocessing v0.0.6/go.mod h1:Io0gN08/PXEzrSOWFa88xHx2Xv3VjvLMY7H76YoI23A=
 github.com/brianvoe/gofakeit/v7 v7.18.0 h1:vn3tb6OKRUazCkzhotd8xEwz/mhkLFbDoR8OUREFm80=
 github.com/brianvoe/gofakeit/v7 v7.18.0/go.mod h1:QXuPeBw164PJCzCUZVmgpgHJ3Llj49jSLVkKPMtxtxA=
-github.com/chinmay-sawant/blinkless v0.1.10 h1:7ELJ6qriikt6/DSyzjIW5k1cZx7EzFlE+d2fh6pSlaA=
-github.com/chinmay-sawant/blinkless v0.1.10/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
+github.com/chinmay-sawant/blinkless v0.1.11 h1:3xL/YyXQ23hI5li7Yg84jchX4+8B2b8N7pMBuQecwAU=
+github.com/chinmay-sawant/blinkless v0.1.11/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
 github.com/chinmay-sawant/ownframe v0.0.8 h1:eCrbJkHM6gYlj+lKN5LSAr9rSvPmwodjkb9rgFjpfCg=
 github.com/chinmay-sawant/ownframe v0.0.8/go.mod h1:fN/Xzrge1elj/YK2I8S7tEWFnuMDhaWgYq66XB70+c4=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
