@@ -319,6 +319,7 @@ func opsMutated(before, after []layout.DisplayOp, indices []int) bool {
 		a, b := &before[idx], &after[idx]
 		if a.X != b.X || a.Y != b.Y || a.W != b.W || a.H != b.H ||
 			a.R != b.R || a.G != b.G || a.B != b.B || a.Alpha != b.Alpha ||
+			a.Radius != b.Radius || a.RadiusY != b.RadiusY ||
 			a.Opacity() != b.Opacity() || a.XformValue() != b.XformValue() {
 			return true
 		}
@@ -760,14 +761,16 @@ const (
 	fieldMatrix
 	fieldOpacity
 	fieldRGB
+	fieldAlpha
+	fieldRadius
 )
 
 // maskAll is every field a target can carry. A zero mask writes nothing.
-const maskAll = fieldX | fieldY | fieldMatrix | fieldOpacity | fieldRGB
+const maskAll = fieldX | fieldY | fieldMatrix | fieldOpacity | fieldRGB | fieldAlpha | fieldRadius
 
 // fieldMaskOf narrows the driver's mask to the paint fields a player owns. A
-// full snapshot maps to maskAll; W, H, and Alpha are not driver write fields,
-// so they never appear here.
+// full snapshot maps to maskAll; W and H are not driver write fields, so they
+// never appear here.
 func fieldMaskOf(mask Mask) fieldMask {
 	if mask == 0 || mask == MaskAll {
 		return maskAll
@@ -787,6 +790,12 @@ func fieldMaskOf(mask Mask) fieldMask {
 	}
 	if mask&MaskRGB != 0 {
 		out |= fieldRGB
+	}
+	if mask&MaskAlpha != 0 {
+		out |= fieldAlpha
+	}
+	if mask&MaskRadius != 0 {
+		out |= fieldRadius
 	}
 	return out
 }

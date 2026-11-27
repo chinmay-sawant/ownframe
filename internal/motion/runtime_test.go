@@ -1037,8 +1037,8 @@ func TestColourOnlyEntryDamagesItsPaint(t *testing.T) {
 	if err := r.Bind(d); err != nil {
 		t.Fatalf("bind: %v", err)
 	}
-	if got := r.entries[0].mask; got != fieldRGB {
-		t.Fatalf("colour mask = %b, want the colour field only", got)
+	if got := r.entries[0].mask; got != fieldRGB|fieldAlpha {
+		t.Fatalf("colour mask = %b, want colour RGB+Alpha fields only", got)
 	}
 
 	damage := r.Step(d, testClock().Add(50*time.Millisecond))

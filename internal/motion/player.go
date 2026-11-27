@@ -245,14 +245,14 @@ type Keyframe struct {
 	Opacity                    float64
 	R, G, B                    float64
 	Move, OpacitySet, ColorSet bool
-	// ColorAlpha is the alpha a parsed colour declaration carried. The paint
-	// phase writes only the sRGB channels, so ColorAlphaSet reports a
-	// translucent keyframed colour the binder counts as a fidelity gap instead
-	// of dropping it silently.
+	// ColorAlpha is the alpha channel a parsed colour declaration carried.
 	ColorAlpha    float64
 	ColorAlphaSet bool
-	Transform     TransformValue
-	Perspective   PerspectiveValue
+	// Radius is a uniform single-value border-radius in display points.
+	Radius      float64
+	RadiusSet   bool
+	Transform   TransformValue
+	Perspective PerspectiveValue
 	// PerspectiveBase is the element's static camera. The binder fills it so
 	// an omitted 0% or 100% perspective or perspective-origin endpoint uses
 	// the static value instead of none and the box centre.

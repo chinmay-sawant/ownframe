@@ -44,6 +44,7 @@ func composeSampled(
 	}{
 		{moveX, animFieldX}, {moveY, animFieldY}, {opacity, animFieldOpacity},
 		{red, animFieldR}, {green, animFieldG}, {blue, animFieldB},
+		{colorAlpha, animFieldAlpha}, {borderRadius, animFieldRadius},
 	}
 	base := target.From
 	mode := e.Timing.Composition
@@ -122,11 +123,11 @@ func hasTransformDecl(frames []Keyframe) bool {
 // omitted property falls back to the base value. An additive composition
 // sums the keyframe onto the paint, so an omitted property must add
 // nothing, or the paint is added to itself and saturates.
-func missingFallbacks(base Paint, mode Composition) [6]float64 {
+func missingFallbacks(base Paint, mode Composition) [fieldCount]float64 {
 	if mode != Replace {
-		return [6]float64{}
+		return [fieldCount]float64{}
 	}
-	return [6]float64{0, 0, base.Opacity, base.R, base.G, base.B}
+	return [fieldCount]float64{0, 0, base.Opacity, base.R, base.G, base.B, base.Alpha, base.Radius}
 }
 
 func apply(p *Paint, base Paint, field int, v float64, mode Composition) {
@@ -160,6 +161,17 @@ func apply(p *Paint, base Paint, field int, v float64, mode Composition) {
 		p.G = color(p.G, v, add)
 	case animFieldB:
 		p.B = color(p.B, v, add)
+	case animFieldAlpha:
+		p.Alpha = color(p.Alpha, v, add)
+	case animFieldRadius:
+		r := v
+		if add {
+			r = p.Radius + v
+		}
+		if r < 0 {
+			r = 0
+		}
+		p.Radius, p.RadiusY = r, r
 	}
 }
 
@@ -801,6 +813,10 @@ func animFieldMask(field int) (Mask, bool) {
 		return MaskOpacity, true
 	case animFieldR, animFieldG, animFieldB:
 		return MaskRGB, true
+	case animFieldAlpha:
+		return MaskAlpha, true
+	case animFieldRadius:
+		return MaskRadius, true
 	}
 	return 0, false
 }

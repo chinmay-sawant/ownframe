@@ -575,8 +575,8 @@ func TestBindBoxKeepsSVGPaintOnAMixedPlayer(t *testing.T) {
 	if len(bounds) != 1 {
 		t.Fatalf("bound players = %d, want the fill player only", len(bounds))
 	}
-	if got := bounds[0].Mask; got != MaskRGB {
-		t.Fatalf("mask = %d, want the colour field", got)
+	if got := bounds[0].Mask; got != MaskRGB|MaskAlpha {
+		t.Fatalf("mask = %d, want the colour RGB+Alpha fields", got)
 	}
 	bounds[0].Player.Step(svgStart().Add(500 * time.Millisecond))
 	if values := bounds[0].Player.SVGPaintValues(); len(values) == 0 {

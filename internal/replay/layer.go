@@ -134,12 +134,6 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 	if box.Transform.HasTransform3D || box.Transform.HasPerspective {
 		return out, "3d transform"
 	}
-	if hasGroups(d) {
-		// The direct layer walk paints group members without buffering them.
-		// Until layer painting runs inside a group buffer, a page with any
-		// blend or isolation group keeps the direct path.
-		return out, "display has blend or isolation groups"
-	}
 
 	matrix := normalMatrix(spec.Matrix)
 	alpha := clampLayerAlpha(spec.Alpha)
@@ -192,7 +186,7 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 			// level counts as the z-indexed band the layer cannot cross.
 			return out, "fixed or z-indexed op"
 		}
-		if op.Group() != nil {
+		if op.Group() != nil || op.GroupBoundary() != 0 {
 			return out, "op inside a blend group"
 		}
 		cx, cy, cw, ch, clipped := op.OverflowClip()
@@ -294,10 +288,13 @@ func layerOrderSafe(d *layout.Display, owned []int, firstRank, lastRank int, box
 			continue
 		}
 		op := &d.Ops[index]
+		if op.Group() != nil || op.GroupBoundary() != 0 {
+			return false
+		}
 		if op.Kind == layout.DisplayOpNoop || op.Kind == layout.DisplayOpLinkURI {
 			continue
 		}
-		if _, hasProj := op.ProjectiveTransformValue(); op.Group() != nil || hasProj {
+		if _, hasProj := op.ProjectiveTransformValue(); hasProj {
 			return false
 		}
 		b, ok := layerOpBox(op, layout.IdentityMatrix(), ppt)
@@ -326,17 +323,37 @@ func layerTopOrderSafe(d *layout.Display, cand *layerCandidate, pinZ int) bool {
 			continue
 		}
 		op := &d.Ops[index]
-		if op.Kind == layout.DisplayOpNoop || op.Kind == layout.DisplayOpLinkURI {
-			continue
-		}
 		if op.Fixed || atPinZ(op, pinZ) {
 			continue
 		}
-		if _, hasProj := op.ProjectiveTransformValue(); op.Group() != nil || hasProj {
+		if op.GroupBoundary() != 0 {
+			if op.IsGroupBegin() && op.Group() != nil && (op.Group().BackdropFilter != "" || op.Group().Mask != nil) {
+				b := boxBounds(op.X, op.Y, op.W, op.H, 0, ppt)
+				if b.Empty() || b.Overlaps(cand.box) || b.Overlaps(animated) {
+					return false
+				}
+			}
+			continue
+		}
+		if op.Kind == layout.DisplayOpNoop || op.Kind == layout.DisplayOpLinkURI {
+			continue
+		}
+		if _, hasProj := op.ProjectiveTransformValue(); hasProj {
 			return false
 		}
 		b, ok := layerOpBox(op, layout.IdentityMatrix(), ppt)
-		if !ok || b.Empty() || b.Overlaps(cand.box) || b.Overlaps(animated) {
+		if !ok || b.Empty() {
+			return false
+		}
+		for g := op.Group(); g != nil; g = g.Parent {
+			if g.BackdropFilter != "" || g.Mask != nil {
+				return false
+			}
+			if blurPx, hasBlur := parseFilterBlur(g.Filter); hasBlur {
+				b = b.Inset(-filterBlurPad(blurPx))
+			}
+		}
+		if b.Overlaps(cand.box) || b.Overlaps(animated) {
 			return false
 		}
 	}
@@ -704,6 +721,11 @@ func (renderer *Renderer) DrawVisibleUnfixedZLayers(dst *ebiten.Image, d *layout
 	}
 
 	rect := visibleRect(dst.Bounds(), dx, dy)
+	if hasGroups(d) {
+		renderer.drawGroupedLayers(dst, d, frame, rect, dx, dy, z, true)
+
+		return
+	}
 	ppt := d.PointsPerPixel
 
 	for rank, index := range d.Order {
@@ -746,6 +768,12 @@ func (renderer *Renderer) DrawRectUnfixedZLayers(dst *ebiten.Image, d *layout.Di
 		return
 	}
 
+	if hasGroups(d) {
+		renderer.drawGroupedLayers(clip, d, frame, rect, 0, 0, z, true)
+
+		return
+	}
+
 	ppt := d.PointsPerPixel
 	for rank, index := range d.Order {
 		if layer := frame.start[rank]; layer != nil && layerTouches(layer, rect) {
@@ -783,6 +811,11 @@ func (renderer *Renderer) DrawVisibleUnfixedZBackground(dst *ebiten.Image, d *la
 	}
 
 	rect := visibleRect(dst.Bounds(), dx, dy)
+	if hasGroups(d) {
+		renderer.drawGroupedLayers(dst, d, frame, rect, dx, dy, z, false)
+
+		return
+	}
 	ppt := d.PointsPerPixel
 
 	for _, index := range d.Order {
@@ -790,6 +823,46 @@ func (renderer *Renderer) DrawVisibleUnfixedZBackground(dst *ebiten.Image, d *la
 			continue
 		}
 		op := &d.Ops[index]
+		if op.Fixed || atPinZ(op, z) || !opTouches(op, ppt, rect) {
+			continue
+		}
+		countOp()
+		renderer.drawOp(dst, op, dx, dy)
+	}
+}
+
+// drawGroupedLayers replays a display that has both active retained layers and
+// blend or isolation groups. Unrelated groups still buffer through paintNode
+// while promoted layer ops are skipped and, when drawLayers is true, composited
+// at their first paint rank.
+func (renderer *Renderer) drawGroupedLayers(dst *ebiten.Image, d *layout.Display,
+	frame *layerFrame, rect image.Rectangle, dx, dy float64, z int, drawLayers bool) {
+	root := renderer.planFor(d)
+	ppt := d.PointsPerPixel
+	pick := func(op *layout.DisplayOp) (float64, float64, bool) {
+		if op.Fixed || atPinZ(op, z) || !opTouches(op, ppt, rect) {
+			return 0, 0, false
+		}
+
+		return dx, dy, true
+	}
+
+	for i := range root.items {
+		it := &root.items[i]
+		if it.child != nil {
+			renderer.paintNode(dst, d, it.child, pick, false)
+
+			continue
+		}
+		if drawLayers {
+			if layer := frame.start[it.rank]; layer != nil && layerTouches(layer, rect) {
+				renderer.drawLayerPose(dst, d, layer, dx, dy)
+			}
+		}
+		if it.index < 0 || it.index >= len(frame.skip) || frame.skip[it.index] {
+			continue
+		}
+		op := it.op
 		if op.Fixed || atPinZ(op, z) || !opTouches(op, ppt, rect) {
 			continue
 		}

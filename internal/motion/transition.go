@@ -184,15 +184,15 @@ func transitionClass(property string) (Kind, Mask, bool) {
 	case "transform":
 		return KindSubtree, MaskMatrix, true
 	case "background-color", "accent-color":
-		return KindFill, MaskRGB, true
+		return KindFill, MaskRGB | MaskAlpha, true
 	case "color", "text-decoration-color", "text-emphasis-color":
-		return KindInk, MaskRGB, true
+		return KindInk, MaskRGB | MaskAlpha, true
 	case "border-color", "border-top-color", "border-right-color",
 		"border-bottom-color", "border-left-color", "border-block-color",
 		"border-block-start-color", "border-block-end-color", "border-inline-color",
 		"border-inline-start-color", "border-inline-end-color", "outline-color",
 		"column-rule-color", "row-rule-color", "rule-color":
-		return KindStroke, MaskRGB, true
+		return KindStroke, MaskRGB | MaskAlpha, true
 	}
 	return 0, 0, false
 }
@@ -913,6 +913,11 @@ func paintChanged(a, b Paint, mask Mask) bool {
 		return true
 	}
 	if mask&MaskAlpha != 0 && math.Abs(a.Alpha-b.Alpha) > transitionPaintEpsilon {
+		return true
+	}
+	if mask&MaskRadius != 0 &&
+		(math.Abs(a.Radius-b.Radius) > transitionPaintEpsilon ||
+			math.Abs(a.RadiusY-b.RadiusY) > transitionPaintEpsilon) {
 		return true
 	}
 	if mask&MaskMatrix != 0 {

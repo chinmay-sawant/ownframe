@@ -1615,3 +1615,95 @@ func TestLayerMixedOverflowClipRejected(t *testing.T) {
 		t.Fatalf("differing clips reason = %q, want %q", reason, "mixed clip rects")
 	}
 }
+
+// TestLayerBlendSiblingPromotion verifies that an unrelated mix-blend-mode
+// element on the page does not demote a separate animated retained layer, while
+// an element inside a blend group, a layer interleaved with a blend group, and
+// a viewport layer covered by a later blend group are still rejected.
+func TestLayerBlendSiblingPromotion(t *testing.T) {
+	const pt = 72.0 / 96.0
+	blendGroup := &layout.DisplayGroup{ID: 1, Mode: "multiply", Isolate: true}
+
+	// Build a page with an animated card and an unrelated blend-mode sibling.
+	makeDisplay := func(badgeX, badgeY float64) *layout.Display {
+		d := layerDisplay()
+		d.Boxes = append(d.Boxes, layout.Box{
+			ID: "badge", X: badgeX, Y: badgeY, W: 20, H: 20, ParentIndex: 0,
+		})
+		badgeOp := layout.DisplayOp{
+			Kind: layout.DisplayOpFillRect,
+			X:    badgeX * pt, Y: badgeY * pt, W: 20 * pt, H: 20 * pt,
+			G: 1, Alpha: 1,
+		}
+		badgeOp.SetBlendGroup(blendGroup)
+		d.Ops = append(d.Ops, badgeOp)
+		d.Order = append(d.Order, 3)
+		d.OpOwners = append(d.OpOwners, 2)
+		return d
+	}
+
+	// 1. Unrelated blend sibling promotes in BeginLayers and BeginViewportLayers,
+	//    and drawing uses the group plan so the blend group stays buffered.
+	d := makeDisplay(80, 50)
+	var renderer Renderer
+	defer renderer.Close()
+
+	specs := layerSpecsFor(d, layerTranslate(6, 0), 1)
+	renderer.BeginLayers(d, 1, specs)
+	if !renderer.LayersActive(d) {
+		t.Fatalf("unrelated blend sibling demoted BeginLayers: %+v", renderer.Layers())
+	}
+
+	dst := ebiten.NewImage(120, 90)
+	defer dst.Deallocate()
+	plansBefore := groupPlanBuildCount()
+	renderer.DrawVisibleUnfixedZBackground(dst, d, 0, 0, 0)
+	if groupPlanBuildCount() == plansBefore {
+		t.Fatal("DrawVisibleUnfixedZBackground bypassed the group plan on a display with blend groups")
+	}
+	renderer.DrawLayers(dst, d, 0, 0)
+	renderer.DrawVisibleUnfixedZLayers(dst, d, 0, 0, 0)
+	renderer.DrawRectUnfixedZLayers(dst, d, image.Rect(0, 0, 120, 90), 0)
+
+	renderer.DemoteLayers()
+	renderer.BeginViewportLayers(d, 1, specs, 0)
+	if !renderer.LayersActive(d) {
+		t.Fatalf("unrelated blend sibling demoted BeginViewportLayers: %+v", renderer.Layers())
+	}
+
+	// 2. An element whose own op is inside a blend group is still rejected.
+	dOwn := makeDisplay(80, 50)
+	badgeOp2 := layout.DisplayOp{
+		Kind: layout.DisplayOpFillRect,
+		X:    82 * pt, Y: 52 * pt, W: 10 * pt, H: 10 * pt,
+		B: 1, Alpha: 1,
+	}
+	badgeOp2.SetBlendGroup(blendGroup)
+	dOwn.Ops = append(dOwn.Ops, badgeOp2)
+	dOwn.Order = append(dOwn.Order, 4)
+	dOwn.OpOwners = append(dOwn.OpOwners, 2)
+	if _, reason := resolveLayer(dOwn, LayerSpec{
+		ElementID: "badge", BoxIndex: 2, Matrix: layerTranslate(4, 0), Alpha: 1,
+	}, 1, nil, nil); reason != "op inside a blend group" {
+		t.Fatalf("blended element reason = %q, want %q", reason, "op inside a blend group")
+	}
+
+	// 3. A blend group op sitting in paint order between firstRank and lastRank
+	//    must reject the interleaved layer.
+	dInterleaved := makeDisplay(80, 50)
+	dInterleaved.Order = []int{0, 1, 3, 2}
+	if _, reason := resolveLayer(dInterleaved, specs[0], 1, nil, nil); reason != "non-contiguous ops" {
+		t.Fatalf("interleaved blend group reason = %q, want %q", reason, "non-contiguous ops")
+	}
+
+	// 4. A later overlapping blend group still rejects BeginViewportLayers.
+	dOverlap := makeDisplay(25, 20)
+	renderer.DemoteLayers()
+	renderer.BeginViewportLayers(dOverlap, 2, specs, 0)
+	if renderer.LayersActive(dOverlap) {
+		t.Fatal("viewport path promoted a layer covered by a later blend group")
+	}
+	if got := renderer.Layers().Reasons[layerReasonCovered]; got != 1 {
+		t.Fatalf("covered reason = %d, want 1 (%v)", got, renderer.Layers().Reasons)
+	}
+}

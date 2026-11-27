@@ -210,6 +210,9 @@ const (
 	// KindStroke is a border or an outline: the owner's StrokeRect and Line
 	// operations.
 	KindStroke
+	// KindRect is a box's own rounded-rectangle fill and stroke: the owner's
+	// FillRect and StrokeRect operations (used for uniform border-radius).
+	KindRect
 	// KindSubtree is a transform or an opacity: every operation the box's
 	// subtree carries, because a moved parent moves its children.
 	KindSubtree
@@ -283,6 +286,8 @@ func matches(kind Kind, op *layout.DisplayOp) bool {
 		return op.Kind == layout.DisplayOpText
 	case KindStroke:
 		return op.Kind == layout.DisplayOpStrokeRect || op.Kind == layout.DisplayOpLine
+	case KindRect:
+		return op.Kind == layout.DisplayOpFillRect || op.Kind == layout.DisplayOpStrokeRect
 	}
 	return false
 }
@@ -380,20 +385,22 @@ const (
 	MaskOpacity
 	MaskRGB
 	MaskAlpha
+	MaskRadius
 )
 
 // MaskAll is every field a paint snapshot can carry. A zero Paint mask means
 // the same thing: a full snapshot. Read returns one, so a transition that
 // captured an operation writes every field it captured. A keyframed target
 // narrows the mask to the fields its keyframes declare, and a paint-only target
-// leaves W, H, and Alpha alone.
-const MaskAll = MaskX | MaskY | MaskW | MaskH | MaskMatrix | MaskOpacity | MaskRGB | MaskAlpha
+// leaves W and H alone.
+const MaskAll = MaskX | MaskY | MaskW | MaskH | MaskMatrix | MaskOpacity | MaskRGB | MaskAlpha | MaskRadius
 
 // Paint is the set of display-list values sampled by CSS motion.
 type Paint struct {
-	X, Y, W, H     float64
-	R, G, B, Alpha float64
-	Opacity        float64
+	X, Y, W, H      float64
+	R, G, B, Alpha  float64
+	Opacity         float64
+	Radius, RadiusY float64
 	// Matrix is the operation's baked 2D transform. HasMatrix reports whether
 	// the operation carried one when the paint was captured, and whether a
 	// write installs Matrix. A paint without a matrix leaves the operation's
@@ -421,7 +428,8 @@ func (p Paint) Writes(m Mask) bool {
 // Read snapshots the paint values from an operation.
 func Read(op *layout.DisplayOp) Paint {
 	p := Paint{X: op.X, Y: op.Y, W: op.W, H: op.H,
-		R: op.R, G: op.G, B: op.B, Alpha: op.Alpha, Opacity: paintOpacity(op), Mask: MaskAll}
+		R: op.R, G: op.G, B: op.B, Alpha: op.Alpha, Opacity: paintOpacity(op),
+		Radius: op.Radius, RadiusY: op.RadiusY, Mask: MaskAll}
 	if op.XformSet {
 		p.Matrix = op.Transform()
 		p.HasMatrix = true
@@ -432,8 +440,8 @@ func Read(op *layout.DisplayOp) Paint {
 }
 
 // Write applies the masked fields of p to the operation. A keyframed target
-// never asks for W, H, or Alpha, so a transform-only animation leaves a
-// translucent operation's alpha and size alone.
+// never asks for W or H, so a transform-only animation leaves a translucent
+// operation's alpha, radius, and size alone.
 func Write(op *layout.DisplayOp, p Paint) {
 	if p.Writes(MaskX) {
 		op.X = p.X
@@ -456,6 +464,10 @@ func Write(op *layout.DisplayOp, p Paint) {
 	if p.Writes(MaskOpacity) {
 		op.SetPaintOpacity(p.Opacity)
 	}
+	if p.Writes(MaskRadius) {
+		op.Radius = p.Radius
+		op.RadiusY = p.RadiusY
+	}
 	if p.Writes(MaskMatrix) && p.HasMatrix {
 		op.SetXform(p.Matrix)
 	}
@@ -472,7 +484,8 @@ func Blend(a, b Paint, t float64) Paint {
 	f := func(x, y float64) float64 { return x + (y-x)*t }
 	out := Paint{X: f(a.X, b.X), Y: f(a.Y, b.Y), W: f(a.W, b.W), H: f(a.H, b.H),
 		R: f(a.R, b.R), G: f(a.G, b.G), B: f(a.B, b.B), Alpha: f(a.Alpha, b.Alpha),
-		Opacity: f(a.Opacity, b.Opacity), Matrix: b.Matrix, HasMatrix: b.HasMatrix,
+		Opacity: f(a.Opacity, b.Opacity), Radius: f(a.Radius, b.Radius),
+		RadiusY: f(a.RadiusY, b.RadiusY), Matrix: b.Matrix, HasMatrix: b.HasMatrix,
 		Mask: a.Mask | b.Mask}
 	if a.HasMatrix && b.HasMatrix {
 		out.Matrix = blendMatrix2D(a.Matrix, b.Matrix, t)

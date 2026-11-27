@@ -421,8 +421,8 @@ func TestBackgroundTargetsOnlyTheOwnerFill(t *testing.T) {
 	if !slices.Equal(bounds[0].Indices, []int{0}) {
 		t.Fatalf("background targets = %v, want the parent fill only", bounds[0].Indices)
 	}
-	if bounds[0].Mask != motion.MaskRGB {
-		t.Fatalf("background mask = %b, want RGB only", bounds[0].Mask)
+	if bounds[0].Mask != motion.MaskRGB|motion.MaskAlpha {
+		t.Fatalf("background mask = %b, want RGB+Alpha only", bounds[0].Mask)
 	}
 	if d.Ops[0].R != .5 || d.Ops[0].G != .5 || d.Ops[0].B != 0 {
 		t.Fatalf("parent fill = %v,%v,%v, want the sRGB midpoint .5,.5,0",
@@ -670,8 +670,8 @@ func TestBackgroundRecoloursACornerPath(t *testing.T) {
 		t.Fatalf("background targets = %v, want the path fill %d", bounds[0].Indices, fill)
 	}
 
-	if bounds[0].Mask != motion.MaskRGB {
-		t.Fatalf("background mask = %b, want RGB only", bounds[0].Mask)
+	if bounds[0].Mask != motion.MaskRGB|motion.MaskAlpha {
+		t.Fatalf("background mask = %b, want RGB+Alpha only", bounds[0].Mask)
 	}
 
 	strokeR, strokeG, strokeB := display.Ops[stroke].R, display.Ops[stroke].G, display.Ops[stroke].B
