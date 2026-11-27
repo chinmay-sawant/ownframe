@@ -754,12 +754,23 @@ func TestOffscreenDirtyTileExpandsSubRectPaint(t *testing.T) {
 	}
 }
 
-// TestLayerDamageTriggersTileRepaintWhenPageDirtyEmpty verifies that tile-path
-// layerDamage triggers a repaint even when TakeDirtyRects reports ok == false.
+// TestLayerDamageTriggersTileRepaintWhenPageDirtyEmpty verifies that fallback
+// in-tile layerDamage (for a covered layer) triggers a tile repaint even when
+// TakeDirtyRects reports ok == false, while a top-order-safe layer composites
+// without repainting tiles.
 func TestLayerDamageTriggersTileRepaintWhenPageDirtyEmpty(t *testing.T) {
 	t.Parallel()
+	const pt = 72.0 / 96.0
 
 	d := windowLayerDisplay()
+	// Add a later static op overlapping the card so the tile path falls back
+	// to BeginLayers + layerDamage.
+	d.Ops = append(d.Ops, layout.DisplayOp{
+		Kind: layout.DisplayOpFillRect, X: 15 * pt, Y: 15 * pt, W: 20 * pt, H: 20 * pt, G: 1, Alpha: 1,
+	})
+	d.Order = append(d.Order, len(d.Ops)-1)
+	d.OpOwners = append(d.OpOwners, 0)
+
 	app := &layerDirtyScreen{
 		dirtyScreen: &dirtyScreen{
 			fakeScreen: &fakeScreen{width: 100, height: 100},
@@ -774,7 +785,7 @@ func TestLayerDamageTriggersTileRepaintWhenPageDirtyEmpty(t *testing.T) {
 	s.display = d
 	dst := partialBuf(100, 100)
 
-	// Frame 1: builds tile grid and promotes card.
+	// Frame 1: builds tile grid and promotes card via fallback BeginLayers.
 	s.drawReplayPartial(dst)
 	if !s.renderer.LayersActive(d) {
 		t.Fatal("card was not promoted on tile path")

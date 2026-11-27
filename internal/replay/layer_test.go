@@ -1543,3 +1543,75 @@ func TestLayerStoreChurnPrunesAndCloses(t *testing.T) {
 		t.Fatal("close did not clear churn map")
 	}
 }
+
+func TestLayerUniformOverflowClip(t *testing.T) {
+	const pt = 72.0 / 96.0
+	d := layerDisplay()
+	d.Boxes[1].ID = ""
+	d.Ops[1].SetOverflowClip(22*pt, 18*pt, 16*pt, 14*pt)
+	d.Ops[2].SetOverflowClip(22*pt, 18*pt, 16*pt, 14*pt)
+
+	var renderer Renderer
+	defer renderer.Close()
+
+	specs := []LayerSpec{{
+		BoxIndex: 1,
+		Matrix:   layerTranslate(10, 0),
+		Alpha:    1,
+	}}
+	damage := renderer.BeginLayers(d, 1, specs)
+	if len(damage) == 0 {
+		t.Fatal("uniform-clipped layer reported no damage")
+	}
+	stats := renderer.Layers()
+	if stats.Active != 1 || stats.Promoted != 1 {
+		t.Fatalf("stats = %+v, want active=1 promoted=1", stats)
+	}
+	layer := renderer.layers.entries[layerKey{id: "", box: 1, gen: 1}]
+	if layer == nil || !layer.hasClip {
+		t.Fatalf("layer = %+v, want hasClip=true", layer)
+	}
+	wantClip := image.Rect(22, 18, 38, 32)
+	if layer.clip != wantClip {
+		t.Fatalf("clip = %v, want %v", layer.clip, wantClip)
+	}
+	if !layer.pose.In(wantClip) {
+		t.Fatalf("pose %v escapes clip %v", layer.pose, wantClip)
+	}
+
+	boxes := renderer.ActiveLayerBoxIndices(d)
+	if len(boxes) != 1 || boxes[0] != 1 {
+		t.Fatalf("ActiveLayerBoxIndices = %v, want [1]", boxes)
+	}
+	if ids := renderer.ActiveLayerIDs(); len(ids) != 0 {
+		t.Fatalf("ActiveLayerIDs = %v, want empty for anonymous layer", ids)
+	}
+
+	// Drawing onto a dst outside the clip returns early without panic.
+	dst := ebiten.NewImage(16, 16)
+	defer dst.Deallocate()
+	renderer.drawLayerPose(dst, d, layer, 0, 0)
+
+	// Drawing onto a dst overlapping the clip succeeds.
+	full := ebiten.NewImage(120, 90)
+	defer full.Deallocate()
+	renderer.drawLayerPose(full, d, layer, 0, 0)
+}
+
+func TestLayerMixedOverflowClipRejected(t *testing.T) {
+	const pt = 72.0 / 96.0
+	active := layerTranslate(4, 0)
+
+	// One op clipped, one op unclipped.
+	d := layerDisplay()
+	d.Ops[1].SetOverflowClip(10*pt, 10*pt, 40*pt, 40*pt)
+	if _, reason := resolveLayer(d, LayerSpec{BoxIndex: 1, Matrix: active}, 1, nil, nil); reason != "mixed clip rects" {
+		t.Fatalf("clipped+unclipped reason = %q, want %q", reason, "mixed clip rects")
+	}
+
+	// Two ops with differing clip rects.
+	d.Ops[2].SetOverflowClip(12*pt, 10*pt, 40*pt, 40*pt)
+	if _, reason := resolveLayer(d, LayerSpec{BoxIndex: 1, Matrix: active}, 1, nil, nil); reason != "mixed clip rects" {
+		t.Fatalf("differing clips reason = %q, want %q", reason, "mixed clip rects")
+	}
+}

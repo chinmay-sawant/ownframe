@@ -361,6 +361,11 @@ func TestParseTransformTwoDimensionalFunctions(t *testing.T) {
 		{"matrix(2, 0, 0, 3, 10, 20)", Transform{Tx: 10, Ty: 20, Sx: 2, Sy: 3}},
 		{"translate(10px, 20px) rotate(0deg) scale(2, 3)",
 			Transform{Tx: 10, Ty: 20, Sx: 2, Sy: 3}},
+		{"translate3d(10px, 20px, 0px)", Transform{Tx: 10, Ty: 20, Sx: 1, Sy: 1}},
+		{"translate3d(10px, 20px, 0)", Transform{Tx: 10, Ty: 20, Sx: 1, Sy: 1}},
+		{"scale3d(2, 3, 1)", Transform{Sx: 2, Sy: 3}},
+		{"translateZ(0px)", Transform{Sx: 1, Sy: 1}},
+		{"scaleZ(1)", Transform{Sx: 1, Sy: 1}},
 	}
 	for _, c := range cases {
 		parsed := parseTestValue(t, c.value, size)

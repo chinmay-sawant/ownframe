@@ -260,10 +260,10 @@ func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *Index) erro
 		key := entryKey{id: box.ID, ordinal: ordinal}
 
 		// The loop index is the box's position in next.Boxes, which is what
-		// OpOwners points at. An element with no id is anonymous for owner
-		// selection; BindBox then falls back to the subtree and reports it.
+		// OpOwners points at. When OpOwners is populated for every op, even
+		// anonymous boxes (box.ID == "") have an exact display index.
 		boxIndex := -1
-		if box.ID != "" {
+		if box.ID != "" || len(next.OpOwners) == len(next.Ops) {
 			boxIndex = i
 		}
 

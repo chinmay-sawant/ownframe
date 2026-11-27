@@ -136,11 +136,11 @@ func (renderer *Renderer) decodedImage(op *layout.DisplayOp) *ebiten.Image {
 	return renderer.images.put(key, src, w*h)
 }
 
-// imageCacheLimit bounds entries kept to 32 decoded images.
+// imageCacheLimit bounds entries kept to 256 decoded images.
 // maxImageCachePixels bounds total pixels to 16M (64 MB of GPU bytes), so
 // many large images evict oldest first.
 const (
-	imageCacheLimit     = 32
+	imageCacheLimit     = 256
 	maxImageCachePixels = 16 << 20
 	imageKeyRingSize    = 64
 	imageKeyMinBytes    = 256

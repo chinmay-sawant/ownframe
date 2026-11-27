@@ -600,7 +600,7 @@ func parseTransform(value string, size transformSize) (TransformValue, error) {
 	}
 	threeD := false
 	for _, f := range functions {
-		threeD = threeD || is3DFunc(f.Name)
+		threeD = threeD || is3DFunction(f)
 	}
 	if threeD {
 		// The 2D projection of a 3D list is not a matrix, but its translation
@@ -964,6 +964,25 @@ func transformValueUnit(value string) (float64, string, error) {
 
 func transformErr(format string, args ...any) error {
 	return fmt.Errorf("%w: %s", ErrTransform, fmt.Sprintf(format, args...))
+}
+
+// is3DFunction reports whether a parsed transform function actually leaves the
+// 2D plane. Planar translate3d(x, y, 0), translateZ(0), scale3d(sx, sy, 1),
+// and scaleZ(1) stay on the 2D affine path so they can promote to compositor
+// layers without forcing RestampTransforms every frame.
+func is3DFunction(f TransformFunction) bool {
+	switch f.Name {
+	case Translate3D:
+		return len(f.Args) >= threeArgs && f.Args[2] != 0
+	case TranslateZ:
+		return len(f.Args) >= oneArg && f.Args[0] != 0
+	case Scale3D:
+		return len(f.Args) >= scaleArgs && f.Args[2] != 1
+	case ScaleZ:
+		return len(f.Args) >= oneArg && f.Args[0] != 1
+	default:
+		return is3DFunc(f.Name)
+	}
 }
 
 func is3DFunc(name TransformFunc) bool {

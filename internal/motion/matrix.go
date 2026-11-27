@@ -586,12 +586,20 @@ func matrix2D(f TransformFunction) (mat2, bool) {
 		return translate2D(f.Args[0], 0), true
 	case TranslateY:
 		return translate2D(0, f.Args[0]), true
+	case Translate3D:
+		return translate2D(f.Args[0], f.Args[1]), true
+	case TranslateZ:
+		return identity2D(), true
 	case Scale:
 		return scale2D(f.Args[0], f.Args[1]), true
 	case ScaleX:
 		return scale2D(f.Args[0], 1), true
 	case ScaleY:
 		return scale2D(1, f.Args[0]), true
+	case Scale3D:
+		return scale2D(f.Args[0], f.Args[1]), true
+	case ScaleZ:
+		return identity2D(), true
 	case Rotate, RotateZ:
 		return rotate2D(f.Args[0]), true
 	case Skew:

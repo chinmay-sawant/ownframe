@@ -531,6 +531,30 @@ func TestOwnerFallbackReportsAGap(t *testing.T) {
 	}
 }
 
+// TestAnonymousBoxWithOpOwnersUsesOwnerScopedColor verifies that Runtime.Bind
+// passes the box's display index even when box.ID is empty, so owner-scoped
+// colour animations only mutate the box's own operations instead of its whole
+// subtree.
+func TestAnonymousBoxWithOpOwnersUsesOwnerScopedColor(t *testing.T) {
+	d := cardDisplay(running("tint"))
+	d.Boxes[0].ID = ""
+	d.Keyframes = colorRule("tint", "background-color", "#ff0000", "#00ff00")
+
+	r := motion.New()
+	if err := r.Bind(d); err != nil {
+		t.Fatalf("bind: %v", err)
+	}
+	if gaps := r.Stats().Gaps; len(gaps) != 0 {
+		t.Fatalf("gaps = %v, want none when OpOwners is populated", gaps)
+	}
+	wantR, wantG, wantB := d.Ops[2].R, d.Ops[2].G, d.Ops[2].B
+	r.Step(d, started().Add(500*time.Millisecond))
+	// Box 0 owns op 0; child box 1 owns op 2 (unchanged).
+	if d.Ops[2].R != wantR || d.Ops[2].G != wantG || d.Ops[2].B != wantB {
+		t.Fatalf("child fill mutated = %v,%v,%v, want unchanged %v,%v,%v", d.Ops[2].R, d.Ops[2].G, d.Ops[2].B, wantR, wantG, wantB)
+	}
+}
+
 // TestCurrentColorResolvesFromTheTextOp checks that currentColor reads the
 // element's own text colour, and that a box with no text op fails the bind.
 func TestCurrentColorResolvesFromTheTextOp(t *testing.T) {

@@ -653,57 +653,117 @@ func windowLayerMatrix(tx float64) layout.Matrix2D {
 	return layout.Matrix2D{A: 1, D: 1, E: tx}
 }
 
-// TestPartialFrameAddsLayerDamage pins the window seam: a clean page frame
-// with a moving retained layer must still repaint the layer's old ∪ new pose,
-// and dropping the layer must repaint the pose it leaves behind.
+// TestPartialFrameAddsLayerDamage pins the tile-surface layer seam:
+//   - a top-order-safe promoted layer repaints tiles on promotion/demotion
+//     (topology damage) and composites onto dst on movement without repainting
+//     any static tiles;
+//   - a covered layer falls back to in-tile BeginLayers replay and repaints
+//     its old ∪ new pose on movement.
 func TestPartialFrameAddsLayerDamage(t *testing.T) {
-	d := windowLayerDisplay()
-	app := &layerDirtyScreen{
-		dirtyScreen: &dirtyScreen{
-			fakeScreen: &fakeScreen{width: 100, height: 100},
-			display:    d,
-			gen:        1,
-			ok:         true,
-		},
-	}
-	shell := newDirtyShell(app.dirtyScreen)
-	shell.app = app
-	shell.display = d
-	dst := ebiten.NewImage(100, 100)
-	defer dst.Deallocate()
+	t.Run("top-order-safe", func(t *testing.T) {
+		d := windowLayerDisplay()
+		app := &promotedLayerScreen{layerDirtyScreen: &layerDirtyScreen{
+			dirtyScreen: &dirtyScreen{
+				fakeScreen: &fakeScreen{width: 100, height: 100},
+				display:    d,
+				gen:        1,
+				ok:         true,
+			},
+		}}
+		shell := newDirtyShell(app.dirtyScreen)
+		shell.app = app
+		shell.display = d
+		dst := ebiten.NewImage(100, 100)
+		defer dst.Deallocate()
 
-	// The first frame builds the tile grid. Promotion then adds its own
-	// damage to an otherwise clean page frame.
-	shell.drawReplayPartial(dst)
-	app.specs = []replay.LayerSpec{{ElementID: "card", BoxIndex: 1, Matrix: windowLayerMatrix(2), Alpha: 1}}
-	shell.drawReplayPartial(dst)
-	if !shell.renderer.LayersActive(d) {
-		t.Fatal("the window did not activate the promoted layer")
-	}
-	if shell.partial.mode != repaintRect || len(shell.partial.last) == 0 {
-		t.Fatalf("promotion mode = %v, last = %v", shell.partial.mode, shell.partial.last)
-	}
+		// Frame 1 builds the tile grid. Promotion then adds topology damage.
+		shell.drawReplayPartial(dst)
+		app.specs = []replay.LayerSpec{{ElementID: "card", BoxIndex: 1, Matrix: windowLayerMatrix(2), Alpha: 1}}
+		shell.drawReplayPartial(dst)
+		if !shell.renderer.LayersActive(d) || !shell.partial.tileLayers {
+			t.Fatal("the window did not activate top-composited tile layer")
+		}
+		if len(app.promoted) != 1 || app.promoted[0] != "card" {
+			t.Fatalf("promoted ids = %v, want [card]", app.promoted)
+		}
+		if shell.partial.mode != repaintRect || len(shell.partial.last) == 0 {
+			t.Fatalf("promotion mode = %v, last = %v", shell.partial.mode, shell.partial.last)
+		}
 
-	app.specs[0].Matrix = windowLayerMatrix(30)
-	shell.drawReplayPartial(dst)
-	if shell.partial.mode != repaintRect {
-		t.Fatalf("move mode = %v, want a rect repaint", shell.partial.mode)
-	}
-	if !covers(shell.partial.last, image.Rect(10, 10, 30, 30)) {
-		t.Fatalf("move damage %v does not cover the old pose", shell.partial.last)
-	}
-	if !covers(shell.partial.last, image.Rect(40, 10, 60, 30)) {
-		t.Fatalf("move damage %v does not cover the new pose", shell.partial.last)
-	}
+		// Moving a top-order-safe layer must NOT repaint tiles: it blits cached
+		// background tiles and composites DrawLayers on top.
+		app.specs[0].Matrix = windowLayerMatrix(30)
+		shell.drawReplayPartial(dst)
+		if shell.partial.mode != repaintBlit {
+			t.Fatalf("move mode = %v, want repaintBlit for top-order-safe tile layer", shell.partial.mode)
+		}
+		if shell.partial.paints != 0 {
+			t.Fatalf("move repainted %d tiles, want 0", shell.partial.paints)
+		}
+		if shell.partial.blits == 0 {
+			t.Fatal("move did not blit background tiles before compositing layer")
+		}
 
-	app.specs = nil
-	shell.drawReplayPartial(dst)
-	if shell.renderer.LayersActive(d) {
-		t.Fatal("a dropped spec left the layer active")
-	}
-	if shell.partial.mode != repaintRect {
-		t.Fatalf("demotion mode = %v, want a rect repaint", shell.partial.mode)
-	}
+		// Demotion repaints the vacated pose and clears promoted ids.
+		app.specs = nil
+		shell.drawReplayPartial(dst)
+		if shell.renderer.LayersActive(d) || shell.partial.tileLayers {
+			t.Fatal("a dropped spec left the layer active")
+		}
+		if len(app.promoted) != 0 {
+			t.Fatalf("demoted promoted ids = %v, want empty", app.promoted)
+		}
+		if shell.partial.mode != repaintRect {
+			t.Fatalf("demotion mode = %v, want a rect repaint", shell.partial.mode)
+		}
+	})
+
+	t.Run("covered-fallback", func(t *testing.T) {
+		const pt = 72.0 / 96.0
+		d := windowLayerDisplay()
+		// Add a later static op overlapping the card so BeginViewportLayers rejects it.
+		d.Ops = append(d.Ops, layout.DisplayOp{
+			Kind: layout.DisplayOpFillRect, X: 15 * pt, Y: 15 * pt, W: 20 * pt, H: 20 * pt, G: 1, Alpha: 1,
+		})
+		d.Order = append(d.Order, len(d.Ops)-1)
+		d.OpOwners = append(d.OpOwners, 0)
+
+		app := &promotedLayerScreen{layerDirtyScreen: &layerDirtyScreen{
+			dirtyScreen: &dirtyScreen{
+				fakeScreen: &fakeScreen{width: 100, height: 100},
+				display:    d,
+				gen:        1,
+				ok:         true,
+			},
+		}}
+		shell := newDirtyShell(app.dirtyScreen)
+		shell.app = app
+		shell.display = d
+		dst := ebiten.NewImage(100, 100)
+		defer dst.Deallocate()
+
+		shell.drawReplayPartial(dst)
+		app.specs = []replay.LayerSpec{{ElementID: "card", BoxIndex: 1, Matrix: windowLayerMatrix(2), Alpha: 1}}
+		shell.drawReplayPartial(dst)
+		if !shell.renderer.LayersActive(d) || shell.partial.tileLayers {
+			t.Fatalf("covered layer fallback state: active=%v tileLayers=%v", shell.renderer.LayersActive(d), shell.partial.tileLayers)
+		}
+		if len(app.promoted) != 0 {
+			t.Fatalf("covered fallback promoted ids = %v, want empty", app.promoted)
+		}
+
+		app.specs[0].Matrix = windowLayerMatrix(30)
+		shell.drawReplayPartial(dst)
+		if shell.partial.mode != repaintRect {
+			t.Fatalf("move mode = %v, want a rect repaint", shell.partial.mode)
+		}
+		if !covers(shell.partial.last, image.Rect(10, 10, 30, 30)) {
+			t.Fatalf("move damage %v does not cover the old pose", shell.partial.last)
+		}
+		if !covers(shell.partial.last, image.Rect(40, 10, 60, 30)) {
+			t.Fatalf("move damage %v does not cover the new pose", shell.partial.last)
+		}
+	})
 }
 
 // covers reports whether one of rects contains want.
@@ -1050,7 +1110,8 @@ func TestPlanRepaintsPicksTheWork(t *testing.T) {
 	two := []image.Rectangle{one[0], image.Rect(60, 60, 80, 80)}
 	overflow := make([]image.Rectangle, maxRepaintRects+1)
 	for i := range overflow {
-		overflow[i] = image.Rect(i*10, 0, i*10+5, 5)
+		x, y := (i%10)*10, (i/10)*10
+		overflow[i] = image.Rect(x, y, x+5, y+5)
 	}
 
 	cases := []struct {
@@ -1074,7 +1135,9 @@ func TestPlanRepaintsPicksTheWork(t *testing.T) {
 		{"size change", badSize, 2, one, true, rebuild},
 		{"clamped", state, 2, []image.Rectangle{image.Rect(-20, -20, 30, 30)}, true,
 			[]repaintPlan{{mode: repaintRect, rect: image.Rect(0, 0, 30, 30)}}},
-		{"away", state, 2, []image.Rectangle{image.Rect(-30, -30, -20, -20)}, true, rebuild},
+		{"away", state, 2, []image.Rectangle{image.Rect(-30, -30, -20, -20)}, true, blit},
+		{"away plus inside", state, 2, []image.Rectangle{image.Rect(-30, -30, -20, -20), one[0]}, true,
+			[]repaintPlan{{mode: repaintRect, rect: one[0]}}},
 	}
 
 	for _, c := range cases {

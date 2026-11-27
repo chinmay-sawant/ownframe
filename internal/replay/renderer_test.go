@@ -29,7 +29,7 @@ func TestRenderersEvictAndCloseIndependently(t *testing.T) {
 		t.Fatal("renderers did not retain independent images")
 	}
 	for i := range imageCacheLimit {
-		filler := imageOp(t, tinyPNG(t, uint8(i)), 2, 2, false)
+		filler := imageOp(t, tinyPNG(t, 1000+i), 2, 2, false)
 		if first.decodedImage(&filler) == nil {
 			t.Fatal("filler did not decode")
 		}

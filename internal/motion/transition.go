@@ -1433,12 +1433,22 @@ func (r *Runtime) stepTransitions(d *Display, now time.Time) Damage {
 			kept = append(kept, entry)
 			continue
 		}
-		before := transitionBounds(d, entry.indices)
+		mask := transitionMask(entry.key.property)
+		promoted := r.promotedTransition(d, &entry)
+		var before image.Rectangle
+		if !promoted {
+			before = transitionBounds(d, entry.indices)
+		}
 		active := entry.renderer.Step(now)
 		entry.sampled, entry.wrote, entry.active = true, true, active
 		r.stats.TransitionsSampled++
-		after := transitionBounds(d, entry.indices)
-		damage.Add(before.Union(after))
+		if !promoted {
+			after := before
+			if mask&(MaskX|MaskY|MaskMatrix) != 0 {
+				after = transitionBounds(d, entry.indices)
+			}
+			damage.Add(before.Union(after))
+		}
 		if active {
 			r.stats.TransitionsActive++
 			kept = append(kept, entry)

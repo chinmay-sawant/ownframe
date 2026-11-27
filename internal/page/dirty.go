@@ -998,6 +998,16 @@ func (p *Page) SetPromotedLayers(ids []string) {
 	p.motion.SetPromotedLayers(ids)
 }
 
+// SetPromotedLayerBoxes tells the motion driver which box indices (including
+// anonymous elements without an id) the compositor kept as retained layers.
+func (p *Page) SetPromotedLayerBoxes(boxes []int) {
+	if p == nil || p.motion == nil {
+		return
+	}
+
+	p.motion.SetPromotedLayerBoxes(boxes)
+}
+
 func (p *Page) LayerSpecs(display *layout.Display) []host.LayerSpec {
 	if p == nil || p.motion == nil || (p.animationsOff && p.transitionsOff) {
 		return nil
