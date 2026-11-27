@@ -54,14 +54,27 @@ func opBoundsXform(op *layout.DisplayOp, d *layout.Display, m layout.Matrix2D) i
 
 	x0, y0, x1, y1 := LocalPaintBox(op)
 
-	loX, loY := math.Inf(1), math.Inf(1)
-	hiX, hiY := math.Inf(-1), math.Inf(-1)
-
-	for _, p := range [4][2]float64{{x0, y0}, {x1, y0}, {x1, y1}, {x0, y1}} {
-		x, y := m.Apply(p[0], p[1])
-		loX, loY = math.Min(loX, x), math.Min(loY, y)
-		hiX, hiY = math.Max(hiX, x), math.Max(hiY, y)
+	ax0, ax1 := m.A*x0, m.A*x1
+	if ax0 > ax1 {
+		ax0, ax1 = ax1, ax0
 	}
+	cy0, cy1 := m.C*y0, m.C*y1
+	if cy0 > cy1 {
+		cy0, cy1 = cy1, cy0
+	}
+	loX := ax0 + cy0 + m.E
+	hiX := ax1 + cy1 + m.E
+
+	bx0, bx1 := m.B*x0, m.B*x1
+	if bx0 > bx1 {
+		bx0, bx1 = bx1, bx0
+	}
+	dy0, dy1 := m.D*y0, m.D*y1
+	if dy0 > dy1 {
+		dy0, dy1 = dy1, dy0
+	}
+	loY := bx0 + dy0 + m.F
+	hiY := bx1 + dy1 + m.F
 
 	return image.Rect(
 		int(loX*scale)-1, int(loY*scale)-1,
