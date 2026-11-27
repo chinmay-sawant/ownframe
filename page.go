@@ -222,7 +222,8 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 	return inner.PatchElements(ctx, patches)
 }
 
-// ElementEdit is one change to an element in the retained tree: an
-// attribute to set, or the text to replace. A nil Text and an empty
-// Attribute change nothing.
+// ElementEdit is one change to an element in the retained tree: text, an
+// attribute write or removal, a class-list mutation, an element removal, or
+// an HTML fragment insertion/replacement. Leaving all action fields empty/nil
+// changes nothing.
 type ElementEdit = page.ElementEdit
