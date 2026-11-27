@@ -276,9 +276,10 @@ func (a *App) replaceEditRange(ctx context.Context, text string, start, end int,
 	a.pushUndo()
 	a.editRedo = nil
 
-	next := make([]rune, 0, len(runes)-(end-start)+len([]rune(insert)))
+	insertRunes := []rune(insert)
+	next := make([]rune, 0, len(runes))
 	next = append(next, runes[:start]...)
-	next = append(next, []rune(insert)...)
+	next = append(next, insertRunes...)
 	next = append(next, runes[end:]...)
 
 	a.edit.SetText(string(next))

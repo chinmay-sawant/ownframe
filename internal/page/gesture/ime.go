@@ -88,7 +88,7 @@ func Replace(field form.Control, text string, start, end, caret int) (string, in
 
 	ins := []rune(text)
 	pos := startRune + form.ClampPos(form.RuneAtByte(text, caret), len(ins))
-	out := make([]rune, 0, len(runes)-(endRune-startRune)+len(ins))
+	out := make([]rune, 0, len(runes))
 	out = append(out, runes[:startRune]...)
 	out = append(out, ins...)
 	out = append(out, runes[endRune:]...)

@@ -16,7 +16,7 @@ func InsertValue(c Control, caret, anchor int, text string) (Control, int, int, 
 		}
 		ins = ins[:limit]
 	}
-	out := make([]rune, 0, len(runes)-(end-start)+len(ins))
+	out := make([]rune, 0, len(runes))
 	out = append(out, runes[:start]...)
 	out = append(out, ins...)
 	out = append(out, runes[end:]...)
