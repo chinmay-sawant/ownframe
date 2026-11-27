@@ -17,6 +17,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/state"
 	"html/template"
 	"image"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -53,8 +54,9 @@ var (
 
 // Page is one template and its picture.
 type Page struct {
-	title string
-	tpl   *template.Template
+	title    string
+	tpl      *template.Template
+	renderFn func(io.Writer, any) error
 	// dataMu guards data and the form-sync handoff below it. SetData
 	// takes it to publish new data; the redraw path takes it to run the
 	// template (shared) and to check, merge, and store the sync flags
@@ -167,30 +169,41 @@ func New(cfg Config) (*Page, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
-	source, htmlInfo, err := sourceHTML(cfg)
-	if err != nil {
-		return nil, err
-	}
-	if len(source) > MaxSourceSize {
-		path := cfg.File
-		if path == "" {
-			path = "html"
+	var (
+		source   string
+		htmlInfo os.FileInfo
+		entry    nav.Entry
+		tpl      *template.Template
+		err      error
+	)
+	if cfg.Render != nil {
+		entry = nav.Entry{Execute: true}
+	} else {
+		source, htmlInfo, err = sourceHTML(cfg)
+		if err != nil {
+			return nil, err
 		}
-		return nil, sourceTooLarge(path, int64(len(source)))
-	}
-	if err := validateHTML(source); err != nil {
-		return nil, err
+		if len(source) > MaxSourceSize {
+			path := cfg.File
+			if path == "" {
+				path = "html"
+			}
+			return nil, sourceTooLarge(path, int64(len(source)))
+		}
+		if err := validateHTML(source); err != nil {
+			return nil, err
+		}
+		entry = nav.Source(source, cfg.StaticHTML)
+		tpl, err = parseTemplate(entry)
+		if err != nil {
+			return nil, err
+		}
 	}
 	schemes, err := acceptedDeepLinkSchemes(cfg.DeepLinkSchemes)
 	if err != nil {
 		return nil, err
 	}
 	minW, minH := cfg.mins()
-	entry := nav.Source(source, cfg.StaticHTML)
-	tpl, err := parseTemplate(entry)
-	if err != nil {
-		return nil, err
-	}
 	themeSrc, themeInfo, err := sourceTheme(cfg)
 	if err != nil {
 		return nil, err
@@ -213,6 +226,7 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 	p := &Page{
 		title:    title,
 		tpl:      tpl,
+		renderFn: cfg.Render,
 		theme:    theme,
 		themeSrc: themeSrc,
 		pageGeom: pageGeom{

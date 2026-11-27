@@ -1,12 +1,14 @@
 package page
 
 import (
+	"io"
+	"strings"
+	"time"
+
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
-	"strings"
-	"time"
 )
 
 // Config is the template, the optional theme, and the frame size for a new
@@ -25,7 +27,10 @@ type Config struct {
 	// StaticHTML renders HTML or File without executing Go template actions.
 	// Reloads of File use the same mode.
 	StaticHTML bool
-	Theme      string
+	// Render writes trusted author HTML directly for each redraw, bypassing
+	// html/template reflection. Setting Render with HTML or File is an error.
+	Render func(w io.Writer, data any) error
+	Theme  string
 	// ThemeFile reads the theme stylesheet from disk and watches it.
 	ThemeFile string
 	// DisableHotReload turns the file watch off. It is ignored without File

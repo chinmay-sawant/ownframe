@@ -1,12 +1,14 @@
 package page
 
 import (
-	"github.com/chinmay-sawant/ownframe/internal/host"
-	"github.com/chinmay-sawant/ownframe/internal/page/source"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"os"
 	"reflect"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page/source"
 )
 
 const (
@@ -102,9 +104,16 @@ func SafeFuncs() template.FuncMap { return source.SafeFuncs() }
 // with ThemeFile, and unusable sizes. New calls it before reading
 // files so conflicts fail at construction instead of first draw.
 func (c Config) Validate() error {
+	htmlSrc := c.HTML
+	if c.Render != nil {
+		if c.HTML != "" || c.File != "" {
+			return fmt.Errorf("%w: Render cannot be set with HTML or File", ErrBadSource)
+		}
+		htmlSrc = " "
+	}
 	return source.Validate(source.Check{
 		File:      c.File,
-		HTML:      c.HTML,
+		HTML:      htmlSrc,
 		ThemeFile: c.ThemeFile,
 		Theme:     c.Theme,
 		Width:     c.Width,

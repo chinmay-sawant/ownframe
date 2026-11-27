@@ -146,6 +146,10 @@ func execTemplate(p *Page, track bool) (string, error) {
 		p.lastSyncBody,
 		&p.stats.lastTemplate,
 		func(w *bytes.Buffer) error {
+			if p.renderFn != nil {
+				return p.renderFn(w, p.data)
+			}
+
 			return p.tpl.Execute(w, p.data)
 		},
 	)
