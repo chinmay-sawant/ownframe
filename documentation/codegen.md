@@ -4,6 +4,110 @@
 
 A complete runnable app and benchmark suite live in [examples/codegen](../examples/codegen).
 
+## Quickstart: `counter.html` to Go in 4 steps
+
+`cmd/ownframegen` does not maintain a whitelist of HTML tags or CSS properties. Everything outside `{{ ... }}` (all 688 Blinkless CSS properties, `@keyframes`, `var()`, `backdrop-filter`, `mask-image`, inline `style="..."`, SVG) is emitted verbatim as `b.WriteString(...)` calls. Only dynamic expressions, static `id="..."`, and `data-action="..."` become typed Go code.
+
+### 1. Write `counter.html`
+
+```html
+<style>
+  .card { padding: 16px; border-radius: 10px; background: #1e293b; color: #f8fafc; }
+  .badge { padding: 4px 10px; background: #064e3b; }
+  .badge.warn { background: #7f1d1d; }
+</style>
+<div class="card">
+  <h1>{{.Title}}</h1>
+  <span id="status-badge" class="badge">{{.Status}}</span>
+  <div id="count-val">{{.Count:int}}</div>
+  <button data-action="inc">+1</button>
+</div>
+```
+
+### 2. Run `ownframegen`
+
+```sh
+go run github.com/chinmay-sawant/ownframe/cmd/ownframegen \
+  -in counter.html -out counter_gen.go -pkg main -type CounterView
+```
+
+### 3. Inspect what `counter_gen.go` generates
+
+```text
+// Compile-time constants (typos become compiler errors)
+const (
+    IDStatusBadge = "status-badge"
+    IDCountVal    = "count-val"
+    ActionInc     = "inc"
+)
+
+// Typed struct with fluent builder methods
+type CounterView struct {
+    Title  string
+    Status string
+    Count  int
+}
+
+func NewCounterView() *CounterView { return &CounterView{} }
+func (v *CounterView) WithTitle(s string) *CounterView  { v.Title = s; return v }
+func (v *CounterView) WithStatus(s string) *CounterView { v.Status = s; return v }
+func (v *CounterView) WithCount(n int) *CounterView     { v.Count = n; return v }
+
+// Zero-reflection renderer (1 allocation total)
+func (v *CounterView) RenderTo(b *strings.Builder) {
+    b.Grow(220 + len(v.Title) + len(v.Status))
+    b.WriteString(`<style>...</style><div class="card"><h1>`)
+    b.WriteString(html.EscapeString(v.Title))
+    b.WriteString(`</h1><span id="status-badge" class="badge">`)
+    b.WriteString(html.EscapeString(v.Status))
+    b.WriteString(`</span><div id="count-val">`)
+    var numBuf [32]byte
+    b.Write(strconv.AppendInt(numBuf[:0], int64(v.Count), 10))
+    b.WriteString(`</div><button data-action="inc">+1</button></div>`)
+}
+
+// Plugs directly into ownframe.Config{Render: view.Render}
+func (v *CounterView) Render(w io.Writer, _ any) error { ... }
+
+// Typed PatchBuilder for batched in-place DOM updates
+func (v *CounterView) Patch() *CounterViewPatch { ... }
+func (p *CounterViewPatch) CountValText(s string) *CounterViewPatch { ... }
+func (p *CounterViewPatch) StatusBadgeAddClass(c string) *CounterViewPatch { ... }
+func (p *CounterViewPatch) Apply(ctx context.Context, page *ownframe.Page) error {
+    return page.PatchElements(ctx, p.patches...)
+}
+```
+
+### 4. Use it from `main.go`
+
+```text
+view := NewCounterView().
+    WithTitle("Deploy Counter").
+    WithStatus("OK").
+    WithCount(0)
+
+page, _ := ownframe.New(ownframe.Config{
+    Title:       "Counter",
+    Render:      view.Render,
+    RetainState: true,
+})
+
+page.Handle(ownframe.Handlers{
+    Click: func(ctx context.Context, box ownframe.Box) error {
+        if box.Action != ActionInc {
+            return nil
+        }
+        view.Count++
+        return view.Patch().
+            CountValText(strconv.Itoa(view.Count)).
+            StatusBadgeAddClass("warn").
+            Apply(ctx, page)
+    },
+})
+```
+
+If you rename `id="count-val"` in `counter.html` and re-run `go generate`, Go flags every outdated `CountValText(...)` call at compile time instead of failing silently at runtime.
+
 ## Why compile HTML templates to Go
 
 `html/template` walks your structs through `reflect` on every `Page.Redraw`, allocating per-field values and formatting numbers on the heap. It also leaves element IDs and `data-action` strings unchecked until runtime: a typo in `id="status-badge"` fails only when a user clicks or a patch runs.
