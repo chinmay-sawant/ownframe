@@ -17,6 +17,8 @@ type State struct {
 	Caret        int
 	Anchor       int
 	All          bool
+	DesiredX     float64
+	HasDesiredX  bool
 	Doc          int
 	BlinkOn      bool
 	BlinkAt      time.Time
@@ -43,6 +45,7 @@ func (s *State) Bounds(n int) (int, int) {
 // ClearRange drops the caret, the anchor, and the select-all flag.
 func (s *State) ClearRange() {
 	s.Caret, s.Anchor, s.All = 0, 0, false
+	s.HasDesiredX = false
 }
 
 // RestartBlink shows the caret and restarts the blink clock.
@@ -55,6 +58,7 @@ func (s *State) RestartBlink() {
 func (s *State) CaretEnd(n int) {
 	s.Caret, s.Anchor = n, n
 	s.All = false
+	s.HasDesiredX = false
 	s.RestartBlink()
 }
 
@@ -68,7 +72,16 @@ func (s *State) SetCaret(pos, n int, extend bool) {
 
 	s.Caret = pos
 	s.All = false
+	s.HasDesiredX = false
 	s.RestartBlink()
+}
+
+// SetCaretVertical moves the caret to pos within n runes while preserving
+// desiredX for subsequent vertical moves.
+func (s *State) SetCaretVertical(pos, n int, extend bool, desiredX float64) {
+	s.SetCaret(pos, n, extend)
+	s.DesiredX = desiredX
+	s.HasDesiredX = true
 }
 
 // FocusCaret focuses id and puts both ends at off.
@@ -78,6 +91,7 @@ func (s *State) FocusCaret(id string, off int) bool {
 	s.FocusID = id
 	s.Caret, s.Anchor = off, off
 	s.All = false
+	s.HasDesiredX = false
 	s.RestartBlink()
 
 	return changed
@@ -92,6 +106,7 @@ func (s *State) DragTo(off int) bool {
 
 	s.Caret = off
 	s.All = false
+	s.HasDesiredX = false
 
 	return true
 }
@@ -101,6 +116,7 @@ func (s *State) SelectSpan(id string, start, end int) {
 	s.FocusID = id
 	s.Anchor, s.Caret = start, end
 	s.All = false
+	s.HasDesiredX = false
 }
 
 // Blur clears focus and the caret range.

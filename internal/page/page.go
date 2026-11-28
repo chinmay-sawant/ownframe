@@ -96,11 +96,12 @@ type Page struct {
 	// layerGen keys the compositor's retained element layers. It moves when a
 	// publish or an element patch changes display content, and stays put when
 	// a re-projection pass only rewrites operation matrices in place.
-	layerGen    uint64
-	touchCancel uint32
-	tickMutated atomic.Bool
-	tickActive  bool
-	tickSnap    *opBuffer
+	layerGen       uint64
+	touchCancel    uint32
+	suppressSubmit bool
+	tickMutated    atomic.Bool
+	tickActive     bool
+	tickSnap       *opBuffer
 	tickSlot
 	nav             nav.History
 	deepLinkSchemes map[string]struct{}

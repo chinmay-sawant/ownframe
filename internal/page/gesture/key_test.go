@@ -41,9 +41,30 @@ func TestKeyDownCaretKeys(t *testing.T) {
 		}
 	}
 
-	for _, key := range []string{"a", "backspace", "space", "enter"} {
+	for _, key := range []string{"a", "backspace", "space", "enter", "arrowup", "arrowdown"} {
 		if got := KeyDown(field, field.Value, key); got != EffectNone {
 			t.Fatalf("%s = %v, want none", key, got)
+		}
+	}
+}
+
+func TestKeyDownTextareaKeys(t *testing.T) {
+	t.Parallel()
+
+	area := form.Control{ID: "ta", Tag: "textarea", Value: "one\ntwo"}
+	for _, key := range []string{"enter", "numpadenter", "shift+enter", "shift+numpadenter"} {
+		if got := KeyDown(area, area.Value, key); got != EffectNewline {
+			t.Fatalf("%s = %v, want newline", key, got)
+		}
+	}
+	for _, key := range []string{"ctrl+enter", "ctrl+numpadenter"} {
+		if got := KeyDown(area, area.Value, key); got != EffectSubmit {
+			t.Fatalf("%s = %v, want submit", key, got)
+		}
+	}
+	for _, key := range []string{"arrowup", "arrowdown", "shift+arrowup", "shift+arrowdown"} {
+		if got := KeyDown(area, area.Value, key); got != EffectCaret {
+			t.Fatalf("%s = %v, want caret", key, got)
 		}
 	}
 }

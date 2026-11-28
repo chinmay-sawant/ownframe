@@ -12,14 +12,20 @@ const (
 	EffectBlur
 	// EffectCaret asks the page to run its caret key.
 	EffectCaret
+	// EffectNewline inserts a newline into a focused textarea.
+	EffectNewline
+	// EffectSubmit triggers form submit from a focused textarea (Ctrl/Cmd+Enter).
+	EffectSubmit
 )
 
 // KeyDown classifies key for the focused field.
 // text is the field value. An unfocused call passes a zero field and
 // empty text. Escape blurs. Arrow, home, and end keys, including a word
-// or extend prefix, move the caret of an editable field. Any other key
-// does nothing here. The page still owns the caret offsets.
+// or extend prefix, move the caret of an editable field. For a textarea,
+// Enter inserts a newline and Ctrl+Enter submits. Any other key does
+// nothing here. The page still owns the caret offsets.
 func KeyDown(field form.Control, text, key string) Effect {
+	_ = text
 	if key == "escape" {
 		return EffectBlur
 	}
@@ -29,7 +35,16 @@ func KeyDown(field form.Control, text, key string) Effect {
 		return EffectNone
 	}
 
-	if _, _, ok := form.MoveCaret(key, text, 0, 0, 0); !ok {
+	if field.Tag == "textarea" {
+		switch key {
+		case "enter", "numpadenter", "shift+enter", "shift+numpadenter":
+			return EffectNewline
+		case "ctrl+enter", "ctrl+numpadenter":
+			return EffectSubmit
+		}
+	}
+
+	if !form.IsCaretKey(field, key) {
 		return EffectNone
 	}
 

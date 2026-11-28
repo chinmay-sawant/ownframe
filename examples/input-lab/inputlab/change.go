@@ -35,6 +35,16 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 	return nil
 }
 
+// onKeyUp refreshes the caret/selection readout after keyboard navigation.
+func (a *App) onKeyUp(ctx context.Context, _ string) error {
+	if a.page.Edit().FocusedField() == "" {
+		return nil
+	}
+	a.syncReadout()
+	a.page.SetData(&a.view)
+	return a.page.Redraw(ctx)
+}
+
 // valueOf reads the control that just changed.
 func (a *App) valueOf(id string) string {
 	if id == "l-agree" || id == "l-free" || id == "l-pro" {

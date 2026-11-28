@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: sans-serif;
+}
+.shell {
+  padding: 20px 24px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #f8fafc;
+}
+.subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+.status-badge {
+  box-sizing: border-box;
+  width: 140px;
+  height: 30px;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #064e3b;
+  border: 1px solid #10b981;
+  color: #a7f3d0;
+  font-size: 12px;
+  font-weight: bold;
+}
+.status-badge.offline {
+  background: #7f1d1d;
+  border-color: #ef4444;
+  color: #fecaca;
+}
+.metrics {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.metric-card {
+  flex: 1;
+  box-sizing: border-box;
+  height: 74px;
+  overflow: hidden;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.metric-label {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+.metric-val {
+  height: 24px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 20px;
+  font-weight: bold;
+  color: #f8fafc;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #334155;
+  border: 1px solid #475569;
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-accent {
+  background: #0284c7;
+  border-color: #38bdf8;
+}
+.event-readout {
+  box-sizing: border-box;
+  flex: 1;
+  height: 32px;
+  overflow: hidden;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: #020617;
+  border: 1px solid #1e293b;
+  color: #7dd3fc;
+  font-size: 12px;
+}
+.banner-slot {
+  margin-bottom: 14px;
+}
+.task-list {
+  box-sizing: border-box;
+  min-height: 220px;
+  max-height: 320px;
+  overflow: hidden;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  height: 36px;
+  overflow: hidden;
+  padding: 0 10px;
+  border-bottom: 1px solid #334155;
+  font-size: 13px;
+}
+.task-row.done {
+  color: #94a3b8;
+}
+.task-id {
+  width: 56px;
+  color: #64748b;
+  font-weight: bold;
+}
+.task-title {
+  flex: 1;
+  color: #f1f5f9;
+}
+.task-owner {
+  width: 120px;
+  color: #94a3b8;
+  text-align: right;
+}
+</style>
+</head>
+<body>
+{{/* Compiled by cmd/ownframegen into typed Go view + PatchBuilder */}}
+<div class="shell">
+  <div class="header">
+    <div>
+      <div class="title">{{.Title}}</div>
+      <div class="subtitle">Zero-reflection Config.Render + compile-time PatchBuilder</div>
+    </div>
+    <div id="status-badge" class="status-badge{{if not .Online}} offline{{end}}">{{if .Online}}Online{{else}}Offline{{end}}</div>
+  </div>
+
+  <div class="banner-slot">{{raw .BannerHTML}}</div>
+
+  <div class="metrics">
+    <div class="metric-card">
+      <div class="metric-label">Open Tasks</div>
+      <div id="open-count" class="metric-val">{{.OpenCount:int}}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Completed</div>
+      <div id="done-count" class="metric-val">{{.DoneCount:int}}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total</div>
+      <div id="total-count" class="metric-val">{{.TotalCount:int}}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Uptime %</div>
+      <div id="uptime-pct" class="metric-val">{{.UptimePct:float64}}</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-accent" data-action="toggle-status">Toggle Status</button>
+    <button class="btn" data-action="increment-done">Complete One</button>
+    <button class="btn" data-action="append-task">Append Task</button>
+    <button class="btn" data-action="reset-tasks">Reset List</button>
+    <div id="last-event" class="event-readout">Ready</div>
+  </div>
+
+  <div id="task-list" class="task-list">
+    {{- range .Tasks -}}
+    <div id="task-{{.ID:int}}" class="task-row{{if .Done}} done{{end}}">
+      <span class="task-id">#{{.ID:int}}</span>
+      <span class="task-title">{{.Name}}</span>
+      <span class="task-owner">{{.Owner}}</span>
+    </div>
+    {{- end -}}
+  </div>
+</div>
+</body>
+</html>

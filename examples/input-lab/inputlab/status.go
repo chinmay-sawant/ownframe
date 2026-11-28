@@ -1,6 +1,9 @@
 package inputlab
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // send snapshots the plain form, like the old forms demo.
 func (a *App) send() error {
@@ -41,7 +44,50 @@ func (a *App) refresh() {
 		a.page.Form().FormValue("c-right"),
 		a.page.Form().FormValue("si-email"),
 	)
+	a.syncReadout()
 	a.page.SetData(&a.view)
+}
+
+// syncReadout updates the multi-line editor readout with focused field,
+// caret index, 1-based line:col, selection range, and newline count.
+func (a *App) syncReadout() {
+	focus := a.page.Edit().FocusedField()
+	caret, start, end := a.page.Edit().Selection()
+	val := a.page.Form().FormValue("ml-editor")
+	if focus != "" {
+		val = a.page.Form().FormValue(focus)
+	}
+	line, col := lineCol(val, caret)
+	sel := "none"
+	if start != end {
+		sel = fmt.Sprintf("[%d,%d)", start, end)
+	}
+	focusLabel := focus
+	if focusLabel == "" {
+		focusLabel = "(none)"
+	}
+	a.view.MLReadout = fmt.Sprintf(
+		"focus=%s | caret=%d | line=%d:%d | sel=%s | newlines=%d",
+		focusLabel, caret, line, col, sel, strings.Count(val, "\n"),
+	)
+}
+
+func lineCol(s string, caret int) (line, col int) {
+	line, col = 1, 1
+	i := 0
+	for _, r := range s {
+		if i >= caret {
+			break
+		}
+		if r == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+		i++
+	}
+	return line, col
 }
 
 // ready reports whether both sign-in fields carry text.

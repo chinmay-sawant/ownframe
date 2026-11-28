@@ -29,6 +29,8 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 		return err
 	}
 
+	p.suppressSubmit = false
+
 	scoped := len(p.ff.scope) != 0
 	if p.handlers.KeyDown != nil {
 		if err := p.handlers.KeyDown(ctx, key); err != nil {
@@ -63,6 +65,14 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 		return p.Focus(ctx, "")
 	case gesture.EffectCaret:
 		return caretKey(p, ctx, key)
+	case gesture.EffectNewline:
+		p.suppressSubmit = true
+		return editField(p, ctx, nil, func(c Control, caret, anchor int) (Control, int, int, bool) {
+			return gesture.Edit(c, "\n", gesture.OpInsert, caret, anchor)
+		})
+	case gesture.EffectSubmit:
+		p.suppressSubmit = true
+		return p.submitNow(ctx)
 	default:
 		return nil
 	}
@@ -74,6 +84,8 @@ func (p *Page) KeyUp(ctx context.Context, key string) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
+
+	p.suppressSubmit = false
 
 	if p.handlers.KeyUp == nil {
 		return nil
@@ -184,6 +196,7 @@ func (p *Page) Cut(ctx context.Context) (string, bool, error) {
 		c, text, pos := gesture.Cut(c, formState(p).Anchor, formState(p).Caret)
 		formState(p).Caret, formState(p).Anchor = pos, pos
 		formState(p).All = false
+		formState(p).HasDesiredX = false
 		resetCaretBlink(p)
 		formState(p).ByID[id] = c
 		markPending(p, id)
@@ -246,6 +259,7 @@ func (p *Page) SelectAll(ctx context.Context) error {
 		sel := gesture.SelectAll(c.Value)
 		formState(p).Anchor, formState(p).Caret = sel.Anchor, sel.Caret
 		formState(p).All = sel.All
+		formState(p).HasDesiredX = false
 		resetCaretBlink(p)
 
 		return p.Redraw(ctx)
@@ -274,10 +288,21 @@ func (p *Page) Redo(ctx context.Context) error {
 
 // Submit activates a focused button. Otherwise it calls the submit handler
 // and draws the page again, or does nothing when no handler is registered.
+// When KeyDown already consumed Enter on a focused textarea (to insert a
+// newline or submit via Ctrl/Cmd+Enter), the immediate host follow-up Submit
+// is suppressed while direct programmatic Submit calls still fire normally.
 func (p *Page) Submit(ctx context.Context) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
+	if p.suppressSubmit {
+		p.suppressSubmit = false
+		return nil
+	}
+	return p.submitNow(ctx)
+}
+
+func (p *Page) submitNow(ctx context.Context) error {
 	if handled, err := activateKeyboardButton(p, ctx); handled || err != nil {
 		return err
 	}

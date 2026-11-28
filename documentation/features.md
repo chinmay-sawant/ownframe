@@ -84,7 +84,7 @@ Text set through a patch does not go through the emoji pass. The pass runs on th
 
 `page.Probe().SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
 
-Detail is in [optimizations.md](optimizations.md). The measured cost of an
+Detail is in [optimizations.md](optimizations.md). For compile-time HTML-to-Go code generation (`Config.Render` and typed `PatchBuilder` batches), see [codegen.md](codegen.md). The measured cost of an
 element patch against a full redraw is in
 [PATCH_COST.md](../examples/css-preview/PATCH_COST.md).
 

@@ -21,6 +21,9 @@ label { display: block; font-size: 13px; margin-top: 12px; }
 display: block; border: 1px solid #c8c2b4; padding: 8px; margin-top: 4px;
 min-height: 18px; width: 280px; }
 #f-note { min-height: 40px; }
+.ml-area { width: 460px; min-height: 120px; line-height: 1.45; font-size: 14px; }
+.hint { font-size: 12px; color: #57534e; margin: 2px 0 6px; }
+#ml-readout { font-size: 12px; font-family: monospace; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; padding: 6px 8px; margin: 6px 0 0; }
 .chk { width: 18px; height: 18px; }
 .btn { display: inline-block; margin: 10px 6px 0 0; background: #1a56db;
 color: #fff; padding: 8px 10px; font-size: 13px; }
@@ -47,6 +50,14 @@ background: #e5e7eb; text-align: center; }
 <h1>Input lab</h1>
 <p id="status">{{.Status}}</p>
 <p id="stamp">stamp={{.Stamp}}</p>
+<h2>Multi-line textarea</h2>
+<p class="hint">Enter inserts a newline; Ctrl/Cmd+Enter submits. Up/Down cross wrapped and hard lines; Home/End move per line; Ctrl+Home/End jump to ends; triple-click selects a line.</p>
+<label for="ml-editor">Multi-line editor</label>
+<textarea id="ml-editor" class="txt ml-area">This opening paragraph is intentionally long enough to soft-wrap across multiple visual lines inside the textarea box so you can test Up, Down, Home, and End across wrapped lines.
+
+Short line.
+Final paragraph with a hard newline above it.</textarea>
+<p id="ml-readout">{{.MLReadout}}</p>
 <h2>Bound controls</h2>
 <p id="b-state">{{.BName}} | {{.BEmail}} | {{.BAgree}} | {{.BPlan}} | {{.BColor}}</p>
 <p id="b-status">{{.BStatus}}</p>

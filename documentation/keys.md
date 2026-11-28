@@ -7,10 +7,11 @@ or `"1"`. `Digit1` arrives as `"1"`. Modifier keys arrive the same way:
 `"shift"`, `"control"`, `"alt"`, `"meta"`, plus `"shiftleft"` and the
 other left and right names.
 
-The window prefixes the four caret keys with the modifiers held:
-`arrowleft`, `arrowright`, `home`, and `end` arrive as
-`shift+arrowleft`, `ctrl+home`, or `alt+end`. Command uses the `ctrl+`
-prefix. Every other key keeps its plain name; [editing.md](editing.md)
+The window prefixes the six caret keys with the modifiers held:
+`arrowleft`, `arrowright`, `arrowup`, `arrowdown`, `home`, and `end` arrive as
+`shift+arrowleft`, `shift+arrowdown`, `ctrl+home`, or `alt+end`. `enter` and
+`numpadenter` carry `ctrl+` when Control or Command is held. Command uses the
+`ctrl+` prefix. Every other key keeps its plain name; [editing.md](editing.md)
 reads the prefixes.
 
 ```go
@@ -45,7 +46,9 @@ The window still handles `Ctrl+C`, `Ctrl+X`, `Ctrl+V`, `Ctrl+A`, `Ctrl+Z`,
 `Ctrl+Shift+Z`, `Ctrl+Y`, `Ctrl+Insert`, `Shift+Insert`, `Shift+Delete`,
 `Ctrl+Backspace`, Enter, and NumpadEnter on its own. Command works in place
 of Ctrl. `Ctrl+Alt` without Meta is AltGr; it fires no chord and types
-normally. Enter and NumpadEnter call `Handlers.Submit`. A key handler sees
+normally. Enter and NumpadEnter call `Handlers.Submit` outside a `textarea`;
+in a focused `textarea`, plain Enter inserts a newline and `Ctrl+Enter` or
+`Cmd+Enter` calls `Handlers.Submit`. A key handler sees
 those keys too, and typing in a focused form control still edits the
 control.
 

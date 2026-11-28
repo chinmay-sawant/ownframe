@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 )
 
-const formCSS = `<style>[data-ownframe-field]{display:inline-block;border:1px solid #c8c2b4;padding:4px 6px;min-width:10em;min-height:1.6em;white-space:pre-wrap}[data-ownframe-field][data-ownframe-focus="1"]{border:1px solid #1a56db;outline:1px solid #1a56db}[data-ownframe-selection]{background:#d6e2ff}[data-ownframe-composition]{text-decoration:underline}[data-ownframe-field][data-ownframe-placeholder="1"]{color:#6b7280}</style>`
+const formCSS = `<style>[data-ownframe-field]{display:inline-block;border:1px solid #c8c2b4;padding:4px 6px;min-width:10em;min-height:1.6em;white-space:pre-wrap}[data-ownframe-field][data-ownframe-focus="1"]{border:1px solid #1a56db;outline:1px solid #1a56db}[data-ownframe-line]{display:block;min-height:1.2em}[data-ownframe-selection]{background:#d6e2ff}[data-ownframe-composition]{text-decoration:underline}[data-ownframe-field][data-ownframe-placeholder="1"]{color:#6b7280}</style>`
 
 // Rewrite copies source, swapping each kept control for paintable
 // HTML. It paints a select-all when selected is true and puts the caret at
@@ -134,6 +134,12 @@ func fieldSpanState(raw string, ctrl Control, st Caret, focused bool) string {
 	case st.Preedit != "":
 		inner = markedPreedit(text, ShownText(kind, st.Preedit), st.Start,
 			st.End, st.PreeditStart, st.PreeditEnd)
+	case tag == "textarea" && strings.Contains(text, "\n"):
+		if whole {
+			inner = markedLines(text, true, 0, RuneLen(text))
+		} else {
+			inner = markedLines(text, focused, start, end)
+		}
 	case whole:
 		inner = selectionSpan(text)
 	default:
@@ -233,6 +239,39 @@ func markedText(text string, focused bool, start, end int) string {
 	}
 
 	return html.EscapeString(text)
+}
+
+// markedLines splits a multi-line textarea value on hard newlines into block
+// line spans so empty lines (middle or trailing) keep real line box height
+// and never collapse under pre-wrap.
+func markedLines(text string, focused bool, start, end int) string {
+	runes := []rune(text)
+	var b strings.Builder
+	lineStart := 0
+	for i := 0; i <= len(runes); i++ {
+		if i < len(runes) && runes[i] != '\n' {
+			continue
+		}
+		b.WriteString(`<span data-ownframe-line="1">`)
+		lineRunes := runes[lineStart:i]
+		if focused && end > start {
+			s := max(start, lineStart) - lineStart
+			e := min(end, i) - lineStart
+			if e > s {
+				b.WriteString(html.EscapeString(string(lineRunes[:s])))
+				b.WriteString(selectionSpan(string(lineRunes[s:e])))
+				b.WriteString(html.EscapeString(string(lineRunes[e:])))
+			} else {
+				b.WriteString(html.EscapeString(string(lineRunes)))
+			}
+		} else {
+			b.WriteString(html.EscapeString(string(lineRunes)))
+		}
+		b.WriteString(`</span>`)
+		lineStart = i + 1
+	}
+
+	return b.String()
 }
 
 const (

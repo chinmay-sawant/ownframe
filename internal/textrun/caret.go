@@ -13,36 +13,21 @@ func Caret(d *layout.Display, box layout.Box, target string, offset int) (layout
 	if d == nil || d.PixelPerPoint <= 0 {
 		return layout.DisplayOp{}, 0, false
 	}
-	lines := collect(d, box)
-	if len(lines) == 0 {
-		return layout.DisplayOp{}, 0, false
-	}
 	if target == "" {
+		lines := collect(d, box)
+		if len(lines) == 0 {
+			return layout.DisplayOp{}, 0, false
+		}
 		op := lines[0].runs[0].op
 
 		return *op, op.X, true
 	}
-	bases, ok := align(lines, target)
-	if !ok {
+	vlines, ok := visualLines(d, box, target)
+	if !ok || len(vlines) == 0 {
 		return layout.DisplayOp{}, 0, false
 	}
 	offset = max(0, min(offset, utf8.RuneCountInString(target)))
-	for i, ln := range lines {
-		local := offset - bases[i]
-		if local < 0 || local > utf8.RuneCountInString(lineText(ln)) {
-			continue
-		}
-		for _, run := range ln.runs {
-			op := run.op
-			n := utf8.RuneCountInString(drawn(op))
-			if local <= n {
-				dx, ok := advance(op, local, d.PixelPerPoint)
-				return *op, op.X + dx*d.PointsPerPixel, ok
-			}
-			local -= n
-		}
-	}
-	return layout.DisplayOp{}, 0, false
+	return vlineCaretX(d, vlines[findVLine(vlines, offset)], offset)
 }
 
 func advance(op *layout.DisplayOp, count int, pxPerPt float64) (float64, bool) {
