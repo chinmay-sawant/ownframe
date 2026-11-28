@@ -17,6 +17,7 @@
     "blinkless-scroll",
     "builder",
     "code-view",
+    "codegen",
     "compare",
     "crash",
     "css-masking",

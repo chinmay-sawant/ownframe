@@ -89,6 +89,7 @@ make air reload ARGS="-web"
 | [flappy-bird](flappy-bird) | Flappy Bird: HTML/CSS scene, gravity and flap physics, scrolling pipe pairs, score and best, keyboard or click. | 8121 |
 | [devtools](devtools) | Inspector dock: JSON element properties, frame counters, and operation outlines; F12 or Ctrl+Shift+I. | 8122 |
 | [retained-dom](retained-dom) | Retained DOM mutations (`ToggleClass`, `AddClass`, `RemoveClass`, `RemoveAttribute`, `AppendHTML`, `InnerHTML`, `Remove`, `PatchElements`) alongside v0.0.9 CSS motion fast paths and clipped/blend-sibling retained layers; DevTools and Perf on by default. | 8151 |
+| [codegen](codegen) | Compile-time HTML-to-Go codegen via `cmd/ownframegen`: typed fluent view builder, zero-reflection `Config.Render`, compile-time `PatchBuilder`, and benchmarks against `html/template`. | 8152 |
 | [reload](reload) | File-backed page that redraws when `index.html` changes; the counter survives the reload. | 8123 |
 | [drop](drop) | Dropped files print their absolute path on desktop and the entry name in a browser; a file control takes a path from the picker. | 8124 |
 | [input-lab](input-lab) | The nine form and input demos (forms, controls, bind, bind-hooks, editing, clipboard, input, login, states) in one window. | 8130 |
