@@ -418,13 +418,49 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 	})
 	p.cache.SetStyled(styled)
 	if structural {
-		markFormDirty(p)
+		formChanged := false
+		for i := range patches {
+			if touched[i] && editsTouchFormControls(patches[i].Edits) {
+				formChanged = true
+				break
+			}
+		}
+		if formChanged {
+			markFormDirty(p)
+		} else {
+			clearFormDirty(p)
+		}
+	} else {
+		clearFormDirty(p)
 	}
 	finishPatchedCommit(p, state)
 
 	return nil
 }
 
+// clearFormDirty clears formDirty under dataMu after a retained patch that
+// did not add or remove form inputs, so a trailing RedrawIfChanged does not
+// re-execute the whole template and redo a full layout.
+func clearFormDirty(p *Page) {
+	p.dataMu.Lock()
+	p.formDirty = false
+	p.dataMu.Unlock()
+}
+
+// editsTouchFormControls reports whether any structural edit introduces or
+// alters form input elements that require a form-control re-sync.
+func editsTouchFormControls(edits []ElementEdit) bool {
+	for i := range edits {
+		if edits[i].InnerHTML == nil {
+			continue
+		}
+		h := strings.ToLower(*edits[i].InnerHTML)
+		if strings.Contains(h, "<input") || strings.Contains(h, "<textarea") || strings.Contains(h, "<select") {
+			return true
+		}
+	}
+	return false
+}
 // failBatch rolls a refused batch back and wraps the cause in
 // ErrPatchRefused, so callers fall back to a refresh.
 func failBatch(p *Page, err error) error {
