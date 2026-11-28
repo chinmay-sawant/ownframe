@@ -32,15 +32,21 @@ type cliOptions struct {
 	outPath  string
 	pkgName  string
 	typeName string
+	bindType string
+	bindDir  string
+	funcName string
 }
 
 func run(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("ownframegen", flag.ContinueOnError)
 	var opts cliOptions
-	fs.StringVar(&opts.inPath, "in", "", "input .html file, glob pattern, or directory")
+	fs.StringVar(&opts.inPath, "in", "", "input .html file, comma-separated files, glob pattern, or directory")
 	fs.StringVar(&opts.outPath, "out", "", "output .go file path (defaults to <stem>_gen.go, or '-' for stdout)")
 	fs.StringVar(&opts.pkgName, "pkg", "main", "Go package name for the generated file")
 	fs.StringVar(&opts.typeName, "type", "", "generated Go view struct name (single-file input)")
+	fs.StringVar(&opts.bindType, "bind", "", "compile full Go html/template syntax against an existing Go struct type")
+	fs.StringVar(&opts.bindDir, "bind-dir", "", "directory containing the Go package defining -bind (defaults to -out directory)")
+	fs.StringVar(&opts.funcName, "func", "", "generated render function prefix for -bind mode (defaults to Render<bind>)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -50,6 +56,10 @@ func run(args []string, stdout io.Writer) error {
 	}
 	if strings.TrimSpace(opts.pkgName) == "" {
 		return errors.New("package name -pkg cannot be empty")
+	}
+
+	if strings.TrimSpace(opts.bindType) != "" {
+		return runBound(opts, stdout)
 	}
 
 	inputs, err := resolveInputs(opts.inPath)
@@ -102,6 +112,58 @@ func run(args []string, stdout io.Writer) error {
 		return fmt.Errorf("write %s: %w", outPath, err)
 	}
 
+	return nil
+}
+
+func runBound(opts cliOptions, stdout io.Writer) error {
+	inputs, err := resolveBoundInputs(opts.inPath)
+	if err != nil {
+		return err
+	}
+	if len(inputs) == 0 {
+		return fmt.Errorf("no .html files matched %q", opts.inPath)
+	}
+
+	var combined strings.Builder
+	names := make([]string, 0, len(inputs))
+	for _, path := range inputs {
+		//nolint:gosec // CLI tool intentionally reads user-specified template path.
+		raw, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return fmt.Errorf("read %s: %w", path, readErr)
+		}
+		combined.Write(raw)
+		names = append(names, filepath.Base(path))
+	}
+
+	bindDir := strings.TrimSpace(opts.bindDir)
+	if bindDir == "" {
+		bindDir = defaultBindDir(opts.outPath)
+	}
+
+	src, err := CompileBoundTemplate(
+		opts.pkgName,
+		strings.TrimSpace(opts.funcName),
+		strings.TrimSpace(opts.bindType),
+		bindDir,
+		strings.Join(names, ", "),
+		combined.String(),
+	)
+	if err != nil {
+		return err
+	}
+
+	outPath := opts.outPath
+	if outPath == "" {
+		outPath = defaultOutPath(inputs[0])
+	}
+	if outPath == "-" {
+		_, err = stdout.Write(src)
+		return err
+	}
+	if err := os.WriteFile(outPath, src, outputFilePerm); err != nil {
+		return fmt.Errorf("write %s: %w", outPath, err)
+	}
 	return nil
 }
 
