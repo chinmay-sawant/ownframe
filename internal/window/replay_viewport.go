@@ -8,6 +8,7 @@ import (
 
 type viewportKey struct {
 	generation uint64
+	layerGen   uint64
 	bounds     image.Rectangle
 }
 
@@ -32,13 +33,14 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	had := s.viewport.valid && s.viewport.buf != nil
 	prevScroll := s.viewport.scroll
 	scroll := image.Pt(s.scrollX, s.scrollY)
-	key := viewportKey{generation: s.seq, bounds: bounds}
+	layerGen := s.layerGeneration()
+	key := viewportKey{generation: s.seq, layerGen: layerGen, bounds: bounds}
 	// Bake this frame's retained layers before reading dirty state. The
 	// background below leaves their operations as holes, and the layers are
 	// composited after the blit, so a moving layer never repaints the page
 	// under it.
 	specs := s.layerSpecs(d)
-	s.renderer.BeginViewportLayers(d, s.layerGeneration(), specs, s.viewportPinZ())
+	s.renderer.BeginViewportLayers(d, layerGen, specs, s.viewportPinZ())
 	s.syncPromotedLayers(d)
 	// Paint dirty rects separately so a moving chip costs its own box instead
 	// of the bounding box of every moving chip.
@@ -56,11 +58,11 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	changed = changed || len(rects) > 0
 	wanted := bounds.Add(scroll)
 	full := !s.viewport.valid || s.viewport.key.bounds != bounds || !wanted.In(s.viewport.area)
-	full = full || (s.viewport.key.generation != key.generation && !changed)
+	full = full || (s.viewport.key.layerGen != key.layerGen && !changed)
 	if full {
 		previous := s.viewport.area
 		reuse := s.viewport.valid && s.viewport.key.bounds == bounds &&
-			(s.viewport.key.generation == key.generation || changed)
+			(s.viewport.key.layerGen == key.layerGen || changed)
 		buffer := s.viewport.buf
 		s.setViewportArea(bounds)
 		if reuse && s.viewport.buf == buffer && previous.Overlaps(s.viewport.area) {

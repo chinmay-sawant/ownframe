@@ -896,6 +896,20 @@ func (p *Page) Boxes() []Box {
 	return append([]Box(nil), p.boxes...)
 }
 
+// BoxByID returns the first placed box matching id without cloning the full
+// boxes slice.
+func (p *Page) BoxByID(id string) (Box, bool) {
+	if p == nil || id == "" {
+		return Box{}, false
+	}
+	for i := range p.boxes {
+		if p.boxes[i].ID == id {
+			return p.boxes[i], true
+		}
+	}
+	return Box{}, false
+}
+
 // BoxesSlice returns the last hit-test boxes directly without copying, or nil
 // when nothing has been drawn. The returned slice is read-only.
 func (p *Page) BoxesSlice() []Box {

@@ -164,9 +164,8 @@ func (c *textRasterCache) warmIdle(n int) {
 	defer c.mu.Unlock()
 
 	if c.entries == nil {
-		c.entries = make(map[textRasterKey]textRasterEntry, n)
+		c.entries = make(map[textRasterKey]*textRasterEntry, n)
 	}
-	c.order.reserve(n)
 }
 
 // releaseIdle deallocates every decoded image and forgets the index, so the

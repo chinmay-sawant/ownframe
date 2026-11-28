@@ -148,6 +148,16 @@ func (p *Page) Boxes() []Box {
 	return inner.Boxes()
 }
 
+// BoxByID returns the first placed box with id without cloning all boxes.
+func (p *Page) BoxByID(id string) (Box, bool) {
+	inner := innerPage(p)
+	if inner == nil {
+		return Box{}, false
+	}
+
+	return inner.BoxByID(id)
+}
+
 // Size returns the frame size in CSS pixels.
 func (p *Page) Size() (int, int) {
 	inner := innerPage(p)

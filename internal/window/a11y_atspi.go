@@ -119,7 +119,10 @@ func (s *shell) publishA11y() {
 	if !ok {
 		return
 	}
-	gen := s.app.Generation()
+	// Key AT-SPI publishing on layerGeneration so no-op hover commits (same
+	// display, same boxes, same a11y tree) do not rebuild and republish the
+	// entire accessibility tree over D-Bus on every pointer move.
+	gen := s.layerGeneration()
 	a.mu.Lock()
 	if a.closed {
 		a.mu.Unlock()
