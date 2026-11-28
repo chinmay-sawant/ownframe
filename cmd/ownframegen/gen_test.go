@@ -179,3 +179,71 @@ func TestCLIRunSingleFileAndDirectory(t *testing.T) {
 		t.Fatalf("directory mode missing PanelView:\n%s", stdout.String())
 	}
 }
+
+func TestCompileBoundTemplate(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	const typesSrc = `package demo
+
+import "html/template"
+
+type Row struct {
+	Kind string
+	Text string
+	No   int
+}
+
+type Inner struct {
+	Open bool
+	Rows []Row
+}
+
+type AppView struct {
+	Mode  string
+	Wrap  bool
+	Total int
+	Body  template.HTML
+	Inner Inner
+	Opt   *Row
+}
+`
+	if err := os.WriteFile(filepath.Join(dir, "types.go"), []byte(typesSrc), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	const tmplSrc = `{{define "badge"}}<span class="b">{{.Mode}}</span>{{end}}` +
+		`{{$single := le .Total 1}}` +
+		`<div class="app{{if and .Inner.Open (not $single)}} open{{else if eq .Mode "diff"}} diff{{end}}">` +
+		`{{template "badge" .}}` +
+		`{{with .Opt}}<em>{{.Text}}</em>{{end}}` +
+		`{{range $i, $r := .Inner.Rows}}` +
+		`<div data-i="{{$i}}" class="{{if or (eq $r.Kind "add") (eq $r.Kind "del")}}chg{{end}}{{if $.Wrap}} w{{end}}">{{$r.No}}:{{.Text}}</div>` +
+		`{{end}}` +
+		`{{.Body}}` +
+		`</div>`
+
+	src, err := CompileBoundTemplate("demo", "RenderApp", "AppView", dir, "app.html", tmplSrc)
+	if err != nil {
+		t.Fatalf("CompileBoundTemplate failed: %v", err)
+	}
+
+	fset := token.NewFileSet()
+	if _, err := parser.ParseFile(fset, "app_gen.go", src, parser.AllErrors); err != nil {
+		t.Fatalf("generated bound code failed go/parser: %v\n%s", err, src)
+	}
+
+	code := string(src)
+	for _, want := range []string{
+		"func RenderAppBuf(b *bytes.Buffer, v *AppView)",
+		"func RenderApp(w io.Writer, data any) error",
+		"renderRenderAppSub_Badge(b, v)",
+		"b.WriteString(string(v.Body))",
+		"html.EscapeString(",
+		"strconv.AppendInt(",
+	} {
+		if !strings.Contains(code, want) {
+			t.Errorf("generated code missing %q\n%s", want, code)
+		}
+	}
+}

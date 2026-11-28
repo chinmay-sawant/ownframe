@@ -174,12 +174,12 @@ func textRasterLayout(ink image.Rectangle) (size image.Point, dx, dy int, ok boo
 }
 
 // textRunMaxEntries and textRunMaxPixels bound what one page caches: at most
-// 1024 baked runs holding 8M pixels (32 MB of GPU bytes). A page with more
-// runs than this keeps the most-recently-used; the least-recently-used
-// rasters are disposed.
+// 4096 baked runs holding 16M pixels (64 MB of GPU bytes). A split-diff view
+// can hold >1000 unique text runs on screen at once, so 4096 prevents per-frame
+// cache thrash and O(N) eviction scans while still bounding VRAM tightly.
 const (
-	textRunMaxEntries = 1024
-	textRunMaxPixels  = 8 << 20
+	textRunMaxEntries = 4096
+	textRunMaxPixels  = 16 << 20
 )
 
 // textRasterEntry is one baked run, offset from the integer origin the key
@@ -188,6 +188,7 @@ const (
 type textRasterEntry struct {
 	img    *ebiten.Image
 	dx, dy int
+	tick   uint64
 }
 
 // pixels is the entry's pixel count, zero for a decline.
@@ -199,12 +200,13 @@ func (e textRasterEntry) pixels() int {
 	return e.img.Bounds().Dx() * e.img.Bounds().Dy()
 }
 
-// textRasterCache keeps baked text rasters, least-recently-used first. A hit
-// moves to the back, so a repaint that reuses its runs never evicts them.
+// textRasterCache keeps baked text rasters, least-recently-used first. Storing
+// the recency tick on the entry pointer avoids a second map hash+compare of
+// the large textRasterKey on every cache hit.
 type textRasterCache struct {
 	mu      sync.Mutex
-	entries map[textRasterKey]textRasterEntry
-	order   lruOrder[textRasterKey]
+	entries map[textRasterKey]*textRasterEntry
+	clock   uint64
 	pixels  int
 }
 
@@ -234,23 +236,18 @@ type textRasterKey struct {
 }
 
 // lookup returns the entry for key, if one has been baked or declined. A hit
-// moves to the back of the eviction order, so the cache evicts the
-// least-recently-used run first.
+// stamps the entry's tick in place with a single map lookup.
 func (c *textRasterCache) lookup(key textRasterKey) (textRasterEntry, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	entry, ok := c.entries[key]
-	if ok {
-		c.touch(key)
+	if !ok {
+		return textRasterEntry{}, false
 	}
-
-	return entry, ok
-}
-
-// touch moves key to the back of the eviction order. The caller holds mu.
-func (c *textRasterCache) touch(key textRasterKey) {
-	c.order.touch(key)
+	c.clock++
+	entry.tick = c.clock
+	return *entry, true
 }
 
 // raster returns the entry for key, running bake once while the key is new.
@@ -261,35 +258,91 @@ func (c *textRasterCache) raster(key textRasterKey, bake func() (textRasterEntry
 	defer c.mu.Unlock()
 
 	if c.entries == nil {
-		c.entries = make(map[textRasterKey]textRasterEntry)
+		c.entries = make(map[textRasterKey]*textRasterEntry)
 	}
 	if entry, ok := c.entries[key]; ok {
-		c.touch(key)
-
-		return entry
+		c.clock++
+		entry.tick = c.clock
+		return *entry
 	}
 
 	entry, ok := bake()
-	c.entries[key] = entry
-	c.order.add(key)
+	c.clock++
+	entry.tick = c.clock
+	c.entries[key] = &entry
 	if ok {
 		c.pixels += entry.pixels()
 	}
 
-	c.pixels = c.order.evict(c.order.length(), textRunMaxEntries, c.pixels, textRunMaxPixels, key, func(victim textRasterKey) int {
-		evicted, exists := c.entries[victim]
-		if !exists {
-			return 0
-		}
-		px := evicted.pixels()
-		if evicted.img != nil {
-			evicted.img.Deallocate()
-		}
-		delete(c.entries, victim)
-		return px
-	})
+	if len(c.entries) > textRunMaxEntries || c.pixels > textRunMaxPixels {
+		c.evictBatch(key)
+	}
 
 	return entry
+}
+
+const textRunEvictBatch = 64
+
+// evictBatch drops up to textRunEvictBatch oldest entries in one map scan when
+// the entry cap is exceeded (and repeats if pixel budget still overflows),
+// amortizing the O(N) scan across 64 inserts instead of scanning on every miss.
+func (c *textRasterCache) evictBatch(protected textRasterKey) {
+	type victim struct {
+		key  textRasterKey
+		tick uint64
+	}
+	for len(c.entries) > textRunMaxEntries || c.pixels > textRunMaxPixels {
+		want := len(c.entries) - textRunMaxEntries
+		if want < textRunEvictBatch && len(c.entries) > textRunMaxEntries {
+			want = textRunEvictBatch
+		}
+		if want < 1 {
+			want = 1
+		}
+		if want > len(c.entries)-1 {
+			want = len(c.entries) - 1
+		}
+		if want <= 0 {
+			break
+		}
+
+		// Collect up to `want` smallest-tick keys in one pass.
+		victims := make([]victim, 0, want)
+		maxIdx := 0
+		for k, e := range c.entries {
+			if k == protected {
+				continue
+			}
+			if len(victims) < want {
+				victims = append(victims, victim{key: k, tick: e.tick})
+				if e.tick > victims[maxIdx].tick {
+					maxIdx = len(victims) - 1
+				}
+				continue
+			}
+			if e.tick < victims[maxIdx].tick {
+				victims[maxIdx] = victim{key: k, tick: e.tick}
+				maxIdx = 0
+				for i := 1; i < len(victims); i++ {
+					if victims[i].tick > victims[maxIdx].tick {
+						maxIdx = i
+					}
+				}
+			}
+		}
+		if len(victims) == 0 {
+			break
+		}
+		for _, v := range victims {
+			if evicted, ok := c.entries[v.key]; ok {
+				c.pixels -= evicted.pixels()
+				if evicted.img != nil {
+					evicted.img.Deallocate()
+				}
+				delete(c.entries, v.key)
+			}
+		}
+	}
 }
 
 // flush drops every raster and every remembered decline. Only the benchmark
@@ -305,6 +358,6 @@ func (c *textRasterCache) flush() {
 	}
 
 	c.entries = nil
-	c.order.reset()
+	c.clock = 0
 	c.pixels = 0
 }

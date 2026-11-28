@@ -605,9 +605,13 @@ func paintHover(p *Page, ctx context.Context, prev, id string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	// The handler ran and can mutate the template data in place, whether
-	// or not it claimed the hover.
-	markFormDirty(p)
+	// Only force a template re-execution when the handler reported handling
+	// the hover (or already called SetData/PatchElement itself). An unhandled
+	// hover on an unrelated control must not re-execute the whole template on
+	// every pointer move.
+	if handled {
+		markFormDirty(p)
+	}
 
 	return handled, nil
 }

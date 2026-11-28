@@ -1,8 +1,6 @@
 package a11y
 
 import (
-	"strings"
-
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/blinkless/markup"
 	"github.com/chinmay-sawant/ownframe/internal/host"
@@ -54,7 +52,7 @@ func newBuilder(root *markup.Node, view View) *builder {
 		names:    names,
 		boxes:    boxes,
 		counts:   counts,
-		nodeBox:  NodeBoxes(root, view.Boxes),
+		nodeBox:  nodeBoxesForRoles(root, view.Boxes),
 		nodeAt:   map[host.AccessibilityNodeID]int{"document": 0},
 	}
 	b.tree.Nodes = []host.AccessibilityNode{{
@@ -110,7 +108,7 @@ func (b *builder) walk(n *markup.Node, parent host.AccessibilityNodeID, path str
 }
 
 func (b *builder) appendText(n *markup.Node, parent host.AccessibilityNodeID, path string) {
-	name := strings.Join(strings.Fields(n.Text), " ")
+	name := collapseSpaces(n.Text)
 	if name == "" || TextNamedByParent(b.tree.Nodes[b.nodeAt[parent]].Role) {
 		return
 	}

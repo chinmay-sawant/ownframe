@@ -102,8 +102,9 @@ type shell struct {
 	drawSyncErr  error
 	fallback     bool
 	bitmapView   bitmapView
-	orderCache   orderCache
-	seq          uint64
+	orderCache      orderCache
+	seq             uint64
+	displayLayerGen uint64
 	contentW     int
 	contentH     int
 	contentGen   uint64
@@ -254,14 +255,20 @@ func (s *shell) built() bool {
 
 func (s *shell) setDisplay(display *layout.Display) {
 	s.viewportSticky = layout.HasViewportSticky(display)
-	// Evict even when the pointer repeats: a recycled *layout.Display with the
-	// same op and box counts keeps the same plan fingerprint, so a plan built
-	// for the previous generation would otherwise hit stale masks and colors.
-	if s.display != nil {
+	// Evict when the display pointer or its content generation changed. Only
+	// screens implementing layerGenerator distinguish content changes from
+	// no-op hover commits on the exact same *layout.Display.
+	layerGen, hasLayerGen := uint64(0), false
+	if src, ok := s.app.(layerGenerator); ok {
+		layerGen, hasLayerGen = src.LayerGeneration(), true
+	}
+	sameContent := hasLayerGen && layerGen != 0 && s.display == display && s.displayLayerGen == layerGen
+	if s.display != nil && !sameContent {
 		s.renderer.EvictDisplay(s.display)
 	}
 	s.disposeImage()
 	s.display = display
+	s.displayLayerGen = layerGen
 	s.img = nil
 	s.fallback = false
 	s.seq = s.app.Generation()
