@@ -32,8 +32,8 @@ github.com/brianvoe/gofakeit/v7 v7.18.0 h1:vn3tb6OKRUazCkzhotd8xEwz/mhkLFbDoR8OU
 github.com/brianvoe/gofakeit/v7 v7.18.0/go.mod h1:QXuPeBw164PJCzCUZVmgpgHJ3Llj49jSLVkKPMtxtxA=
 github.com/chinmay-sawant/blinkless v0.1.11 h1:3xL/YyXQ23hI5li7Yg84jchX4+8B2b8N7pMBuQecwAU=
 github.com/chinmay-sawant/blinkless v0.1.11/go.mod h1:AndgpwyhPKxh9/YXVvSwYbirByQzQrikZI/xchqeC18=
-github.com/chinmay-sawant/ownframe v0.0.9 h1:Np7JJLbVryZet0Z24xBmMRuD7zV8rVKmILZPwaBOJlk=
-github.com/chinmay-sawant/ownframe v0.0.9/go.mod h1:cTj414oT1KzYN9LCL5S/s5G27DnO0wpZTGjjjqgzJgs=
+github.com/chinmay-sawant/ownframe v0.0.10 h1:S1TWZ4bkyeO53O91nNrM1I8qjy8mOpBlrZzIV+Gle/I=
+github.com/chinmay-sawant/ownframe v0.0.10/go.mod h1:cTj414oT1KzYN9LCL5S/s5G27DnO0wpZTGjjjqgzJgs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
