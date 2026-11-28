@@ -88,6 +88,7 @@ make air reload ARGS="-web"
 | [lg-remote](lg-remote) | LG webOS remote for a UP7750-class TV. Dark by default, with a light theme toggle. Desktop uses Wi-Fi. Android adds Bluetooth HID. | 8131 |
 | [flappy-bird](flappy-bird) | Flappy Bird: HTML/CSS scene, gravity and flap physics, scrolling pipe pairs, score and best, keyboard or click. | 8121 |
 | [devtools](devtools) | Inspector dock: JSON element properties, frame counters, and operation outlines; F12 or Ctrl+Shift+I. | 8122 |
+| [retained-dom](retained-dom) | Retained DOM mutations (`ToggleClass`, `AddClass`, `RemoveClass`, `RemoveAttribute`, `AppendHTML`, `InnerHTML`, `Remove`, `PatchElements`) alongside v0.0.9 CSS motion fast paths and clipped/blend-sibling retained layers; DevTools and Perf on by default. | 8151 |
 | [reload](reload) | File-backed page that redraws when `index.html` changes; the counter survives the reload. | 8123 |
 | [drop](drop) | Dropped files print their absolute path on desktop and the entry name in a browser; a file control takes a path from the picker. | 8124 |
 | [input-lab](input-lab) | The nine form and input demos (forms, controls, bind, bind-hooks, editing, clipboard, input, login, states) in one window. | 8130 |
@@ -199,6 +200,7 @@ The remaining ticks are input or I/O bridges, not animation:
 | [lg-remote](lg-remote) | Remote bridge: drains TV events, key repeat, wake polling, and Bluetooth status. |
 | [desktop-cat](desktop-cat) | Overlay content: switches expression PNGs on a timer and bobs the image from elapsed seconds. |
 | [perf-stress](perf-stress) | Measurement loop: advances synthetic progress and equalizer values to stress the paint path. |
+| [retained-dom](retained-dom) | Toast timeout: hides the bottom-right patch alert card via `PatchElement` after 5 seconds using `WantFrameAt`; all motion cards are CSS-only. |
 
 [wispr-flow-dashboard](wispr-flow-dashboard) is the ordinary app that proves the
 automatic path outside the animation catalog. `.nav-item` declares

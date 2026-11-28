@@ -54,6 +54,7 @@
     "reload",
     "replay",
     "resize",
+    "retained-dom",
     "scrolling",
     "shapes",
     "snipping-tool",
