@@ -26,17 +26,20 @@ func collapseSpaces(s string) string {
 			fast = false
 			break
 		}
-		if b == ' ' {
+		switch b {
+		case ' ':
 			if prevSpace {
 				fast = false
-				break
+			} else {
+				prevSpace = true
 			}
-			prevSpace = true
-		} else if b == '\t' || b == '\n' || b == '\r' || b == '\v' || b == '\f' {
+		case '\t', '\n', '\r', '\v', '\f':
 			fast = false
-			break
-		} else {
+		default:
 			prevSpace = false
+		}
+		if !fast {
+			break
 		}
 	}
 	if fast && !prevSpace {

@@ -15,6 +15,11 @@ import (
 	"text/template/parse"
 )
 
+const (
+	rangeKeyValDecls = 2
+	binaryOpArgs     = 2
+)
+
 type typeKind int
 
 const (
@@ -59,6 +64,7 @@ func findModuleRoot(dir string) (root, modPath string) {
 		return "", ""
 	}
 	for {
+		//nolint:gosec // CLI tool walks parent directories to locate go.mod.
 		data, readErr := os.ReadFile(filepath.Join(cur, "go.mod"))
 		if readErr == nil {
 			for _, line := range strings.Split(string(data), "\n") {
@@ -128,72 +134,74 @@ func (pt *pkgTypes) parseDirInto(
 	named map[string]ast.Expr,
 	methods map[string]map[string]ast.Expr,
 ) ([]string, error) {
-	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, dir, func(fi os.FileInfo) bool {
-		return !strings.HasSuffix(fi.Name(), "_test.go")
-	}, 0)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("parse Go package in %s: %w", dir, err)
+		return nil, fmt.Errorf("read Go package dir %s: %w", dir, err)
 	}
-
+	fset := token.NewFileSet()
 	var imports []string
-	for _, pkg := range pkgs {
-		for _, f := range pkg.Files {
-			for _, imp := range f.Imports {
-				if p, unqErr := strconv.Unquote(imp.Path.Value); unqErr == nil {
-					imports = append(imports, p)
-				}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		f, parseErr := parser.ParseFile(fset, filepath.Join(dir, entry.Name()), nil, 0)
+		if parseErr != nil {
+			return nil, fmt.Errorf("parse %s: %w", entry.Name(), parseErr)
+		}
+		for _, imp := range f.Imports {
+			if p, unqErr := strconv.Unquote(imp.Path.Value); unqErr == nil {
+				imports = append(imports, p)
 			}
-			for _, decl := range f.Decls {
-				switch d := decl.(type) {
-				case *ast.GenDecl:
-					if d.Tok != token.TYPE {
+		}
+		for _, decl := range f.Decls {
+			switch d := decl.(type) {
+			case *ast.GenDecl:
+				if d.Tok != token.TYPE {
+					continue
+				}
+				for _, spec := range d.Specs {
+					ts, ok := spec.(*ast.TypeSpec)
+					if !ok {
 						continue
 					}
-					for _, spec := range d.Specs {
-						ts, ok := spec.(*ast.TypeSpec)
-						if !ok {
-							continue
-						}
-						if st, ok := ts.Type.(*ast.StructType); ok {
-							sd := &structDef{fields: make(map[string]ast.Expr)}
-							if st.Fields != nil {
-								for _, field := range st.Fields.List {
-									if len(field.Names) == 0 {
-										if emb := identName(field.Type); emb != "" {
-											sd.embedded = append(sd.embedded, emb)
-										}
-										continue
+					if st, ok := ts.Type.(*ast.StructType); ok {
+						sd := &structDef{fields: make(map[string]ast.Expr)}
+						if st.Fields != nil {
+							for _, field := range st.Fields.List {
+								if len(field.Names) == 0 {
+									if emb := identName(field.Type); emb != "" {
+										sd.embedded = append(sd.embedded, emb)
 									}
-									for _, name := range field.Names {
-										sd.fields[name.Name] = field.Type
-									}
+									continue
+								}
+								for _, name := range field.Names {
+									sd.fields[name.Name] = field.Type
 								}
 							}
-							structs[ts.Name.Name] = sd
-						} else {
-							named[ts.Name.Name] = ts.Type
 						}
+						structs[ts.Name.Name] = sd
+					} else {
+						named[ts.Name.Name] = ts.Type
 					}
-				case *ast.FuncDecl:
-					if d.Recv == nil || len(d.Recv.List) == 0 {
-						continue
-					}
-					if d.Type.Params != nil && len(d.Type.Params.List) > 0 {
-						continue
-					}
-					if d.Type.Results == nil || len(d.Type.Results.List) == 0 {
-						continue
-					}
-					recvName := identName(d.Recv.List[0].Type)
-					if recvName == "" {
-						continue
-					}
-					if methods[recvName] == nil {
-						methods[recvName] = make(map[string]ast.Expr)
-					}
-					methods[recvName][d.Name.Name] = d.Type.Results.List[0].Type
 				}
+			case *ast.FuncDecl:
+				if d.Recv == nil || len(d.Recv.List) == 0 {
+					continue
+				}
+				if d.Type.Params != nil && len(d.Type.Params.List) > 0 {
+					continue
+				}
+				if d.Type.Results == nil || len(d.Type.Results.List) == 0 {
+					continue
+				}
+				recvName := identName(d.Recv.List[0].Type)
+				if recvName == "" {
+					continue
+				}
+				if methods[recvName] == nil {
+					methods[recvName] = make(map[string]ast.Expr)
+				}
+				methods[recvName][d.Name.Name] = d.Type.Results.List[0].Type
 			}
 		}
 	}
@@ -209,10 +217,6 @@ func identName(expr ast.Expr) string {
 		return identName(e.X)
 	}
 	return ""
-}
-
-func (pt *pkgTypes) resolveExpr(expr ast.Expr) *goTypeInfo {
-	return pt.resolveExprIn("", expr)
 }
 
 func (pt *pkgTypes) resolveExprIn(pkgName string, expr ast.Expr) *goTypeInfo {
@@ -647,7 +651,7 @@ func (gc *boundCompiler) emitNode(buf *bytes.Buffer, node parse.Node, scope *com
 		switch len(n.Pipe.Decl) {
 		case 1:
 			rScope.vars[n.Pipe.Decl[0].Ident[0]] = boundVar{goExpr: itemVar, typ: dotType}
-		case 2:
+		case rangeKeyValDecls:
 			rScope.vars[n.Pipe.Decl[0].Ident[0]] = boundVar{goExpr: idxVar, typ: &goTypeInfo{kind: tkInt, goName: "int"}}
 			rScope.vars[n.Pipe.Decl[1].Ident[0]] = boundVar{goExpr: itemVar, typ: dotType}
 		}
@@ -838,14 +842,14 @@ func (gc *boundCompiler) evalBuiltin(name string, args []parse.Node, scope *comp
 		return "(" + strings.Join(parts, " || ") + ")", boolType, nil
 
 	case "eq":
-		if len(args) < 2 {
+		if len(args) < binaryOpArgs {
 			return "", nil, fmt.Errorf("eq expects >= 2 args")
 		}
 		lhs, _, err := gc.evalArg(args[0], scope, false)
 		if err != nil {
 			return "", nil, err
 		}
-		if len(args) == 2 {
+		if len(args) == binaryOpArgs {
 			rhs, _, err := gc.evalArg(args[1], scope, false)
 			if err != nil {
 				return "", nil, err
@@ -863,7 +867,7 @@ func (gc *boundCompiler) evalBuiltin(name string, args []parse.Node, scope *comp
 		return "(" + strings.Join(parts, " || ") + ")", boolType, nil
 
 	case "ne", "lt", "le", "gt", "ge":
-		if len(args) != 2 {
+		if len(args) != binaryOpArgs {
 			return "", nil, fmt.Errorf("%s expects 2 args, got %d", name, len(args))
 		}
 		lhs, _, err := gc.evalArg(args[0], scope, false)
