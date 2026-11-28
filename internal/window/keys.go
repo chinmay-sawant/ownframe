@@ -117,7 +117,13 @@ func keyEventName(key ebiten.Key, mods modifiers) string {
 	}
 
 	switch name {
-	case "arrowleft", "arrowright", "home", "end":
+	case "arrowleft", "arrowright", "arrowup", "arrowdown", "home", "end":
+	case "enter", "numpadenter":
+		if mods.command() {
+			return "ctrl+" + name
+		}
+
+		return name
 	default:
 		return name
 	}

@@ -65,3 +65,97 @@ func OffsetAt(d *layout.Display, box layout.Box, c Control, x, y float64) int {
 
 	return ClampPos(off, n)
 }
+
+// MoveCaretDisplay applies one caret navigation key to c. For a textarea it
+// uses the laid-out visual lines for vertical arrows (preserving desiredX) and
+// line-aware Home/End, while Ctrl+Home/Ctrl+End move to the document ends.
+func MoveCaretDisplay(
+	d *layout.Display, box layout.Box, c Control,
+	key string, caret, start, end int,
+	desiredX float64, hasDesiredX bool,
+) (pos int, extend bool, nextX float64, keepX bool, ok bool) {
+	if c.Tag != "textarea" {
+		pos, extend, ok = MoveCaret(key, c.Value, caret, start, end)
+
+		return pos, extend, 0, false, ok
+	}
+
+	base, extend, word := Mods(key)
+	n := RuneLen(c.Value)
+	caret = ClampPos(caret, n)
+	shown := ShownText(strings.ToLower(c.Type), c.Value)
+
+	switch base {
+	case "arrowleft", "arrowright":
+		pos, extend, ok = MoveCaret(key, c.Value, caret, start, end)
+
+		return pos, extend, 0, false, ok
+	case "arrowup", "arrowdown":
+		dir := -1
+		if base == "arrowdown" {
+			dir = 1
+		}
+		from := caret
+		wantX := -1.0
+		if start != end && !extend {
+			if dir < 0 {
+				from = start
+			} else {
+				from = end
+			}
+		} else if hasDesiredX {
+			wantX = desiredX
+		}
+		if next, prefX, moved := textrun.MoveVertical(d, box, shown, from, dir, wantX); moved {
+			return ClampPos(next, n), extend, prefX, true, true
+		}
+
+		return moveVerticalLogical(c.Value, from, dir), extend, 0, false, true
+	case "home":
+		if word {
+			return 0, extend, 0, false, true
+		}
+		if lineStart, _, found := textrun.LineRange(d, box, shown, caret); found {
+			return ClampPos(lineStart, n), extend, 0, false, true
+		}
+		lineStart, _ := LineBounds(c.Value, caret)
+
+		return lineStart, extend, 0, false, true
+	case "end":
+		if word {
+			return n, extend, 0, false, true
+		}
+		if _, lineEnd, found := textrun.LineRange(d, box, shown, caret); found {
+			return ClampPos(lineEnd, n), extend, 0, false, true
+		}
+		_, lineEnd := LineBounds(c.Value, caret)
+
+		return lineEnd, extend, 0, false, true
+	default:
+		return 0, false, 0, false, false
+	}
+}
+
+func moveVerticalLogical(value string, pos, dir int) int {
+	runes := []rune(value)
+	n := len(runes)
+	pos = ClampPos(pos, n)
+	lineStart, lineEnd := LineBounds(value, pos)
+	col := pos - lineStart
+	if dir < 0 {
+		if lineStart == 0 {
+			return 0
+		}
+		prevEnd := lineStart - 1
+		prevStart, _ := LineBounds(value, prevEnd)
+
+		return min(prevStart+col, prevEnd)
+	}
+	if lineEnd >= n {
+		return n
+	}
+	nextStart := lineEnd + 1
+	_, nextEnd := LineBounds(value, nextStart)
+
+	return min(nextStart+col, nextEnd)
+}

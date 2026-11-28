@@ -45,6 +45,20 @@ func MoveCaret(key, value string, caret, start, end int) (int, bool, bool) {
 	return ClampPos(pos, n), extend, true
 }
 
+// IsCaretKey reports whether key moves the caret for c.
+// Textareas also handle vertical arrows.
+func IsCaretKey(c Control, key string) bool {
+	base, _, _ := Mods(key)
+	switch base {
+	case "arrowleft", "arrowright", "home", "end":
+		return true
+	case "arrowup", "arrowdown":
+		return c.Tag == "textarea"
+	default:
+		return false
+	}
+}
+
 // CaretMoved reports whether storing pos would change the caret.
 // extend false also treats a moved anchor or a select-all as a change.
 func CaretMoved(caret, anchor, pos int, all, extend bool) bool {

@@ -21,20 +21,21 @@ const (
 // View is the data the template prints. Field values live in the
 // page; bound fields mirror into B/L pairs through data-bind.
 type View struct {
-	BName   string
-	BEmail  string
-	BAgree  bool
-	BPlan   string
-	BColor  string
-	BStatus string
-	LName   string
-	LEmail  string
-	LAgree  bool
-	LPlan   string
-	LStatus string
-	Status  string
-	Stamp   int
-	Ready   bool
-	LoginOk string
-	LoginEr string
+	BName     string
+	BEmail    string
+	BAgree    bool
+	BPlan     string
+	BColor    string
+	BStatus   string
+	LName     string
+	LEmail    string
+	LAgree    bool
+	LPlan     string
+	LStatus   string
+	Status    string
+	Stamp     int
+	Ready     bool
+	LoginOk   string
+	LoginEr   string
+	MLReadout string
 }

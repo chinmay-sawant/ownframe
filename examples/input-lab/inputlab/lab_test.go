@@ -2,6 +2,7 @@ package inputlab
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -78,5 +79,29 @@ func TestSendSnapshot(t *testing.T) {
 	clickID(t, app, ctx, "f-send")
 	if got := app.View().Status; got == "" {
 		t.Fatal("empty status")
+	}
+}
+
+func TestMultilineTextareaSection(t *testing.T) {
+	app, ctx := newTest(t)
+	if err := app.Page().Form().Focus(ctx, "ml-editor"); err != nil {
+		t.Fatal(err)
+	}
+	before := app.FormValue("ml-editor")
+	if !strings.Contains(before, "\n\n") {
+		t.Fatalf("ml-editor missing prefilled paragraphs: %q", before)
+	}
+	if err := app.Page().Edit().KeyDown(ctx, "enter"); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Page().Edit().KeyUp(ctx, "enter"); err != nil {
+		t.Fatal(err)
+	}
+	if got := app.FormValue("ml-editor"); got != before+"\n" {
+		t.Fatalf("after enter got %q, want trailing newline", got)
+	}
+	if !strings.Contains(app.View().MLReadout, "focus=ml-editor") ||
+		!strings.Contains(app.View().MLReadout, "newlines=4") {
+		t.Fatalf("MLReadout = %q", app.View().MLReadout)
 	}
 }

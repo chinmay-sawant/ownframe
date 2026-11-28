@@ -331,8 +331,10 @@ func hasSelection(p *Page) bool {
 }
 
 // caretKey moves the caret for a focused text field and draws. Arrow keys
-// move by rune, Home and End move to the ends, and a ctrl+ or alt+ prefix
-// jumps by word. A shift+ prefix extends the range from the anchor.
+// move by rune (and by visual line vertically in a textarea), Home and End
+// move to the ends (or visual line ends in a textarea), and a ctrl+ or alt+
+// prefix jumps by word (or document ends for Ctrl+Home/End in a textarea).
+// A shift+ prefix extends the range from the anchor.
 func caretKey(p *Page, ctx context.Context, key string) error {
 	c, ok := typingTarget(p)
 	if !ok {
@@ -343,16 +345,27 @@ func caretKey(p *Page, ctx context.Context, key string) error {
 	n := runeLen(c.Value)
 	caret := form.ClampPos(fs.Caret, n)
 	start, end := fs.Bounds(n)
-	pos, extend, ok := form.MoveCaret(key, c.Value, caret, start, end)
+	pos, extend, nextX, keepX, ok := form.MoveCaretDisplay(
+		p.draw.Display, boxByID(p, c.ID), c, key, caret, start, end,
+		fs.DesiredX, fs.HasDesiredX,
+	)
 	if !ok {
 		return nil
 	}
 
 	if !form.CaretMoved(fs.Caret, fs.Anchor, pos, fs.All, extend) {
+		if keepX {
+			fs.DesiredX, fs.HasDesiredX = nextX, true
+		}
+
 		return nil
 	}
 
-	fs.SetCaret(pos, n, extend)
+	if keepX {
+		fs.SetCaretVertical(pos, n, extend, nextX)
+	} else {
+		fs.SetCaret(pos, n, extend)
+	}
 	p.tickMutated.Store(true)
 
 	return p.Redraw(ctx)
@@ -999,6 +1012,7 @@ func applyEdit(p *Page, ctx context.Context, edit valueEdit) (bool, int, error) 
 	fs.ByID[fs.FocusID] = next
 	fs.Caret, fs.Anchor = caret, anchor
 	fs.All = false
+	fs.HasDesiredX = false
 	resetCaretBlink(p)
 	bindWrite(p, next)
 
@@ -1145,6 +1159,22 @@ func control(p *Page, id string) (Control, bool) {
 	}
 
 	return fs.Lookup(id)
+}
+
+// CaretState returns the focused editable field's caret rune offset and
+// normalized selection range [start, end). Returns 0, 0, 0 when no editable
+// field is focused.
+func CaretState(p *Page) (caret, start, end int) {
+	c, ok := focusedEditable(p)
+	if !ok {
+		return 0, 0, 0
+	}
+	fs := formState(p)
+	n := runeLen(c.Value)
+	caret = form.ClampPos(fs.Caret, n)
+	start, end = fs.Bounds(n)
+
+	return caret, start, end
 }
 
 // FormSelected reports whether id is the focused control and its whole

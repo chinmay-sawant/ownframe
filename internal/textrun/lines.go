@@ -80,19 +80,6 @@ func addRun(lines []line, op *layout.DisplayOp) []line {
 	return append(lines, line{baseline: op.Y, runs: []run{{op: op}}})
 }
 
-// nearest returns the index of the line closest to a baseline.
-func nearest(lines []line, yPt float64) int {
-	best := 0
-	dist := abs(lines[0].baseline - yPt)
-	for i, ln := range lines[1:] {
-		if d := abs(ln.baseline - yPt); d < dist {
-			best, dist = i+1, d
-		}
-	}
-
-	return best
-}
-
 // lineText joins the drawn text of a line's runs in reading order.
 func lineText(ln line) string {
 	var b strings.Builder

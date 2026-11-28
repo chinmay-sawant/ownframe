@@ -1,6 +1,10 @@
 package ownframe
 
-import "context"
+import (
+	"context"
+
+	"github.com/chinmay-sawant/ownframe/internal/page"
+)
 
 // Edit runs text edits, keys, and pointer actions.
 type Edit struct{ page *Page }
@@ -195,4 +199,16 @@ func (e Edit) FocusedField() string {
 	}
 
 	return p.FocusedField()
+}
+
+// Selection returns the focused editable field's caret rune offset and
+// normalized selection range [start, end). Returns 0, 0, 0 when no editable
+// field is focused.
+func (e Edit) Selection() (caret, start, end int) {
+	p := innerPage(e.page)
+	if p == nil {
+		return 0, 0, 0
+	}
+
+	return page.CaretState(p)
 }

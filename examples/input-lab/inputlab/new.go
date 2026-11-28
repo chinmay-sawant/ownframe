@@ -25,6 +25,7 @@ func New() (*App, error) {
 		Click:      app.onClick,
 		Change:     app.onChange,
 		BeforeEdit: app.onBeforeEdit,
+		KeyUp:      app.onKeyUp,
 		Submit:     app.onSubmit,
 		Copy:       app.onCopy,
 		Cut:        app.onCut,
@@ -33,6 +34,7 @@ func New() (*App, error) {
 		Undo:       app.onUndo,
 		Redo:       app.onRedo,
 	})
+	app.view.MLReadout = "focus=(none) | caret=0 | line=1:1 | sel=none | newlines=3"
 	page.SetData(&app.view)
 	return app, nil
 }

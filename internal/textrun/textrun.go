@@ -34,22 +34,21 @@ func At(d *layout.Display, box layout.Box, x, y float64, target string) (int, bo
 		return 0, false
 	}
 
-	lines := collect(d, box)
-	if len(lines) == 0 {
-		return 0, false
-	}
-
-	bases, ok := align(lines, target)
-	if !ok {
+	vlines, ok := visualLines(d, box, target)
+	if !ok || len(vlines) == 0 {
 		return 0, false
 	}
 
 	pt := d.PointsPerPixel
-	at := nearest(lines, y*pt)
-	off, ok := offsetInLine(lines[at], x, 1/pt)
+	vl := vlines[nearestVLine(vlines, y*pt)]
+	if vl.painted == nil {
+		return vl.start, true
+	}
+
+	off, ok := offsetInLine(*vl.painted, x, 1/pt)
 	if !ok {
 		return 0, false
 	}
 
-	return bases[at] + off, true
+	return vl.start + off, true
 }
